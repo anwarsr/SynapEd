@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'SynapEd – Belajar Neuroscience & EEG')
+@section('title', 'SynapEd – Platform Pembelajaran Online Terlengkap')
 
 @section('content')
 

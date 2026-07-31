@@ -17,11 +17,11 @@
 
                 <h1 class="text-5xl lg:text-7xl font-poppins font-semibold leading-[1.1] text-white">
                     Platform Terbaik <br>
-                    <span class="text-blue-500">Kuasai Neuroscience</span>
+                    <span class="text-blue-500">Kuasai Ilmu Apapun</span>
                 </h1>
 
                 <p class="text-lg text-white font-poppins leading-relaxed max-w-lg">
-                    Pahami sinyal listrik otak dan implementasi EEG secara praktis. Didesain khusus untuk pelajar, mahasiswa, dan profesional teknologi.
+                    Akses ratusan materi berkualitas dari berbagai bidang ilmu. Didesain untuk pelajar, mahasiswa, dan profesional di semua bidang.
                 </p>
 
                 <div class="flex flex-wrap gap-4 mt-4">
@@ -49,7 +49,7 @@
                         peer-checked/p3:z-10 peer-checked/p3:translate-x-0 peer-checked/p3:opacity-0
                         group-hover:peer-checked/p1:translate-x-12 group-hover:peer-checked/p1:rotate-6 group-hover:peer-checked/p1:z-20">
                         <div class="w-full h-full rounded-[2rem] overflow-hidden shadow-2xl border-[1px] border-white/30">
-                            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80" class="w-full h-full object-cover" alt="Neuroscience Student">
+                            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80" class="w-full h-full object-cover" alt="Student Learning">
                         </div>
                     </label>
 
@@ -58,7 +58,7 @@
                         group-hover:peer-checked/p1:opacity-100 group-hover:peer-checked/p1:-translate-x-10 group-hover:peer-checked/p1:-rotate-6
                         group-hover:peer-checked/p2:translate-x-12 group-hover:peer-checked/p2:rotate-6 group-hover:peer-checked/p2:z-20">
                         <div class="w-full h-full rounded-[2rem] overflow-hidden shadow-2xl border-[1px] border-white/30">
-                            <img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&q=80" class="w-full h-full object-cover" alt="Brain Scan Research">
+                            <img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&q=80" class="w-full h-full object-cover" alt="Research Lab">
                         </div>
                     </label>
 
@@ -67,7 +67,7 @@
                         group-hover:peer-checked/p2:opacity-100 group-hover:peer-checked/p2:-translate-x-10 group-hover:peer-checked/p2:-rotate-6
                         group-hover:peer-checked/p3:translate-x-12 group-hover:peer-checked/p3:rotate-6 group-hover:peer-checked/p3:z-20">
                         <div class="w-full h-full rounded-[2rem] overflow-hidden shadow-2xl border-[1px] border-white/30">
-                            <img src="https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80" class="w-full h-full object-cover" alt="Technology and Brain">
+                            <img src="https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80" class="w-full h-full object-cover" alt="Technology and Learning">
                         </div>
                     </label>
 

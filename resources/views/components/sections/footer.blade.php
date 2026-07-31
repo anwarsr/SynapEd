@@ -11,7 +11,7 @@
                     </div>
                 </div>
                 <p class="text-slate-400 text-sm leading-relaxed max-w-xs mb-6">
-                    Platform pembelajaran neuroscience dan EEG yang terbuka untuk semua kalangan. Memahami otak, teknologi, dan masa depan BCI bersama <strong>SynapEd</strong>.
+                    Platform pembelajaran online terlengkap yang terbuka untuk semua kalangan. Pelajari berbagai bidang ilmu dan kembangkan potensimu bersama <strong>SynapEd</strong>.
                 </p>
 
                 <div class="flex items-center gap-3">
@@ -41,7 +41,7 @@
             <div>
                 <h4 class="text-white font-semibold text-sm mb-5 uppercase tracking-wider">Materi</h4>
                 <ul class="flex flex-col gap-3">
-                    @foreach(['Dasar Neuroscience', 'Pengenalan EEG', 'Implementasi Muse', 'Analisis Data EEG', 'Brain-Computer Interface'] as $link)
+                    @foreach(['Neuroscience', 'Teknologi & Data', 'Pemrograman', 'Sains', 'Lihat Semua →'] as $link)
                     <li><a href="#" class="text-slate-400 hover:text-[#0056D2] text-sm transition-colors duration-200">{{ $link }}</a></li>
                     @endforeach
                 </ul>
@@ -50,7 +50,7 @@
 
         <div class="h-px mb-8" style="background: rgba(255,255,255,0.08);"></div>
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500 uppercase tracking-tight">
-            <span>© {{ date('Y') }} SynapEd. Brain-Tech Learning Hub.</span>
+            <span>© {{ date('Y') }} SynapEd. Learn Anything, Anytime.</span>
             <div class="flex items-center gap-6">
                 <a href="#" class="hover:text-[#0056D2] transition-colors">Kebijakan Privasi</a>
                 <a href="#" class="hover:text-[#0056D2] transition-colors">Syarat Penggunaan</a>

@@ -6,17 +6,17 @@
             </h2>
             <span id="typing-target" class="text-4xl md:text-5xl font-bold text-blue-600 border-r-4 border-blue-600 pr-1 tracking-tight leading-tight"></span>
             <p class="max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
-                NeuroAcademy menghadirkan pembelajaran neuroscience dan EEG secara sistematis. Materi dirancang agar mudah dipahami oleh pelajar dan pemula tanpa latar belakang medis.
+                SynapEd menghadirkan pembelajaran dari berbagai bidang ilmu secara sistematis. Materi dirancang agar mudah dipahami oleh pelajar dan pemula tanpa memerlukan latar belakang khusus.
             </p>
         </div>
 
         <div class="flex flex-col gap-8 max-w-3xl mx-auto">
             @php
                 $features = [
-                    ['title' => 'Kurikulum Terverifikasi', 'desc' => 'Materi dikurasi oleh praktisi neuroscience dan teknologi EEG berpengalaman.'],
+                    ['title' => 'Kurikulum Terverifikasi', 'desc' => 'Materi dikurasi oleh para ahli dan praktisi berpengalaman di bidangnya.'],
                     ['title' => 'Video Berkualitas', 'desc' => 'Video rekaman & animasi terstruktur yang sangat mudah dipahami.'],
                     ['title' => 'Modul PDF Lengkap', 'desc' => 'Ringkasan PDF yang dapat diunduh untuk mendukung belajar secara offline.'],
-                    ['title' => 'Eksperimen Praktis', 'desc' => 'Dataset nyata dan panduan eksperimen untuk melatih skill analisis langsung.'],
+                    ['title' => 'Studi Kasus Praktis', 'desc' => 'Studi kasus nyata dan panduan praktik untuk melatih skill secara langsung.'],
                     ['title' => 'Akses Fleksibel', 'desc' => 'Responsif di laptop, tablet, atau smartphone. Belajar di mana saja.'],
                     ['title' => 'Berbasis Riset', 'desc' => 'Kurikulum disusun berdasarkan standar riset teknologi terbaru.']
                 ];

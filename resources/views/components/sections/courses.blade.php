@@ -8,7 +8,7 @@
                 Materi
                 <span class="bg-clip-text text-[#0056D2] ">Pembelajaran</span>
             </h2>
-            <p class="text-black font-poppins text-lg mt-4 max-w-2xl mx-auto">4 modul terstruktur dari level dasar hingga analisis lanjutan, dirancang untuk pengalaman belajar yang optimal.</p>
+            <p class="text-black font-poppins text-lg mt-4 max-w-2xl mx-auto">Berbagai modul terstruktur dari level dasar hingga lanjutan, dirancang untuk pengalaman belajar yang optimal.</p>
         </div>
 
             <div class="flex flex-wrap justify-center gap-3 mb-12">

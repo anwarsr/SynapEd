@@ -4,7 +4,7 @@
         <div class="mb-16 flex items-center justify-center text-center">
             <h2 class="text-3xl md:text-5xl font-poppins font-bold text-slate-900 leading-tight">
                 Materi Pembelajaran <br>
-                <span class="text-blue-600">Neuroscience & BCI</span>
+                <span class="text-blue-600">Pilihan Terbaik</span>
             </h2>
         </div>
 
@@ -23,8 +23,8 @@
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-slate-900 font-bold text-2xl leading-tight mb-3">Struktur <br> Neuron Otak</h3>
-                        <p class="text-slate-600 text-sm leading-relaxed">Eksplorasi arsitektur neuron, transmisi sinaptik, dan mekanisme kesadaran manusia.</p>
+                        <h3 class="text-slate-900 font-bold text-2xl leading-tight mb-3">Sains & <br> Teknologi</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed">Eksplorasi berbagai cabang ilmu sains dan teknologi terkini secara mendalam dan terstruktur.</p>
                     </div>
                 </div>
             </div>
@@ -42,8 +42,8 @@
                         </div>
                     </div>
                     <div>
-                        <h3 class="font-bold text-2xl leading-tight mb-3" style="color: white">Teknologi <br> EEG Modern</h3>
-                        <p class="text-blue-100 text-sm leading-relaxed">Kuasai cara kerja elektroda dan pengukuran impedansi sinyal otak secara presisi.</p>
+                        <h3 class="font-bold text-2xl leading-tight mb-3" style="color: white">Neuroscience <br> & EEG</h3>
+                        <p class="text-blue-100 text-sm leading-relaxed">Kuasai cara kerja otak dan teknologi perekaman sinyal otak secara mendalam.</p>
                     </div>
                 </div>
             </div>
@@ -61,8 +61,8 @@
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-slate-900 font-bold text-2xl leading-tight mb-3">Integrasi <br> Software</h3>
-                        <p class="text-slate-600 text-sm leading-relaxed">Praktik menggunakan Python dan OpenBCI untuk visualisasi data EEG real-time.</p>
+                        <h3 class="text-slate-900 font-bold text-2xl leading-tight mb-3">Pemrograman <br> & Data</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed">Praktik menggunakan Python dan tools modern untuk analisis dan visualisasi data.</p>
                     </div>
                 </div>
             </div>
@@ -80,8 +80,8 @@
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-white font-bold text-2xl leading-tight mb-3" style="color: white">Antarmuka <br> Otak-Mesin</h3>
-                        <p class="text-blue-100 text-sm leading-relaxed">Pelajari kendali perangkat via sinyal otak dan aplikasi neurofeedback modern.</p>
+                        <h3 class="text-white font-bold text-2xl leading-tight mb-3" style="color: white">Riset & <br> Inovasi</h3>
+                        <p class="text-blue-100 text-sm leading-relaxed">Pelajari metodologi riset dan inovasi terbaru di berbagai bidang keilmuan.</p>
                     </div>
                 </div>
             </div>

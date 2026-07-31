@@ -10,12 +10,12 @@
     <div class="relative max-w-6xl mx-auto px-6 text-center">
 
         <h2 class="text-3xl md:text-5xl font-poppins font-bold text-slate-900 mb-6 leading-tight">
-            Platform Pembelajaran Neuroscience <br>
-            <span class="text-blue-600">untuk Generasi Teknologi</span>
+            Platform Pembelajaran Modern <br>
+            <span class="text-blue-600">untuk Generasi Digital</span>
         </h2>
 
         <p class="text-lg text-black leading-relaxed mb-16 max-w-3xl mx-auto">
-            NeuroAcademy menghadirkan pembelajaran neuroscience dan EEG secara sistematis mulai dari konsep dasar neuron hingga analisis sinyal otak. Materi dirancang agar mudah dipahami oleh pelajar dan pemula tanpa latar belakang medis.
+            SynapEd menghadirkan pembelajaran dari berbagai bidang ilmu secara sistematis dan terstruktur. Materi dirancang agar mudah dipahami oleh pelajar dan pemula tanpa memerlukan latar belakang khusus.
         </p>
 
         <div class="grid md:grid-cols-3 gap-6 font-poppins">
@@ -76,7 +76,7 @@
                             Berbasis Riset
                         </h3>
                         <p class="text-slate-500 text-justify text-xs mt-3 leading-relaxed opacity-0 max-h-0 overflow-hidden group-hover:opacity-100 group-hover:max-h-[100px] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] delay-100 max-w-[200px]">
-                            Seluruh materi pada website ini divalidasi berdasarkan jurnal dan literatur neuroscience internasional terbaru.
+                            Seluruh materi pada website ini divalidasi berdasarkan jurnal dan literatur ilmiah internasional terbaru.
                         </p>
                     </div>
 
