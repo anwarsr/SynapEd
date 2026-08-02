@@ -1,0 +1,396 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   SynapEd — "Tinta & Kertas"
+   Tinta biru di atas kertas hangat, dengan stabilo kuning.
+
+   Kehangatan datang dari NETRAL (kertas + teks), bukan dari
+   aksen. Biru #2563EB tetap warna identitas dan memimpin
+   semua aksi utama.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Font — `inline` supaya utility font-display/font-body memakai variabel
+   yang disuntik next/font (lihat layout.tsx) apa adanya.
+   Catatan: karena `inline`, --font-display TIDAK diterbitkan ke :root,
+   jadi CSS di bawah selalu merujuk --font-fraunces / --font-inter langsung. */
+@theme inline {
+    --font-display: var(--font-fraunces);
+    --font-body: var(--font-inter);
+}
+
+@theme {
+    /* ── Kertas — putih hangat ─────────────────────────────── */
+    --color-paper: #FCF9F4;        /* latar halaman */
+    --color-paper-alt: #F5F0E7;    /* section selang-seling */
+    --color-paper-card: #FFFFFF;   /* kartu — putih murni */
+    --color-rule: #E7DED0;         /* garis hairline */
+    --color-rule-strong: #D8CBB6;
+
+    /* ── Tinta — netral hangat, sumber kehangatan ──────────── */
+    --color-ink: #23201C;          /* judul      15.0:1  AAA */
+    --color-ink-body: #57504A;     /* isi         7.4:1  AAA */
+    --color-ink-muted: #6E655C;    /* caption     5.0:1  AA  */
+    --color-ink-faint: #A99F95;    /* DEKORATIF — bukan teks */
+
+    /* ── Biru — identitas SynapEd ──────────────────────────── */
+    --color-blue-50: #EDF2FE;
+    --color-blue-100: #DCE6FD;
+    --color-blue-300: #8FAEF8;
+    --color-blue-500: #2563EB;     /* biru logo   4.9:1  AA  */
+    --color-blue-600: #1D4FD0;     /* tombol      6.8:1  AAA */
+    --color-blue-700: #1A3F9E;     /* teks aksen */
+    --color-navy: #142A56;         /* footer, permukaan gelap */
+
+    /* ── Stabilo — kehangatan + sinyal belajar ─────────────── */
+    --color-amber-100: #FBEBCB;
+    --color-amber-500: #D99A2B;    /* GRAFIS SAJA — 2.3:1, gagal untuk teks */
+    --color-amber-700: #8A5C0C;    /* teks — 5.4:1 di paper, 4.9:1 di amber-100 (chip) */
+
+    /* ── Rust — hanya chip level "Lanjutan" ────────────────── */
+    --color-rust-100: #F6E2D9;
+    --color-rust-700: #8F4326;
+
+    /* ── Bayangan — satu-satunya yang dipakai ──────────────── */
+    --shadow-soft: 0 1px 2px rgba(35, 32, 28, .04), 0 8px 24px -12px rgba(35, 32, 28, .10);
+    --shadow-lift: 0 2px 4px rgba(35, 32, 28, .05), 0 14px 32px -14px rgba(35, 32, 28, .16);
+
+    /* ── Easing ────────────────────────────────────────────────
+       out-soft : untuk INTERAKSI (hover, klik) — cepat, 160–240ms
+       warm     : untuk REVEAL saat scroll — lambat & melambat
+                  panjang di ujung, itu yang memberi kesan hangat  */
+    --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+    --ease-warm: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+   RADIUS — memakai skala bawaan Tailwind, dibatasi ke 4 langkah:
+     rounded-md   6px   chip, tag
+     rounded-lg   8px   tombol, input
+     rounded-2xl 16px   kartu
+     rounded-3xl 24px   panel besar, gambar
+     rounded-full       hanya pill & avatar
+   Jangan pakai radius di atas rounded-3xl — bentuk terlalu
+   membulat terbaca "app", bukan "buku".
+*/
+
+/* ══ Base ═══════════════════════════════════════════════════ */
+
+html {
+    font-family: var(--font-inter);
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--color-paper);
+    color: var(--color-ink-body);
+}
+
+/* Tekstur kertas — dilapiskan di atas seluruh halaman.
+   pointer-events:none supaya tidak mengganggu interaksi. */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: .028;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+    background: var(--color-amber-100);
+    color: var(--color-ink);
+}
+
+/* Navbar fixed setinggi ~72px — tanpa ini, lompatan anchor (#about,
+   #courses, …) menyembunyikan bagian atas section di baliknya. */
+section[id] {
+    scroll-margin-top: 5.5rem;
+}
+
+@layer components {
+
+    /* ══ Skala tipografi ═════════════════════════════════════
+       Fraunces dengan axis SOFT (ujung huruf membulat = hangat),
+       WONK (bentuk alternatif yang khas), dan opsz (detail di
+       ukuran besar). Tanpa axis ini Fraunces hanya serif biasa.
+       Jangan pakai Fraunces di bawah 1.25rem — teks isi selalu Inter.
+       ═══════════════════════════════════════════════════════ */
+
+    .t-display {
+        font-family: var(--font-fraunces);
+        font-size: clamp(2.75rem, 6vw, 4.5rem);
+        font-weight: 400;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        font-variation-settings: "opsz" 96, "SOFT" 40, "WONK" 1;
+        color: var(--color-ink);
+    }
+
+    .t-h2 {
+        font-family: var(--font-fraunces);
+        font-size: clamp(2rem, 3.5vw, 2.75rem);
+        font-weight: 400;
+        line-height: 1.15;
+        letter-spacing: -0.015em;
+        font-variation-settings: "opsz" 48, "SOFT" 30, "WONK" 1;
+        color: var(--color-ink);
+    }
+
+    .t-h3 {
+        font-family: var(--font-fraunces);
+        font-size: 1.375rem;
+        font-weight: 500;
+        line-height: 1.25;
+        font-variation-settings: "opsz" 24, "SOFT" 25, "WONK" 0;
+        color: var(--color-ink);
+    }
+
+    /* Angka besar (Stats) — serif display murni */
+    .t-numeral {
+        font-family: var(--font-fraunces);
+        font-weight: 400;
+        line-height: 1;
+        font-variation-settings: "opsz" 72, "SOFT" 30, "WONK" 0;
+        color: var(--color-ink);
+    }
+
+    /* Numeral hantu di latar (LearningPath, ValueProposition) */
+    .t-numeral-ghost {
+        font-family: var(--font-fraunces);
+        font-weight: 400;
+        line-height: 1;
+        font-variation-settings: "opsz" 96, "SOFT" 20, "WONK" 0;
+    }
+
+    .t-body {
+        font-family: var(--font-inter);
+        font-size: 1rem;
+        line-height: 1.7;
+        color: var(--color-ink-body);
+    }
+
+    .t-label {
+        font-family: var(--font-inter);
+        font-size: 0.72rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+    }
+
+    /* Kutipan (Testimonials) — Fraunces italic asli */
+    .t-quote {
+        font-family: var(--font-fraunces);
+        font-style: italic;
+        font-size: 1.0625rem;
+        line-height: 1.6;
+        font-variation-settings: "opsz" 20, "SOFT" 40, "WONK" 1;
+        color: var(--color-ink-body);
+    }
+
+    /* ══ Motif 1 — sapuan stabilo kuning ═════════════════════
+       Sudut 104° + radius tidak rata = terbaca seperti sapuan
+       tangan, bukan kotak. Pakai HEMAT: satu frasa per judul besar.
+       Saat masuk layar, sapuannya "digambar" dari kiri ke kanan. */
+    .mark {
+        background-image: linear-gradient(104deg,
+                transparent 0.4%,
+                var(--color-amber-100) 2.4%,
+                var(--color-amber-100) 96.8%,
+                transparent 99.2%);
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        border-radius: 0.55em 0.25em 0.5em 0.2em;
+        padding: 0.06em 0.24em;
+        margin: 0 -0.12em;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+    }
+
+    /* Varian di atas permukaan gelap (hero navy).
+       Di latar gelap, blok stabilo penuh terbaca terlalu keras —
+       jadi di sini sapuannya menyusut menjadi garis bawah tebal
+       yang "ditarik" dari kiri setelah judul selesai naik. */
+    .mark-on-dark {
+        background-image: linear-gradient(104deg,
+                transparent 0.4%,
+                var(--color-amber-500) 2.4%,
+                var(--color-amber-500) 96.8%,
+                transparent 99.2%);
+        background-repeat: no-repeat;
+        background-size: 100% 0.16em;
+        background-position: 0 92%;
+        border-radius: 0;
+        padding: 0 0.06em;
+        margin: 0;
+        color: var(--color-paper);
+        animation: swipe-in 900ms var(--ease-warm) 850ms backwards;
+    }
+
+    @keyframes swipe-in {
+        from { background-size: 0% 0.16em; }
+        to   { background-size: 100% 0.16em; }
+    }
+
+    .reveal .mark { background-size: 0% 100%; }
+
+    .reveal.is-visible .mark {
+        background-size: 100% 100%;
+        transition: background-size 900ms var(--ease-warm) 260ms;
+    }
+
+    /* ══ Motif 2 — nomor bab di margin ═══════════════════════ */
+    .chapter-mark {
+        font-family: var(--font-inter);
+        font-size: 0.72rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--color-ink-faint);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    /* ══ Motif 3 — garis hairline pemisah ════════════════════ */
+    .rule-line {
+        height: 1px;
+        background: var(--color-rule);
+        border: 0;
+    }
+
+    /* Garis pendek biru di bawah judul section */
+    .rule-accent {
+        display: block;
+        width: 40px;
+        height: 2px;
+        background: var(--color-blue-500);
+    }
+
+    /* ══ Foto — penyelaras nada hangat ═══════════════════════
+       Foto stok (Unsplash/UGM) bernuansa dingin dan melawan
+       kertas hangat. Filter tipis ini menyatukannya tanpa
+       menghilangkan birunya. */
+    .photo-warm {
+        filter: saturate(.82) sepia(.14);
+    }
+
+    /* ══ Hero navy — permukaan biru penuh ════════════════════
+       Gradient navy hangat + satu kilau amber tipis supaya
+       tetap terasa "kertas malam", bukan biru korporat datar. */
+    .bg-hero-navy {
+        background:
+            radial-gradient(ellipse 60% 50% at 85% 15%, rgba(217, 154, 43, .16) 0%, transparent 60%),
+            radial-gradient(ellipse 70% 60% at 10% 90%, rgba(37, 99, 235, .30) 0%, transparent 65%),
+            linear-gradient(135deg, #0F2147 0%, #1B3A6B 48%, #12264E 100%);
+    }
+}
+
+/* ══ Reveal saat scroll ═════════════════════════════════════
+   Naik lembut + memudar masuk. Durasi panjang dengan ease-warm
+   inilah yang memberi kesan hangat, bukan snappy. */
+.reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+        opacity 800ms var(--ease-warm),
+        transform 800ms var(--ease-warm);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* ══ Entrance hero (saat halaman dimuat) ════════════════════ */
+@keyframes rise-in {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.rise-in {
+    opacity: 0;
+    animation: rise-in 900ms var(--ease-warm) forwards;
+    animation-delay: var(--rise-delay, 0ms);
+}
+
+/* ══ Mengambang lembut — kartu & foto hero ══════════════════ */
+@keyframes drift {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+}
+
+.drift {
+    animation: drift 7s ease-in-out infinite;
+    animation-delay: var(--drift-delay, 0ms);
+}
+
+/* ══ Garis aksen yang tumbuh ════════════════════════════════ */
+.reveal .rule-accent { transform: scaleX(0); transform-origin: left; }
+
+.reveal.is-visible .rule-accent {
+    transform: scaleX(1);
+    transition: transform 700ms var(--ease-warm) 200ms;
+}
+
+/* ══ Marquee (Partners) ═════════════════════════════════════ */
+@keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+.marquee-track {
+    animation: marquee 42s linear infinite;
+}
+
+.marquee-track:hover {
+    animation-play-state: paused;
+}
+
+/* ══ Scrollbar ══════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: var(--color-rule-strong);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-faint); }
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ══ Reduced motion ═════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+
+    .marquee-track,
+    .drift { animation: none; }
+
+    /* Konten harus tetap TERLIHAT, bukan sekadar berhenti bergerak */
+    .reveal,
+    .rise-in {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+    }
+
+    .reveal .mark,
+    .reveal.is-visible .mark { background-size: 100% 100%; }
+
+    .mark-on-dark { background-size: 100% 0.16em; }
+
+    .reveal .rule-accent,
+    .reveal.is-visible .rule-accent { transform: scaleX(1); }
+
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

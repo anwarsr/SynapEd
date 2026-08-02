@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Pengenalan EEG thumbnail">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5f3ff"/>
+      <stop offset="100%" stop-color="#ede9fe"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" rx="48" fill="url(#bg)"/>
+  <circle cx="260" cy="215" r="120" fill="#ffffff" opacity="0.55"/>
+  <path d="M120 310c40-18 64-18 104 0s64 18 104 0 64-18 104 0 64 18 104 0 64-18 104 0" fill="none" stroke="url(#accent)" stroke-width="14" stroke-linecap="round"/>
+  <path d="M120 350c40-18 64-18 104 0s64 18 104 0 64-18 104 0 64 18 104 0 64-18 104 0" fill="none" stroke="#8b5cf6" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+  <rect x="500" y="118" width="170" height="220" rx="34" fill="#ffffff" opacity="0.7"/>
+  <path d="M545 168v120m30-80v80m30-110v140m30-100v100" stroke="#4f46e5" stroke-width="12" stroke-linecap="round"/>
+  <text x="80" y="520" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#312e81">Pengenalan EEG</text>
+</svg>
