@@ -14,12 +14,13 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-2">
+            {/* Rasio asli 667x667 — lihat catatan di Navbar.tsx */}
             <Image
               src="/images/logotextwhite.png"
               alt="SynapEd"
-              width={80}
-              height={32}
-              className="w-20 mb-5"
+              width={667}
+              height={667}
+              className="w-28 h-auto -my-9 mb-1"
             />
             <p className="text-sm leading-relaxed max-w-xs mb-6 text-blue-100/70">
               Platform pembelajaran online terlengkap yang terbuka untuk semua kalangan. Pelajari

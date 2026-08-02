@@ -3,77 +3,111 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useActiveSection } from "@/lib/useActiveSection";
 import { cn } from "@/lib/cn";
+
+const NAV_LINKS = [
+  { label: "Beranda", id: "hero" },
+  { label: "Tentang", id: "about" },
+  { label: "Kurikulum", id: "value" },
+  { label: "Kursus", id: "courses" },
+  { label: "FAQ", id: "faq" },
+];
+
+const SECTION_IDS = NAV_LINKS.map((l) => l.id);
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
+  const isHome = pathname === "/";
   // Hanya beranda yang punya hero navy; halaman lain berlatar kertas terang.
-  const overDarkHero = pathname === "/";
-  const light = overDarkHero && !scrolled;
+  const light = isHome && !scrolled;
+  const activeId = useActiveSection(SECTION_IDS, isHome);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinks = [
-    { label: "Beranda", href: "#hero" },
-    { label: "Tentang", href: "#about" },
-    { label: "Kurikulum", href: "#value" },
-    { label: "Kursus", href: "#courses" },
-    { label: "FAQ", href: "#faq" },
-  ];
-
   return (
-    <nav
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ease-out-soft",
-        scrolled ? "bg-paper/90 backdrop-blur-md border-b border-rule" : "bg-transparent",
-      )}
-    >
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center" aria-label="SynapEd — beranda">
+    // Kapsul mengambang, bukan bilah penuh — memberi navbar bentuk sendiri
+    // sekaligus mengangkat logo dari latar navy supaya "Ed" biru terbaca.
+    <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-3 sm:pt-4">
+      <div
+        className={cn(
+          "max-w-7xl mx-auto rounded-3xl border px-4 sm:px-5 py-2.5",
+          "flex items-center justify-between gap-4",
+          "transition-[background-color,border-color,box-shadow] duration-300 ease-out-soft",
+          scrolled
+            ? "bg-paper/92 backdrop-blur-xl border-rule shadow-soft"
+            : light
+              ? "bg-white/10 backdrop-blur-md border-white/15"
+              : "bg-paper-card/70 backdrop-blur-md border-rule",
+        )}
+      >
+        {/* Aset logo berukuran 667x667 (persegi) dengan margin transparan tebal.
+            width/height WAJIB sesuai rasio asli, kalau tidak gambarnya dipipihkan.
+            Ukuran optis diatur lewat lebar CSS, lalu -my menetralkan tinggi
+            kanvas kosong supaya baris navbar tidak ikut membesar. */}
+        <Link href="/" className="flex items-center shrink-0" aria-label="SynapEd — beranda">
           <Image
             src={light ? "/images/logotextwhite.png" : "/images/logotext.png"}
             alt="SynapEd"
-            width={80}
-            height={32}
-            className="w-20"
+            width={667}
+            height={667}
+            className="w-24 sm:w-28 h-auto -my-8"
             priority
           />
         </Link>
 
-        <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "relative text-sm transition-colors duration-200 ease-out-soft",
-                "after:absolute after:left-0 after:-bottom-1.5 after:h-px after:w-full",
-                "after:origin-left after:scale-x-0 after:transition-transform after:duration-300 after:ease-warm",
-                "hover:after:scale-x-100",
-                light
-                  ? "text-blue-100 hover:text-white after:bg-amber-500"
-                  : "text-ink-body hover:text-blue-700 after:bg-blue-500",
-              )}
-            >
-              {link.label}
-            </a>
-          ))}
+        {/* Link + penanda section aktif */}
+        <div className="hidden md:flex items-center gap-1">
+          {NAV_LINKS.map((link) => {
+            const href = isHome ? `#${link.id}` : `/#${link.id}`;
+            const isActive = isHome && activeId === link.id;
+
+            return (
+              <a
+                key={link.id}
+                href={href}
+                aria-current={isActive ? "true" : undefined}
+                className={cn(
+                  "relative px-3.5 py-2 rounded-full text-sm",
+                  "transition-colors duration-200 ease-out-soft",
+                  light
+                    ? isActive
+                      ? "text-white bg-white/12"
+                      : "text-blue-100/80 hover:text-white hover:bg-white/8"
+                    : isActive
+                      ? "text-blue-700 bg-blue-50"
+                      : "text-ink-body hover:text-blue-700 hover:bg-blue-50/60",
+                )}
+              >
+                {link.label}
+                {/* Titik penanda — sinyal halus, tidak menggeser tata letak */}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute left-1/2 -translate-x-1/2 bottom-0.5 w-1 h-1 rounded-full",
+                    "transition-all duration-300 ease-warm",
+                    isActive ? "opacity-100 scale-100 bg-amber-500" : "opacity-0 scale-0",
+                  )}
+                />
+              </a>
+            );
+          })}
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-1.5 shrink-0">
           <Link
             href="/login"
             className={cn(
-              "px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ease-out-soft",
-              light ? "text-blue-100 hover:text-white" : "text-ink-body hover:text-blue-700",
+              "px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ease-out-soft",
+              light ? "text-blue-100/90 hover:text-white hover:bg-white/8" : "text-ink-body hover:text-blue-700 hover:bg-blue-50/60",
             )}
           >
             Masuk
@@ -81,18 +115,28 @@ export default function Navbar() {
           <Link
             href="/register"
             className={cn(
-              "px-5 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+              "group inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold rounded-full",
+              "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
               light
                 ? "bg-paper text-navy hover:bg-white hover:shadow-lift"
-                : "bg-blue-600 text-white hover:bg-blue-700",
+                : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-soft",
             )}
           >
             Daftar Gratis
+            <svg
+              className="w-3.5 h-3.5 -mr-0.5 transition-transform duration-200 ease-out-soft group-hover:translate-x-0.5"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
           </Link>
         </div>
 
         <button
-          className={cn("md:hidden p-1 transition-colors", light ? "text-paper" : "text-ink")}
+          className={cn(
+            "md:hidden p-1.5 rounded-full transition-colors",
+            light ? "text-paper hover:bg-white/10" : "text-ink hover:bg-blue-50",
+          )}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
           aria-expanded={mobileOpen}
@@ -107,31 +151,32 @@ export default function Navbar() {
         </button>
       </div>
 
+      {/* Menu mobile — kartu terpisah di bawah kapsul */}
       {mobileOpen && (
-        <div className="md:hidden bg-paper border-t border-rule">
-          <div className="px-6 py-5 space-y-1">
-            {navLinks.map((link, i) => (
+        <div className="md:hidden max-w-7xl mx-auto mt-2 bg-paper-card border border-rule rounded-3xl shadow-lift overflow-hidden">
+          <div className="px-5 py-4 space-y-0.5">
+            {NAV_LINKS.map((link, i) => (
               <a
-                key={link.href}
-                href={link.href}
-                className="rise-in block text-sm text-ink-body hover:text-blue-700 py-2.5 transition-colors"
+                key={link.id}
+                href={isHome ? `#${link.id}` : `/#${link.id}`}
+                className="rise-in block text-sm text-ink-body hover:text-blue-700 hover:bg-blue-50/60 rounded-xl px-3 py-2.5 transition-colors"
                 style={{ "--rise-delay": `${i * 40}ms` } as React.CSSProperties}
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
               </a>
             ))}
-            <hr className="rule-line my-4" />
-            <div className="flex flex-col gap-2.5">
+            <hr className="rule-line my-3" />
+            <div className="flex flex-col gap-2">
               <Link
                 href="/login"
-                className="px-6 py-3 text-sm font-medium rounded-lg text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
               >
                 Masuk
               </Link>
               <Link
                 href="/register"
-                className="px-6 py-3 text-sm font-semibold rounded-lg text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
               >
                 Daftar Gratis
               </Link>

@@ -218,18 +218,20 @@ section[id] {
                 var(--color-amber-500) 96.8%,
                 transparent 99.2%);
         background-repeat: no-repeat;
-        background-size: 100% 0.16em;
-        background-position: 0 92%;
+        background-size: 100% 0.13em;
+        /* padding-bottom + posisi 100% menaruh sapuan DI BAWAH ekor huruf
+           (p, g, y) — tanpa ini ia memotong descender seperti garis coret. */
+        background-position: 0 100%;
         border-radius: 0;
-        padding: 0 0.06em;
+        padding: 0 0.06em 0.22em;
         margin: 0;
         color: var(--color-paper);
         animation: swipe-in 900ms var(--ease-warm) 850ms backwards;
     }
 
     @keyframes swipe-in {
-        from { background-size: 0% 0.16em; }
-        to   { background-size: 100% 0.16em; }
+        from { background-size: 0% 0.13em; }
+        to   { background-size: 100% 0.13em; }
     }
 
     .reveal .mark { background-size: 0% 100%; }
@@ -382,7 +384,7 @@ section[id] {
     .reveal .mark,
     .reveal.is-visible .mark { background-size: 100% 100%; }
 
-    .mark-on-dark { background-size: 100% 0.16em; }
+    .mark-on-dark { background-size: 100% 0.13em; }
 
     .reveal .rule-accent,
     .reveal.is-visible .rule-accent { transform: scaleX(1); }

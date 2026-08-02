@@ -1,25 +1,25 @@
 "use client";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import CountUp from "@/components/ui/CountUp";
 import { stats } from "@/data/landing";
 
+const photos = [
+  { src: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80", alt: "Mahasiswa belajar bersama" },
+  { src: "https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&q=80", alt: "Laboratorium riset" },
+  { src: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80", alt: "Teknologi dan pembelajaran" },
+];
+
 export default function Hero() {
   const [activePhoto, setActivePhoto] = useState(0);
 
-  const photos = [
-    { src: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80", alt: "Mahasiswa sedang belajar" },
-    { src: "https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&q=80", alt: "Laboratorium riset" },
-    { src: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80", alt: "Teknologi dan pembelajaran" },
-  ];
-
   return (
     <section id="hero" className="relative min-h-screen flex items-center bg-hero-navy overflow-hidden">
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pt-32 pb-24 grid lg:grid-cols-[1.05fr_1fr] items-center gap-14 lg:gap-10">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pt-32 pb-20 grid lg:grid-cols-[1.05fr_1fr] items-center gap-14 lg:gap-10">
         {/* ── Kiri — teks ─────────────────────────────────── */}
         <div className="text-center lg:text-left">
           <div
-            className="rise-in inline-flex items-center gap-2.5 px-4 py-2 bg-white/10 border border-white/15 rounded-full mb-8 backdrop-blur-sm"
+            className="rise-in inline-flex items-center gap-2.5 px-4 py-2 bg-white/10 border border-white/15 rounded-full mb-7 backdrop-blur-sm"
             style={{ "--rise-delay": "60ms" } as React.CSSProperties}
           >
             <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
@@ -30,12 +30,15 @@ export default function Hero() {
             className="rise-in text-paper"
             style={{
               fontFamily: "var(--font-fraunces)",
-              fontSize: "clamp(2.9rem, 5.6vw, 4.75rem)",
+              // Dijaga agar frasa bersapuan selalu muat satu baris — kalau
+              // membungkus, box-decoration-break memberi sapuan per baris
+              // dan yang atas memotong baris di bawahnya.
+              fontSize: "clamp(2.05rem, 5.2vw, 4.5rem)",
               fontWeight: 400,
-              lineHeight: 1.02,
-              letterSpacing: "-0.025em",
+              lineHeight: 1.04,
+              letterSpacing: "-0.026em",
               fontVariationSettings: '"opsz" 120, "SOFT" 40, "WONK" 1',
-              "--rise-delay": "160ms",
+              "--rise-delay": "170ms",
             } as React.CSSProperties}
           >
             Platform Terbaik <br />
@@ -43,16 +46,16 @@ export default function Hero() {
           </h1>
 
           <p
-            className="rise-in text-lg lg:text-xl leading-relaxed text-blue-100/85 max-w-xl mt-8 mx-auto lg:mx-0"
-            style={{ "--rise-delay": "280ms" } as React.CSSProperties}
+            className="rise-in text-lg leading-relaxed text-blue-100/80 max-w-lg mt-8 mx-auto lg:mx-0"
+            style={{ "--rise-delay": "300ms" } as React.CSSProperties}
           >
             Akses ratusan materi berkualitas dari berbagai bidang ilmu. Didesain untuk pelajar,
             mahasiswa, dan profesional di semua bidang.
           </p>
 
           <div
-            className="rise-in flex flex-wrap gap-3 mt-10 justify-center lg:justify-start"
-            style={{ "--rise-delay": "380ms" } as React.CSSProperties}
+            className="rise-in flex flex-wrap gap-3 mt-9 justify-center lg:justify-start"
+            style={{ "--rise-delay": "400ms" } as React.CSSProperties}
           >
             <Link
               href="/register"
@@ -74,20 +77,20 @@ export default function Hero() {
             </a>
           </div>
 
-          {/* Strip bukti — mengisi ruang bawah sekaligus memberi bobot */}
           <div
-            className="rise-in flex items-center gap-8 sm:gap-12 mt-14 pt-8 border-t border-white/12 justify-center lg:justify-start"
-            style={{ "--rise-delay": "480ms" } as React.CSSProperties}
+            className="rise-in flex items-start gap-7 sm:gap-10 mt-12 pt-8 border-t border-white/12 justify-center lg:justify-start"
+            style={{ "--rise-delay": "500ms" } as React.CSSProperties}
           >
             {stats.slice(0, 3).map((s, i) => (
-              <div key={i} className="text-center lg:text-left">
-                <CountUp
-                  value={s.value}
-                  className="block text-paper text-2xl sm:text-3xl tabular-nums"
-                />
-
-                <div className="t-label text-blue-300 mt-1.5 text-[0.6rem]">{s.label}</div>
-              </div>
+              <Fragment key={i}>
+                {i > 0 && <span aria-hidden="true" className="w-px h-9 bg-white/15 mt-1" />}
+                <div>
+                  <CountUp value={s.value} className="block text-paper text-2xl sm:text-3xl tabular-nums" />
+                  <div className="t-label text-blue-300/80 mt-1.5 text-[0.58rem] tracking-[0.07em] sm:tracking-[0.13em]">
+                    {s.label}
+                  </div>
+                </div>
+              </Fragment>
             ))}
           </div>
         </div>
@@ -97,63 +100,60 @@ export default function Hero() {
           className="rise-in hidden lg:flex justify-center"
           style={{ "--rise-delay": "300ms" } as React.CSSProperties}
         >
-          <div className="relative w-[460px] h-[480px]">
-            {/* Bingkai garis — kedalaman tanpa menambah blok berat */}
+          {/* SATU sistem offset untuk semua elemen: tiap lapis bergeser
+              tetap 18px ke kanan dan 14px ke atas. Bingkai kosong adalah
+              lapis ke-4 yang meneruskan irama yang sama, bukan bentuk
+              nyasar. Kartu dikunci ke tepi kiri dengan overhang identik. */}
+          <div className="relative w-[446px] h-[478px]">
+            {/* Lapis 4 — bingkai kosong, penutup kaskade */}
             <div
               aria-hidden="true"
-              className="absolute right-2 bottom-2 w-[350px] h-[370px] rounded-3xl border border-white/15"
+              className="absolute rounded-3xl border border-white/12"
+              style={{ left: 54, top: 0, width: 390, height: 420 }}
             />
+
+            {/* Dek foto — aktif selalu di depan, sisanya mengekor berurutan */}
+            {photos.map((photo, i) => {
+              const isActive = i === activePhoto;
+              const rest = photos.map((_, idx) => idx).filter((idx) => idx !== activePhoto);
+              const depth = isActive ? 0 : rest.indexOf(i) + 1;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActivePhoto(i)}
+                  aria-label={`Tampilkan foto: ${photo.alt}`}
+                  className="absolute cursor-pointer rounded-3xl transition-all duration-300 ease-out-soft"
+                  style={{
+                    left: 0,
+                    top: 42,
+                    width: 390,
+                    height: 420,
+                    transform: `translate(${depth * 18}px, ${depth * -14}px)`,
+                    zIndex: 30 - depth,
+                    opacity: isActive ? 1 : 0.4,
+                  }}
+                >
+                  <div className="w-full h-full rounded-3xl overflow-hidden border-[6px] border-white/90 shadow-lift">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo.src} className="w-full h-full object-cover photo-warm" alt={photo.alt} />
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* Garis amber menempel rapat di bawah foto depan —
+                menggemakan sapuan di judul, bukan garis melayang. */}
             <div
               aria-hidden="true"
-              className="drift absolute right-[38px] bottom-[-10px] w-[300px] h-[3px] bg-amber-500 rounded-full"
-              style={{ "--drift-delay": "1.4s" } as React.CSSProperties}
+              className="absolute bg-amber-500 rounded-full"
+              style={{ left: 24, top: 472, width: 342, height: 3 }}
             />
 
-            <div className="absolute left-0 top-0 z-10 w-[400px] h-[430px]">
-              {photos.map((photo, i) => {
-                const isActive = activePhoto === i;
-                const offset = isActive ? 0 : i < activePhoto ? -30 : 30;
-                const rotation = isActive ? 0 : i < activePhoto ? -3.5 : 3.5;
-
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setActivePhoto(i)}
-                    aria-label={`Tampilkan foto: ${photo.alt}`}
-                    className="absolute inset-0 cursor-pointer transition-all duration-300 ease-out-soft"
-                    style={{
-                      transform: `translateX(${offset}px) rotate(${rotation}deg)`,
-                      zIndex: isActive ? 30 : 10,
-                      opacity: isActive ? 1 : 0.55,
-                    }}
-                  >
-                    <div className="w-full h-full rounded-3xl overflow-hidden border-[6px] border-white/90 shadow-lift">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo.src} className="w-full h-full object-cover photo-warm" alt={photo.alt} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Dua kartu mengambang — titik baca & kedalaman */}
-            <div className="drift absolute z-40 -left-10 bottom-24 bg-paper-card border border-rule rounded-2xl px-5 py-4 shadow-lift">
-              <div className="flex items-center gap-3">
-                <span className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
-                <div>
-                  <div className="text-sm font-semibold text-ink leading-tight">Kurikulum Terstruktur</div>
-                  <div className="text-xs text-ink-muted">Dari dasar hingga lanjutan</div>
-                </div>
-              </div>
-            </div>
-
+            {/* Kedua kartu dikunci ke tepi kiri, overhang sama (-26px) */}
             <div
-              className="drift absolute z-40 -right-4 top-10 bg-paper-card border border-rule rounded-2xl px-4 py-3 shadow-lift"
-              style={{ "--drift-delay": "2.2s" } as React.CSSProperties}
+              className="drift absolute z-40 bg-paper-card border border-rule rounded-2xl px-4 py-3 shadow-lift"
+              style={{ left: -26, top: 86, "--drift-delay": "2.2s" } as React.CSSProperties}
             >
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
@@ -164,6 +164,23 @@ export default function Hero() {
                 <div>
                   <div className="text-sm font-semibold text-ink leading-tight">4.8 dari 5</div>
                   <div className="text-xs text-ink-muted">Rating pelajar</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="drift absolute z-40 bg-paper-card border border-rule rounded-2xl px-4 py-3 shadow-lift"
+              style={{ left: -26, top: 348 }}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+                <div>
+                  <div className="text-sm font-semibold text-ink leading-tight">Kurikulum Terstruktur</div>
+                  <div className="text-xs text-ink-muted">Dari dasar hingga lanjutan</div>
                 </div>
               </div>
             </div>
