@@ -118,15 +118,18 @@ export default function Navbar() {
             <span aria-hidden="true" className="h-9 w-40 rounded-full bg-current opacity-[0.07]" />
           ) : status === "authenticated" ? (
             <>
-              <span
+              <Link
+                href="/dashboard"
                 className={cn(
-                  "px-3 py-2 text-sm truncate max-w-[9rem]",
-                  light ? "text-blue-100/90" : "text-ink-body",
+                  "px-3 py-2 text-sm rounded-full truncate max-w-[9rem] transition-colors duration-200 ease-out-soft",
+                  light
+                    ? "text-blue-100/90 hover:text-white hover:bg-white/8"
+                    : "text-ink-body hover:text-blue-700 hover:bg-blue-50/60",
                 )}
-                title={user.email}
+                title={`${user.email} — buka dashboard`}
               >
                 {user.name}
-              </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className={cn(
@@ -215,6 +218,12 @@ export default function Navbar() {
                   <p className="px-3 pb-1 text-sm text-ink-muted truncate">
                     Masuk sebagai <span className="text-ink font-medium">{user.name}</span>
                   </p>
+                  <Link
+                    href="/dashboard"
+                    className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"

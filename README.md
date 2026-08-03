@@ -44,6 +44,22 @@ Server Component Next.js.
 Karena itu semua permintaan wajib memakai `credentials: "include"` (sudah diurus
 `src/lib/api.ts`), dan `CORS_ORIGINS` di backend harus memuat asal frontend.
 
+## Halaman
+
+| Rute | Akses | Keterangan |
+|---|---|---|
+| `/` | publik | landing, katalog dari API |
+| `/courses` | publik | semua kursus |
+| `/courses/:slug` | publik | detail + kurikulum |
+| `/courses/:slug/learn` | **perlu masuk** | pelajaran pertama |
+| `/courses/:slug/learn/:lessonSlug` | **perlu masuk** | pelajaran tertentu |
+| `/dashboard` | **perlu masuk** | katalog + pengaturan akun |
+| `/login`, `/register` | publik | masuk / daftar |
+
+Rute terproteksi diperiksa di Server Component (`src/lib/serverApi.ts`) sehingga
+pengalihan ke `/login` terjadi sebelum halaman dirender — tanpa kedipan konten.
+Pengalihan menyertakan `?next=` agar setelah masuk kembali ke halaman yang dituju.
+
 ## Endpoint
 
 | Metode | Rute | Keterangan |
@@ -78,17 +94,37 @@ Katalog di-seed dari `backend/prisma/lms-data.json` — 4 kursus, 19 section,
 
 Backend Laravel telah dihapus. Beberapa hal yang perlu diketahui:
 
-- **Deployment perlu dikonfigurasi ulang.** `Dockerfile`, `Procfile`,
-  `railway.toml`, `render.yaml`, dan `nixpacks.toml` semuanya menjalankan
-  `php artisan` sehingga sudah tidak berlaku dan ikut dihapus. Sekarang ada
-  dua layanan yang harus dideploy, bukan satu.
 - **Akun lama tetap bisa dipakai.** Hash bcrypt Laravel berawalan `$2y$` dan
   tetap valid di Node, jadi kata sandi lama masih berfungsi.
 - **Data kursus dulunya tidak pernah ada di database** — hanya array PHP di
   `app/Helpers/LmsData.php`. Sekarang menjadi tabel sungguhan.
-- **Fitur yang belum ada:** enrollment dan progres belajar. Di Laravel keduanya
-  hanya angka hardcoded di `DashboardController`, bukan fitur yang berjalan.
-  Halaman `/dashboard` dan `/courses/:slug/learn` juga belum dibuat di Next.js.
+- **Enrollment & progres belajar belum ada.** Di Laravel keduanya hanya angka
+  hardcoded di `DashboardController` (`65%`, `30%`), bukan fitur yang berjalan.
+  Karena itu dashboard baru tidak menampilkan angka kemajuan sama sekali —
+  lebih baik kosong daripada menampilkan angka yang tidak berarti.
+- **Isi materi pelajaran belum ada.** Judul, durasi, dan tipe setiap pelajaran
+  tersimpan di database, tetapi tidak pernah ada kolom untuk isinya. Halaman
+  belajar menandai ini secara terbuka sebagai "Materi belum tersedia".
 - **Reset kata sandi lewat email belum aktif.** Tabel `password_reset_tokens`
   sudah disiapkan, tetapi pengirimannya belum diimplementasikan (di Laravel pun
   `MAIL_MAILER=log`, jadi email tidak pernah benar-benar terkirim).
+
+## Deployment — BELUM dikonfigurasi
+
+`Dockerfile`, `Procfile`, `railway.toml`, `render.yaml`, dan `nixpacks.toml`
+semuanya menjalankan `php artisan`, jadi sudah tidak berlaku dan ikut dihapus.
+Belum ada penggantinya. Sekarang ada **dua layanan** yang harus dideploy, bukan
+satu.
+
+> **PERINGATAN — SQLite akan terhapus setiap deploy.**
+>
+> Railway, Render, dan Vercel memakai filesystem *ephemeral*: file yang ditulis
+> aplikasi hilang setiap kali deploy ulang. Karena `synaped.db` berisi **seluruh
+> akun pengguna**, men-deploy apa adanya berarti kehilangan semua akun di setiap
+> rilis.
+>
+> Rencananya: pasang **volume persisten** dan arahkan `DATABASE_URL` ke path di
+> dalam volume itu. Konsekuensinya aplikasi hanya boleh berjalan pada **satu
+> instance** — dua instance akan menulis ke file berbeda dan datanya pecah.
+> Kalau nanti perlu di-scale, pindah ke PostgreSQL (di Prisma cukup mengganti
+> `provider`; kode aplikasi tidak berubah).

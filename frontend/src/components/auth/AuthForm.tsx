@@ -29,7 +29,14 @@ const copy = {
   },
 } as const;
 
-export default function AuthForm({ mode }: { mode: Mode }) {
+export default function AuthForm({
+  mode,
+  redirectTo = "/",
+}: {
+  mode: Mode;
+  /** Sudah divalidasi hanya berupa jalur internal oleh halaman pemanggil. */
+  redirectTo?: string;
+}) {
   const t = copy[mode];
   const router = useRouter();
 
@@ -52,7 +59,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
       }
       // Cookie httpOnly sudah dipasang server; refresh agar
       // Server Component ikut melihat sesi barunya.
-      router.replace("/");
+      router.replace(redirectTo);
       router.refresh();
     } catch (err) {
       setError(
