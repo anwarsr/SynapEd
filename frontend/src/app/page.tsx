@@ -9,8 +9,22 @@ import LearningPath from "@/components/sections/LearningPath";
 import Testimonials from "@/components/sections/Testimonials";
 import FAQ from "@/components/sections/FAQ";
 import Footer from "@/components/sections/Footer";
+import { coursesApi } from "@/lib/api";
 
-export default function Home() {
+/**
+ * Katalog hidup di database, jadi halaman ini TIDAK boleh di-prerender:
+ *   1. kursus baru tidak akan muncul sampai di-rebuild, dan
+ *   2. build frontend jadi gagal kalau API kebetulan sedang mati.
+ * force-dynamic membuat data diambil saat permintaan datang.
+ */
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [courses, categories] = await Promise.all([
+    coursesApi.list(),
+    coursesApi.categories(),
+  ]);
+
   return (
     <>
       <Navbar />
@@ -19,7 +33,7 @@ export default function Home() {
         <Partners />
         <About />
         <ValueProposition />
-        <Courses />
+        <Courses courses={courses} categories={categories} />
         <Features />
         <LearningPath />
         <Testimonials />

@@ -1,0 +1,675 @@
+[
+    {
+        "id": 1,
+        "slug": "dasar-neuroscience",
+        "title": "Dasar Neuroscience",
+        "short_desc": "Pelajari struktur neuron, sinapsis, dan cara otak memproses informasi dari level seluler hingga sistem.",
+        "long_desc": "Modul ini merupakan fondasi dari seluruh kurikulum NeuroAcademy. Anda akan memulai dari konsep paling dasar tentang sistem saraf, memahami bagaimana neuron berkomunikasi melalui sinapsis, hingga mempelajari arsitektur otak manusia secara menyeluruh. Tidak diperlukan latar belakang medis; semua materi dirancang agar dapat dipahami oleh siapa saja.",
+        "level": "Pemula",
+        "level_color": "green",
+        "category": "neuroscience",
+        "icon": "brain",
+        "lessons_count": 12,
+        "duration": "6 Jam",
+        "rating": 4.8,
+        "reviews": 124,
+        "gradient": "linear-gradient(135deg, #2563EB, #1D4ED8)",
+        "gradient_from": "#2563EB",
+        "gradient_to": "#1D4ED8",
+        "badge_color": "#3B82F6",
+        "instructor": "Tim Pengajar NeuroAcademy",
+        "instructor_bio": "Spesialis Neurosains Kognitif dan Neuroplastisitas.",
+        "what_you_learn": [
+            "Memahami struktur neuron dan fungsinya",
+            "Mengenal berbagai jenis sinapsis dan neurotransmitter",
+            "Mempelajari anatomi otak manusia secara sistematis",
+            "Memahami bagaimana sinyal listrik mengalir di neuron",
+            "Mengenal lobus-lobus otak dan fungsinya",
+            "Fondasi untuk mempelajari teknologi EEG"
+        ],
+        "requirements": [
+            "Tidak diperlukan pengetahuan medis sebelumnya",
+            "Kemampuan membaca teks akademik dasar",
+            "Rasa ingin tahu yang tinggi"
+        ],
+        "sections": [
+            {
+                "id": 1,
+                "title": "Pengantar Neuroscience",
+                "lessons": [
+                    {
+                        "id": 1,
+                        "slug": "apa-itu-neuroscience",
+                        "title": "Apa itu Neuroscience?",
+                        "type": "video",
+                        "duration": "18 menit",
+                        "free": true
+                    },
+                    {
+                        "id": 2,
+                        "slug": "sejarah-neuroscience",
+                        "title": "Sejarah Singkat Neuroscience",
+                        "type": "video",
+                        "duration": "14 menit",
+                        "free": true
+                    },
+                    {
+                        "id": 3,
+                        "slug": "neuroscience-kehidupan",
+                        "title": "Neuroscience dalam Kehidupan Sehari-hari",
+                        "type": "reading",
+                        "duration": "10 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 2,
+                "title": "Anatomi Neuron",
+                "lessons": [
+                    {
+                        "id": 4,
+                        "slug": "struktur-neuron",
+                        "title": "Struktur Dasar Neuron",
+                        "type": "video",
+                        "duration": "22 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 5,
+                        "slug": "sinapsis-transmisi-sinyal",
+                        "title": "Sinapsis dan Transmisi Sinyal",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 6,
+                        "slug": "neurotransmitter",
+                        "title": "Jenis-jenis Neurotransmitter",
+                        "type": "reading",
+                        "duration": "12 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 3,
+                "title": "Otak Manusia",
+                "lessons": [
+                    {
+                        "id": 7,
+                        "slug": "struktur-otak",
+                        "title": "Struktur Makroskopik Otak",
+                        "type": "video",
+                        "duration": "25 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 8,
+                        "slug": "lobus-otak",
+                        "title": "Lobus-lobus Otak",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 9,
+                        "slug": "korteks-serebral",
+                        "title": "Fungsi Korteks Serebral",
+                        "type": "reading",
+                        "duration": "15 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 10,
+                        "slug": "sistem-limbik",
+                        "title": "Sistem Limbik & Emosi",
+                        "type": "video",
+                        "duration": "18 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "title": "Evaluasi Modul",
+                "lessons": [
+                    {
+                        "id": 11,
+                        "slug": "kuis-neuroscience-dasar",
+                        "title": "Kuis: Neuroscience Dasar",
+                        "type": "quiz",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 12,
+                        "slug": "tugas-akhir-modul-1",
+                        "title": "Tugas Akhir Modul 1",
+                        "type": "reading",
+                        "duration": "30 menit",
+                        "free": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "slug": "pengenalan-eeg",
+        "title": "Pengenalan EEG",
+        "short_desc": "Memahami prinsip dasar Electroencephalography, jenis gelombang otak, dan setup perangkat EEG.",
+        "long_desc": "Modul ini memperkenalkan Anda pada dunia Electroencephalography (EEG) dari sudut pandang yang mudah dipahami. Anda akan belajar tentang bagaimana otak menghasilkan sinyal listrik, apa saja jenis gelombang otak yang diukur EEG, serta bagaimana perangkat EEG modern bekerja. Modul ini menjadi jembatan antara neuroscience dasar dan implementasi teknologi EEG.",
+        "level": "Pemula",
+        "level_color": "green",
+        "category": "eeg",
+        "icon": "wave",
+        "lessons_count": 10,
+        "duration": "5 Jam",
+        "rating": 4.7,
+        "reviews": 98,
+        "gradient": "linear-gradient(135deg, #2563EB, #1D4ED8)",
+        "gradient_from": "#7C3AED",
+        "gradient_to": "#6D28D9",
+        "badge_color": "#8B5CF6",
+        "instructor": "Tim Pengajar NeuroAcademy",
+        "instructor_bio": "Spesialis Teknik Biomedik dan Biosignal Processing.",
+        "what_you_learn": [
+            "Memahami bagaimana otak menghasilkan sinyal listrik",
+            "Mengenal 5 jenis gelombang otak (Delta, Theta, Alpha, Beta, Gamma)",
+            "Memahami cara kerja perangkat EEG",
+            "Mengenal sistem penempatan elektroda 10-20",
+            "Membedakan EEG klinis dan EEG consumer",
+            "Persiapan untuk penggunaan perangkat EEG praktis"
+        ],
+        "requirements": [
+            "Direkomendasikan: sudah menyelesaikan Modul Dasar Neuroscience",
+            "Tidak diperlukan pengetahuan teknik elektronika"
+        ],
+        "sections": [
+            {
+                "id": 1,
+                "title": "Dasar Elektrofisiologi",
+                "lessons": [
+                    {
+                        "id": 1,
+                        "slug": "potensial-listrik-otak",
+                        "title": "Potensial Listrik pada Neuron",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": true
+                    },
+                    {
+                        "id": 2,
+                        "slug": "gelombang-otak",
+                        "title": "Jenis Gelombang Otak",
+                        "type": "video",
+                        "duration": "25 menit",
+                        "free": true
+                    },
+                    {
+                        "id": 3,
+                        "slug": "cara-kerja-eeg",
+                        "title": "Bagaimana EEG Mengukur Aktivitas Otak",
+                        "type": "video",
+                        "duration": "18 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 2,
+                "title": "Perangkat EEG",
+                "lessons": [
+                    {
+                        "id": 4,
+                        "slug": "jenis-elektroda",
+                        "title": "Jenis-jenis Elektroda EEG",
+                        "type": "reading",
+                        "duration": "12 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 5,
+                        "slug": "sistem-10-20",
+                        "title": "Sistem Penempatan Elektroda 10-20",
+                        "type": "video",
+                        "duration": "22 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 6,
+                        "slug": "consumer-vs-clinical-eeg",
+                        "title": "Consumer EEG vs Clinical EEG",
+                        "type": "reading",
+                        "duration": "10 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 3,
+                "title": "Pembacaan Sinyal EEG",
+                "lessons": [
+                    {
+                        "id": 7,
+                        "slug": "membaca-sinyal-eeg",
+                        "title": "Cara Membaca Sinyal EEG",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 8,
+                        "slug": "artefak-eeg",
+                        "title": "Mengenali Artefak pada Sinyal EEG",
+                        "type": "video",
+                        "duration": "15 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "title": "Evaluasi Modul",
+                "lessons": [
+                    {
+                        "id": 9,
+                        "slug": "kuis-eeg-dasar",
+                        "title": "Kuis: Pengenalan EEG",
+                        "type": "quiz",
+                        "duration": "15 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 10,
+                        "slug": "tugas-akhir-modul-2",
+                        "title": "Tugas Akhir Modul 2",
+                        "type": "reading",
+                        "duration": "25 menit",
+                        "free": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "slug": "implementasi-eeg-muse",
+        "title": "Implementasi EEG dengan Muse",
+        "short_desc": "Panduan praktis menggunakan headband Muse untuk merekam dan memvisualisasikan data EEG secara real-time.",
+        "long_desc": "Modul ini adalah modul paling praktis di kurikulum NeuroAcademy. Anda akan belajar cara menggunakan perangkat EEG consumer headband Muse, mulai dari setup perangkat, koneksi via Bluetooth, perekaman data real-time, hingga visualisasi sinyal otak langsung di layar komputer. Modul ini sangat direkomendasikan bagi yang memiliki akses ke perangkat Muse.",
+        "level": "Menengah",
+        "level_color": "yellow",
+        "category": "eeg",
+        "icon": "headset",
+        "lessons_count": 14,
+        "duration": "8 Jam",
+        "rating": 4.9,
+        "reviews": 76,
+        "gradient": "linear-gradient(135deg, #2563EB, #1D4ED8)",
+        "gradient_from": "#2563EB",
+        "gradient_to": "#1D4ED8",
+        "badge_color": "#06B6D4",
+        "instructor": "Tim Pengajar NeuroAcademy",
+        "instructor_bio": "R&D Engineer spesialis Brain-Computer Interface berbasis EEG.",
+        "what_you_learn": [
+            "Setup perangkat Muse headband dari awal",
+            "Koneksi perangkat via Bluetooth ke komputer",
+            "Merekam data EEG secara real-time",
+            "Memvisualisasikan gelombang otak live",
+            "Menggunakan Mind Monitor dan aplikasi pendamping",
+            "Ekspor data untuk analisis lebih lanjut"
+        ],
+        "requirements": [
+            "Wajib: sudah menyelesaikan Modul Pengenalan EEG",
+            "Direkomendasikan: memiliki perangkat Muse headband",
+            "Laptop dengan Bluetooth dan OS Windows/Mac/Linux"
+        ],
+        "sections": [
+            {
+                "id": 1,
+                "title": "Persiapan Perangkat",
+                "lessons": [
+                    {
+                        "id": 1,
+                        "slug": "pengenalan-muse",
+                        "title": "Mengenal Perangkat Muse Headband",
+                        "type": "video",
+                        "duration": "15 menit",
+                        "free": true
+                    },
+                    {
+                        "id": 2,
+                        "slug": "setup-muse",
+                        "title": "Setup Awal Perangkat Muse",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": true
+                    },
+                    {
+                        "id": 3,
+                        "slug": "koneksi-bluetooth",
+                        "title": "Koneksi Bluetooth dan Pairing",
+                        "type": "video",
+                        "duration": "12 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 2,
+                "title": "Perekaman Data Real-time",
+                "lessons": [
+                    {
+                        "id": 4,
+                        "slug": "rekam-data-eeg",
+                        "title": "Merekam Sesi EEG Pertama Anda",
+                        "type": "video",
+                        "duration": "25 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 5,
+                        "slug": "visualisasi-sinyal",
+                        "title": "Visualisasi Sinyal Otak Real-time",
+                        "type": "video",
+                        "duration": "22 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 6,
+                        "slug": "kualitas-sinyal",
+                        "title": "Memastikan Kualitas Sinyal Optimal",
+                        "type": "video",
+                        "duration": "18 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 3,
+                "title": "Aplikasi dan Tools",
+                "lessons": [
+                    {
+                        "id": 7,
+                        "slug": "mind-monitor",
+                        "title": "Menggunakan Mind Monitor",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 8,
+                        "slug": "muse-direct",
+                        "title": "Muse Direct & OSC Protocol",
+                        "type": "video",
+                        "duration": "25 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 9,
+                        "slug": "ekspor-data",
+                        "title": "Ekspor Data CSV untuk Analisis",
+                        "type": "reading",
+                        "duration": "10 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "title": "Eksperimen Neurofeedback",
+                "lessons": [
+                    {
+                        "id": 10,
+                        "slug": "eksperimen-relaksasi",
+                        "title": "Eksperimen: Meditasi & Alpha Wave",
+                        "type": "video",
+                        "duration": "22 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 11,
+                        "slug": "eksperimen-fokus",
+                        "title": "Eksperimen: Fokus & Beta Wave",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 12,
+                        "slug": "neurofeedback-dasar",
+                        "title": "Konsep Dasar Neurofeedback",
+                        "type": "reading",
+                        "duration": "15 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 5,
+                "title": "Evaluasi Modul",
+                "lessons": [
+                    {
+                        "id": 13,
+                        "slug": "kuis-implementasi-eeg",
+                        "title": "Kuis: Implementasi EEG",
+                        "type": "quiz",
+                        "duration": "15 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 14,
+                        "slug": "laporan-eksperimen",
+                        "title": "Laporan Eksperimen Akhir",
+                        "type": "reading",
+                        "duration": "45 menit",
+                        "free": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": 4,
+        "slug": "analisis-data-eeg",
+        "title": "Analisis Data EEG",
+        "short_desc": "Teknik pemrosesan sinyal, filtering, artifact removal, dan interpretasi data EEG menggunakan Python.",
+        "long_desc": "Modul tingkat lanjut ini mengajarkan Anda cara mengolah dan menganalisis data EEG menggunakan Python dengan library MNE-Python. Anda akan mempelajari teknik pemrosesan sinyal digital, cara menghilangkan artefak, mengekstrak fitur dari gelombang otak, dan menginterpretasikan hasil analisis untuk keperluan riset maupun aplikasi BCI.",
+        "level": "Lanjut",
+        "level_color": "red",
+        "category": "analisis",
+        "icon": "chart",
+        "lessons_count": 16,
+        "duration": "10 Jam",
+        "rating": 4.9,
+        "reviews": 54,
+        "gradient": "linear-gradient(135deg, #2563EB, #1D4ED8)",
+        "gradient_from": "#BE185D",
+        "gradient_to": "#9D174D",
+        "badge_color": "#EC4899",
+        "instructor": "Tim Pengajar NeuroAcademy",
+        "instructor_bio": "Spesialis Computational Neuroscience dan Machine Learning untuk biosignal.",
+        "what_you_learn": [
+            "Setup environment Python untuk analisis EEG (MNE, NumPy, SciPy)",
+            "Import dan visualisasi data EEG mentah",
+            "Teknik filtering sinyal (bandpass, notch filter)",
+            "Artifact removal: ocular dan muscular artifact",
+            "Ekstraksi fitur spektral (Power Spectral Density)",
+            "Analisis Event-Related Potential (ERP)"
+        ],
+        "requirements": [
+            "Wajib: sudah menyelesaikan Modul Pengenalan EEG",
+            "Pengetahuan dasar Python (variabel, loop, fungsi)",
+            "Anaconda atau lingkungan Python 3.8+ terinstal"
+        ],
+        "sections": [
+            {
+                "id": 1,
+                "title": "Setup Lingkungan Analisis",
+                "lessons": [
+                    {
+                        "id": 1,
+                        "slug": "instalasi-mne-python",
+                        "title": "Instalasi MNE-Python & Dependencies",
+                        "type": "video",
+                        "duration": "15 menit",
+                        "free": true
+                    },
+                    {
+                        "id": 2,
+                        "slug": "import-data-eeg",
+                        "title": "Import Data EEG ke MNE",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": true
+                    },
+                    {
+                        "id": 3,
+                        "slug": "visualisasi-raw",
+                        "title": "Visualisasi Data EEG Mentah",
+                        "type": "video",
+                        "duration": "18 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 2,
+                "title": "Preprocessing Sinyal",
+                "lessons": [
+                    {
+                        "id": 4,
+                        "slug": "filtering-sinyal",
+                        "title": "Filtering: Bandpass & Notch Filter",
+                        "type": "video",
+                        "duration": "25 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 5,
+                        "slug": "referencing",
+                        "title": "Re-referencing Elektroda",
+                        "type": "video",
+                        "duration": "15 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 6,
+                        "slug": "segmentasi-epoch",
+                        "title": "Segmentasi Epoch",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 3,
+                "title": "Artifact Removal",
+                "lessons": [
+                    {
+                        "id": 7,
+                        "slug": "deteksi-artefak",
+                        "title": "Deteksi Artefak Manual",
+                        "type": "video",
+                        "duration": "22 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 8,
+                        "slug": "ica-artifact",
+                        "title": "ICA untuk Artifact Removal",
+                        "type": "video",
+                        "duration": "30 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 9,
+                        "slug": "validasi-bersih",
+                        "title": "Validasi Data Pasca-Cleaning",
+                        "type": "reading",
+                        "duration": "12 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "title": "Analisis Spektral",
+                "lessons": [
+                    {
+                        "id": 10,
+                        "slug": "power-spectral-density",
+                        "title": "Power Spectral Density (PSD)",
+                        "type": "video",
+                        "duration": "25 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 11,
+                        "slug": "band-power",
+                        "title": "Ekstraksi Band Power per Kanal",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 12,
+                        "slug": "topographic-map",
+                        "title": "Visualisasi Topographic Map",
+                        "type": "video",
+                        "duration": "22 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 5,
+                "title": "Event-Related Potential",
+                "lessons": [
+                    {
+                        "id": 13,
+                        "slug": "konsep-erp",
+                        "title": "Konsep Event-Related Potential",
+                        "type": "video",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 14,
+                        "slug": "analisis-p300",
+                        "title": "Analisis Komponen P300",
+                        "type": "video",
+                        "duration": "25 menit",
+                        "free": false
+                    }
+                ]
+            },
+            {
+                "id": 6,
+                "title": "Evaluasi Modul",
+                "lessons": [
+                    {
+                        "id": 15,
+                        "slug": "kuis-analisis-eeg",
+                        "title": "Kuis: Analisis Data EEG",
+                        "type": "quiz",
+                        "duration": "20 menit",
+                        "free": false
+                    },
+                    {
+                        "id": 16,
+                        "slug": "proyek-akhir-analisis",
+                        "title": "Proyek Akhir: Pipeline Analisis EEG",
+                        "type": "reading",
+                        "duration": "60 menit",
+                        "free": false
+                    }
+                ]
+            }
+        ]
+    }
+]

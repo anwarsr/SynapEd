@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+
+# Rahasia — jangan pernah di-commit
+.env
+.env.local
+
+# File database SQLite
+prisma/*.db
+prisma/*.db-journal

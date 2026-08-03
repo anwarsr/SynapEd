@@ -4,17 +4,20 @@ import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
 import Tag from "@/components/ui/Tag";
-import { courses, levelMap } from "@/data/courses";
-import { courseCategories } from "@/data/landing";
+import type { Category, CourseSummary } from "@/lib/api";
+import { levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 
-/** Tint kepala kartu — ramp hangat + biru, menggantikan
- *  rotasi pastel orange/purple/emerald yang lama. */
-const headerTints = ["bg-blue-50", "bg-paper-alt", "bg-amber-100", "bg-blue-100"];
+interface Props {
+  courses: CourseSummary[];
+  categories: Category[];
+}
 
-export default function Courses() {
+export default function Courses({ courses, categories }: Props) {
   const [filter, setFilter] = useState("semua");
 
+  // Katalognya kecil, jadi disaring di klien — filter terasa instan
+  // tanpa perlu bolak-balik ke server.
   const filtered = filter === "semua" ? courses : courses.filter((c) => c.category === filter);
 
   return (
@@ -41,9 +44,8 @@ export default function Courses() {
           Materi <span className="mark">pembelajaran</span>
         </SectionHeader>
 
-        {/* Filter */}
         <div className="flex flex-wrap justify-center gap-2 mb-12">
-          {courseCategories.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat.slug}
               onClick={() => setFilter(cat.slug)}
@@ -60,21 +62,14 @@ export default function Courses() {
           ))}
         </div>
 
-        {/* Grid kursus */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {filtered.map((course, index) => {
-            const lm = levelMap[course.level_color] ?? levelMap.green;
-
-            return (
-              <Reveal key={course.id} delay={index * 100} className="h-full">
-              <div
-                className="bg-paper-card border border-rule rounded-2xl overflow-hidden group flex flex-col h-full transition-all duration-300 ease-out-soft hover:border-rule-strong hover:shadow-lift hover:-translate-y-1.5"
-              >
-                {/* Kepala kartu */}
+          {filtered.map((course, index) => (
+            <Reveal key={course.id} delay={index * 100} className="h-full">
+              <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden group flex flex-col h-full transition-all duration-300 ease-out-soft hover:border-rule-strong hover:shadow-lift hover:-translate-y-1.5">
                 <div
                   className={cn(
                     "relative h-40 w-full flex justify-center items-end overflow-hidden pt-4 border-b border-rule",
-                    headerTints[index % headerTints.length],
+                    course.tint,
                   )}
                 >
                   <svg className="absolute bottom-0 w-full z-0 opacity-40" viewBox="0 0 400 150" fill="none" aria-hidden="true">
@@ -90,14 +85,13 @@ export default function Courses() {
                   />
                 </div>
 
-                {/* Isi kartu */}
                 <div className="p-5 flex flex-col flex-1">
                   <h3 className="t-h3 text-lg mb-2">{course.title}</h3>
-                  <p className="t-body text-sm line-clamp-2 mb-5">{course.short_desc}</p>
+                  <p className="t-body text-sm line-clamp-2 mb-5">{course.shortDesc}</p>
 
                   <div className="mt-auto space-y-1 mb-5 text-[13px] text-ink-muted">
                     <div>
-                      <span className="text-ink font-medium">{course.lessons_count}</span> modul pelajaran
+                      <span className="text-ink font-medium">{course.lessonsCount}</span> modul pelajaran
                     </div>
                     <div>
                       <span className="text-ink font-medium">{course.duration}</span> estimasi durasi
@@ -124,7 +118,7 @@ export default function Courses() {
                       </div>
                       <span className="text-ink-muted text-xs">({course.reviews})</span>
                     </div>
-                    <Tag tone={lm.tone}>{course.level}</Tag>
+                    <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -137,9 +131,8 @@ export default function Courses() {
                   </div>
                 </div>
               </div>
-              </Reveal>
-            );
-          })}
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>

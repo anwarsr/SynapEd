@@ -4,7 +4,8 @@ import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
-import { courses, iconPaths, levelMap } from "@/data/courses";
+import { ApiError, coursesApi, type CourseDetail } from "@/lib/api";
+import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
 
@@ -12,32 +13,35 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  return courses.map((c) => ({ slug: c.slug }));
+/**
+ * Tidak ada generateStaticParams: katalog kini hidup di database, jadi
+ * membekukan daftar slug saat build berarti kursus baru tidak akan muncul
+ * sampai di-rebuild. Halaman ini dirender saat diminta.
+ */
+async function getCourse(slug: string): Promise<CourseDetail | null> {
+  try {
+    return await coursesApi.detail(slug);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const course = courses.find((c) => c.slug === slug);
-  return { title: course ? `${course.title} – SynapEd` : "Kursus – SynapEd" };
+  const course = await getCourse(slug);
+  return {
+    title: course ? `${course.title} – SynapEd` : "Kursus – SynapEd",
+    description: course?.shortDesc,
+  };
 }
 
-const lessonIcons: Record<string, string> = {
-  video:
-    "M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z",
-  reading:
-    "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-  quiz:
-    "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-};
-
-export default async function CourseDetail({ params }: Props) {
+export default async function CourseDetailPage({ params }: Props) {
   const { slug } = await params;
-  const course = courses.find((c) => c.slug === slug);
-  if (!course) return notFound();
+  const course = await getCourse(slug);
+  if (!course) notFound();
 
-  const lm = levelMap[course.level_color] ?? levelMap.green;
-  const totalLessons = course.sections.reduce((acc, s) => acc + s.lessons.length, 0);
+  const totalLessons = course.lessonsCount;
 
   return (
     <>
@@ -45,7 +49,6 @@ export default async function CourseDetail({ params }: Props) {
 
       <main className="bg-paper min-h-screen pt-32 pb-24">
         <div className="max-w-6xl mx-auto px-6">
-          {/* Breadcrumb */}
           <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
             <Link href="/" className="hover:text-blue-700 transition-colors">Beranda</Link>
             <span aria-hidden="true">/</span>
@@ -55,17 +58,15 @@ export default async function CourseDetail({ params }: Props) {
           </nav>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Konten utama */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Judul */}
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <div className="flex items-center gap-3 mb-5">
-                  <Tag tone={lm.tone}>{course.level}</Tag>
+                  <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
                   <span className="t-label text-ink-faint">{course.category}</span>
                 </div>
 
                 <h1 className="t-h2 mb-5">{course.title}</h1>
-                <p className="t-body">{course.long_desc}</p>
+                <p className="t-body">{course.longDesc}</p>
 
                 <div className="flex flex-wrap gap-x-8 gap-y-3 mt-8 pt-6 border-t border-rule text-sm text-ink-muted">
                   <div className="flex items-center gap-2">
@@ -86,14 +87,16 @@ export default async function CourseDetail({ params }: Props) {
                     </svg>
                     <span>{course.rating} ({course.reviews} ulasan)</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <span>{course.enrolledStudents.toLocaleString("id-ID")} peserta</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Yang akan dipelajari */}
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <h2 className="t-h3 mb-6">Yang Akan Anda Pelajari</h2>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3.5">
-                  {course.what_you_learn.map((item, i) => (
+                  {course.whatYouLearn.map((item, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -104,7 +107,6 @@ export default async function CourseDetail({ params }: Props) {
                 </div>
               </div>
 
-              {/* Kurikulum */}
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <h2 className="t-h3 mb-6">Kurikulum</h2>
                 <div className="space-y-4">
@@ -125,7 +127,7 @@ export default async function CourseDetail({ params }: Props) {
                           <li key={lesson.id} className="px-5 py-3 flex items-center justify-between gap-4 text-sm">
                             <div className="flex items-center gap-3 min-w-0">
                               <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[lesson.type]} />
+                                <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[lesson.type] ?? lessonIcons.reading} />
                               </svg>
                               <span className="text-ink-body truncate">{lesson.title}</span>
                               {lesson.free && <Tag tone="amber">Gratis</Tag>}
@@ -140,24 +142,25 @@ export default async function CourseDetail({ params }: Props) {
               </div>
             </div>
 
-            {/* Sidebar */}
             <aside>
               <div className="bg-paper-card border border-rule rounded-2xl p-6 sticky top-28">
                 <div className={cn("h-36 rounded-2xl flex items-center justify-center mb-6", course.tint)}>
                   <svg className="w-16 h-16 text-blue-600/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.8} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon]} />
+                    <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon] ?? iconPaths.reading} />
                   </svg>
                 </div>
 
                 <h2 className="t-h3 text-lg mb-1.5">{course.title}</h2>
-                <p className="text-sm text-ink-muted mb-6">oleh {course.instructor}</p>
+                <p className="text-sm text-ink-muted mb-4">oleh {course.instructorName}</p>
+
+                <p className="t-numeral text-2xl mb-6">{formatPrice(course.price)}</p>
 
                 <div className="flex flex-col gap-2.5">
                   <Button href="/register" variant="primary" className="w-full">
                     Daftar Sekarang
                   </Button>
-                  <Button href="/" variant="outline" className="w-full">
-                    Kembali ke Beranda
+                  <Button href="/courses" variant="outline" className="w-full">
+                    Lihat Kursus Lain
                   </Button>
                 </div>
 
@@ -172,6 +175,12 @@ export default async function CourseDetail({ params }: Props) {
                     ))}
                   </ul>
                 </div>
+
+                {course.lastUpdated && (
+                  <p className="mt-6 pt-5 border-t border-rule text-xs text-ink-muted">
+                    Terakhir diperbarui {course.lastUpdated}
+                  </p>
+                )}
               </div>
             </aside>
           </div>

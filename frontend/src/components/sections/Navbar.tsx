@@ -3,7 +3,9 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useActiveSection } from "@/lib/useActiveSection";
+import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/cn";
 
 const NAV_LINKS = [
@@ -20,6 +22,13 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { status, user, logout } = useAuth();
+
+  async function handleLogout() {
+    await logout();
+    router.refresh();
+  }
 
   const isHome = pathname === "/";
   // Hanya beranda yang punya hero navy; halaman lain berlatar kertas terang.
@@ -102,34 +111,67 @@ export default function Navbar() {
           })}
         </div>
 
-        <div className="hidden md:flex items-center gap-1.5 shrink-0">
-          <Link
-            href="/login"
-            className={cn(
-              "px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ease-out-soft",
-              light ? "text-blue-100/90 hover:text-white hover:bg-white/8" : "text-ink-body hover:text-blue-700 hover:bg-blue-50/60",
-            )}
-          >
-            Masuk
-          </Link>
-          <Link
-            href="/register"
-            className={cn(
-              "group inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold rounded-full",
-              "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-              light
-                ? "bg-paper text-navy hover:bg-white hover:shadow-lift"
-                : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-soft",
-            )}
-          >
-            Daftar Gratis
-            <svg
-              className="w-3.5 h-3.5 -mr-0.5 transition-transform duration-200 ease-out-soft group-hover:translate-x-0.5"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
+        {/* Slot lebar tetap: status auth baru diketahui setelah /auth/me
+            menjawab, dan tanpa ini kapsul akan bergeser saat datanya masuk. */}
+        <div className="hidden md:flex items-center justify-end gap-1.5 shrink-0 min-w-[15.5rem]">
+          {status === "loading" ? (
+            <span aria-hidden="true" className="h-9 w-40 rounded-full bg-current opacity-[0.07]" />
+          ) : status === "authenticated" ? (
+            <>
+              <span
+                className={cn(
+                  "px-3 py-2 text-sm truncate max-w-[9rem]",
+                  light ? "text-blue-100/90" : "text-ink-body",
+                )}
+                title={user.email}
+              >
+                {user.name}
+              </span>
+              <button
+                onClick={handleLogout}
+                className={cn(
+                  "px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                  light
+                    ? "bg-paper text-navy hover:bg-white hover:shadow-lift"
+                    : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-soft",
+                )}
+              >
+                Keluar
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ease-out-soft",
+                  light
+                    ? "text-blue-100/90 hover:text-white hover:bg-white/8"
+                    : "text-ink-body hover:text-blue-700 hover:bg-blue-50/60",
+                )}
+              >
+                Masuk
+              </Link>
+              <Link
+                href="/register"
+                className={cn(
+                  "group inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold rounded-full",
+                  "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                  light
+                    ? "bg-paper text-navy hover:bg-white hover:shadow-lift"
+                    : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-soft",
+                )}
+              >
+                Daftar Gratis
+                <svg
+                  className="w-3.5 h-3.5 -mr-0.5 transition-transform duration-200 ease-out-soft group-hover:translate-x-0.5"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -168,18 +210,34 @@ export default function Navbar() {
             ))}
             <hr className="rule-line my-3" />
             <div className="flex flex-col gap-2">
-              <Link
-                href="/login"
-                className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
-              >
-                Masuk
-              </Link>
-              <Link
-                href="/register"
-                className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              >
-                Daftar Gratis
-              </Link>
+              {status === "authenticated" ? (
+                <>
+                  <p className="px-3 pb-1 text-sm text-ink-muted truncate">
+                    Masuk sebagai <span className="text-ink font-medium">{user.name}</span>
+                  </p>
+                  <button
+                    onClick={handleLogout}
+                    className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    Keluar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                  >
+                    Masuk
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    Daftar Gratis
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
