@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Tag from "@/components/ui/Tag";
@@ -9,8 +8,9 @@ import {
   PasswordForm,
   ProfileForm,
 } from "@/components/dashboard/AccountForms";
+import { AvatarForm, PhoneForm } from "@/components/dashboard/ProfileMedia";
 import { listCourses } from "@/lib/courses";
-import { getCurrentUser } from "@/lib/firebase/session";
+import { requireUser } from "@/lib/firebase/session";
 import { iconPaths, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -21,9 +21,7 @@ export const metadata: Metadata = { title: "Dashboard – SynapEd" };
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login?next=/dashboard");
-
+  const user = await requireUser("/dashboard");
   const courses = await listCourses();
 
   return (
@@ -92,7 +90,9 @@ export default async function DashboardPage() {
 
           <section className="space-y-5">
             <h2 className="t-h3 mb-5">Pengaturan Akun</h2>
+            <AvatarForm user={user} />
             <ProfileForm user={user} />
+            <PhoneForm user={user} />
             <EmailForm user={user} />
             <PasswordForm />
             <DeleteAccount />

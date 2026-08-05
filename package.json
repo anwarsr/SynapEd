@@ -9,7 +9,10 @@
     "emulators": "firebase emulators:start --import=.emulator-data --export-on-exit=.emulator-data",
     "emulators:fresh": "firebase emulators:start",
     "migrate:firestore": "tsx scripts/migrate-to-firestore.ts",
-    "import:users": "tsx scripts/import-users-to-firebase.ts"
+    "import:users": "tsx scripts/import-users-to-firebase.ts",
+    "set-role": "tsx scripts/set-role.ts",
+    "verify:admin": "tsx scripts/verify-admin.ts",
+    "verify:rules": "tsx scripts/verify-rules.ts"
   },
   "devDependencies": {
     "firebase-admin": "^13.0.0",

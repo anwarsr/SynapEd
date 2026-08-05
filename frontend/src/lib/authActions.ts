@@ -19,6 +19,18 @@ export async function establishSession(user: User): Promise<void> {
   if (!res.ok) throw new Error("Sesi gagal dibuat. Silakan coba lagi.");
 }
 
+/**
+ * Role dibaca dari custom claim di dalam ID token.
+ *
+ * `true` memaksa token diambil ulang dari server — penting karena token yang
+ * ter-cache bisa saja diterbitkan sebelum role-nya diubah, sehingga admin baru
+ * akan terbaca sebagai pengguna biasa.
+ */
+export async function readRole(user: User): Promise<"admin" | "user"> {
+  const token = await user.getIdTokenResult(true);
+  return token.claims.role === "admin" ? "admin" : "user";
+}
+
 /** Kode galat Firebase diterjemahkan ke pesan yang berguna bagi pengguna. */
 export function authErrorMessage(err: unknown): string {
   if (!(err instanceof FirebaseError)) {

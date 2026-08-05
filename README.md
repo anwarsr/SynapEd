@@ -161,10 +161,46 @@ persis apa yang masih kurang.
 `scripts/data/synaped.db` berisi hash kata sandi akun lama dan **sengaja
 diabaikan git**. Simpan berkas itu sebagai cadangan.
 
+## Profil & role
+
+Setiap akun bisa mengubah nama, email, kata sandi, foto profil, dan nomor HP
+lewat `/dashboard`. Foto disimpan di Storage (`avatars/{uid}/avatar.*`, maks
+2 MB, harus gambar); nomor HP di Firestore (`users/{uid}`).
+
+Nomor HP **tidak** ditaruh di field `phoneNumber` milik Firebase Auth — field itu
+khusus nomor yang sudah diverifikasi lewat SMS, dan mengisinya dengan nomor yang
+diketik sendiri akan menjanjikan verifikasi yang tidak pernah terjadi.
+
+Role ada dua: `user` dan `admin`. Admin masuk langsung ke `/admin`, yang
+menampilkan daftar akun dan detail tiap akun (hanya-baca).
+
+```bash
+npm run set-role anwar.saipul120305@gmail.com admin
+npm run set-role seseorang@contoh.com user
+```
+
+Role disimpan sebagai **custom claim**, bukan field database, sehingga ikut di
+dalam session cookie dan bisa diperiksa di server tanpa pembacaan tambahan —
+dan tidak bisa diubah dari browser. `set-role` juga mencabut refresh token, jadi
+akun yang bersangkutan **harus masuk ulang** agar role barunya berlaku.
+
+Dua skrip menguji hal ini terhadap proyek asli. Keduanya membuat akun uji
+sementara dan menghapusnya lagi di akhir; akun sungguhan tidak disentuh.
+
+```bash
+npm run verify:admin     # penjagaan /admin (butuh dev server berjalan)
+npm run verify:rules     # rules Firestore & Storage yang sedang ter-deploy
+```
+
+`verify:rules` yang paling penting: ia membuktikan pengguna biasa **tidak** bisa
+menulis field `role` ke dokumennya sendiri.
+
 ## Yang belum ada
 
-- **Panel admin.** Materi dikelola lewat Firebase Console. Membangun CMS adalah
-  pekerjaan tersendiri yang jauh lebih besar.
+- **CMS materi.** Panel admin yang ada baru menampilkan daftar akun; `videoUrl`
+  dan `attachments` masih diisi lewat Firebase Console.
+- **Mengubah role dari UI.** Sengaja lewat skrip dulu — endpoint tulis untuk
+  role harus dijaga sangat ketat, dan itu pekerjaan tersendiri.
 - **Enrollment & progres belajar.** Di Laravel dulu keduanya hanya angka
   hardcoded di controller, bukan fitur yang berjalan — jadi dashboard di sini
   sengaja tidak menampilkan angka kemajuan sama sekali.

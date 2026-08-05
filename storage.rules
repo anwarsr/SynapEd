@@ -3,7 +3,20 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Lampiran pelajaran (PDF, DOCX, dsb).
+    // ── Foto profil ────────────────────────────────────────────────────
+    // Hanya pemilik yang boleh menulis ke foldernya sendiri. Batas ukuran
+    // dan tipe konten diperiksa DI SINI, bukan cuma di UI — validasi di
+    // browser bisa dilewati dengan memanggil API Storage secara langsung.
+    match /avatars/{uid}/{fileName} {
+      allow read: if true;
+
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── Lampiran pelajaran (PDF, DOCX, dsb) ────────────────────────────
     //
     // PERINGATAN YANG DISENGAJA: akses baca publik dipilih secara sadar.
     // Siapa pun yang memegang tautannya bisa mengunduh dan menyebarkannya,

@@ -7,6 +7,8 @@ export interface AuthUser {
   uid: string;
   name: string;
   email: string;
+  photoURL: string | null;
+  role: "admin" | "user";
 }
 
 type State =
@@ -14,11 +16,18 @@ type State =
   | { status: "authenticated"; user: AuthUser }
   | { status: "anonymous"; user: null };
 
-function toAuthUser(u: User): AuthUser {
+async function toAuthUser(u: User): Promise<AuthUser> {
+  // Tanpa refresh paksa; ini hanya untuk tampilan. Sumber kebenaran otorisasi
+  // tetap pemeriksaan di server (requireAdmin), yang membaca claim dari
+  // session cookie dan tidak bisa disiasati dari browser.
+  const token = await u.getIdTokenResult().catch(() => null);
+
   return {
     uid: u.uid,
     name: u.displayName ?? u.email?.split("@")[0] ?? "Pengguna",
     email: u.email ?? "",
+    photoURL: u.photoURL ?? null,
+    role: token?.claims.role === "admin" ? "admin" : "user",
   };
 }
 
@@ -34,9 +43,24 @@ export function useAuth() {
   const [state, setState] = useState<State>({ status: "loading", user: null });
 
   useEffect(() => {
-    return onAuthStateChanged(firebaseAuth(), (u) => {
-      setState(u ? { status: "authenticated", user: toAuthUser(u) } : { status: "anonymous", user: null });
+    let alive = true;
+
+    const unsubscribe = onAuthStateChanged(firebaseAuth(), (u) => {
+      if (!u) {
+        if (alive) setState({ status: "anonymous", user: null });
+        return;
+      }
+      // toAuthUser asinkron, jadi penjaga `alive` mencegah setState
+      // setelah komponen dilepas.
+      void toAuthUser(u).then((user) => {
+        if (alive) setState({ status: "authenticated", user });
+      });
     });
+
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
   }, []);
 
   const logout = useCallback(async () => {

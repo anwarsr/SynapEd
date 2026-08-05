@@ -9,7 +9,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { authErrorMessage, establishSession } from "@/lib/authActions";
+import { authErrorMessage, establishSession, readRole } from "@/lib/authActions";
 import { cn } from "@/lib/cn";
 
 type Mode = "login" | "register";
@@ -73,7 +73,13 @@ export default function AuthForm({
       // Component bisa mengenali sesi ini tanpa menunggu JavaScript.
       await establishSession(credential.user);
 
-      router.replace(redirectTo);
+      // Admin diantar langsung ke panelnya — kecuali memang sedang diminta
+      // membuka halaman tertentu lewat ?next=, misalnya setelah ditolak dari
+      // halaman belajar. Menimpa tujuan itu justru membingungkan.
+      const role = await readRole(credential.user);
+      const target = redirectTo !== "/" ? redirectTo : role === "admin" ? "/admin" : "/";
+
+      router.replace(target);
       router.refresh();
     } catch (err) {
       setError(authErrorMessage(err));

@@ -118,6 +118,29 @@ export default function Navbar() {
             <span aria-hidden="true" className="h-9 w-40 rounded-full bg-current opacity-[0.07]" />
           ) : status === "authenticated" ? (
             <>
+              {user.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-full",
+                    "transition-colors duration-200 ease-out-soft",
+                    // amber-500 hanya boleh dipakai sebagai teks di atas navy
+                    // (5.8:1); di atas kertas ia gagal, jadi di sana amber-700.
+                    light
+                      ? "text-amber-500 hover:text-white hover:bg-white/8"
+                      : "text-amber-700 hover:bg-amber-100",
+                  )}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 3l7 3v6c0 4-3 7.5-7 9-4-1.5-7-5-7-9V6l7-3z"
+                    />
+                  </svg>
+                  Admin
+                </Link>
+              )}
               <Link
                 href="/dashboard"
                 className={cn(
@@ -218,8 +241,18 @@ export default function Navbar() {
                   <p className="px-3 pb-1 text-sm text-ink-muted truncate">
                     Masuk sebagai <span className="text-ink font-medium">{user.name}</span>
                   </p>
+                  {user.role === "admin" && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileOpen(false)}
+                      className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-amber-500/40 text-amber-700 hover:bg-amber-100 transition-colors"
+                    >
+                      Panel Admin
+                    </Link>
+                  )}
                   <Link
                     href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
                     className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
                   >
                     Dashboard

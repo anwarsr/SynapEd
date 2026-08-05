@@ -14,6 +14,34 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── Profil pengguna ────────────────────────────────────────────────
+    // Hanya pemilik yang boleh membaca & menulis profilnya sendiri.
+    //
+    // Halaman admin TIDAK bergantung pada aturan ini: ia dirender di server
+    // dengan Admin SDK, yang memang melewati rules. Jadi aturan di sini bisa
+    // tetap seketat mungkin tanpa mengorbankan fitur admin.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create, update: if request.auth != null
+                            && request.auth.uid == uid
+                            && isValidProfile();
+
+      allow delete: if false;   // penghapusan akun lewat Admin SDK
+    }
+
+    // Field yang boleh ditulis klien sengaja dikunci.
+    // `role` TIDAK termasuk — role hidup sebagai custom claim. Kalau role
+    // ditaruh di dokumen ini, pengguna bisa mengangkat dirinya sendiri
+    // jadi admin hanya dengan menulis ke profilnya.
+    function isValidProfile() {
+      return request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
+             && (!('phone' in request.resource.data)
+                 || request.resource.data.phone == null
+                 || (request.resource.data.phone is string
+                     && request.resource.data.phone.size() <= 20));
+    }
+
     // Tolak apa pun di luar yang tersebut di atas.
     match /{document=**} {
       allow read, write: if false;
