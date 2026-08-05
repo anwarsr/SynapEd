@@ -51,23 +51,31 @@ async function signIn(email: string, password: string): Promise<string> {
   return body.idToken;
 }
 
-const docUrl = (uid: string) =>
-  `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}`;
+const docUrl = (uid: string, collection = "users") =>
+  `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}/${uid}`;
 
 /** PATCH dengan updateMask supaya perilakunya sama dengan setDoc({merge:true}). */
 async function writeDoc(
   uid: string,
   token: string,
   fields: Record<string, { stringValue: string }>,
+  collection = "users",
 ): Promise<number> {
   const mask = Object.keys(fields)
     .map((f) => `updateMask.fieldPaths=${f}`)
     .join("&");
 
-  const res = await fetch(`${docUrl(uid)}?${mask}`, {
+  const res = await fetch(`${docUrl(uid, collection)}?${mask}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ fields }),
+  });
+  return res.status;
+}
+
+async function readDoc(uid: string, token: string, collection: string): Promise<number> {
+  const res = await fetch(docUrl(uid, collection), {
+    headers: { Authorization: `Bearer ${token}` },
   });
   return res.status;
 }
@@ -137,6 +145,27 @@ async function main() {
       otherDoc === 403,
       `HTTP ${otherDoc}`,
     );
+
+    // ── Lamaran educator: tertutup rapat dari klien ────────────
+    // Seluruh alurnya lewat Server Action + Admin SDK, jadi klien tidak boleh
+    // menyentuhnya sama sekali. Yang paling berbahaya kalau bocor: menulis
+    // status "accepted" ke lamaran sendiri.
+    {
+      const read = await readDoc(me.uid, token, "educatorApplications");
+      check("baca lamaran sendiri -> DITOLAK", read === 403, `HTTP ${read}`);
+
+      const selfAccept = await writeDoc(
+        me.uid,
+        token,
+        { status: { stringValue: "accepted" } },
+        "educatorApplications",
+      );
+      check(
+        "tulis status accepted ke lamaran sendiri -> DITOLAK",
+        selfAccept === 403,
+        `HTTP ${selfAccept} (menerima diri sendiri harus mustahil)`,
+      );
+    }
 
     // ── Storage avatars/{uid} ──────────────────────────────────
     check(

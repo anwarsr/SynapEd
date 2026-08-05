@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { useActiveSection } from "@/lib/useActiveSection";
 import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/cn";
@@ -22,13 +22,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const { status, user, logout } = useAuth();
-
-  async function handleLogout() {
-    await logout();
-    router.refresh();
-  }
+  const { status, user } = useAuth();
 
   const isHome = pathname === "/";
   // Hanya beranda yang punya hero navy; halaman lain berlatar kertas terang.
@@ -111,11 +105,11 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* Slot lebar tetap: status auth baru diketahui setelah /auth/me
+        {/* Slot lebar tetap: status auth baru diketahui setelah Firebase
             menjawab, dan tanpa ini kapsul akan bergeser saat datanya masuk. */}
-        <div className="hidden md:flex items-center justify-end gap-1.5 shrink-0 min-w-[15.5rem]">
+        <div className="hidden md:flex items-center justify-end gap-2 shrink-0 min-w-[13rem]">
           {status === "loading" ? (
-            <span aria-hidden="true" className="h-9 w-40 rounded-full bg-current opacity-[0.07]" />
+            <span aria-hidden="true" className="h-9 w-36 rounded-full bg-current opacity-[0.07]" />
           ) : status === "authenticated" ? (
             <>
               {user.role === "admin" && (
@@ -141,29 +135,52 @@ export default function Navbar() {
                   Admin
                 </Link>
               )}
+
+              {/* Hanya pengguna biasa yang ditawari: admin meninjau pengajuan,
+                  educator sudah menjadi educator. */}
+              {user.role === "user" && (
+                <Link
+                  href="/educator"
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium rounded-full border",
+                    "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                    light
+                      ? "border-white/25 text-white hover:bg-white/10"
+                      : "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700",
+                  )}
+                >
+                  Jadi Educator
+                </Link>
+              )}
+
+              {user.role === "educator" && (
+                <span
+                  className={cn(
+                    "px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-md",
+                    light ? "bg-white/12 text-white" : "bg-amber-100 text-amber-700",
+                  )}
+                >
+                  Educator
+                </span>
+              )}
+
+              {/* Foto profil sebagai tombol. Lebih jelas bisa diklik daripada
+                  nama polos, dan tombol Keluar pindah ke halaman profil supaya
+                  navbar tidak menaruh aksi merusak di sebelah tautan biasa. */}
               <Link
                 href="/dashboard"
+                title={`${user.email} — buka profil`}
+                aria-label="Buka profil"
                 className={cn(
-                  "px-3 py-2 text-sm rounded-full truncate max-w-[9rem] transition-colors duration-200 ease-out-soft",
+                  "rounded-full transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                  "focus:outline-none focus-visible:ring-2",
                   light
-                    ? "text-blue-100/90 hover:text-white hover:bg-white/8"
-                    : "text-ink-body hover:text-blue-700 hover:bg-blue-50/60",
+                    ? "ring-offset-0 hover:ring-2 hover:ring-white/40 focus-visible:ring-white/60"
+                    : "hover:ring-2 hover:ring-blue-500/30 focus-visible:ring-blue-500/40",
                 )}
-                title={`${user.email} — buka dashboard`}
               >
-                {user.name}
+                <UserAvatar name={user.name} photoURL={user.photoURL} size="sm" />
               </Link>
-              <button
-                onClick={handleLogout}
-                className={cn(
-                  "px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-                  light
-                    ? "bg-paper text-navy hover:bg-white hover:shadow-lift"
-                    : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-soft",
-                )}
-              >
-                Keluar
-              </button>
             </>
           ) : (
             <>
@@ -238,9 +255,14 @@ export default function Navbar() {
             <div className="flex flex-col gap-2">
               {status === "authenticated" ? (
                 <>
-                  <p className="px-3 pb-1 text-sm text-ink-muted truncate">
-                    Masuk sebagai <span className="text-ink font-medium">{user.name}</span>
-                  </p>
+                  <span className="flex items-center gap-3 px-3 pb-2">
+                    <UserAvatar name={user.name} photoURL={user.photoURL} size="sm" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-ink truncate">{user.name}</span>
+                      <span className="block text-xs text-ink-muted truncate">{user.email}</span>
+                    </span>
+                  </span>
+
                   {user.role === "admin" && (
                     <Link
                       href="/admin"
@@ -250,19 +272,26 @@ export default function Navbar() {
                       Panel Admin
                     </Link>
                   )}
+
+                  {user.role === "user" && (
+                    <Link
+                      href="/educator"
+                      onClick={() => setMobileOpen(false)}
+                      className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                    >
+                      Jadi Educator
+                    </Link>
+                  )}
+
+                  {/* Tidak ada tombol Keluar di sini — keluar dilakukan dari
+                      halaman profil, sejalan dengan navbar desktop. */}
                   <Link
                     href="/dashboard"
                     onClick={() => setMobileOpen(false)}
-                    className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
-                  >
-                    Dashboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
                     className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                   >
-                    Keluar
-                  </button>
+                    Profil Saya
+                  </Link>
                 </>
               ) : (
                 <>

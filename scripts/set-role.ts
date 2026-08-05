@@ -1,7 +1,7 @@
 /**
  * Menetapkan role sebuah akun.
  *
- *   npx tsx scripts/set-role.ts <email> <admin|user>
+ *   npx tsx scripts/set-role.ts <email> <admin|educator|user>
  *
  * Role disimpan sebagai CUSTOM CLAIM, bukan field Firestore. Alasannya:
  *   - claim ikut di dalam ID token dan session cookie, jadi bisa diverifikasi
@@ -17,14 +17,14 @@
 import { getAuth } from "firebase-admin/auth";
 import { initAdmin, targetLabel } from "./project";
 
-const ROLES = ["admin", "user"] as const;
+const ROLES = ["admin", "educator", "user"] as const;
 type Role = (typeof ROLES)[number];
 
 async function main() {
   const [email, role] = process.argv.slice(2);
 
   if (!email || !role || !ROLES.includes(role as Role)) {
-    console.error("Pemakaian: npx tsx scripts/set-role.ts <email> <admin|user>");
+    console.error("Pemakaian: npx tsx scripts/set-role.ts <email> <admin|educator|user>");
     process.exit(1);
   }
 
@@ -38,6 +38,20 @@ async function main() {
   }
 
   const before = (user.customClaims?.role as string | undefined) ?? "user";
+
+  // Peningkatan ke educator disepakati permanen: kursus yang sudah dibuat
+  // akan menggantung tanpa pemilik yang berwenang kalau role-nya dicabut.
+  // Penjaga ini ada di sini DAN di server action, karena keduanya jalur
+  // terpisah menuju perubahan yang sama.
+  if (before === "educator" && role === "user") {
+    console.error("Educator tidak bisa dikembalikan menjadi user biasa.");
+    process.exit(1);
+  }
+
+  if (before === role) {
+    console.log(`  ${email} sudah berrole "${role}" — tidak ada yang diubah.`);
+    return;
+  }
 
   // Pertahankan claim lain kalau suatu saat ada.
   await auth.setCustomUserClaims(user.uid, { ...user.customClaims, role });

@@ -9,20 +9,23 @@ import {
   ProfileForm,
 } from "@/components/dashboard/AccountForms";
 import { AvatarForm, PhoneForm } from "@/components/dashboard/ProfileMedia";
+import LogoutButton from "@/components/dashboard/LogoutButton";
+import EducatorStatus from "@/components/dashboard/EducatorStatus";
 import { listCourses } from "@/lib/courses";
+import { getApplication } from "@/lib/educator";
 import { requireUser } from "@/lib/firebase/session";
 import { iconPaths, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Dashboard – SynapEd" };
+export const metadata: Metadata = { title: "Profil Saya – SynapEd" };
 
 // Sesi ada di cookie, jadi halaman ini tidak boleh di-prerender.
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
-  const courses = await listCourses();
+  const [courses, application] = await Promise.all([listCourses(), getApplication(user.uid)]);
 
   return (
     <>
@@ -35,10 +38,17 @@ export default async function DashboardPage() {
             <span>Akun Saya</span>
           </p>
 
-          <h1 className="t-h2 mb-3">
-            Halo, <span className="mark">{user.name}</span>
-          </h1>
-          <p className="t-body text-ink-muted mb-12">{user.email}</p>
+          {/* Keluar ditaruh sebaris dengan sapaan: navbar sekarang hanya
+              menampilkan ikon profil, jadi inilah jalan keluarnya. */}
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
+            <h1 className="t-h2">
+              Halo, <span className="mark">{user.name}</span>
+            </h1>
+            <LogoutButton />
+          </div>
+          <p className="t-body text-ink-muted mb-10">{user.email}</p>
+
+          <EducatorStatus role={user.role} status={application?.status ?? null} />
 
           {/* Katalog tanpa angka kemajuan. Dashboard Laravel dulu menampilkan
               progres 65% & 30%, tapi keduanya ditulis tangan di controller.

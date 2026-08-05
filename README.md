@@ -171,12 +171,25 @@ Nomor HP **tidak** ditaruh di field `phoneNumber` milik Firebase Auth — field 
 khusus nomor yang sudah diverifikasi lewat SMS, dan mengisinya dengan nomor yang
 diketik sendiri akan menjanjikan verifikasi yang tidak pernah terjadi.
 
-Role ada dua: `user` dan `admin`. Admin masuk langsung ke `/admin`, yang
-menampilkan daftar akun dan detail tiap akun (hanya-baca).
+Di navbar, akun diwakili **ikon foto profil** yang menuju `/dashboard`. Tombol
+Keluar ada di halaman profil, bukan di navbar, supaya aksi yang mengakhiri sesi
+tidak bersebelahan dengan tautan navigasi yang sering ditekan.
+
+## Role
+
+Ada tiga role.
+
+| Role | Artinya |
+|---|---|
+| `user` | pelajar biasa |
+| `educator` | penyedia kursus — boleh membuat kursusnya sendiri |
+| `admin` | meninjau pengajuan educator dan melihat seluruh akun |
+
+Admin masuk langsung ke `/admin`. Educator dan user biasa masuk ke beranda.
 
 ```bash
-npm run set-role anwar.saipul120305@gmail.com admin
-npm run set-role seseorang@contoh.com user
+npm run set-role seseorang@contoh.com admin
+npm run set-role seseorang@contoh.com educator
 ```
 
 Role disimpan sebagai **custom claim**, bukan field database, sehingga ikut di
@@ -184,23 +197,61 @@ dalam session cookie dan bisa diperiksa di server tanpa pembacaan tambahan —
 dan tidak bisa diubah dari browser. `set-role` juga mencabut refresh token, jadi
 akun yang bersangkutan **harus masuk ulang** agar role barunya berlaku.
 
-Dua skrip menguji hal ini terhadap proyek asli. Keduanya membuat akun uji
+### Menjadi educator
+
+Pengguna biasa menekan **Jadi Educator** di navbar atau di halaman profil, yang
+membawanya ke `/educator` — penjelasan programnya, lalu tombol pengajuan. Untuk
+sekarang tidak ada persyaratan apa pun.
+
+Pengajuan muncul di **Panel Admin → Notifikasi**, dan akun yang bersangkutan
+ditandai di daftar akun. Admin dapat menerima atau menolak dari kedua tempat.
+
+Menerima berarti mengubah custom claim menjadi `educator` lalu **mencabut
+refresh token** pelamar. Pencabutan itu memang melempar pelamar keluar, tetapi
+tanpanya sesi lamanya masih membawa role `user` sampai cookie-nya kedaluwarsa —
+jadi role barunya tidak akan berlaku. Pelamar cukup masuk lagi.
+
+**Peningkatan ke educator bersifat permanen.** `set-role` menolak menurunkan
+educator ke `user`, dan tidak ada jalur di UI untuk itu.
+
+Pengajuan disimpan di `educatorApplications/{uid}` — satu dokumen per akun,
+sehingga tidak mungkin ada dua pengajuan yang bersaing. Koleksi itu tertutup
+rapat dari klien (`allow read, write: if false`); seluruh alurnya berjalan lewat
+Server Action dengan Admin SDK. Pengajuan yang ditolak boleh diajukan lagi.
+
+### Menguji
+
+Tiga skrip menguji semuanya terhadap proyek asli. Ketiganya membuat akun uji
 sementara dan menghapusnya lagi di akhir; akun sungguhan tidak disentuh.
 
 ```bash
-npm run verify:admin     # penjagaan /admin (butuh dev server berjalan)
-npm run verify:rules     # rules Firestore & Storage yang sedang ter-deploy
+npm run verify:admin      # penjagaan /admin              (butuh dev server)
+npm run verify:educator   # alur pengajuan sampai putusan (butuh dev server)
+npm run verify:rules      # rules Firestore & Storage yang sedang ter-deploy
 ```
 
-`verify:rules` yang paling penting: ia membuktikan pengguna biasa **tidak** bisa
-menulis field `role` ke dokumennya sendiri.
+`verify:educator` memanggil Server Action yang sesungguhnya lewat POST +
+header `Next-Action`, persis seperti browser saat tombolnya ditekan — jadi yang
+teruji kode produksinya, bukan tiruan alurnya. ID action-nya dibaca dari
+manifest `.next/dev`, karena itu dev server harus berjalan.
+
+`verify:rules` membuktikan dua hal terpenting: pengguna biasa **tidak** bisa
+menulis field `role` ke dokumennya sendiri, dan **tidak** bisa menyentuh
+lamarannya sendiri untuk menandainya `accepted`.
 
 ## Yang belum ada
 
-- **CMS materi.** Panel admin yang ada baru menampilkan daftar akun; `videoUrl`
-  dan `attachments` masih diisi lewat Firebase Console.
-- **Mengubah role dari UI.** Sengaja lewat skrip dulu — endpoint tulis untuk
-  role harus dijaga sangat ketat, dan itu pekerjaan tersendiri.
+- **Pembuatan kursus oleh educator.** Role-nya sudah ada beserta seluruh alur
+  pengajuan dan persetujuannya, tetapi antarmuka untuk menyusun kursus belum
+  dibangun — itu pekerjaan tersendiri yang jauh lebih besar. Untuk sekarang
+  educator adalah akun yang sudah berwenang, tanpa alat untuk memakainya.
+- **CMS materi.** `videoUrl` dan `attachments` masih diisi lewat Firebase
+  Console.
+- **Mengubah role sembarangan dari UI.** Hanya keputusan pengajuan educator yang
+  bisa dilakukan dari panel; sisanya lewat skrip, karena endpoint tulis untuk
+  role harus dijaga sangat ketat.
+- **Pemberitahuan ke pelamar.** Hasil keputusan hanya terlihat kalau pelamar
+  membuka `/educator` atau profilnya; belum ada email atau notifikasi.
 - **Enrollment & progres belajar.** Di Laravel dulu keduanya hanya angka
   hardcoded di controller, bukan fitur yang berjalan — jadi dashboard di sini
   sengaja tidak menampilkan angka kemajuan sama sekali.

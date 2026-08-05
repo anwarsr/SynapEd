@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
+import DecisionButtons from "@/components/admin/DecisionButtons";
 import Tag from "@/components/ui/Tag";
-import UserAvatar from "@/components/admin/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { formatDate, getUser } from "@/lib/adminUsers";
+import { getApplication, pendingApplicationCount, statusLabel } from "@/lib/educator";
 import { requireAdmin } from "@/lib/firebase/session";
+import { roleLabel, type Role } from "@/lib/roles";
 import type { Metadata } from "next";
 
 interface Props {
@@ -18,6 +21,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const user = await getUser(uid);
   return { title: user ? `${user.name} – Panel Admin SynapEd` : "Akun – Panel Admin SynapEd" };
 }
+
+const roleTone: Record<Role, "amber" | "blue" | "neutral"> = {
+  admin: "amber",
+  educator: "blue",
+  user: "neutral",
+};
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -35,8 +44,13 @@ export default async function AdminUserDetailPage({ params }: Props) {
   const user = await getUser(uid);
   if (!user) notFound();
 
+  const [application, pending] = await Promise.all([
+    getApplication(uid),
+    pendingApplicationCount(),
+  ]);
+
   return (
-    <AdminShell user={admin}>
+    <AdminShell user={admin} pendingCount={pending}>
       <div className="container-reading">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
           <Link href="/admin" className="hover:text-blue-700 transition-colors">
@@ -52,9 +66,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
             <div className="min-w-0">
               <h1 className="t-h3 text-xl mb-1.5 truncate">{user.name}</h1>
               <div className="flex flex-wrap items-center gap-2">
-                <Tag tone={user.role === "admin" ? "amber" : "blue"}>
-                  {user.role === "admin" ? "Admin" : "User"}
-                </Tag>
+                <Tag tone={roleTone[user.role]}>{roleLabel[user.role]}</Tag>
                 {user.disabled && <Tag tone="rust">Dinonaktifkan</Tag>}
               </div>
             </div>
@@ -76,6 +88,33 @@ export default async function AdminUserDetailPage({ params }: Props) {
               {user.phone ?? <span className="text-ink-faint">Belum diisi</span>}
             </Row>
 
+            <Row label="Pengajuan educator">
+              {application ? (
+                <span className="flex flex-wrap items-center gap-2">
+                  <Tag
+                    tone={
+                      application.status === "pending"
+                        ? "amber"
+                        : application.status === "accepted"
+                          ? "blue"
+                          : "rust"
+                    }
+                  >
+                    {statusLabel[application.status]}
+                  </Tag>
+                  <span className="text-ink-muted">{formatDate(application.createdAt)}</span>
+                  <Link
+                    href={`/admin/notifications/${user.uid}`}
+                    className="text-blue-700 hover:underline underline-offset-4"
+                  >
+                    Detail →
+                  </Link>
+                </span>
+              ) : (
+                <span className="text-ink-faint">Tidak ada</span>
+              )}
+            </Row>
+
             <Row label="Terdaftar sejak">{formatDate(user.createdAt)}</Row>
             <Row label="Terakhir masuk">{formatDate(user.lastSignInAt)}</Row>
 
@@ -85,14 +124,28 @@ export default async function AdminUserDetailPage({ params }: Props) {
           </dl>
         </div>
 
-        {/* Panel ini sengaja hanya-baca. Mengubah role dari UI menuntut
-            endpoint tulis yang dijaga ketat; untuk sekarang role diatur
-            lewat skrip supaya tidak ada jalur baru yang bisa disalahgunakan. */}
+        {/* Keputusan bisa diambil langsung dari sini supaya admin yang sedang
+            memeriksa sebuah akun tidak perlu berpindah ke halaman notifikasi. */}
+        {application?.status === "pending" && (
+          <div className="mt-8">
+            <h2 className="t-h3 text-base mb-2">Pengajuan menjadi educator</h2>
+            <p className="text-sm text-ink-muted mb-5">
+              Menerima akan mengubah role akun ini menjadi educator. Keputusan itu
+              permanen, dan pengguna harus masuk ulang agar role barunya berlaku.
+            </p>
+            <DecisionButtons uid={user.uid} name={user.name} />
+          </div>
+        )}
+
+        {/* Selain keputusan pengajuan, panel ini hanya-baca. Mengubah role
+            sembarangan dari UI menuntut penjagaan tersendiri; untuk sekarang
+            jalurnya lewat skrip. */}
         <p className="mt-6 text-xs text-ink-muted">
-          Panel ini hanya menampilkan data. Untuk mengubah role, jalankan{" "}
+          Untuk mengubah role secara manual, jalankan{" "}
           <code className="bg-paper-alt px-1.5 py-0.5 rounded">
-            npm run set-role {user.email} admin
+            npm run set-role {user.email} educator
           </code>
+          . Role educator tidak dapat dikembalikan menjadi user biasa.
         </p>
 
         <Link

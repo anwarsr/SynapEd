@@ -1,6 +1,6 @@
 import "server-only";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
-import type { Role } from "@/lib/firebase/session";
+import { roleRank, toRole, type Role } from "@/lib/roles";
 
 export interface AdminUserRow {
   uid: string;
@@ -13,16 +13,23 @@ export interface AdminUserRow {
   createdAt: string | null;
   lastSignInAt: string | null;
   disabled: boolean;
-}
-
-function toRole(claims: Record<string, unknown> | undefined): Role {
-  return claims?.role === "admin" ? "admin" : "user";
+  /** Ada lamaran educator yang belum diputuskan — dipakai sebagai penanda. */
+  pendingApplication: boolean;
 }
 
 function toIso(value: string | undefined): string | null {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+/** Uid yang punya lamaran educator berstatus pending. */
+async function pendingUids(): Promise<Set<string>> {
+  const snap = await adminDb()
+    .collection("educatorApplications")
+    .where("status", "==", "pending")
+    .get();
+  return new Set(snap.docs.map((d) => d.id));
 }
 
 /**
@@ -40,12 +47,18 @@ function toIso(value: string | undefined): string | null {
 export async function listUsers(): Promise<AdminUserRow[]> {
   const { users } = await adminAuth().listUsers(1000);
 
-  // Nomor HP hidup di Firestore, bukan di Auth — diambil sekaligus supaya
-  // tidak ada N+1 pembacaan.
+  // Nomor HP dan status lamaran hidup di Firestore, bukan di Auth. Keduanya
+  // diambil sekali untuk semua akun supaya tidak ada N+1 pembacaan.
   const phones = new Map<string, string | null>();
+  let pending = new Set<string>();
+
   if (users.length) {
-    const snap = await adminDb().collection("users").get();
-    snap.forEach((d) => phones.set(d.id, (d.data().phone as string | null) ?? null));
+    const [profiles, applied] = await Promise.all([
+      adminDb().collection("users").get(),
+      pendingUids(),
+    ]);
+    profiles.forEach((d) => phones.set(d.id, (d.data().phone as string | null) ?? null));
+    pending = applied;
   }
 
   return users
@@ -55,15 +68,17 @@ export async function listUsers(): Promise<AdminUserRow[]> {
       email: u.email ?? "",
       emailVerified: u.emailVerified,
       photoURL: u.photoURL ?? null,
-      role: toRole(u.customClaims),
+      role: toRole(u.customClaims?.role),
       phone: phones.get(u.uid) ?? null,
       createdAt: toIso(u.metadata.creationTime),
       lastSignInAt: toIso(u.metadata.lastSignInTime),
       disabled: u.disabled,
+      pendingApplication: pending.has(u.uid),
     }))
     .sort((a, b) => {
-      // Admin di atas, lalu yang terbaru mendaftar.
-      if (a.role !== b.role) return a.role === "admin" ? -1 : 1;
+      // Yang menunggu keputusan naik paling atas — itu yang butuh tindakan.
+      if (a.pendingApplication !== b.pendingApplication) return a.pendingApplication ? -1 : 1;
+      if (a.role !== b.role) return roleRank[a.role] - roleRank[b.role];
       return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
     });
 }
@@ -72,7 +87,10 @@ export async function getUser(uid: string): Promise<AdminUserRow | null> {
   const u = await adminAuth().getUser(uid).catch(() => null);
   if (!u) return null;
 
-  const snap = await adminDb().collection("users").doc(uid).get();
+  const [profile, application] = await Promise.all([
+    adminDb().collection("users").doc(uid).get(),
+    adminDb().collection("educatorApplications").doc(uid).get(),
+  ]);
 
   return {
     uid: u.uid,
@@ -80,11 +98,12 @@ export async function getUser(uid: string): Promise<AdminUserRow | null> {
     email: u.email ?? "",
     emailVerified: u.emailVerified,
     photoURL: u.photoURL ?? null,
-    role: toRole(u.customClaims),
-    phone: (snap.data()?.phone as string | null) ?? null,
+    role: toRole(u.customClaims?.role),
+    phone: (profile.data()?.phone as string | null) ?? null,
     createdAt: toIso(u.metadata.creationTime),
     lastSignInAt: toIso(u.metadata.lastSignInTime),
     disabled: u.disabled,
+    pendingApplication: application.data()?.status === "pending",
   };
 }
 

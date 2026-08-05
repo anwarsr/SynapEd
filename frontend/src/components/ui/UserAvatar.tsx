@@ -8,26 +8,35 @@ function initials(name: string): string {
     .join("");
 }
 
+const sizes = {
+  sm: "w-9 h-9 text-xs",
+  md: "w-10 h-10 text-sm",
+  lg: "w-20 h-20 text-xl",
+} as const;
+
 /** Foto profil dengan cadangan inisial bila belum ada. */
 export default function UserAvatar({
   name,
   photoURL,
   size = "md",
+  className,
 }: {
   name: string;
   photoURL: string | null;
-  size?: "md" | "lg";
+  size?: keyof typeof sizes;
+  className?: string;
 }) {
-  const box = size === "lg" ? "w-20 h-20 text-xl" : "w-10 h-10 text-sm";
-
   return (
     <span
       className={cn(
         "rounded-full overflow-hidden bg-blue-50 border border-rule flex items-center justify-center shrink-0",
-        box,
+        sizes[size],
+        className,
       )}
     >
       {photoURL ? (
+        // Foto datang dari Firebase Storage dengan URL bertanda tangan yang
+        // panjang; <img> biasa menghindarkan konfigurasi remotePatterns.
         // eslint-disable-next-line @next/next/no-img-element
         <img src={photoURL} alt="" className="w-full h-full object-cover" />
       ) : (

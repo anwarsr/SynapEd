@@ -2,13 +2,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/client";
+import { toRole, type Role } from "@/lib/roles";
 
 export interface AuthUser {
   uid: string;
   name: string;
   email: string;
   photoURL: string | null;
-  role: "admin" | "user";
+  role: Role;
 }
 
 type State =
@@ -27,7 +28,7 @@ async function toAuthUser(u: User): Promise<AuthUser> {
     name: u.displayName ?? u.email?.split("@")[0] ?? "Pengguna",
     email: u.email ?? "",
     photoURL: u.photoURL ?? null,
-    role: token?.claims.role === "admin" ? "admin" : "user",
+    role: toRole(token?.claims.role),
   };
 }
 

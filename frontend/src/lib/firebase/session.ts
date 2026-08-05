@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { toRole, type Role } from "@/lib/roles";
 import { adminAuth } from "./admin";
 
 export const SESSION_COOKIE = "synaped_session";
@@ -8,7 +9,7 @@ export const SESSION_COOKIE = "synaped_session";
 /** Berlaku 5 hari — batas maksimum yang diizinkan createSessionCookie. */
 export const SESSION_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
 
-export type Role = "admin" | "user";
+export type { Role } from "@/lib/roles";
 
 export interface SessionUser {
   uid: string;
@@ -46,7 +47,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       email: claims.email ?? "",
       emailVerified: Boolean(claims.email_verified),
       photoURL: (claims.picture as string | undefined) ?? null,
-      role: claims.role === "admin" ? "admin" : "user",
+      role: toRole(claims.role),
     };
   } catch {
     // Cookie kedaluwarsa atau sudah dicabut — perlakukan sebagai belum masuk.

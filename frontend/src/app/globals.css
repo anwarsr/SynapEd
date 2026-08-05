@@ -378,6 +378,34 @@ section[id] {
     animation-delay: var(--rise-delay, 0ms);
 }
 
+/* ══ Dialog konfirmasi ══════════════════════════════════════
+   Memakai elemen <dialog> asli, jadi jebakan fokus, tombol Esc,
+   dan lapisan teratas ditangani browser. Yang diatur di sini
+   hanya tampilannya.                                          */
+@keyframes dialog-in {
+    from { opacity: 0; transform: translateY(12px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.dialog-panel[open] {
+    animation: dialog-in 260ms var(--ease-out-soft);
+}
+
+/* Navy pekat, bukan hitam — latar gelap pun tetap berwarna SynapEd */
+.dialog-panel::backdrop {
+    background: color-mix(in srgb, var(--color-navy) 55%, transparent);
+    backdrop-filter: blur(3px);
+}
+
+.dialog-panel[open]::backdrop {
+    animation: backdrop-in 260ms var(--ease-out-soft);
+}
+
 /* ══ Mengambang lembut — kartu & foto hero ══════════════════ */
 @keyframes drift {
     0%, 100% { transform: translateY(0); }
@@ -432,6 +460,10 @@ section[id] {
 
     .marquee-track,
     .drift { animation: none; }
+
+    /* Dialog tetap muncul seketika, tanpa gerak */
+    .dialog-panel[open],
+    .dialog-panel[open]::backdrop { animation: none; }
 
     /* Konten harus tetap TERLIHAT, bukan sekadar berhenti bergerak */
     .reveal,

@@ -1,6 +1,7 @@
 "use client";
 import { FirebaseError } from "firebase/app";
 import type { User } from "firebase/auth";
+import { toRole, type Role } from "@/lib/roles";
 
 /**
  * Menukar ID token Firebase menjadi session cookie httpOnly di server.
@@ -26,9 +27,9 @@ export async function establishSession(user: User): Promise<void> {
  * ter-cache bisa saja diterbitkan sebelum role-nya diubah, sehingga admin baru
  * akan terbaca sebagai pengguna biasa.
  */
-export async function readRole(user: User): Promise<"admin" | "user"> {
+export async function readRole(user: User): Promise<Role> {
   const token = await user.getIdTokenResult(true);
-  return token.claims.role === "admin" ? "admin" : "user";
+  return toRole(token.claims.role);
 }
 
 /** Kode galat Firebase diterjemahkan ke pesan yang berguna bagi pengguna. */

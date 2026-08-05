@@ -42,6 +42,21 @@ service cloud.firestore {
                      && request.resource.data.phone.size() <= 20));
     }
 
+    // ── Lamaran menjadi educator ───────────────────────────────────────
+    // Tertutup rapat dari klien, baca maupun tulis.
+    //
+    // Seluruh alurnya berjalan lewat Server Action yang memakai Admin SDK:
+    // pengguna melamar, admin memutuskan. Jadi klien tidak butuh akses
+    // langsung sama sekali, dan menutupnya menghilangkan seluruh kelas
+    // kesalahan aturan — termasuk pengguna yang mengubah status lamarannya
+    // sendiri menjadi "accepted".
+    //
+    // Document ID = uid pelamar, sehingga satu akun tidak mungkin punya dua
+    // lamaran yang bersaing.
+    match /educatorApplications/{uid} {
+      allow read, write: if false;
+    }
+
     // Tolak apa pun di luar yang tersebut di atas.
     match /{document=**} {
       allow read, write: if false;
