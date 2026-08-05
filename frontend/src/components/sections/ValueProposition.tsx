@@ -33,7 +33,7 @@ export default function ValueProposition() {
 
   return (
     <section id="value" className="py-28 bg-paper-alt border-y border-rule">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="container-page">
         <SectionHeader chapter="02" label="Kurikulum">
           Materi pembelajaran <span className="text-blue-600">pilihan terbaik</span>
         </SectionHeader>

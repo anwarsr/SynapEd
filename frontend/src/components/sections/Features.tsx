@@ -72,7 +72,7 @@ export default function Features() {
 
   return (
     <section ref={sectionRef} id="features" className="py-28 bg-paper">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="container-page">
         <Reveal className="flex flex-col items-center text-center mb-14">
           <p className="chapter-mark mb-5">
             <span>§04</span>

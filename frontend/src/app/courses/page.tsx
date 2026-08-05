@@ -23,7 +23,7 @@ export default async function CoursesPage() {
       <Navbar />
 
       <main className="bg-paper min-h-screen pt-36 pb-24">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="container-page">
           <div className="flex flex-col items-center text-center mb-16">
             <p className="chapter-mark mb-5">
               <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />

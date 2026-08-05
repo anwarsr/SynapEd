@@ -9,8 +9,8 @@ export default function Footer() {
   return (
     // Navy hangat menggantikan navy-kehitaman lama yang dingin —
     // tetap jadi jangkar gelap, tapi jelas biru SynapEd.
-    <footer className="bg-navy pt-16 pb-8 px-6">
-      <div className="max-w-7xl mx-auto">
+    <footer className="bg-navy pt-16 pb-8">
+      <div className="container-page">
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-2">

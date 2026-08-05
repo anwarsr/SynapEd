@@ -31,7 +31,7 @@ export default async function DashboardPage() {
       <Navbar />
 
       <main className="bg-paper min-h-screen pt-36 pb-24">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="container-reading">
           <p className="chapter-mark mb-5">
             <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
             <span>Akun Saya</span>

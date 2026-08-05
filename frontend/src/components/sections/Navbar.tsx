@@ -48,7 +48,7 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-3 sm:pt-4">
       <div
         className={cn(
-          "max-w-7xl mx-auto rounded-3xl border px-4 sm:px-5 py-2.5",
+          "container-nav rounded-3xl border px-4 sm:px-5 py-2.5",
           "flex items-center justify-between gap-4",
           "transition-[background-color,border-color,box-shadow] duration-300 ease-out-soft",
           scrolled

@@ -15,7 +15,7 @@ export default function Hero() {
 
   return (
     <section id="hero" className="relative min-h-screen flex items-center bg-hero-navy overflow-hidden">
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pt-32 pb-20 grid lg:grid-cols-[1.05fr_1fr] items-center gap-14 lg:gap-10">
+      <div className="relative z-10 w-full container-page pt-32 pb-20 grid lg:grid-cols-[1.05fr_1fr] items-center gap-14 lg:gap-10">
         {/* ── Kiri — teks ─────────────────────────────────── */}
         <div className="text-center lg:text-left">
           <div
@@ -33,7 +33,7 @@ export default function Hero() {
               // Dijaga agar frasa bersapuan selalu muat satu baris — kalau
               // membungkus, box-decoration-break memberi sapuan per baris
               // dan yang atas memotong baris di bawahnya.
-              fontSize: "clamp(2.05rem, 5.2vw, 4.5rem)",
+              fontSize: "clamp(2.05rem, 5.2vw, 5.5rem)",
               fontWeight: 400,
               lineHeight: 1.04,
               letterSpacing: "-0.026em",
@@ -46,7 +46,7 @@ export default function Hero() {
           </h1>
 
           <p
-            className="rise-in text-lg leading-relaxed text-blue-100/80 max-w-lg mt-8 mx-auto lg:mx-0"
+            className="rise-in text-lg 2xl:text-xl leading-relaxed text-blue-100/80 max-w-lg 2xl:max-w-xl mt-8 mx-auto lg:mx-0"
             style={{ "--rise-delay": "300ms" } as React.CSSProperties}
           >
             Akses ratusan materi berkualitas dari berbagai bidang ilmu. Didesain untuk pelajar,
@@ -104,7 +104,10 @@ export default function Hero() {
               tetap 18px ke kanan dan 14px ke atas. Bingkai kosong adalah
               lapis ke-4 yang meneruskan irama yang sama, bukan bentuk
               nyasar. Kartu dikunci ke tepi kiri dengan overhang identik. */}
-          <div className="relative w-[446px] h-[478px]">
+          {/* Seluruh susunan memakai posisi absolut dalam piksel tetap, jadi
+              cara paling aman membesarkannya di layar lebar adalah scale —
+              perbandingan antar lapis tetap terjaga persis. */}
+          <div className="relative w-[446px] h-[478px] 2xl:scale-110">
             {/* Lapis 4 — bingkai kosong, penutup kaskade */}
             <div
               aria-hidden="true"

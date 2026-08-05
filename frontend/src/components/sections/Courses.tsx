@@ -35,7 +35,7 @@ export default function Courses({ courses, categories }: Props) {
         }}
       />
 
-      <div className="relative max-w-7xl mx-auto px-6">
+      <div className="relative container-page">
         <SectionHeader
           chapter="03"
           label="Materi"

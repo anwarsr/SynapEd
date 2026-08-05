@@ -12,7 +12,7 @@ export default function FAQ() {
 
   return (
     <section id="faq" className="relative py-28 bg-paper overflow-hidden">
-      <div className="relative max-w-6xl mx-auto px-6">
+      <div className="relative container-reading">
         <SectionHeader chapter="07" label="Pertanyaan">
           Pertanyaan yang <span className="text-blue-600">sering diajukan</span>
         </SectionHeader>

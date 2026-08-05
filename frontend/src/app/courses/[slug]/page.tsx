@@ -40,7 +40,7 @@ export default async function CourseDetailPage({ params }: Props) {
       <Navbar />
 
       <main className="bg-paper min-h-screen pt-32 pb-24">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="container-reading">
           <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
             <Link href="/" className="hover:text-blue-700 transition-colors">Beranda</Link>
             <span aria-hidden="true">/</span>

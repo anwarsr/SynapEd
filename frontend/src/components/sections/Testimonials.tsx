@@ -16,7 +16,7 @@ export default function Testimonials() {
 
   return (
     <section id="testimonials" className="py-28 bg-paper overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="container-page">
         <SectionHeader chapter="06" label="Testimoni">
           Apa kata <span className="mark">mereka</span> yang sudah belajar
         </SectionHeader>

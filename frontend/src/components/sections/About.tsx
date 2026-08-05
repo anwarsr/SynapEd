@@ -26,7 +26,7 @@ const cards = [
 export default function About() {
   return (
     <section id="about" className="py-28 bg-paper">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="container-page">
         <SectionHeader
           chapter="01"
           label="Tentang"

@@ -10,7 +10,7 @@ export default function LearningPath() {
 
   return (
     <section id="learning-path" className="py-28 bg-paper-alt border-y border-rule overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="container-page">
         <SectionHeader chapter="05" label="Alur Belajar">
           Alur <span className="text-blue-600">pembelajaran</span>
         </SectionHeader>

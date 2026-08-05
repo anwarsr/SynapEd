@@ -110,6 +110,66 @@ section[id] {
 
 @layer components {
 
+    /* ══ Kontainer responsif ═════════════════════════════════
+       Sebelumnya semua section berhenti di max-w-7xl (1280px),
+       jadi di layar 1920px hanya 67% lebar yang terpakai.
+
+       Dua tingkat, karena keduanya punya batas alami berbeda:
+       - container-page    : grid kartu — boleh sangat lebar
+       - container-reading  : didominasi teks — dibatasi lebih
+         ketat, sebab baris yang terlalu panjang justru
+         melelahkan dibaca.
+       ═══════════════════════════════════════════════════════ */
+
+    .container-page,
+    .container-reading,
+    .container-nav {
+        width: 100%;
+        margin-inline: auto;
+    }
+
+    /* container-nav sengaja TANPA padding — kapsul navbar mengatur
+       padding-nya sendiri dan harus tetap rapat meski layar lebar. */
+    .container-page,
+    .container-reading {
+        padding-inline: 1.5rem;
+    }
+
+    .container-page,
+    .container-nav { max-width: 80rem; }       /* 1280px */
+    .container-reading { max-width: 72rem; }   /* 1152px */
+
+    /* Naik bertahap, bukan sekali lompat. Batasnya selalu menyisakan
+       margin luar yang terlihat — konten yang menempel tepi jendela
+       terasa sesak, bukan "penuh". */
+
+    /* >= 1536px */
+    @media (min-width: 96rem) {
+        .container-page,
+        .container-reading { padding-inline: 2.5rem; }
+
+        .container-page,
+        .container-nav { max-width: 88rem; }     /* 1408px -> 92% di 1536 */
+        .container-reading { max-width: 78rem; } /* 1248px */
+    }
+
+    /* >= 1680px */
+    @media (min-width: 105rem) {
+        .container-page,
+        .container-nav { max-width: 96rem; }     /* 1536px */
+        .container-reading { max-width: 84rem; } /* 1344px */
+    }
+
+    /* >= 1920px */
+    @media (min-width: 120rem) {
+        .container-page,
+        .container-reading { padding-inline: 3rem; }
+
+        .container-page,
+        .container-nav { max-width: 104rem; }    /* 1664px -> 87% di 1920 */
+        .container-reading { max-width: 90rem; } /* 1440px */
+    }
+
     /* ══ Skala tipografi ═════════════════════════════════════
        Fraunces dengan axis SOFT (ujung huruf membulat = hangat),
        WONK (bentuk alternatif yang khas), dan opsz (detail di

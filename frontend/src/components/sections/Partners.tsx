@@ -5,7 +5,7 @@ export default function Partners() {
 
   return (
     <section id="partners" className="py-16 bg-paper border-t border-rule overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="container-page">
         <p className="t-label text-ink-faint text-center mb-8">Dipercaya Oleh</p>
 
         <div className="relative">
