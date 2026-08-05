@@ -1,0 +1,20 @@
+{
+  "name": "synaped",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SynapEd — Next.js + Firebase",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "check": "tsx scripts/check-firebase.ts",
+    "emulators": "firebase emulators:start --import=.emulator-data --export-on-exit=.emulator-data",
+    "emulators:fresh": "firebase emulators:start",
+    "migrate:firestore": "tsx scripts/migrate-to-firestore.ts",
+    "import:users": "tsx scripts/import-users-to-firebase.ts"
+  },
+  "devDependencies": {
+    "firebase-admin": "^13.0.0",
+    "firebase-tools": "^14.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  }
+}

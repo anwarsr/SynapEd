@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Katalog kursus: boleh dibaca siapa saja (halaman publik),
+    // tetapi TIDAK BOLEH ditulis dari klien sama sekali.
+    //
+    // Penulisan hanya lewat Admin SDK — yang melewati rules ini —
+    // yaitu skrip migrasi dan Firebase Console. Tanpa panel admin,
+    // memberi izin tulis ke klien hanya membuka celah tanpa manfaat.
+    match /courses/{slug} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Tolak apa pun di luar yang tersebut di atas.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

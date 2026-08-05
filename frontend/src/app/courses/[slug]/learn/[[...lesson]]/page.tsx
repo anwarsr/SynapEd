@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import LearnShell from "@/components/learn/LearnShell";
-import { ApiError, coursesApi, type CourseDetail } from "@/lib/api";
-import { getCurrentUser } from "@/lib/serverApi";
+import { flattenLessons, getCourse } from "@/lib/courses";
+import { getCurrentUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
 
 /**
@@ -14,15 +14,6 @@ interface Props {
 }
 
 export const dynamic = "force-dynamic";
-
-async function getCourse(slug: string): Promise<CourseDetail | null> {
-  try {
-    return await coursesApi.detail(slug);
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 404) return null;
-    throw e;
-  }
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -42,7 +33,7 @@ export default async function LearnPage({ params }: Props) {
 
   // Kurikulum diratakan sekali; urutan section & lesson sudah dijamin
   // oleh kolom `position` di database.
-  const flat = course.sections.flatMap((s) => s.lessons);
+  const flat = flattenLessons(course);
   if (flat.length === 0) notFound();
 
   const requested = lesson?.[0];

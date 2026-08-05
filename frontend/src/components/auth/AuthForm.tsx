@@ -3,7 +3,13 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ApiError, authApi } from "@/lib/api";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase/client";
+import { authErrorMessage, establishSession } from "@/lib/authActions";
 import { cn } from "@/lib/cn";
 
 type Mode = "login" | "register";
@@ -52,19 +58,25 @@ export default function AuthForm({
     setPending(true);
 
     try {
-      if (mode === "register") {
-        await authApi.register({ name, email, password });
-      } else {
-        await authApi.login({ email, password });
+      const auth = firebaseAuth();
+
+      const credential =
+        mode === "register"
+          ? await createUserWithEmailAndPassword(auth, email, password)
+          : await signInWithEmailAndPassword(auth, email, password);
+
+      if (mode === "register" && name.trim()) {
+        await updateProfile(credential.user, { displayName: name.trim() });
       }
-      // Cookie httpOnly sudah dipasang server; refresh agar
-      // Server Component ikut melihat sesi barunya.
+
+      // Tukar ID token menjadi session cookie httpOnly, supaya Server
+      // Component bisa mengenali sesi ini tanpa menunggu JavaScript.
+      await establishSession(credential.user);
+
       router.replace(redirectTo);
       router.refresh();
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Tidak dapat terhubung ke server. Coba lagi.",
-      );
+      setError(authErrorMessage(err));
       setPending(false);
     }
   }
@@ -134,7 +146,7 @@ export default function AuthForm({
               value={password}
               onChange={setPassword}
               autoComplete={mode === "register" ? "new-password" : "current-password"}
-              hint={mode === "register" ? "Minimal 8 karakter." : undefined}
+              hint={mode === "register" ? "Minimal 6 karakter." : undefined}
               required
             />
 

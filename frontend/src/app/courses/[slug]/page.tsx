@@ -4,7 +4,7 @@ import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
-import { ApiError, coursesApi, type CourseDetail } from "@/lib/api";
+import { getCourse } from "@/lib/courses";
 import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -14,18 +14,10 @@ interface Props {
 }
 
 /**
- * Tidak ada generateStaticParams: katalog kini hidup di database, jadi
- * membekukan daftar slug saat build berarti kursus baru tidak akan muncul
+ * Tidak ada generateStaticParams: katalog hidup di Firestore, jadi
+ * membekukan daftar slug saat build berarti kursus baru tidak muncul
  * sampai di-rebuild. Halaman ini dirender saat diminta.
  */
-async function getCourse(slug: string): Promise<CourseDetail | null> {
-  try {
-    return await coursesApi.detail(slug);
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 404) return null;
-    throw e;
-  }
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -111,7 +103,7 @@ export default async function CourseDetailPage({ params }: Props) {
                 <h2 className="t-h3 mb-6">Kurikulum</h2>
                 <div className="space-y-4">
                   {course.sections.map((section, si) => (
-                    <div key={section.id} className="border border-rule rounded-2xl overflow-hidden">
+                    <div key={section.position} className="border border-rule rounded-2xl overflow-hidden">
                       <div className="px-5 py-4 bg-paper-alt flex items-center gap-3">
                         <span className="t-numeral-ghost text-xl text-ink-faint" aria-hidden="true">
                           {String(si + 1).padStart(2, "0")}
@@ -124,7 +116,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
                       <ul className="divide-y divide-rule">
                         {section.lessons.map((lesson) => (
-                          <li key={lesson.id} className="px-5 py-3 flex items-center justify-between gap-4 text-sm">
+                          <li key={lesson.slug} className="px-5 py-3 flex items-center justify-between gap-4 text-sm">
                             <div className="flex items-center gap-3 min-w-0">
                               <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[lesson.type] ?? lessonIcons.reading} />

@@ -4,7 +4,7 @@ import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
 import Tag from "@/components/ui/Tag";
-import type { Category, CourseSummary } from "@/lib/api";
+import type { Category, CourseSummary } from "@/lib/courses";
 import { levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 
@@ -64,7 +64,7 @@ export default function Courses({ courses, categories }: Props) {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {filtered.map((course, index) => (
-            <Reveal key={course.id} delay={index * 100} className="h-full">
+            <Reveal key={course.slug} delay={index * 100} className="h-full">
               <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden group flex flex-col h-full transition-all duration-300 ease-out-soft hover:border-rule-strong hover:shadow-lift hover:-translate-y-1.5">
                 <div
                   className={cn(

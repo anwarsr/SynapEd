@@ -1,130 +1,189 @@
 # SynapEd
 
-Platform pembelajaran online multi-disiplin. Backend NestJS + Prisma, frontend Next.js.
+Platform pembelajaran online multi-disiplin. Next.js 16 + Firebase.
 
 ```
-backend/    NestJS 11 + Prisma + SQLite   → API di :3001
-frontend/   Next.js 16 + Tailwind v4      → web di :3000
+frontend/   Next.js 16 + Tailwind v4     -> web
+scripts/    migrasi data & akun (sekali pakai)
+*.rules     aturan keamanan Firestore & Storage
 ```
 
-## Menjalankan
+Tidak ada server backend terpisah. Next.js berbicara langsung ke Firebase:
+Server Component memakai Admin SDK, sedangkan SDK klien hanya dipakai untuk
+alur masuk/daftar.
 
-Butuh dua terminal. **Backend harus jalan lebih dulu**, karena halaman katalog
-mengambil datanya dari API.
+## Menjalankan secara lokal
+
+Konfigurasi saat ini: **web di localhost, database di Firebase asli**
+(`synap-ed`). Satu terminal saja, emulator tidak perlu dijalankan.
 
 ```bash
-# Terminal 1 — API
-cd backend
-cp .env.example .env          # lalu isi JWT_ACCESS_SECRET & JWT_REFRESH_SECRET
-npx prisma migrate deploy
-npm run db:seed
-npm run start:dev             # http://localhost:3001/api
-
-# Terminal 2 — Web
-cd frontend
-cp .env.example .env.local
-npm run dev                   # http://localhost:3000
+npm run dev            # dari akar -> http://localhost:3000
 ```
 
-Dokumentasi API interaktif: <http://localhost:3001/api/docs>
+Data yang tampil berasal langsung dari Firestore. Mengubah isi kursus di
+Firebase Console akan langsung terlihat setelah halaman di-refresh — tanpa
+rebuild, karena semua halaman katalog memakai `force-dynamic`.
 
-> Jangan menjalankan `npm run build` sementara `npm run dev` masih hidup di paket
-> yang sama — keduanya berebut direktori build dan dev server akan mati.
+### Pertama kali di komputer baru
 
-## Autentikasi
+```bash
+npm install                      # akar — untuk skrip migrasi
+cd frontend && npm install
 
-JWT di **cookie httpOnly**, bukan localStorage — jadi kebal XSS dan bisa dibaca
-Server Component Next.js.
+# kredensial agar skrip bisa menulis ke Firebase
+gcloud auth application-default login
+gcloud auth application-default set-quota-project synap-ed
 
-- access token 15 menit, refresh token 7 hari
-- refresh token disimpan sebagai **hash** di database
-- setiap refresh merotasi token; token lama langsung ditolak
-- ganti kata sandi mencabut **seluruh** sesi
+npm run check                    # dari akar — pastikan semua hijau
+```
 
-Karena itu semua permintaan wajib memakai `credentials: "include"` (sudah diurus
-`src/lib/api.ts`), dan `CORS_ORIGINS` di backend harus memuat asal frontend.
+`frontend/.env.local` sudah berisi konfigurasi `synap-ed`, tetapi berkas itu
+**tidak ikut git**. Di komputer baru, salin dari
+[docs/SETUP-FIREBASE.md](docs/SETUP-FIREBASE.md) Langkah 7a.
+
+### Memeriksa sambungan
+
+```bash
+npm run check
+```
+
+Hanya membaca. Harus melaporkan `4 kursus / 19 section / 52 lesson` dan
+jumlah akun.
+
+### Alternatif: emulator lokal (offline, tanpa menyentuh data asli)
+
+Berguna kalau ingin bereksperimen tanpa risiko mengubah data sungguhan.
+
+```bash
+npm run emulators                                    # UI di :4000
+$env:FIRESTORE_EMULATOR_HOST="127.0.0.1:8080"; npm run migrate:firestore
+```
+
+Lalu ubah `frontend/.env.local`:
+
+```ini
+NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-synaped
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099
+```
+
+dan `.firebaserc` → `"default": "demo-synaped"`. Kembalikan keduanya untuk
+memakai Firebase asli lagi. `npm run check` akan memberi tahu kalau keduanya
+tidak sinkron.
+
+> **Jangan menguji login akun hasil impor di emulator** — Auth emulator tidak
+> mengimplementasikan verifikasi bcrypt, jadi selalu gagal meski sandinya benar.
+
+> Kalau muncul 404 di semua halaman kecuali `/`, hapus `frontend/.next` lalu
+> jalankan ulang. Cache Turbopack yang basi bisa menyebabkan itu.
 
 ## Halaman
 
-| Rute | Akses | Keterangan |
-|---|---|---|
-| `/` | publik | landing, katalog dari API |
-| `/courses` | publik | semua kursus |
-| `/courses/:slug` | publik | detail + kurikulum |
-| `/courses/:slug/learn` | **perlu masuk** | pelajaran pertama |
-| `/courses/:slug/learn/:lessonSlug` | **perlu masuk** | pelajaran tertentu |
-| `/dashboard` | **perlu masuk** | katalog + pengaturan akun |
-| `/login`, `/register` | publik | masuk / daftar |
+| Rute | Akses |
+|---|---|
+| `/` | publik — landing + katalog |
+| `/courses`, `/courses/:slug` | publik |
+| `/courses/:slug/learn[/:lessonSlug]` | **perlu masuk** |
+| `/dashboard` | **perlu masuk** — katalog + pengaturan akun |
+| `/login`, `/register` | publik |
 
-Rute terproteksi diperiksa di Server Component (`src/lib/serverApi.ts`) sehingga
-pengalihan ke `/login` terjadi sebelum halaman dirender — tanpa kedipan konten.
-Pengalihan menyertakan `?next=` agar setelah masuk kembali ke halaman yang dituju.
+Rute terproteksi diperiksa di Server Component (`src/lib/firebase/session.ts`),
+jadi pengalihan ke `/login` terjadi sebelum halaman dirender — tanpa kedipan
+konten. Pengalihan menyertakan `?next=` agar kembali ke tujuan semula.
 
-## Endpoint
+## Autentikasi
 
-| Metode | Rute | Keterangan |
-|---|---|---|
-| POST | `/api/auth/register` | daftar + langsung masuk |
-| POST | `/api/auth/login` | masuk |
-| POST | `/api/auth/refresh` | perbarui token (dirotasi) |
-| POST | `/api/auth/logout` | keluar + cabut token |
-| GET | `/api/auth/me` | akun yang sedang masuk |
-| PATCH | `/api/users/me` | ubah nama / email |
-| PUT | `/api/users/me/password` | ganti kata sandi |
-| DELETE | `/api/users/me` | hapus akun |
-| GET | `/api/courses` | daftar kursus (`?category=`) |
-| GET | `/api/courses/categories` | kategori untuk filter |
-| GET | `/api/courses/:slug` | detail + section + lesson |
-| GET | `/api/courses/:slug/lessons/:lessonSlug` | satu lesson + navigasi |
+Firebase Auth hidup di klien, tetapi halaman terproteksi dirender di server.
+Jembatannya adalah **session cookie** — pola resmi Firebase untuk SSR:
 
-## Basis data
-
-Skema di `backend/prisma/schema.prisma`. Perintah yang sering dipakai:
-
-```bash
-npm run prisma:studio     # lihat isi database
-npm run prisma:migrate    # buat migrasi baru
-npm run db:seed           # isi ulang katalog kursus
+```
+klien   signInWithEmailAndPassword()   -> ID token
+        POST /api/auth/session         -> tukar jadi cookie httpOnly
+server  verifySessionCookie(checkRevoked: true)
+keluar  DELETE /api/auth/session + revokeRefreshTokens()
 ```
 
-Katalog di-seed dari `backend/prisma/lms-data.json` — 4 kursus, 19 section,
-52 lesson.
+`checkRevoked: true` membuat "keluar" berlaku seketika, bukan menunggu token
+kedaluwarsa sendiri.
 
-## Catatan migrasi dari Laravel
+## Model data
 
-Backend Laravel telah dihapus. Beberapa hal yang perlu diketahui:
+Satu koleksi: `courses/{slug}`. Section dan lesson **ditanam di dalam dokumen
+kursus**, bukan subcollection. Dokumen terbesar hanya 3,3 KB — 0,31% dari batas
+1 MiB Firestore, tersisa 319× lipat. Akibatnya:
 
-- **Akun lama tetap bisa dipakai.** Hash bcrypt Laravel berawalan `$2y$` dan
-  tetap valid di Node, jadi kata sandi lama masih berfungsi.
-- **Data kursus dulunya tidak pernah ada di database** — hanya array PHP di
-  `app/Helpers/LmsData.php`. Sekarang menjadi tabel sungguhan.
-- **Enrollment & progres belajar belum ada.** Di Laravel keduanya hanya angka
-  hardcoded di `DashboardController` (`65%`, `30%`), bukan fitur yang berjalan.
-  Karena itu dashboard baru tidak menampilkan angka kemajuan sama sekali —
-  lebih baik kosong daripada menampilkan angka yang tidak berarti.
-- **Isi materi pelajaran belum ada.** Judul, durasi, dan tipe setiap pelajaran
-  tersimpan di database, tetapi tidak pernah ada kolom untuk isinya. Halaman
-  belajar menandai ini secara terbuka sebagai "Materi belum tersedia".
-- **Reset kata sandi lewat email belum aktif.** Tabel `password_reset_tokens`
-  sudah disiapkan, tetapi pengirimannya belum diimplementasikan (di Laravel pun
-  `MAIL_MAILER=log`, jadi email tidak pernah benar-benar terkirim).
+- membaca satu kursus = **satu operasi baca**, bukan 1 + 19 + 52
+- tidak ada masalah cascade delete: hapus kursus, section & lesson ikut hilang
 
-## Deployment — BELUM dikonfigurasi
+`lessonsCount` sengaja **tidak disimpan** — selalu dihitung dari isi dokumen,
+jadi tidak mungkin melenceng.
 
-`Dockerfile`, `Procfile`, `railway.toml`, `render.yaml`, dan `nixpacks.toml`
-semuanya menjalankan `php artisan`, jadi sudah tidak berlaku dan ikut dihapus.
-Belum ada penggantinya. Sekarang ada **dua layanan** yang harus dideploy, bukan
-satu.
+Dua field diisi lewat Firebase Console:
 
-> **PERINGATAN — SQLite akan terhapus setiap deploy.**
+| Field | Isi |
+|---|---|
+| `videoUrl` | tautan YouTube/Vimeo biasa — otomatis dikonversi ke URL embed |
+| `attachments` | `[{ name, path, size, mime }]`, `path` menunjuk ke Storage |
+
+## Menghubungkan ke proyek Firebase asli
+
+**→ Panduan lengkap: [docs/SETUP-FIREBASE.md](docs/SETUP-FIREBASE.md)**
+(12 langkah, ±30–45 menit, disertai penanganan masalah)
+
+Ringkasnya:
+
+```bash
+# setelah proyek Firebase dibuat & frontend/.env.local + .firebaserc diisi
+npm run check                    # periksa konfigurasi sebelum lanjut
+
+$env:FIREBASE_SERVICE_ACCOUNT = Get-Content "C:\path\firebase-key.json" -Raw
+npx firebase deploy --only firestore:rules,storage
+npm run migrate:firestore
+npm run import:users
+npm run check                    # harus: 4/19/52 kursus dan 4 akun
+```
+
+`npm run check` hanya membaca — tidak mengubah apa pun — dan menyebutkan
+persis apa yang masih kurang.
+
+> **Hash bcrypt lama TERBUKTI berfungsi di Firebase asli.**
+> Diuji langsung terhadap proyek `synap-ed`: hash bergaya Laravel `$2y$`
+> dinormalkan ke `$2b$`, diimpor, lalu login dengan kata sandi yang benar
+> **berhasil** dan kata sandi salah **ditolak**. Jadi kata sandi lama tetap
+> berlaku — tidak perlu reset.
 >
-> Railway, Render, dan Vercel memakai filesystem *ephemeral*: file yang ditulis
-> aplikasi hilang setiap kali deploy ulang. Karena `synaped.db` berisi **seluruh
-> akun pengguna**, men-deploy apa adanya berarti kehilangan semua akun di setiap
-> rilis.
->
-> Rencananya: pasang **volume persisten** dan arahkan `DATABASE_URL` ke path di
-> dalam volume itu. Konsekuensinya aplikasi hanya boleh berjalan pada **satu
-> instance** — dua instance akan menulis ke file berbeda dan datanya pecah.
-> Kalau nanti perlu di-scale, pindah ke PostgreSQL (di Prisma cukup mengganti
-> `provider`; kode aplikasi tidak berubah).
+> Catatan: hal yang sama **gagal di emulator**. Auth emulator tampaknya tidak
+> mengimplementasikan verifikasi bcrypt untuk akun impor, jadi jangan memakai
+> emulator untuk menguji bagian ini.
+
+`scripts/data/synaped.db` berisi hash kata sandi akun lama dan **sengaja
+diabaikan git**. Simpan berkas itu sebagai cadangan.
+
+## Yang belum ada
+
+- **Panel admin.** Materi dikelola lewat Firebase Console. Membangun CMS adalah
+  pekerjaan tersendiri yang jauh lebih besar.
+- **Enrollment & progres belajar.** Di Laravel dulu keduanya hanya angka
+  hardcoded di controller, bukan fitur yang berjalan — jadi dashboard di sini
+  sengaja tidak menampilkan angka kemajuan sama sekali.
+- **Proteksi berkas.** `storage.rules` memakai akses baca publik sesuai
+  keputusan awal. Konsekuensinya materi kursus berbayar dapat disebarluaskan
+  bebas. Untuk mengubahnya: ganti `allow read: if true` menjadi
+  `if request.auth != null` dan sajikan lewat URL bertanda tangan.
+- **Verifikasi email & reset kata sandi.** Tersedia gratis di Firebase Auth,
+  tetapi belum dirangkai ke UI.
+
+## Riwayat
+
+Proyek ini bermula sebagai Laravel + Blade, lalu frontend-nya dipindah ke
+Next.js, backend-nya ke NestJS + Prisma, dan akhirnya ke Firebase. Beberapa
+catatan yang masih relevan:
+
+- Data kursus **tidak pernah ada di database** pada versi Laravel — hanya array
+  PHP 622 baris di `app/Helpers/LmsData.php`.
+- Konversi frontend oleh AI terdahulu diam-diam kehilangan **14 lesson dan 6
+  section**. Karena itu `scripts/migrate-to-firestore.ts` memiliki pengaman yang
+  **menggagalkan migrasi** bila jumlahnya bukan 4 kursus / 19 section /
+  52 lesson.

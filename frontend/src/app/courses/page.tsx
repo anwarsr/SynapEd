@@ -2,7 +2,7 @@ import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
-import { coursesApi } from "@/lib/api";
+import { listCourses } from "@/lib/courses";
 import { iconPaths, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CoursesPage() {
-  const courses = await coursesApi.list();
+  const courses = await listCourses();
 
   return (
     <>
@@ -45,7 +45,7 @@ export default async function CoursesPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {courses.map((course) => (
               <div
-                key={course.id}
+                key={course.slug}
                 className="bg-paper-card border border-rule rounded-2xl overflow-hidden flex flex-col transition-[border-color,box-shadow] duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft"
               >
                 <div className={cn("h-32 flex items-center justify-center border-b border-rule", course.tint)}>

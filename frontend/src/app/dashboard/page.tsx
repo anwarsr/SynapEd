@@ -3,9 +3,14 @@ import { redirect } from "next/navigation";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Tag from "@/components/ui/Tag";
-import { DeleteAccount, PasswordForm, ProfileForm } from "@/components/dashboard/AccountForms";
-import { coursesApi } from "@/lib/api";
-import { getCurrentUser } from "@/lib/serverApi";
+import {
+  DeleteAccount,
+  EmailForm,
+  PasswordForm,
+  ProfileForm,
+} from "@/components/dashboard/AccountForms";
+import { listCourses } from "@/lib/courses";
+import { getCurrentUser } from "@/lib/firebase/session";
 import { iconPaths, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -17,9 +22,9 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/login?next=/dashboard");
 
-  const courses = await coursesApi.list();
+  const courses = await listCourses();
 
   return (
     <>
@@ -37,10 +42,9 @@ export default async function DashboardPage() {
           </h1>
           <p className="t-body text-ink-muted mb-12">{user.email}</p>
 
-          {/* Katalog — tanpa angka kemajuan.
-              Dashboard Laravel dulu menampilkan progres 65% & 30%, tapi
-              keduanya ditulis tangan di controller, bukan data nyata.
-              Enrollment belum dibuat, jadi angka itu tidak ditiru di sini. */}
+          {/* Katalog tanpa angka kemajuan. Dashboard Laravel dulu menampilkan
+              progres 65% & 30%, tapi keduanya ditulis tangan di controller.
+              Enrollment belum ada, jadi angka itu tidak ditiru di sini. */}
           <section className="mb-12">
             <div className="flex items-baseline justify-between mb-5">
               <h2 className="t-h3">Kursus Tersedia</h2>
@@ -52,7 +56,7 @@ export default async function DashboardPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               {courses.map((c) => (
                 <Link
-                  key={c.id}
+                  key={c.slug}
                   href={`/courses/${c.slug}/learn`}
                   className="group flex items-center gap-4 bg-paper-card border border-rule rounded-2xl p-4 transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft hover:-translate-y-0.5"
                 >
@@ -89,6 +93,7 @@ export default async function DashboardPage() {
           <section className="space-y-5">
             <h2 className="t-h3 mb-5">Pengaturan Akun</h2>
             <ProfileForm user={user} />
+            <EmailForm user={user} />
             <PasswordForm />
             <DeleteAccount />
           </section>

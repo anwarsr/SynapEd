@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Lampiran pelajaran (PDF, DOCX, dsb).
+    //
+    // PERINGATAN YANG DISENGAJA: akses baca publik dipilih secara sadar.
+    // Siapa pun yang memegang tautannya bisa mengunduh dan menyebarkannya,
+    // termasuk materi kursus berbayar. Kalau nanti berubah pikiran,
+    // ganti `allow read: if true` menjadi `if request.auth != null`
+    // dan sajikan berkas lewat URL bertanda tangan.
+    match /lesson-assets/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;   // unggah hanya lewat Firebase Console / Admin SDK
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

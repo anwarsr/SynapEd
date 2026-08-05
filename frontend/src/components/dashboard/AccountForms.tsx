@@ -1,29 +1,40 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, API_URL, type AuthUser } from "@/lib/api";
+import {
+  EmailAuthProvider,
+  deleteUser,
+  reauthenticateWithCredential,
+  signOut,
+  updatePassword,
+  updateProfile,
+  verifyBeforeUpdateEmail,
+  type User,
+} from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase/client";
+import { authErrorMessage, establishSession } from "@/lib/authActions";
+import type { SessionUser } from "@/lib/firebase/session";
 import { cn } from "@/lib/cn";
 
 type Status = { kind: "idle" } | { kind: "ok"; msg: string } | { kind: "err"; msg: string };
 
-async function send(path: string, method: string, body?: unknown) {
-  const res = await fetch(`${API_URL}${path}`, {
-    method,
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    let message = `Gagal (${res.status})`;
-    try {
-      const j = (await res.json()) as { message?: string | string[] };
-      if (Array.isArray(j.message)) message = j.message.join(", ");
-      else if (j.message) message = j.message;
-    } catch {
-      /* pakai pesan default */
-    }
-    throw new ApiError(message, res.status);
-  }
+function currentUser(): User {
+  const u = firebaseAuth().currentUser;
+  if (!u) throw new Error("Sesi berakhir. Silakan masuk kembali.");
+  return u;
+}
+
+/**
+ * Firebase menolak operasi sensitif (ganti sandi/email, hapus akun) kalau
+ * sesi sudah lama — inilah `auth/requires-recent-login`. Autentikasi ulang
+ * dengan kata sandi saat ini menyelesaikannya, sekaligus berfungsi sebagai
+ * konfirmasi identitas.
+ */
+async function reauth(password: string): Promise<User> {
+  const user = currentUser();
+  const credential = EmailAuthProvider.credential(user.email ?? "", password);
+  await reauthenticateWithCredential(user, credential);
+  return user;
 }
 
 function Note({ status }: { status: Status }) {
@@ -50,6 +61,7 @@ function Field({
   value,
   onChange,
   autoComplete,
+  hint,
 }: {
   id: string;
   label: string;
@@ -57,6 +69,7 @@ function Field({
   value: string;
   onChange: (v: string) => void;
   autoComplete?: string;
+  hint?: string;
 }) {
   return (
     <div>
@@ -71,6 +84,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
       />
+      {hint && <p className="mt-1.5 text-xs text-ink-muted">{hint}</p>}
     </div>
   );
 }
@@ -78,12 +92,11 @@ function Field({
 const submitClass =
   "rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed";
 
-// ── Profil ──────────────────────────────────────────────────────────────
+// ── Nama tampilan ───────────────────────────────────────────────────────
 
-export function ProfileForm({ user }: { user: AuthUser }) {
+export function ProfileForm({ user }: { user: SessionUser }) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
-  const [email, setEmail] = useState(user.email);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [pending, setPending] = useState(false);
 
@@ -92,11 +105,18 @@ export function ProfileForm({ user }: { user: AuthUser }) {
     setPending(true);
     setStatus({ kind: "idle" });
     try {
-      await send("/users/me", "PATCH", { name, email });
-      setStatus({ kind: "ok", msg: "Profil berhasil diperbarui." });
+      const u = currentUser();
+      await updateProfile(u, { displayName: name.trim() });
+
+      // Nama ikut tertanam di dalam session cookie, jadi cookie-nya harus
+      // diterbitkan ulang — kalau tidak, navbar masih menampilkan nama lama.
+      await u.getIdToken(true);
+      await establishSession(u);
+
+      setStatus({ kind: "ok", msg: "Nama berhasil diperbarui." });
       router.refresh();
     } catch (err) {
-      setStatus({ kind: "err", msg: err instanceof ApiError ? err.message : "Terjadi kesalahan." });
+      setStatus({ kind: "err", msg: authErrorMessage(err) });
     } finally {
       setPending(false);
     }
@@ -105,19 +125,77 @@ export function ProfileForm({ user }: { user: AuthUser }) {
   return (
     <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
       <h2 className="t-h3 mb-1.5">Profil</h2>
-      <p className="t-body text-sm mb-6">Ubah nama dan alamat email akun Anda.</p>
+      <p className="t-body text-sm mb-6">Nama yang ditampilkan di seluruh aplikasi.</p>
 
       <div className="space-y-4 max-w-md">
         <Field id="p-name" label="Nama" value={name} onChange={setName} autoComplete="name" />
-        <Field id="p-email" label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
+        <Field id="p-email" label="Email" value={user.email} onChange={() => {}} hint="Diubah lewat bagian di bawah." />
       </div>
 
-      <p className="mt-3 text-xs text-ink-muted">
-        Mengganti email akan membatalkan status verifikasi.
+      <button type="submit" disabled={pending} className={cn(submitClass, "mt-6")}>
+        {pending ? "Menyimpan…" : "Simpan Nama"}
+      </button>
+
+      <Note status={status} />
+    </form>
+  );
+}
+
+// ── Ganti email ─────────────────────────────────────────────────────────
+
+export function EmailForm({ user }: { user: SessionUser }) {
+  const [newEmail, setNewEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPending(true);
+    setStatus({ kind: "idle" });
+    try {
+      const u = await reauth(password);
+      // Firebase sengaja tidak langsung mengganti email: tautan verifikasi
+      // dikirim ke alamat BARU dan email baru berlaku setelah diklik.
+      await verifyBeforeUpdateEmail(u, newEmail.trim());
+      setPassword("");
+      setStatus({
+        kind: "ok",
+        msg: `Tautan verifikasi dikirim ke ${newEmail.trim()}. Email baru berlaku setelah tautan itu diklik.`,
+      });
+    } catch (err) {
+      setStatus({ kind: "err", msg: authErrorMessage(err) });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
+      <h2 className="t-h3 mb-1.5">Alamat Email</h2>
+      <p className="t-body text-sm mb-6">
+        Saat ini <span className="text-ink font-medium">{user.email}</span>. Perubahan harus
+        diverifikasi lewat email baru sebelum berlaku.
       </p>
 
-      <button type="submit" disabled={pending} className={cn(submitClass, "mt-6")}>
-        {pending ? "Menyimpan…" : "Simpan Perubahan"}
+      <div className="space-y-4 max-w-md">
+        <Field id="e-new" label="Email baru" type="email" value={newEmail} onChange={setNewEmail} autoComplete="email" />
+        <Field
+          id="e-password"
+          label="Kata sandi saat ini"
+          type="password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={pending || !newEmail || !password}
+        className={cn(submitClass, "mt-6")}
+      >
+        {pending ? "Mengirim…" : "Kirim Tautan Verifikasi"}
       </button>
 
       <Note status={status} />
@@ -138,15 +216,15 @@ export function PasswordForm() {
     setPending(true);
     setStatus({ kind: "idle" });
     try {
-      await send("/users/me/password", "PUT", { currentPassword, newPassword });
+      const u = await reauth(currentPassword);
+      await updatePassword(u, newPassword);
+      await establishSession(u);
+
       setCurrent("");
       setNew("");
-      setStatus({
-        kind: "ok",
-        msg: "Kata sandi diperbarui. Semua sesi lain sudah dikeluarkan.",
-      });
+      setStatus({ kind: "ok", msg: "Kata sandi berhasil diperbarui." });
     } catch (err) {
-      setStatus({ kind: "err", msg: err instanceof ApiError ? err.message : "Terjadi kesalahan." });
+      setStatus({ kind: "err", msg: authErrorMessage(err) });
     } finally {
       setPending(false);
     }
@@ -155,9 +233,7 @@ export function PasswordForm() {
   return (
     <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
       <h2 className="t-h3 mb-1.5">Kata Sandi</h2>
-      <p className="t-body text-sm mb-6">
-        Demi keamanan, mengganti kata sandi akan mengeluarkan Anda dari semua perangkat lain.
-      </p>
+      <p className="t-body text-sm mb-6">Minimal 6 karakter.</p>
 
       <div className="space-y-4 max-w-md">
         <Field
@@ -178,7 +254,11 @@ export function PasswordForm() {
         />
       </div>
 
-      <button type="submit" disabled={pending} className={cn(submitClass, "mt-6")}>
+      <button
+        type="submit"
+        disabled={pending || !currentPassword || !newPassword}
+        className={cn(submitClass, "mt-6")}
+      >
         {pending ? "Menyimpan…" : "Ganti Kata Sandi"}
       </button>
 
@@ -201,11 +281,17 @@ export function DeleteAccount() {
     setPending(true);
     setStatus({ kind: "idle" });
     try {
-      await send("/users/me", "DELETE", { password });
+      const u = await reauth(password);
+      await deleteUser(u);
+
+      // Akun sudah tidak ada — cookie sesi wajib ikut dibersihkan.
+      await fetch("/api/auth/session", { method: "DELETE" }).catch(() => undefined);
+      await signOut(firebaseAuth()).catch(() => undefined);
+
       router.replace("/");
       router.refresh();
     } catch (err) {
-      setStatus({ kind: "err", msg: err instanceof ApiError ? err.message : "Terjadi kesalahan." });
+      setStatus({ kind: "err", msg: authErrorMessage(err) });
       setPending(false);
     }
   }
@@ -214,7 +300,7 @@ export function DeleteAccount() {
     <div className="bg-paper-card border border-rust-700/30 rounded-2xl p-7">
       <h2 className="t-h3 mb-1.5 text-rust-700">Hapus Akun</h2>
       <p className="t-body text-sm mb-6">
-        Akun dan seluruh sesinya dihapus permanen. Tindakan ini tidak bisa dibatalkan.
+        Akun dihapus permanen dari Firebase Authentication. Tindakan ini tidak bisa dibatalkan.
       </p>
 
       {!open ? (
@@ -237,7 +323,7 @@ export function DeleteAccount() {
           <div className="flex gap-2.5 mt-5">
             <button
               type="submit"
-              disabled={pending || password.length === 0}
+              disabled={pending || !password}
               className="rounded-lg bg-rust-700 px-6 py-2.5 text-sm font-semibold text-white transition-opacity duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {pending ? "Menghapus…" : "Hapus Permanen"}
