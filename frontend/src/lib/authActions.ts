@@ -150,7 +150,7 @@ export function authErrorMessage(err: unknown): string {
       // yang terdaftar. Petunjuk Google ditambahkan untuk SEMUA kegagalan,
       // bukan hanya yang memang memakai Google — kalau hanya muncul pada
       // akun Google, pesan ini justru membocorkan email mana yang ada.
-      return "Email atau kata sandi salah. Kalau Anda pernah masuk lewat Google, gunakan tombol Masuk dengan Google di atas.";
+      return "Email atau kata sandi salah. Coba Masuk dengan Google kalau Anda pernah memakainya.";
     case "auth/email-already-in-use":
       return "Email ini sudah terdaftar.";
     case "auth/invalid-email":

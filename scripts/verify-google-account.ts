@@ -90,8 +90,8 @@ async function main() {
       check(
         "email belum diverifikasi -> ada peringatan",
         page.html.includes("Email belum diverifikasi") &&
-          page.html.includes("melepas kata sandi"),
-        "sebab masalahnya dijelaskan di tempat",
+          page.html.includes("Kirim Tautan Verifikasi"),
+        "peringatan beserta tombolnya",
       );
       check(
         "menawarkan Tautkan Akun Google",
@@ -100,7 +100,7 @@ async function main() {
       );
       check(
         "menyebut menautkan itu aman",
-        page.html.includes("kata sandi Anda tetap berlaku"),
+        page.html.includes("Kata sandi Anda tetap bisa dipakai"),
         "membedakannya dari masuk lewat Google",
       );
 

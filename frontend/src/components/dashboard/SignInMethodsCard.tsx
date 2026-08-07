@@ -56,10 +56,7 @@ export default function SignInMethodsCard({
       if (!user) throw new Error("Sesi berakhir. Silakan masuk kembali.");
 
       await linkGoogle(user);
-      setStatus({
-        kind: "ok",
-        msg: "Google berhasil ditautkan. Kata sandi Anda tetap berlaku — kini keduanya bisa dipakai.",
-      });
+      setStatus({ kind: "ok", msg: "Akun Google berhasil ditautkan." });
       router.refresh();
     } catch (err) {
       if (!isPopupDismissed(err)) setStatus({ kind: "err", msg: authErrorMessage(err) });
@@ -76,10 +73,7 @@ export default function SignInMethodsCard({
       if (!user) throw new Error("Sesi berakhir. Silakan masuk kembali.");
 
       await sendVerification(user);
-      setStatus({
-        kind: "ok",
-        msg: "Tautan verifikasi dikirim. Periksa kotak masuk Anda, termasuk folder spam.",
-      });
+      setStatus({ kind: "ok", msg: "Tautan verifikasi dikirim. Cek email Anda." });
     } catch (err) {
       setStatus({ kind: "err", msg: authErrorMessage(err) });
     } finally {
@@ -90,9 +84,7 @@ export default function SignInMethodsCard({
   return (
     <div className="bg-paper-card border border-rule rounded-2xl p-7">
       <h2 className="t-h3 mb-1.5">Cara Masuk</h2>
-      <p className="t-body text-sm mb-6">
-        Metode yang bisa Anda pakai untuk masuk ke akun ini.
-      </p>
+      <p className="t-body text-sm mb-6">Cara yang bisa Anda pakai untuk masuk.</p>
 
       <ul className="space-y-3 mb-6">
         <li className="flex items-center gap-3 text-sm">
@@ -111,17 +103,13 @@ export default function SignInMethodsCard({
         </li>
       </ul>
 
-      {/* Peringatan ini yang paling penting: email belum terverifikasi adalah
-          sebab kata sandi terlepas saat akun yang sama masuk lewat Google. */}
+      {/* Sebab teknisnya (kata sandi pada email yang belum terbukti
+          kepemilikannya dianggap berisiko) sengaja tidak dijelaskan di sini —
+          pengguna cukup tahu bahwa ini perlu dilakukan. */}
       {!emailVerified && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-100 px-4 py-3.5 text-sm text-amber-700 mb-6">
           <p className="font-semibold mb-1">Email belum diverifikasi</p>
-          <p>
-            Selama belum diverifikasi, masuk lewat Google dengan email yang sama akan{" "}
-            <span className="font-medium">melepas kata sandi Anda</span> — Firebase
-            memperlakukan kata sandi pada email yang belum terbukti kepemilikannya sebagai
-            berisiko. Verifikasi sekali, dan keduanya bisa hidup berdampingan.
-          </p>
+          <p>Verifikasi email Anda agar akun ini lebih aman.</p>
           <button
             onClick={onVerify}
             disabled={pending !== null}
@@ -141,9 +129,7 @@ export default function SignInMethodsCard({
           >
             {pending === "link" ? "Menghubungkan…" : "Tautkan Akun Google"}
           </button>
-          <p className="mt-2.5 text-xs text-ink-muted">
-            Menautkan dari sini aman: kata sandi Anda tetap berlaku.
-          </p>
+          <p className="mt-2.5 text-xs text-ink-muted">Kata sandi Anda tetap bisa dipakai.</p>
         </div>
       )}
 

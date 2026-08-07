@@ -198,7 +198,7 @@ export function EmailForm({ user, methods }: { user: SessionUser; methods: SignI
       setPassword("");
       setStatus({
         kind: "ok",
-        msg: `Tautan verifikasi dikirim ke ${newEmail.trim()}. Email baru berlaku setelah tautan itu diklik.`,
+        msg: `Tautan dikirim ke ${newEmail.trim()}. Klik tautan itu untuk menyelesaikan perubahan.`,
       });
     } catch (err) {
       setStatus({ kind: "err", msg: authErrorMessage(err) });
@@ -217,8 +217,7 @@ export function EmailForm({ user, methods }: { user: SessionUser; methods: SignI
         <h2 className="t-h3 mb-1.5">Alamat Email</h2>
         <p className="t-body text-sm">
           Saat ini <span className="text-ink font-medium">{user.email}</span>, mengikuti akun
-          Google Anda. Untuk mengubahnya, buat kata sandi terlebih dahulu di bagian bawah —
-          setelah itu alamat email dapat diubah dari sini.
+          Google Anda. Buat kata sandi di bawah kalau ingin mengubahnya.
         </p>
       </div>
     );
@@ -228,8 +227,8 @@ export function EmailForm({ user, methods }: { user: SessionUser; methods: SignI
     <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
       <h2 className="t-h3 mb-1.5">Alamat Email</h2>
       <p className="t-body text-sm mb-6">
-        Saat ini <span className="text-ink font-medium">{user.email}</span>. Perubahan harus
-        diverifikasi lewat email baru sebelum berlaku.
+        Saat ini <span className="text-ink font-medium">{user.email}</span>. Email baru berlaku
+        setelah Anda klik tautan yang kami kirim ke sana.
       </p>
 
       <div className="space-y-4 max-w-md">
@@ -289,7 +288,7 @@ export function PasswordForm({ methods }: { methods: SignInMethods }) {
       setStatus({
         kind: "ok",
         msg: creating
-          ? "Kata sandi dibuat. Mulai sekarang Anda bisa masuk dengan email dan kata sandi, atau tetap lewat Google."
+          ? "Kata sandi dibuat. Sekarang Anda bisa masuk dengan email atau Google."
           : "Kata sandi berhasil diperbarui.",
       });
     } catch (err) {
@@ -304,7 +303,7 @@ export function PasswordForm({ methods }: { methods: SignInMethods }) {
       <h2 className="t-h3 mb-1.5">{creating ? "Buat Kata Sandi" : "Kata Sandi"}</h2>
       <p className="t-body text-sm mb-6">
         {creating
-          ? "Akun ini sekarang hanya bisa masuk lewat Google. Buat kata sandi untuk menambahkan cara masuk kedua — Google tetap berfungsi."
+          ? "Saat ini Anda hanya bisa masuk lewat Google. Buat kata sandi agar bisa masuk dengan email juga."
           : "Minimal 6 karakter."}
       </p>
 
@@ -326,11 +325,7 @@ export function PasswordForm({ methods }: { methods: SignInMethods }) {
           value={newPassword}
           onChange={setNew}
           autoComplete="new-password"
-          hint={
-            creating
-              ? "Minimal 6 karakter. Kalau sesi Anda sudah lama, Google akan meminta konfirmasi sekali."
-              : undefined
-          }
+          hint={creating ? "Minimal 6 karakter." : undefined}
         />
       </div>
 
@@ -387,7 +382,7 @@ export function DeleteAccount({ methods }: { methods: SignInMethods }) {
     <div className="bg-paper-card border border-rust-700/30 rounded-2xl p-7">
       <h2 className="t-h3 mb-1.5 text-rust-700">Hapus Akun</h2>
       <p className="t-body text-sm mb-6">
-        Akun dihapus permanen dari Firebase Authentication. Tindakan ini tidak bisa dibatalkan.
+        Akun beserta datanya dihapus permanen. Tindakan ini tidak bisa dibatalkan.
       </p>
 
       {!open ? (
@@ -401,7 +396,7 @@ export function DeleteAccount({ methods }: { methods: SignInMethods }) {
         <form onSubmit={onSubmit} className="max-w-md">
           {viaGoogle ? (
             <p className="text-sm text-ink-body">
-              Google akan meminta konfirmasi untuk akun ini, lalu akun dihapus permanen.
+              Google akan meminta konfirmasi, lalu akun dihapus.
             </p>
           ) : (
             <Field

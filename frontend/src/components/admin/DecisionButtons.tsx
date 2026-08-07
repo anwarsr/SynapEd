@@ -57,8 +57,8 @@ export default function DecisionButtons({ uid, name }: { uid: string; name: stri
       <ConfirmDialog
         open={asking === "accept"}
         title="Jadikan educator?"
-        description={`${name} akan mendapat role educator dan dapat membuat kursusnya sendiri di SynapEd.`}
-        note="Keputusan ini permanen — role educator tidak dapat dikembalikan menjadi pengguna biasa."
+        description={`${name} akan menjadi educator dan dapat membuat kursusnya sendiri.`}
+        note="Keputusan ini permanen dan tidak dapat dibatalkan."
         confirmLabel="Ya, Terima"
         onConfirm={() => decide("accept")}
         onCancel={() => setAsking(null)}
@@ -67,8 +67,8 @@ export default function DecisionButtons({ uid, name }: { uid: string; name: stri
       <ConfirmDialog
         open={asking === "reject"}
         title="Tolak pengajuan?"
-        description={`Pengajuan ${name} akan ditandai ditolak dan role-nya tetap sebagai pengguna biasa.`}
-        note="Pengajuan yang sudah diputuskan tidak dapat diubah, tetapi yang bersangkutan boleh mengajukan kembali."
+        description={`Pengajuan ${name} akan ditolak dan statusnya tetap pengguna biasa.`}
+        note="Keputusan tidak dapat diubah, tetapi yang bersangkutan boleh mengajukan lagi."
         confirmLabel="Ya, Tolak"
         onConfirm={() => decide("reject")}
         onCancel={() => setAsking(null)}

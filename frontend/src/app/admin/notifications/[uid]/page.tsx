@@ -112,8 +112,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
           <div className="mt-8">
             <h2 className="t-h3 text-base mb-2">Keputusan</h2>
             <p className="text-sm text-ink-muted mb-5">
-              Menerima akan mengubah role akun ini menjadi educator. Keputusan itu
-              permanen, dan pengguna harus masuk ulang agar role barunya berlaku.
+              Keputusan bersifat permanen. Pengguna perlu masuk ulang setelah diterima.
             </p>
             <DecisionButtons uid={application.uid} name={application.name} />
           </div>

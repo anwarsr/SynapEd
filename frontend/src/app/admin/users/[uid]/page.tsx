@@ -130,8 +130,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
           <div className="mt-8">
             <h2 className="t-h3 text-base mb-2">Pengajuan menjadi educator</h2>
             <p className="text-sm text-ink-muted mb-5">
-              Menerima akan mengubah role akun ini menjadi educator. Keputusan itu
-              permanen, dan pengguna harus masuk ulang agar role barunya berlaku.
+              Keputusan bersifat permanen. Pengguna perlu masuk ulang setelah diterima.
             </p>
             <DecisionButtons uid={user.uid} name={user.name} />
           </div>
@@ -139,13 +138,10 @@ export default async function AdminUserDetailPage({ params }: Props) {
 
         {/* Selain keputusan pengajuan, panel ini hanya-baca. Mengubah role
             sembarangan dari UI menuntut penjagaan tersendiri; untuk sekarang
-            jalurnya lewat skrip. */}
+            jalurnya lewat skrip, dan itu urusan pengembang — bukan sesuatu
+            yang pantas ditempel sebagai perintah terminal di halaman web. */}
         <p className="mt-6 text-xs text-ink-muted">
-          Untuk mengubah role secara manual, jalankan{" "}
-          <code className="bg-paper-alt px-1.5 py-0.5 rounded">
-            npm run set-role {user.email} educator
-          </code>
-          . Role educator tidak dapat dikembalikan menjadi user biasa.
+          Selain keputusan pengajuan, halaman ini hanya menampilkan data.
         </p>
 
         <Link

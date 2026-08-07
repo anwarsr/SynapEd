@@ -135,7 +135,7 @@ export default function AuthForm({
     setNotice(null);
 
     if (!email.trim()) {
-      setError("Isi alamat email Anda dulu, lalu tekan “Lupa kata sandi?” lagi.");
+      setError("Isi alamat email Anda dulu.");
       return;
     }
 
@@ -149,10 +149,7 @@ export default function AuthForm({
     }
 
     // Pesan netral — sama saja apakah emailnya terdaftar atau tidak.
-    setNotice(
-      `Kalau ${email.trim()} terdaftar, tautan untuk mengatur kata sandi sudah dikirim. ` +
-        "Tautan ini juga berlaku untuk akun yang selama ini hanya masuk lewat Google.",
-    );
+    setNotice(`Kalau ${email.trim()} terdaftar, tautan atur ulang kata sandi sudah dikirim.`);
   }
 
   return (

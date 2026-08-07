@@ -111,7 +111,7 @@ export async function decideApplication(
     ok: true,
     message:
       decision === "accept"
-        ? "Pengajuan diterima. Pengguna harus masuk ulang agar role educator berlaku."
+        ? "Pengajuan diterima. Pengguna perlu masuk ulang agar statusnya berlaku."
         : "Pengajuan ditolak.",
   };
 }

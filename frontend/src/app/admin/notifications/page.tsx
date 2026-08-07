@@ -40,8 +40,7 @@ export default async function AdminNotificationsPage() {
         {applications.length === 0 ? (
           <div className="bg-paper-card border border-rule rounded-2xl p-12 text-center">
             <p className="t-body text-ink-muted">
-              Belum ada pengajuan yang masuk. Notifikasi akan muncul di sini saat ada
-              pengguna yang mengajukan diri menjadi educator.
+              Belum ada pengajuan. Notifikasi akan muncul di sini.
             </p>
           </div>
         ) : (

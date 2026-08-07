@@ -83,8 +83,8 @@ export default async function EducatorPage() {
 
           <h2 className="t-h3 mb-4">Persyaratan</h2>
           <p className="t-body text-ink-body mb-10">
-            Untuk saat ini belum ada persyaratan khusus. Setiap pengajuan ditinjau
-            langsung oleh admin SynapEd, dan Anda akan melihat hasilnya di halaman ini.
+            Belum ada persyaratan khusus. Pengajuan Anda ditinjau admin SynapEd, dan
+            hasilnya muncul di halaman ini.
           </p>
 
           {/* Bagian yang berubah menurut keadaan akun. Semua cabang dijelaskan
@@ -107,8 +107,7 @@ export default async function EducatorPage() {
             <Panel>
               <h2 className="t-h3 text-lg mb-3">Anda masuk sebagai admin</h2>
               <p className="t-body text-sm mb-6">
-                Admin tidak mengajukan diri menjadi educator — justru admin yang
-                meninjau pengajuan yang masuk.
+                Andalah yang meninjau pengajuan educator, bukan mengajukannya.
               </p>
               <Link href="/admin/notifications" className="text-sm text-blue-700 hover:underline underline-offset-4">
                 Lihat pengajuan masuk →
@@ -121,8 +120,8 @@ export default async function EducatorPage() {
                 <Tag tone="amber">Menunggu</Tag>
               </div>
               <p className="t-body text-sm">
-                Diajukan pada {formatDate(application.createdAt)}. Admin akan meninjaunya;
-                status di halaman ini akan berubah setelah ada keputusan.
+                Diajukan pada {formatDate(application.createdAt)}. Status di halaman ini
+                berubah setelah admin memutuskan.
               </p>
             </Panel>
           ) : application?.status === "rejected" ? (
