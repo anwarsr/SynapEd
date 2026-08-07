@@ -175,6 +175,112 @@ Di navbar, akun diwakili **ikon foto profil** yang menuju `/dashboard`. Tombol
 Keluar ada di halaman profil, bukan di navbar, supaya aksi yang mengakhiri sesi
 tidak bersebelahan dengan tautan navigasi yang sering ditekan.
 
+## Masuk dengan Google
+
+Halaman `/login` dan `/register` punya tombol **Masuk/Daftar dengan Google**.
+Satu tombol untuk keduanya, karena Firebase memang tidak membedakannya: kalau
+email-nya belum terdaftar, akunnya dibuat saat itu juga.
+
+Memakai `signInWithPopup`, bukan `signInWithRedirect`. Redirect menyimpan
+keadaan di cookie pihak ketiga, dan browser yang memblokirnya membuat alur itu
+gagal diam-diam. Sisanya tidak berubah — ID token dari Google ditukar menjadi
+session cookie lewat jalur yang sama dengan login kata sandi, jadi tidak ada
+perubahan di sisi server sama sekali.
+
+### Yang harus disetel di Firebase Console
+
+Hanya satu langkah, dan **wajib** — tanpa ini tombolnya gagal dengan
+`auth/operation-not-allowed`:
+
+1. Buka [Firebase Console](https://console.firebase.google.com/project/synap-ed/authentication/providers)
+   → **Authentication** → **Sign-in method**
+2. **Add new provider** → **Google** → aktifkan
+3. Isi **Project support email** (wajib diisi Google, pilih email Anda)
+4. **Save**
+
+Client ID dan secret OAuth dibuat otomatis; tidak ada yang perlu disalin ke
+`.env.local`.
+
+Periksa hasilnya tanpa membuka Console:
+
+```bash
+npm run check:google                          # provider aktif? domain diizinkan?
+npm run check:google seseorang@gmail.com      # metode masuk akun tertentu
+```
+
+`localhost` sudah ada di daftar domain yang diizinkan, jadi popup langsung
+berfungsi saat pengembangan. Domain produksi ditambahkan nanti di
+**Authentication → Settings → Authorized domains**.
+
+### Email sama, kata sandi terlepas
+
+**Ini sudah terbukti terjadi, bukan sekadar kemungkinan.**
+
+Proyek disetel **satu email = satu akun**. Saat sebuah email yang sudah punya
+akun kata sandi dipakai masuk lewat Google, Firebase menautkan Google ke akun
+yang sama — uid-nya tetap, jadi role dan data tidak hilang — lalu **melepas
+kredensial kata sandinya**. Sejak itu akun tersebut hanya bisa masuk lewat
+Google.
+
+Ini **perilaku keamanan yang benar dan tidak boleh dilawan**. Akun kata sandi
+tidak pernah membuktikan kepemilikan email; Google membuktikannya. Kalau
+kredensial lama dibiarkan, siapa pun yang mendaftar memakai email orang lain
+akan tetap punya akses setelah pemilik aslinya masuk. Tidak ada setelan Firebase
+yang mematikannya, dan mengizinkan email ganda justru lebih buruk — satu orang
+jadi punya dua akun terpisah dengan role dan data yang terbelah.
+
+Sebabnya adalah **email yang belum diverifikasi**. Kalau akun kata sandi sudah
+terverifikasi, Google menempel sebagai metode tambahan dan kata sandinya tetap.
+
+**Pencegahannya: jangan menekan "Masuk dengan Google" untuk menambahkan Google
+ke akun berkata sandi.** Gunakan **Tautkan Akun Google** di halaman profil.
+Menautkan bersifat menambah — kata sandinya tidak tersentuh. Kartu *Cara Masuk*
+di profil menawarkan tombol itu dan, selama email belum terverifikasi,
+menjelaskan risikonya beserta tombol kirim tautan verifikasi.
+
+Pendaftaran dengan kata sandi juga otomatis mengirim tautan verifikasi. Yang
+tidak pernah mengkliknya lalu masuk lewat Google tetap kehilangan kata sandinya
+— itu batas yang tidak bisa dilewati dari sisi aplikasi.
+
+Kalau sudah terlanjur, dua jalan keluar, keduanya swalayan:
+
+| Kalau | Lakukan |
+|---|---|
+| tidak bisa masuk sama sekali | **Lupa kata sandi?** di `/login` — tautannya juga memasang kata sandi baru pada akun yang selama ini hanya punya Google |
+| masih bisa masuk lewat Google | **Buat Kata Sandi** di halaman profil |
+
+Periksa keadaan sebuah akun kapan saja:
+
+```bash
+npm run check:google seseorang@gmail.com
+```
+
+Bila Firebase justru menolak dengan `auth/account-exists-with-different-credential`,
+aplikasi menampilkan pesan yang menyuruh masuk memakai kata sandi.
+
+### Akun tanpa kata sandi
+
+Akun yang hanya masuk lewat Google tidak punya kata sandi untuk dicocokkan,
+padahal Firebase mewajibkan autentikasi ulang sebelum operasi sensitif. Halaman
+profil menyesuaikan diri:
+
+- **Kata Sandi** berubah menjadi **Buat Kata Sandi**
+- **Hapus Akun** konfirmasi lewat popup Google, bukan mengetik kata sandi
+- **Alamat Email** diganti keterangan — alamatnya mengikuti akun Google, dan
+  mengubahnya di sini justru membuat masuk lewat Google berhenti mengenali akun
+  itu. Buat kata sandi dulu, baru email bisa diubah.
+
+Popup Google untuk konfirmasi memakai `login_hint`, bukan
+`prompt: "select_account"` — akunnya sudah tertentu, jadi menyodorkan daftar
+seluruh akun Google hanya mengundang salah pilih yang berakhir dengan
+`auth/user-mismatch`.
+
+Membuat kata sandi **mencoba dulu, baru meminta konfirmasi** kalau Firebase
+menuntut sesi yang lebih baru (`auth/requires-recent-login`); pengguna yang baru
+saja masuk tidak melihat popup sama sekali. Menghapus akun tidak begitu — di
+sana konfirmasi selalu diminta, karena tindakannya tidak bisa dibatalkan dan
+tidak pantas berjalan hanya karena sesinya kebetulan masih segar.
+
 ## Role
 
 Ada tiga role.
@@ -225,10 +331,17 @@ Tiga skrip menguji semuanya terhadap proyek asli. Ketiganya membuat akun uji
 sementara dan menghapusnya lagi di akhir; akun sungguhan tidak disentuh.
 
 ```bash
+npm run typecheck         # skrip di scripts/ — tsx TIDAK memeriksa tipe
 npm run verify:admin      # penjagaan /admin              (butuh dev server)
 npm run verify:educator   # alur pengajuan sampai putusan (butuh dev server)
+npm run verify:google     # cara masuk & halaman profil   (butuh dev server)
 npm run verify:rules      # rules Firestore & Storage yang sedang ter-deploy
 ```
+
+`verify:google` meniru setiap keadaan lewat Admin SDK — melepas kata sandi,
+menandai email terverifikasi, menautkan google.com — sehingga keempat kombinasi
+cara masuk teruji tanpa perlu popup Google sungguhan. Termasuk yang paling
+penting: kata sandi **tetap ada** setelah Google ditautkan.
 
 `verify:educator` memanggil Server Action yang sesungguhnya lewat POST +
 header `Next-Action`, persis seperti browser saat tombolnya ditekan — jadi yang
@@ -252,6 +365,11 @@ lamarannya sendiri untuk menandainya `accepted`.
   role harus dijaga sangat ketat.
 - **Pemberitahuan ke pelamar.** Hasil keputusan hanya terlihat kalau pelamar
   membuka `/educator` atau profilnya; belum ada email atau notifikasi.
+- **Menyelamatkan kata sandi saat masuk Google "dingin".** Menekan *Masuk
+  dengan Google* dalam keadaan keluar, pada email yang punya akun kata sandi
+  belum terverifikasi, tetap melepas kata sandi itu. Firebase melakukannya di
+  server sebelum aplikasi tahu apa-apa. Yang tersedia adalah jalur yang benar
+  (*Tautkan Akun Google*) dan pemulihannya, bukan pencegahan di jalur itu.
 - **Enrollment & progres belajar.** Di Laravel dulu keduanya hanya angka
   hardcoded di controller, bukan fitur yang berjalan — jadi dashboard di sini
   sengaja tidak menampilkan angka kemajuan sama sekali.

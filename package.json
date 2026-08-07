@@ -5,7 +5,9 @@
   "description": "SynapEd — Next.js + Firebase",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
+    "typecheck": "tsc --noEmit",
     "check": "tsx scripts/check-firebase.ts",
+    "check:google": "tsx scripts/check-google-signin.ts",
     "emulators": "firebase emulators:start --import=.emulator-data --export-on-exit=.emulator-data",
     "emulators:fresh": "firebase emulators:start",
     "migrate:firestore": "tsx scripts/migrate-to-firestore.ts",
@@ -13,9 +15,11 @@
     "set-role": "tsx scripts/set-role.ts",
     "verify:admin": "tsx scripts/verify-admin.ts",
     "verify:educator": "tsx scripts/verify-educator.ts",
+    "verify:google": "tsx scripts/verify-google-account.ts",
     "verify:rules": "tsx scripts/verify-rules.ts"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "firebase-admin": "^13.0.0",
     "firebase-tools": "^14.0.0",
     "tsx": "^4.19.2",

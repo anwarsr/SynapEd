@@ -5,11 +5,21 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   updateProfile,
+  type User,
 } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { authErrorMessage, establishSession, readRole } from "@/lib/authActions";
+import {
+  authErrorMessage,
+  establishSession,
+  isPopupDismissed,
+  readRole,
+  sendPasswordReset,
+  signInWithGoogle,
+} from "@/lib/authActions";
+import GoogleButton from "@/components/auth/GoogleButton";
 import { cn } from "@/lib/cn";
 
 type Mode = "login" | "register";
@@ -50,11 +60,33 @@ export default function AuthForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [googlePending, setGooglePending] = useState(false);
+
+  /**
+   * Langkah setelah kredensial diterima — sama untuk kata sandi maupun Google,
+   * karena bagi Firebase keduanya menghasilkan pengguna yang setara.
+   */
+  async function completeSignIn(user: User) {
+    // Tukar ID token menjadi session cookie httpOnly, supaya Server
+    // Component bisa mengenali sesi ini tanpa menunggu JavaScript.
+    await establishSession(user);
+
+    // Admin diantar langsung ke panelnya — kecuali memang sedang diminta
+    // membuka halaman tertentu lewat ?next=, misalnya setelah ditolak dari
+    // halaman belajar. Menimpa tujuan itu justru membingungkan.
+    const role = await readRole(user);
+    const target = redirectTo !== "/" ? redirectTo : role === "admin" ? "/admin" : "/";
+
+    router.replace(target);
+    router.refresh();
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setPending(true);
 
     try {
@@ -65,26 +97,62 @@ export default function AuthForm({
           ? await createUserWithEmailAndPassword(auth, email, password)
           : await signInWithEmailAndPassword(auth, email, password);
 
-      if (mode === "register" && name.trim()) {
-        await updateProfile(credential.user, { displayName: name.trim() });
+      if (mode === "register") {
+        if (name.trim()) await updateProfile(credential.user, { displayName: name.trim() });
+
+        // Email yang belum diverifikasi adalah sebab kata sandi terlepas
+        // begitu akun yang sama masuk lewat Google: Google membuktikan
+        // kepemilikan email, akun kata sandi tidak. Mengirim tautan ini
+        // sejak awal memberi pengguna kesempatan menutup celah itu.
+        await sendEmailVerification(credential.user).catch(() => undefined);
       }
 
-      // Tukar ID token menjadi session cookie httpOnly, supaya Server
-      // Component bisa mengenali sesi ini tanpa menunggu JavaScript.
-      await establishSession(credential.user);
-
-      // Admin diantar langsung ke panelnya — kecuali memang sedang diminta
-      // membuka halaman tertentu lewat ?next=, misalnya setelah ditolak dari
-      // halaman belajar. Menimpa tujuan itu justru membingungkan.
-      const role = await readRole(credential.user);
-      const target = redirectTo !== "/" ? redirectTo : role === "admin" ? "/admin" : "/";
-
-      router.replace(target);
-      router.refresh();
+      await completeSignIn(credential.user);
     } catch (err) {
       setError(authErrorMessage(err));
       setPending(false);
     }
+  }
+
+  async function onGoogle() {
+    setError(null);
+    setNotice(null);
+    setGooglePending(true);
+
+    try {
+      const credential = await signInWithGoogle();
+      await completeSignIn(credential.user);
+    } catch (err) {
+      // Menutup popup adalah keputusan pengguna, bukan kegagalan — tidak
+      // pantas dibalas kotak merah.
+      if (!isPopupDismissed(err)) setError(authErrorMessage(err));
+      setGooglePending(false);
+    }
+  }
+
+  async function onForgotPassword() {
+    setError(null);
+    setNotice(null);
+
+    if (!email.trim()) {
+      setError("Isi alamat email Anda dulu, lalu tekan “Lupa kata sandi?” lagi.");
+      return;
+    }
+
+    try {
+      await sendPasswordReset(email.trim());
+    } catch (err) {
+      // Galat selain jaringan sengaja tidak dibedakan: membedakannya akan
+      // memberitahu penebak email mana yang terdaftar.
+      setError(authErrorMessage(err));
+      return;
+    }
+
+    // Pesan netral — sama saja apakah emailnya terdaftar atau tidak.
+    setNotice(
+      `Kalau ${email.trim()} terdaftar, tautan untuk mengatur kata sandi sudah dikirim. ` +
+        "Tautan ini juga berlaku untuk akun yang selama ini hanya masuk lewat Google.",
+    );
   }
 
   return (
@@ -113,16 +181,40 @@ export default function AuthForm({
           </h1>
           <p className="t-body text-sm text-center text-ink-muted mb-8">{t.sub}</p>
 
-          <form onSubmit={onSubmit} className="space-y-4" noValidate>
-            {error && (
-              <div
-                role="alert"
-                className="rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700"
-              >
-                {error}
-              </div>
-            )}
+          {error && (
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700"
+            >
+              {error}
+            </div>
+          )}
 
+          {notice && (
+            <div
+              role="status"
+              className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700"
+            >
+              {notice}
+            </div>
+          )}
+
+          {/* Google didahulukan: bagi kebanyakan orang ini jalan tercepat,
+              dan menaruhnya di bawah form membuatnya mudah terlewat. */}
+          <GoogleButton
+            onClick={onGoogle}
+            pending={googlePending}
+            disabled={pending}
+            label={mode === "register" ? "Daftar dengan Google" : "Masuk dengan Google"}
+          />
+
+          <div className="flex items-center gap-3 my-6" aria-hidden="true">
+            <span className="flex-1 h-px bg-rule" />
+            <span className="text-xs uppercase tracking-wider text-ink-faint">atau</span>
+            <span className="flex-1 h-px bg-rule" />
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-4" noValidate>
             {mode === "register" && (
               <Field
                 id="name"
@@ -156,9 +248,21 @@ export default function AuthForm({
               required
             />
 
+            {mode === "login" && (
+              <p className="text-right -mt-1">
+                <button
+                  type="button"
+                  onClick={onForgotPassword}
+                  className="text-sm text-blue-700 hover:underline underline-offset-4"
+                >
+                  Lupa kata sandi?
+                </button>
+              </p>
+            )}
+
             <button
               type="submit"
-              disabled={pending}
+              disabled={pending || googlePending}
               className={cn(
                 "w-full rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 ease-out-soft",
                 "bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-0.5",

@@ -1,0 +1,21 @@
+{
+  // Skrip di scripts/ dijalankan dengan tsx, yang MENGABAIKAN galat tipe.
+  // Tanpa berkas ini tidak ada satu pun pemeriksaan atasnya — dan itu sempat
+  // menyembunyikan beberapa galat tipe yang nyata.
+  //
+  //   npm run typecheck
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["scripts/**/*.ts"]
+}

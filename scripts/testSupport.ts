@@ -56,7 +56,8 @@ export interface TestUser {
 /** Akun uji baru beserta session cookie yang siap dipakai. */
 export async function createTestUser(
   role: "admin" | "educator" | "user",
-  tag = role,
+  /** Bebas — hanya menandai email uji supaya mudah dibaca di log. */
+  tag: string = role,
 ): Promise<TestUser> {
   const email = `verify-${tag}-${randomUUID().slice(0, 8)}@synaped.test`;
   const password = randomUUID();

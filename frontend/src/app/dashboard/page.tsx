@@ -10,7 +10,9 @@ import {
 } from "@/components/dashboard/AccountForms";
 import { AvatarForm, PhoneForm } from "@/components/dashboard/ProfileMedia";
 import LogoutButton from "@/components/dashboard/LogoutButton";
+import SignInMethodsCard from "@/components/dashboard/SignInMethodsCard";
 import EducatorStatus from "@/components/dashboard/EducatorStatus";
+import { getSignInMethods } from "@/lib/accountProviders";
 import { listCourses } from "@/lib/courses";
 import { getApplication } from "@/lib/educator";
 import { requireUser } from "@/lib/firebase/session";
@@ -25,7 +27,11 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
-  const [courses, application] = await Promise.all([listCourses(), getApplication(user.uid)]);
+  const [courses, application, methods] = await Promise.all([
+    listCourses(),
+    getApplication(user.uid),
+    getSignInMethods(user.uid),
+  ]);
 
   return (
     <>
@@ -103,9 +109,10 @@ export default async function DashboardPage() {
             <AvatarForm user={user} />
             <ProfileForm user={user} />
             <PhoneForm user={user} />
-            <EmailForm user={user} />
-            <PasswordForm />
-            <DeleteAccount />
+            <SignInMethodsCard methods={methods} emailVerified={user.emailVerified} />
+            <EmailForm user={user} methods={methods} />
+            <PasswordForm methods={methods} />
+            <DeleteAccount methods={methods} />
           </section>
         </div>
       </main>
