@@ -14,6 +14,7 @@
     "import:users": "tsx scripts/import-users-to-firebase.ts",
     "set-role": "tsx scripts/set-role.ts",
     "verify:admin": "tsx scripts/verify-admin.ts",
+    "verify:course": "tsx scripts/verify-course.ts",
     "verify:educator": "tsx scripts/verify-educator.ts",
     "verify:google": "tsx scripts/verify-google-account.ts",
     "verify:rules": "tsx scripts/verify-rules.ts"

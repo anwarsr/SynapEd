@@ -325,6 +325,49 @@ sehingga tidak mungkin ada dua pengajuan yang bersaing. Koleksi itu tertutup
 rapat dari klien (`allow read, write: if false`); seluruh alurnya berjalan lewat
 Server Action dengan Admin SDK. Pengajuan yang ditolak boleh diajukan lagi.
 
+### Educator membuat kursus
+
+Educator membuka **Kursus Saya** → **Buat Kursus**. Satu formulir, satu kali
+kirim, kursusnya jadi utuh:
+
+| Bagian | Bentuk |
+|---|---|
+| Modul materi | unggah PDF atau Word |
+| Video pembelajaran | tautan YouTube |
+| Penugasan akhir | unggah PDF atau Word |
+
+Kursus buatan educator memakai **struktur dokumen yang sama persis** dengan
+kursus hasil migrasi — satu section berisi tiga pelajaran. Karena itu katalog,
+halaman detail, dan halaman belajar bekerja tanpa satu baris pun kode khusus;
+`videoUrl` dan `attachments` memang sudah ada di model `Lesson`.
+
+Beberapa hal yang mudah terlewat:
+
+- **`order` wajib ada.** Katalog memakai `orderBy('order')`, dan Firestore
+  mengabaikan dokumen yang tidak punya field itu — kursus baru akan hilang dari
+  katalog tanpa pesan galat apa pun.
+- **Path berkas tidak dipercaya.** Berkas diunggah dari browser, jadi server
+  memeriksa ulang bahwa path-nya diawali `course-assets/{uid-pengunggah}/`.
+  Tanpa itu, seorang educator bisa menerbitkan berkas milik akun lain.
+- **Tautan video divalidasi memakai `toEmbedUrl`** — pengubah yang sama dengan
+  yang dipakai halaman belajar. Kalau ia tidak mengenali tautannya, videonya
+  juga tidak akan tampil di sana, jadi lebih baik ditolak saat dibuat.
+- **Kategori dibatasi** ke tiga yang sudah ada. Kategori bebas berarti kombinasi
+  indeks Firestore baru untuk tiap nilai, dan daftar filter yang terpecah oleh
+  salah ketik.
+- **Kursus bawaan tidak punya `ownerUid`.** Itu berarti bukan milik educator
+  mana pun, jadi tidak seorang pun bisa menghapusnya lewat panel educator.
+
+Berkas disimpan di `course-assets/{uid}/{draft}/…`. `storage.rules` hanya
+mengizinkan pemiliknya sendiri, hanya bila `role == 'educator'`, maksimal 20 MB,
+dan hanya tiga tipe: PDF, DOC, DOCX. Daftarnya sengaja tertutup — pola
+`application/.*` akan ikut mengizinkan berkas yang dapat dieksekusi.
+
+**Belum ada penyuntingan.** Kursus yang sudah terbit hanya bisa dihapus lalu
+dibuat ulang. Kursus juga **langsung tampil di katalog** begitu diterbitkan,
+tanpa peninjauan admin — gerbangnya ada di persetujuan educator, bukan per
+kursus.
+
 ### Menguji
 
 Tiga skrip menguji semuanya terhadap proyek asli. Ketiganya membuat akun uji
@@ -334,6 +377,7 @@ sementara dan menghapusnya lagi di akhir; akun sungguhan tidak disentuh.
 npm run typecheck         # skrip di scripts/ — tsx TIDAK memeriksa tipe
 npm run verify:admin      # penjagaan /admin              (butuh dev server)
 npm run verify:educator   # alur pengajuan sampai putusan (butuh dev server)
+npm run verify:course     # pembuatan kursus oleh educator (butuh dev server)
 npm run verify:google     # cara masuk & halaman profil   (butuh dev server)
 npm run verify:rules      # rules Firestore & Storage yang sedang ter-deploy
 ```
@@ -354,12 +398,17 @@ lamarannya sendiri untuk menandainya `accepted`.
 
 ## Yang belum ada
 
-- **Pembuatan kursus oleh educator.** Role-nya sudah ada beserta seluruh alur
-  pengajuan dan persetujuannya, tetapi antarmuka untuk menyusun kursus belum
-  dibangun — itu pekerjaan tersendiri yang jauh lebih besar. Untuk sekarang
-  educator adalah akun yang sudah berwenang, tanpa alat untuk memakainya.
-- **CMS materi.** `videoUrl` dan `attachments` masih diisi lewat Firebase
-  Console.
+- **Menyunting kursus.** Sekali terbit, yang bisa dilakukan hanya menghapus dan
+  membuat ulang.
+- **Kurikulum yang lebih dari tiga bagian.** Bentuknya masih tetap: satu modul,
+  satu video, satu tugas. Kursus hasil migrasi tetap boleh berlapis-lapis;
+  yang dibatasi hanya pembuatan lewat formulir.
+- **Pengumpulan tugas.** Penugasan akhir baru berupa berkas soal yang diunduh;
+  peserta belum bisa mengirimkan jawaban.
+- **Peninjauan kursus.** Kursus langsung tampil di katalog tanpa persetujuan
+  admin per kursus.
+- **CMS untuk kursus bawaan.** `videoUrl` dan `attachments` pada empat kursus
+  hasil migrasi masih diisi lewat Firebase Console.
 - **Mengubah role sembarangan dari UI.** Hanya keputusan pengajuan educator yang
   bisa dilakukan dari panel; sisanya lewat skrip, karena endpoint tulis untuk
   role harus dijaga sangat ketat.

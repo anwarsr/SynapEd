@@ -73,3 +73,16 @@ export async function requireAdmin(next?: string): Promise<SessionUser> {
   if (user.role !== "admin") redirect("/dashboard");
   return user;
 }
+
+/**
+ * Halaman khusus educator.
+ *
+ * Yang belum educator diantar ke /educator — di sana ada penjelasannya
+ * beserta tombol pengajuan, jadi mereka tahu apa yang harus dilakukan
+ * alih-alih sekadar ditolak.
+ */
+export async function requireEducator(next?: string): Promise<SessionUser> {
+  const user = await requireUser(next);
+  if (user.role !== "educator") redirect("/educator");
+  return user;
+}

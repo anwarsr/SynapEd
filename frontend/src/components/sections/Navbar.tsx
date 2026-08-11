@@ -154,14 +154,18 @@ export default function Navbar() {
               )}
 
               {user.role === "educator" && (
-                <span
+                <Link
+                  href="/educator/courses"
                   className={cn(
-                    "px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-md",
-                    light ? "bg-white/12 text-white" : "bg-amber-100 text-amber-700",
+                    "px-4 py-2 text-sm font-medium rounded-full border",
+                    "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                    light
+                      ? "border-white/25 text-white hover:bg-white/10"
+                      : "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700",
                   )}
                 >
-                  Educator
-                </span>
+                  Kursus Saya
+                </Link>
               )}
 
               {/* Foto profil sebagai tombol. Lebih jelas bisa diklik daripada
@@ -280,6 +284,16 @@ export default function Navbar() {
                       className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
                     >
                       Jadi Educator
+                    </Link>
+                  )}
+
+                  {user.role === "educator" && (
+                    <Link
+                      href="/educator/courses"
+                      onClick={() => setMobileOpen(false)}
+                      className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                    >
+                      Kursus Saya
                     </Link>
                   )}
 

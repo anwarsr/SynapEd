@@ -31,8 +31,11 @@ export default function EducatorStatus({
             Anda dapat membuat kursus sendiri di SynapEd.
           </p>
         </div>
-        <Link href="/educator" className="text-sm text-blue-700 hover:underline underline-offset-4">
-          Selengkapnya →
+        <Link
+          href="/educator/courses"
+          className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
+        >
+          Kursus Saya
         </Link>
       </div>
     );

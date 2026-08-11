@@ -96,11 +96,14 @@ export default async function EducatorPage() {
                 <Tag tone="amber">Educator</Tag>
               </div>
               <p className="t-body text-sm mb-6">
-                Fitur pembuatan kursus masih dalam pengerjaan. Untuk sementara, materi
-                masih dimasukkan oleh tim SynapEd.
+                Anda dapat membuat kursus sendiri: satu modul materi, satu video, dan satu
+                penugasan akhir.
               </p>
-              <Link href="/dashboard" className="text-sm text-blue-700 hover:underline underline-offset-4">
-                Kembali ke profil →
+              <Link
+                href="/educator/courses"
+                className="inline-block rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
+              >
+                Kelola Kursus Saya
               </Link>
             </Panel>
           ) : user.role === "admin" ? (
