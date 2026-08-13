@@ -57,6 +57,24 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Pendaftaran kursus & kemajuan belajar ──────────────────────────
+    // Tertutup rapat dari klien, sama seperti educatorApplications.
+    //
+    // Seluruh alurnya lewat Server Action dengan Admin SDK: pengguna
+    // mendaftar, menandai pelajaran selesai, admin memberikan akses. Klien
+    // tidak pernah membacanya langsung — halaman belajar dan dashboard
+    // dirender di server.
+    //
+    // Aturan ini sebenarnya sudah dicakup penolakan menyeluruh di bawah;
+    // ditulis eksplisit supaya niatnya terbaca dan tidak diam-diam terbuka
+    // kalau suatu saat ada yang menambahkan wildcard rekursif.
+    //
+    // Document ID = "{uid}_{slug}", sehingga satu akun tidak mungkin punya
+    // dua pendaftaran yang bersaing di kursus yang sama.
+    match /enrollments/{id} {
+      allow read, write: if false;
+    }
+
     // Tolak apa pun di luar yang tersebut di atas.
     match /{document=**} {
       allow read, write: if false;

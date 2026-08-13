@@ -2,17 +2,28 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { CourseDetail, Lesson } from "@/lib/courses";
+import type { Progress } from "@/lib/enrollments";
 import { lessonIcons } from "@/lib/courseUi";
 import { formatBytes, storageDownloadUrl, toEmbedUrl } from "@/lib/videoEmbed";
 import { cn } from "@/lib/cn";
+import LessonCompleteButton from "./LessonCompleteButton";
 
 interface Props {
   course: CourseDetail;
   current: Lesson;
   prev: Lesson | null;
   next: Lesson | null;
-  position: number;
-  total: number;
+  /** Slug pelajaran yang belum boleh dibuka — digembok di daftar materi. */
+  locked: string[];
+  /** Slug pelajaran yang sudah ditandai selesai oleh peserta ini. */
+  completed: string[];
+  progress: Progress;
+  /**
+   * Peserta sungguhan dengan enrollment aktif? Pratinjau admin/educator
+   * tidak punya dokumen enrollment, jadi progresnya tidak ada yang dilacak
+   * dan tombol tandai-selesai tidak ditampilkan sama sekali.
+   */
+  canTrackProgress: boolean;
 }
 
 const typeLabel: Record<string, string> = {
@@ -21,9 +32,23 @@ const typeLabel: Record<string, string> = {
   quiz: "Kuis",
 };
 
-export default function LearnShell({ course, current, prev, next, position, total }: Props) {
+const LOCK_ICON =
+  "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z";
+const CHECK_ICON = "M5 13l4 4L19 7";
+
+export default function LearnShell({
+  course,
+  current,
+  prev,
+  next,
+  locked,
+  completed,
+  progress,
+  canTrackProgress,
+}: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const progress = Math.round((position / total) * 100);
+  const lockedSet = new Set(locked);
+  const doneSet = new Set(completed);
 
   const embedUrl = current.videoUrl ? toEmbedUrl(current.videoUrl) : null;
   const attachments = current.attachments ?? [];
@@ -57,15 +82,21 @@ export default function LearnShell({ course, current, prev, next, position, tota
           <span className="hidden md:block text-sm font-medium truncate">{course.title}</span>
 
           <div className="ml-auto flex items-center gap-3 shrink-0">
-            <span className="text-xs text-blue-100/70 tabular-nums">
-              {position} / {total}
-            </span>
-            <div className="w-24 sm:w-40 h-1.5 rounded-full bg-white/15 overflow-hidden" role="presentation">
-              <div
-                className="h-full rounded-full bg-amber-500 transition-all duration-500 ease-warm"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+            {canTrackProgress ? (
+              <>
+                <span className="text-xs text-blue-100/70 tabular-nums">
+                  {progress.done} / {progress.total} selesai
+                </span>
+                <div className="w-24 sm:w-40 h-1.5 rounded-full bg-white/15 overflow-hidden" role="presentation">
+                  <div
+                    className="h-full rounded-full bg-amber-500 transition-all duration-500 ease-warm"
+                    style={{ width: `${progress.percent}%` }}
+                  />
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-blue-100/70">Pratinjau</span>
+            )}
           </div>
         </div>
       </header>
@@ -97,31 +128,66 @@ export default function LearnShell({ course, current, prev, next, position, tota
                 <ul className="space-y-0.5">
                   {section.lessons.map((lesson) => {
                     const active = lesson.slug === current.slug;
+                    const isLocked = lockedSet.has(lesson.slug);
+                    const isDone = doneSet.has(lesson.slug);
+
+                    // Pelajaran terkunci dirender sebagai teks, bukan tautan.
+                    // Servernya tetap menolak, tapi tautan yang mengalihkan
+                    // balik ke halaman penjualan adalah jalan buntu yang
+                    // membingungkan.
+                    const inner = (
+                      <>
+                        <svg
+                          className={cn(
+                            "w-4 h-4 mt-0.5 shrink-0",
+                            active ? "text-white" : isLocked ? "text-ink-faint" : "text-blue-600",
+                          )}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d={
+                              isLocked
+                                ? LOCK_ICON
+                                : isDone
+                                  ? CHECK_ICON
+                                  : lessonIcons[lesson.type] ?? lessonIcons.reading
+                            }
+                          />
+                        </svg>
+                        <span className="flex-1 leading-snug">{lesson.title}</span>
+                        <span className={cn("text-[11px] shrink-0 mt-0.5", active ? "text-blue-100" : "text-ink-faint")}>
+                          {lesson.duration}
+                        </span>
+                      </>
+                    );
+
                     return (
                       <li key={lesson.slug}>
-                        <Link
-                          href={`/courses/${course.slug}/learn/${lesson.slug}`}
-                          aria-current={active ? "page" : undefined}
-                          onClick={() => setSidebarOpen(false)}
-                          className={cn(
-                            "flex items-start gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-200",
-                            active
-                              ? "bg-blue-600 text-white"
-                              : "text-ink-body hover:bg-blue-50 hover:text-blue-700",
-                          )}
-                        >
-                          <svg
-                            className={cn("w-4 h-4 mt-0.5 shrink-0", active ? "text-white" : "text-blue-600")}
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}
-                            aria-hidden="true"
+                        {isLocked ? (
+                          <span
+                            title="Daftar kursus ini untuk membuka pelajaran"
+                            className="flex items-start gap-2.5 rounded-lg px-3 py-2 text-sm text-ink-faint cursor-not-allowed"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[lesson.type] ?? lessonIcons.reading} />
-                          </svg>
-                          <span className="flex-1 leading-snug">{lesson.title}</span>
-                          <span className={cn("text-[11px] shrink-0 mt-0.5", active ? "text-blue-100" : "text-ink-faint")}>
-                            {lesson.duration}
+                            {inner}
                           </span>
-                        </Link>
+                        ) : (
+                          <Link
+                            href={`/courses/${course.slug}/learn/${lesson.slug}`}
+                            aria-current={active ? "page" : undefined}
+                            onClick={() => setSidebarOpen(false)}
+                            className={cn(
+                              "flex items-start gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-200",
+                              active
+                                ? "bg-blue-600 text-white"
+                                : "text-ink-body hover:bg-blue-50 hover:text-blue-700",
+                            )}
+                          >
+                            {inner}
+                          </Link>
+                        )}
                       </li>
                     );
                   })}
@@ -220,9 +286,19 @@ export default function LearnShell({ course, current, prev, next, position, tota
               </section>
             )}
 
+            {canTrackProgress && (
+              <div className="mb-8 flex justify-end">
+                <LessonCompleteButton
+                  slug={course.slug}
+                  lessonSlug={current.slug}
+                  done={doneSet.has(current.slug)}
+                />
+              </div>
+            )}
+
             {/* Navigasi antar pelajaran */}
             <nav className="flex items-stretch gap-3 pt-6 border-t border-rule">
-              {prev ? (
+              {prev && !lockedSet.has(prev.slug) ? (
                 <Link
                   href={`/courses/${course.slug}/learn/${prev.slug}`}
                   className="group flex-1 rounded-2xl border border-rule bg-paper-card p-4 transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
@@ -236,7 +312,7 @@ export default function LearnShell({ course, current, prev, next, position, tota
                 <span className="flex-1" />
               )}
 
-              {next ? (
+              {next && !lockedSet.has(next.slug) ? (
                 <Link
                   href={`/courses/${course.slug}/learn/${next.slug}`}
                   className="group flex-1 rounded-2xl border border-rule bg-paper-card p-4 text-right transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
@@ -244,6 +320,18 @@ export default function LearnShell({ course, current, prev, next, position, tota
                   <span className="t-label text-ink-faint block mb-1">Berikutnya →</span>
                   <span className="text-sm text-ink group-hover:text-blue-700 transition-colors line-clamp-1">
                     {next.title}
+                  </span>
+                </Link>
+              ) : next ? (
+                // Pelajaran berikutnya ada tapi terkunci — katakan apa adanya,
+                // jangan mengaku "pelajaran terakhir".
+                <Link
+                  href={`/courses/${course.slug}`}
+                  className="group flex-1 rounded-2xl border border-rule bg-paper-alt p-4 text-right transition-all duration-200 ease-out-soft hover:border-blue-500"
+                >
+                  <span className="t-label text-ink-faint block mb-1">Terkunci</span>
+                  <span className="text-sm text-ink-muted group-hover:text-blue-700 transition-colors">
+                    Daftar untuk melanjutkan
                   </span>
                 </Link>
               ) : (

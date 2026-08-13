@@ -31,10 +31,21 @@ export const auth: Auth = getAuth(app);
 
 const apiKey = readEnv("NEXT_PUBLIC_FIREBASE_API_KEY");
 
+/**
+ * Identity Toolkit yang dipakai: emulator kalau ada, Google kalau tidak.
+ *
+ * Admin SDK mengenali FIREBASE_AUTH_EMULATOR_HOST sendiri, tetapi panggilan
+ * REST di bawah tidak — tanpa cabang ini setiap skrip verifikasi akan menembak
+ * Google dengan kunci demo dan gagal dengan "API key not valid".
+ */
+const identityToolkit = process.env.FIREBASE_AUTH_EMULATOR_HOST
+  ? `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1`
+  : "https://identitytoolkit.googleapis.com/v1";
+
 /** Masuk dengan email+sandi lewat REST — jalur yang sama dengan SDK klien. */
 export async function signIn(email: string, password: string): Promise<string> {
   const res = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+    `${identityToolkit}/accounts:signInWithPassword?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

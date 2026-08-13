@@ -4,7 +4,9 @@ import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
+import EnrollButton from "@/components/courses/EnrollButton";
 import { getCourse } from "@/lib/courses";
+import { getCourseAccess } from "@/lib/courseAccess";
 import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -18,6 +20,10 @@ interface Props {
  * membekukan daftar slug saat build berarti kursus baru tidak muncul
  * sampai di-rebuild. Halaman ini dirender saat diminta.
  */
+
+// Tombol aksinya bergantung pada sesi dan status pendaftaran, jadi halaman
+// ini tidak boleh di-prerender.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -34,6 +40,12 @@ export default async function CourseDetailPage({ params }: Props) {
   if (!course) notFound();
 
   const totalLessons = course.lessonsCount;
+
+  // null = belum masuk. Pengunjung yang belum punya akun tetap melihat
+  // seluruh halaman ini — hanya tombolnya yang berbeda.
+  const access = await getCourseAccess(slug);
+  const enrolled = access?.level === "full";
+  const resumeSlug = access?.enrollment?.lastLessonSlug;
 
   return (
     <>
@@ -145,12 +157,39 @@ export default async function CourseDetailPage({ params }: Props) {
                 <h2 className="t-h3 text-lg mb-1.5">{course.title}</h2>
                 <p className="text-sm text-ink-muted mb-4">oleh {course.instructorName}</p>
 
-                <p className="t-numeral text-2xl mb-6">{formatPrice(course.price)}</p>
+                <p className="t-numeral text-2xl mb-6">
+                  {course.price > 0 ? formatPrice(course.price) : "Gratis"}
+                </p>
 
                 <div className="flex flex-col gap-2.5">
-                  <Button href="/register" variant="primary" className="w-full">
-                    Daftar Sekarang
-                  </Button>
+                  {enrolled ? (
+                    <Button
+                      href={`/courses/${slug}/learn${resumeSlug ? `/${resumeSlug}` : ""}`}
+                      variant="primary"
+                      className="w-full"
+                    >
+                      Lanjutkan Belajar
+                    </Button>
+                  ) : !access ? (
+                    // Belum masuk. Bawa ke login dengan ?next= supaya kembali
+                    // ke halaman ini setelah masuk, bukan ke beranda.
+                    <Button
+                      href={`/login?next=${encodeURIComponent(`/courses/${slug}`)}`}
+                      variant="primary"
+                      className="w-full"
+                    >
+                      Masuk untuk Mendaftar
+                    </Button>
+                  ) : course.price > 0 ? (
+                    // Pembayaran belum ada. Katakan apa adanya alih-alih
+                    // menyodorkan tombol yang tidak melakukan apa-apa.
+                    <span className="w-full rounded-lg border border-rule bg-paper-alt px-6 py-3 text-center text-sm text-ink-muted">
+                      Pembayaran segera hadir
+                    </span>
+                  ) : (
+                    <EnrollButton slug={slug} />
+                  )}
+
                   <Button href="/courses" variant="outline" className="w-full">
                     Lihat Kursus Lain
                   </Button>

@@ -85,8 +85,8 @@ tidak sinkron.
 |---|---|
 | `/` | publik — landing + katalog |
 | `/courses`, `/courses/:slug` | publik |
-| `/courses/:slug/learn[/:lessonSlug]` | **perlu masuk** |
-| `/dashboard` | **perlu masuk** — katalog + pengaturan akun |
+| `/courses/:slug/learn[/:lessonSlug]` | **perlu terdaftar** — kecuali pelajaran bertanda `free` |
+| `/dashboard` | **perlu masuk** — kursus saya + pengaturan akun |
 | `/login`, `/register` | publik |
 
 Rute terproteksi diperiksa di Server Component (`src/lib/firebase/session.ts`),
@@ -126,6 +126,40 @@ Dua field diisi lewat Firebase Console:
 |---|---|
 | `videoUrl` | tautan YouTube/Vimeo biasa — otomatis dikonversi ke URL embed |
 | `attachments` | `[{ name, path, size, mime }]`, `path` menunjuk ke Storage |
+
+## Pendaftaran kursus
+
+Koleksi kedua: `enrollments/{uid}_{slug}`. Document ID-nya **dihitung**, bukan
+auto-ID — dan itu bukan gaya-gayaan:
+
+```
+enrollmentRef(uid, slug).set({ … }, { merge: true })
+```
+
+Tulisan itu aman dijalankan berapa kali pun. Saat gerbang pembayaran dipasang
+nanti, webhook-nya bisa mengirim ulang notifikasi dan datang tidak berurutan —
+dengan ID tetap, tidak dibutuhkan transaksi atau read-before-write untuk
+mencegah pendaftaran ganda.
+
+Koleksinya **tertutup rapat dari klien** (`allow read, write: if false`), sama
+seperti `educatorApplications`: halaman belajar dan dashboard dirender di
+server, jadi browser tidak pernah perlu membacanya sendiri.
+
+Pelajaran yang boleh dibuka ditentukan satu baris di `src/lib/courseAccess.ts`:
+
+```ts
+access.level === "full" || lesson.free === true
+```
+
+Admin dan pemilik kursus mendapat `full` tanpa mendaftar — educator harus bisa
+meninjau kursusnya sendiri. Pelajaran terkunci **dialihkan ke halaman
+penjualan, bukan 404**: pelajarannya memang ada, dan di sanalah tempat
+memperoleh aksesnya.
+
+Kemajuan belajar dihitung dari **irisan** dengan kurikulum yang sedang berlaku,
+tidak pernah dari `completedLessons.length` begitu saja — alasannya sama dengan
+`lessonsCount` yang tidak disimpan: begitu sebuah pelajaran dihapus, angka
+turunan yang tersimpan akan melenceng (dan bisa merender 110%).
 
 ## Menghubungkan ke proyek Firebase asli
 
@@ -370,17 +404,30 @@ kursus.
 
 ### Menguji
 
-Tiga skrip menguji semuanya terhadap proyek asli. Ketiganya membuat akun uji
-sementara dan menghapusnya lagi di akhir; akun sungguhan tidak disentuh.
+Skrip-skrip ini menguji semuanya terhadap proyek asli. Semuanya membuat akun
+uji sementara dan menghapusnya lagi di akhir; akun sungguhan tidak disentuh.
 
 ```bash
-npm run typecheck         # skrip di scripts/ — tsx TIDAK memeriksa tipe
-npm run verify:admin      # penjagaan /admin              (butuh dev server)
-npm run verify:educator   # alur pengajuan sampai putusan (butuh dev server)
-npm run verify:course     # pembuatan kursus oleh educator (butuh dev server)
-npm run verify:google     # cara masuk & halaman profil   (butuh dev server)
-npm run verify:rules      # rules Firestore & Storage yang sedang ter-deploy
+npm run typecheck          # skrip di scripts/ — tsx TIDAK memeriksa tipe
+npm run verify:admin       # penjagaan /admin               (butuh dev server)
+npm run verify:educator    # alur pengajuan sampai putusan  (butuh dev server)
+npm run verify:course      # pembuatan kursus oleh educator (butuh dev server)
+npm run verify:enrollment  # pendaftaran & gerbang akses    (butuh dev server)
+npm run verify:google      # cara masuk & halaman profil    (butuh dev server)
+npm run verify:rules       # rules Firestore & Storage yang sedang ter-deploy
 ```
+
+`verify:enrollment` menjaga invarian yang paling mudah hilang tanpa disadari:
+pengguna yang **sudah masuk tetapi belum mendaftar** tidak boleh membuka
+pelajaran berbayar, sementara pelajaran bertanda `free` tetap terbuka. Ia juga
+membuktikan pendaftarannya idempoten — mendaftar dua kali tidak menaikkan
+jumlah peserta dua kali.
+
+Yang memakai `scripts/testSupport.ts` (`verify:educator`, `verify:course`,
+`verify:enrollment`) ikut berjalan di emulator: setel `FIRESTORE_EMULATOR_HOST`
+dan `FIREBASE_AUTH_EMULATOR_HOST` sebelum menjalankannya. `verify:admin` dan
+`verify:rules` masih memanggil Identity Toolkit langsung, jadi keduanya tetap
+butuh proyek asli.
 
 `verify:google` meniru setiap keadaan lewat Admin SDK — melepas kata sandi,
 menandai email terverifikasi, menautkan google.com — sehingga keempat kombinasi
@@ -419,9 +466,9 @@ lamarannya sendiri untuk menandainya `accepted`.
   belum terverifikasi, tetap melepas kata sandi itu. Firebase melakukannya di
   server sebelum aplikasi tahu apa-apa. Yang tersedia adalah jalur yang benar
   (*Tautkan Akun Google*) dan pemulihannya, bukan pencegahan di jalur itu.
-- **Enrollment & progres belajar.** Di Laravel dulu keduanya hanya angka
-  hardcoded di controller, bukan fitur yang berjalan — jadi dashboard di sini
-  sengaja tidak menampilkan angka kemajuan sama sekali.
+- **Progres belajar.** Enrollment sudah ada (lihat *Pendaftaran kursus* di
+  bawah), tetapi peserta belum bisa menandai pelajaran selesai — jadi angka
+  kemajuan di dashboard masih selalu 0%.
 - **Proteksi berkas.** `storage.rules` memakai akses baca publik sesuai
   keputusan awal. Konsekuensinya materi kursus berbayar dapat disebarluaskan
   bebas. Untuk mengubahnya: ganti `allow read: if true` menjadi
