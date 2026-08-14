@@ -341,10 +341,7 @@ section[id] {
        Gradient navy hangat + satu kilau amber tipis supaya
        tetap terasa "kertas malam", bukan biru korporat datar. */
     .bg-hero-navy {
-        background:
-            radial-gradient(ellipse 60% 50% at 85% 15%, rgba(217, 154, 43, .16) 0%, transparent 60%),
-            radial-gradient(ellipse 70% 60% at 10% 90%, rgba(37, 99, 235, .30) 0%, transparent 65%),
-            linear-gradient(135deg, #0F2147 0%, #1B3A6B 48%, #12264E 100%);
+        background:#0445d1;
     }
 }
 
@@ -376,6 +373,26 @@ section[id] {
     opacity: 0;
     animation: rise-in 900ms var(--ease-warm) forwards;
     animation-delay: var(--rise-delay, 0ms);
+}
+
+/* ══ Maskot pojok Hero — melayang idle setelah masuk ════════
+   Ayunan naik-turun + rotasi tipis, giliran kiri/kanan sengaja
+   dibuat tidak simetris (durasi & delay beda) supaya tidak
+   terasa seperti loop mekanis. */
+@keyframes float-bob-left {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50%      { transform: translateY(-16px) rotate(1deg); }
+}
+@keyframes float-bob-right {
+    0%, 100% { transform: translateY(0) rotate(2deg); }
+    50%      { transform: translateY(-13px) rotate(-1deg); }
+}
+.animate-float-bob-left {
+    animation: float-bob-left 4600ms var(--ease-warm) infinite;
+}
+.animate-float-bob-right {
+    animation: float-bob-right 5200ms var(--ease-warm) infinite;
+    animation-delay: 400ms;
 }
 
 /* ══ Dialog konfirmasi ══════════════════════════════════════
@@ -425,20 +442,6 @@ section[id] {
     transition: transform 700ms var(--ease-warm) 200ms;
 }
 
-/* ══ Marquee (Partners) ═════════════════════════════════════ */
-@keyframes marquee {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-}
-
-.marquee-track {
-    animation: marquee 42s linear infinite;
-}
-
-.marquee-track:hover {
-    animation-play-state: paused;
-}
-
 /* ══ Scrollbar ══════════════════════════════════════════════ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -458,7 +461,6 @@ section[id] {
 @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
 
-    .marquee-track,
     .drift { animation: none; }
 
     /* Dialog tetap muncul seketika, tanpa gerak */

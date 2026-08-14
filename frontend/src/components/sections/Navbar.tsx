@@ -25,9 +25,9 @@ export default function Navbar() {
   const { status, user } = useAuth();
 
   const isHome = pathname === "/";
-  // Hanya beranda yang punya hero navy; halaman lain berlatar kertas terang.
-  const light = isHome && !scrolled;
   const activeId = useActiveSection(SECTION_IDS, isHome);
+  const overHero = activeId === "hero" || activeId === null;
+  const light = isHome && !overHero;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -46,10 +46,10 @@ export default function Navbar() {
           "flex items-center justify-between gap-4",
           "transition-[background-color,border-color,box-shadow] duration-300 ease-out-soft",
           scrolled
-            ? "bg-paper/92 backdrop-blur-xl border-rule shadow-soft"
+            ? "bg-paper/10 backdrop-blur-xl border-0 shadow-soft"
             : light
               ? "bg-white/10 backdrop-blur-md border-white/15"
-              : "bg-paper-card/70 backdrop-blur-md border-rule",
+              : "bg-paper-card/0 backdrop-blur-md border-0",
         )}
       >
         {/* Aset logo berukuran 667x667 (persegi) dengan margin transparan tebal.
@@ -58,7 +58,7 @@ export default function Navbar() {
             kanvas kosong supaya baris navbar tidak ikut membesar. */}
         <Link href="/" className="flex items-center shrink-0" aria-label="SynapEd — beranda">
           <Image
-            src={light ? "/images/logotextwhite.png" : "/images/logotext.png"}
+            src={light ? "/images/logotext.png" : "/images/logotextwhite.png"}
             alt="SynapEd"
             width={667}
             height={667}
@@ -83,23 +83,14 @@ export default function Navbar() {
                   "transition-colors duration-200 ease-out-soft",
                   light
                     ? isActive
-                      ? "text-white bg-white/12"
-                      : "text-blue-100/80 hover:text-white hover:bg-white/8"
+                      ? "text-black bg-black/5"
+                      : "text-black-100/20 hover:text-white hover:bg-black/10"
                     : isActive
                       ? "text-blue-700 bg-blue-50"
-                      : "text-ink-body hover:text-blue-700 hover:bg-blue-50/60",
+                      : "text-white hover:text-blue-700 hover:bg-blue-50/60",
                 )}
               >
                 {link.label}
-                {/* Titik penanda — sinyal halus, tidak menggeser tata letak */}
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "absolute left-1/2 -translate-x-1/2 bottom-0.5 w-1 h-1 rounded-full",
-                    "transition-all duration-300 ease-warm",
-                    isActive ? "opacity-100 scale-100 bg-amber-500" : "opacity-0 scale-0",
-                  )}
-                />
               </a>
             );
           })}
@@ -193,8 +184,8 @@ export default function Navbar() {
                 className={cn(
                   "px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ease-out-soft",
                   light
-                    ? "text-blue-100/90 hover:text-white hover:bg-white/8"
-                    : "text-ink-body hover:text-blue-700 hover:bg-blue-50/60",
+                    ? "text-black hover:text-white hover:bg-white/8"
+                    : "text-white hover:text-blue-700 hover:bg-blue-50/60",
                 )}
               >
                 Masuk
@@ -205,8 +196,8 @@ export default function Navbar() {
                   "group inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold rounded-full",
                   "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
                   light
-                    ? "bg-paper text-navy hover:bg-white hover:shadow-lift"
-                    : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-soft",
+                    ? "bg-blue-600 text-white hover:bg-white hover:shadow-lift"
+                    : "bg-white text-blue-600 hover:bg-blue-700 hover:shadow-soft",
                 )}
               >
                 Daftar Gratis

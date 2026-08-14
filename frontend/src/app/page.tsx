@@ -1,6 +1,5 @@
 import Navbar from "@/components/sections/Navbar";
 import Hero from "@/components/sections/Hero";
-import Partners from "@/components/sections/Partners";
 import About from "@/components/sections/About";
 import ValueProposition from "@/components/sections/ValueProposition";
 import Courses from "@/components/sections/Courses";
@@ -23,7 +22,6 @@ export default async function Home() {
       <Navbar />
       <main>
         <Hero />
-        <Partners />
         <About />
         <ValueProposition />
         <Courses courses={courses} categories={categories} />
