@@ -61,15 +61,6 @@ export default function Features() {
     };
   }, [reducedMotion]);
 
-  const featureIcons = [
-    "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
-    "M15 10l4.553-2.069A1 1 0 0121 8.873v6.254a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z",
-    "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z",
-    "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z",
-    "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z",
-    "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z",
-  ];
-
   return (
     <section ref={sectionRef} id="features" className="py-28 bg-paper">
       <div className="container-page">
@@ -102,17 +93,24 @@ export default function Features() {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((feat, i) => (
-            <Reveal key={i} delay={(i % 3) * 110} className="h-full">
+            <Reveal key={i} delay={(i % 3) * 110} variant="tilt" className="h-full">
               <Card hover className="group p-8 h-full transition-transform duration-300 ease-out-soft hover:-translate-y-1.5">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-6 transition-colors duration-300 group-hover:bg-blue-600">
-                  <svg
-                    className="w-6 h-6 text-blue-700 transition-colors duration-300 group-hover:text-white"
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d={featureIcons[i]} />
-                  </svg>
-                </div>
-                <h3 className="t-h3 text-lg mb-2">{feat.title}</h3>
+                <span
+                  aria-hidden="true"
+                  className="card-line block w-8 h-px bg-blue-500 mb-6 transition-[width] duration-300 ease-out-soft group-hover:w-12"
+                />
+                <h3
+                  className="text-ink mb-3"
+                  style={{
+                    fontFamily: "var(--font-inter)",
+                    fontSize: "clamp(1.25rem, 2vw, 1.625rem)",
+                    fontWeight: 800,
+                    lineHeight: 1.15,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {feat.title}
+                </h3>
                 <p className="t-body text-sm">{feat.desc}</p>
               </Card>
             </Reveal>
