@@ -47,7 +47,9 @@ function safeName(name: string): string {
 export async function uploadCourseDoc(
   uid: string,
   draftId: string,
-  kind: "modul" | "tugas",
+  /** Prefix nama berkas saja — "modul"/"tugas" untuk form buat kursus,
+   *  "lesson-{key}" untuk editor kurikulum. Tidak ada makna lain. */
+  kind: string,
   file: File,
 ): Promise<UploadedDoc> {
   const path = `course-assets/${uid}/${draftId}/${kind}-${safeName(file.name)}`;

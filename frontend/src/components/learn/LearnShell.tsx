@@ -3,10 +3,12 @@ import { useState } from "react";
 import Link from "next/link";
 import type { CourseDetail, Lesson } from "@/lib/courses";
 import type { Progress } from "@/lib/enrollments";
+import type { PublicQuiz } from "@/lib/quiz";
 import { lessonIcons } from "@/lib/courseUi";
-import { formatBytes, storageDownloadUrl, toEmbedUrl } from "@/lib/videoEmbed";
+import { formatBytes, lessonAssetUrl, toEmbedUrl } from "@/lib/videoEmbed";
 import { cn } from "@/lib/cn";
 import LessonCompleteButton from "./LessonCompleteButton";
+import QuizRunner from "./QuizRunner";
 
 interface Props {
   course: CourseDetail;
@@ -24,6 +26,12 @@ interface Props {
    * dan tombol tandai-selesai tidak ditampilkan sama sekali.
    */
   canTrackProgress: boolean;
+  /**
+   * null berarti pelajaran ini bukan kuis, ATAU kuisnya belum punya soal
+   * tersimpan (kursus hasil migrasi) — kedua kasus jatuh ke tampilan
+   * lampiran lama di bawah, tanpa migrasi data apa pun.
+   */
+  quiz: PublicQuiz | null;
 }
 
 const typeLabel: Record<string, string> = {
@@ -45,6 +53,7 @@ export default function LearnShell({
   completed,
   progress,
   canTrackProgress,
+  quiz,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const lockedSet = new Set(locked);
@@ -212,88 +221,96 @@ export default function LearnShell({
 
             <h1 className="t-h2 mb-8">{current.title}</h1>
 
-            {embedUrl ? (
-              /* Rasio 16:9 dijaga lewat aspect-video supaya tidak bergeser
-                 saat iframe dimuat. */
-              <div className="aspect-video w-full rounded-3xl overflow-hidden border border-rule bg-navy mb-8">
-                <iframe
-                  src={embedUrl}
-                  title={current.title}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                />
+            {quiz ? (
+              <div className="mb-8">
+                <QuizRunner courseSlug={course.slug} quiz={quiz} />
               </div>
             ) : (
-              /* Keadaan kosong yang jujur: struktur pelajaran sudah ada di
-                 Firestore, tapi videoUrl-nya belum diisi lewat Console. */
-              <div
-                className={cn(
-                  "rounded-3xl border border-rule flex flex-col items-center justify-center text-center px-8 py-16 mb-8",
-                  current.type === "video" ? "bg-navy" : "bg-paper-alt",
+              <>
+                {embedUrl ? (
+                  /* Rasio 16:9 dijaga lewat aspect-video supaya tidak bergeser
+                     saat iframe dimuat. */
+                  <div className="aspect-video w-full rounded-3xl overflow-hidden border border-rule bg-navy mb-8">
+                    <iframe
+                      src={embedUrl}
+                      title={current.title}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : (
+                  /* Keadaan kosong yang jujur: struktur pelajaran sudah ada di
+                     Firestore, tapi videoUrl-nya belum diisi lewat Console. */
+                  <div
+                    className={cn(
+                      "rounded-3xl border border-rule flex flex-col items-center justify-center text-center px-8 py-16 mb-8",
+                      current.type === "video" ? "bg-navy" : "bg-paper-alt",
+                    )}
+                  >
+                    <svg
+                      className={cn("w-12 h-12 mb-4", current.type === "video" ? "text-blue-300" : "text-blue-600")}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.25}
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[current.type] ?? lessonIcons.reading} />
+                    </svg>
+                    <p className={cn("t-h3 text-lg mb-2", current.type === "video" && "text-paper")}>
+                      Materi belum tersedia
+                    </p>
+                    <p className={cn("text-sm max-w-sm", current.type === "video" ? "text-blue-100/70" : "text-ink-muted")}>
+                      Struktur pelajaran sudah ada, tetapi tautan video dan berkasnya belum diunggah.
+                    </p>
+                  </div>
                 )}
-              >
-                <svg
-                  className={cn("w-12 h-12 mb-4", current.type === "video" ? "text-blue-300" : "text-blue-600")}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.25}
-                  aria-hidden="true"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[current.type] ?? lessonIcons.reading} />
-                </svg>
-                <p className={cn("t-h3 text-lg mb-2", current.type === "video" && "text-paper")}>
-                  Materi belum tersedia
-                </p>
-                <p className={cn("text-sm max-w-sm", current.type === "video" ? "text-blue-100/70" : "text-ink-muted")}>
-                  Struktur pelajaran sudah ada, tetapi tautan video dan berkasnya belum diunggah.
-                </p>
-              </div>
-            )}
 
-            {attachments.length > 0 && (
-              <section className="mb-8">
-                <h2 className="t-label text-ink-muted mb-3">Berkas Pendukung</h2>
-                <ul className="space-y-2">
-                  {attachments.map((file) => {
-                    const size = formatBytes(file.size);
-                    return (
-                      <li key={file.path}>
-                        <a
-                          href={storageDownloadUrl(file.path)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group flex items-center gap-3 rounded-2xl border border-rule bg-paper-card px-4 py-3 transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
-                        >
-                          <span className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                            <svg className="w-4 h-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-                              <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons.reading} />
-                            </svg>
-                          </span>
-                          <span className="flex-1 min-w-0">
-                            <span className="block text-sm text-ink truncate group-hover:text-blue-700 transition-colors">
-                              {file.name}
-                            </span>
-                            {size && <span className="block text-xs text-ink-muted">{size}</span>}
-                          </span>
-                          <svg className="w-4 h-4 text-ink-faint shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                          </svg>
-                        </a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            )}
+                {attachments.length > 0 && (
+                  <section className="mb-8">
+                    <h2 className="t-label text-ink-muted mb-3">Berkas Pendukung</h2>
+                    <ul className="space-y-2">
+                      {attachments.map((file) => {
+                        const size = formatBytes(file.size);
+                        return (
+                          <li key={file.path}>
+                            <a
+                              href={lessonAssetUrl(course.slug, file.path)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-center gap-3 rounded-2xl border border-rule bg-paper-card px-4 py-3 transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
+                            >
+                              <span className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                                <svg className="w-4 h-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons.reading} />
+                                </svg>
+                              </span>
+                              <span className="flex-1 min-w-0">
+                                <span className="block text-sm text-ink truncate group-hover:text-blue-700 transition-colors">
+                                  {file.name}
+                                </span>
+                                {size && <span className="block text-xs text-ink-muted">{size}</span>}
+                              </span>
+                              <svg className="w-4 h-4 text-ink-faint shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                              </svg>
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                )}
 
-            {canTrackProgress && (
-              <div className="mb-8 flex justify-end">
-                <LessonCompleteButton
-                  slug={course.slug}
-                  lessonSlug={current.slug}
-                  done={doneSet.has(current.slug)}
-                />
-              </div>
+                {canTrackProgress && (
+                  <div className="mb-8 flex justify-end">
+                    <LessonCompleteButton
+                      slug={course.slug}
+                      lessonSlug={current.slug}
+                      done={doneSet.has(current.slug)}
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {/* Navigasi antar pelajaran */}

@@ -12,6 +12,19 @@ service cloud.firestore {
     match /courses/{slug} {
       allow read: if true;
       allow write: if false;
+
+      // ── Soal & jawaban kuis ─────────────────────────────────────────
+      // Firestore rules TIDAK hierarkis: `allow read: if true` pada dokumen
+      // induk di atas TIDAK menjangkau subcollection ini. Jadi dokumen ini
+      // sudah tertutup rapat lewat penolakan menyeluruh di paling bawah —
+      // blok ini murni dokumentasi & jaga-jaga terhadap suntingan ceroboh
+      // di masa depan (mis. seseorang menambahkan wildcard rekursif).
+      //
+      // correctOptionId TIDAK BOLEH pernah bocor ke klien; itu sebabnya
+      // kuis hidup di sini, terpisah dari dokumen kursus yang publik.
+      match /quizzes/{lessonSlug} {
+        allow read, write: if false;
+      }
     }
 
     // ── Profil pengguna ────────────────────────────────────────────────
@@ -72,6 +85,18 @@ service cloud.firestore {
     // Document ID = "{uid}_{slug}", sehingga satu akun tidak mungkin punya
     // dua pendaftaran yang bersaing di kursus yang sama.
     match /enrollments/{id} {
+      allow read, write: if false;
+    }
+
+    // ── Sertifikat kelulusan ────────────────────────────────────────────
+    // Tertutup rapat dari klien Firestore — halaman verifikasi publik
+    // (/verify/{id}) membacanya lewat Admin SDK di Server Component, BUKAN
+    // lewat SDK klien, jadi rules ini tidak perlu dilonggarkan untuk itu.
+    //
+    // ID sertifikat acak (bukan turunan uid+slug) supaya URL sertifikat
+    // orang lain tidak bisa ditebak; rules tertutup ini adalah lapis kedua,
+    // menutup jalur enumerasi lewat query langsung ke koleksi.
+    match /certificates/{id} {
       allow read, write: if false;
     }
 

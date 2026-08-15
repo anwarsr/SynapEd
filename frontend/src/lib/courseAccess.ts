@@ -1,6 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { getCourse, type CourseDetail, type Lesson } from "@/lib/courses";
+import { ownerUidOf } from "@/lib/educatorCourses";
 import { getEnrollment, isActive, type Enrollment } from "@/lib/enrollments";
 import { getCurrentUser, type SessionUser } from "@/lib/firebase/session";
 
@@ -25,9 +26,6 @@ export interface CourseAccess {
   reason: AccessReason;
 }
 
-/** Kursus hasil migrasi tidak punya ownerUid, jadi field ini memang opsional. */
-type OwnedCourse = CourseDetail & { ownerUid?: string };
-
 /**
  * Tidak mengalihkan; `null` berarti belum masuk atau kursusnya tidak ada.
  * Pemanggilnya yang memutuskan apa artinya.
@@ -47,7 +45,7 @@ export async function getCourseAccess(slug: string): Promise<CourseAccess | null
 
   // Educator wajib bisa membuka kursus buatannya sendiri tanpa mendaftar.
   // Kursus bawaan tidak punya ownerUid, jadi undefined !== uid sudah benar.
-  if ((course as OwnedCourse).ownerUid === user.uid) return decide("full", "owner", null);
+  if (ownerUidOf(course) === user.uid) return decide("full", "owner", null);
 
   const enrollment = await getEnrollment(user.uid, slug);
   if (!enrollment) return decide("preview", "not-enrolled", null);

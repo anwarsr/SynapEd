@@ -2,19 +2,8 @@
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
-import {
-  CATEGORIES,
-  COURSE_ASSETS,
-  ICONS,
-  LEVELS,
-  courseOwnership,
-  nextOrder,
-  tintFor,
-  toSlug,
-  uniqueSlug,
-} from "@/lib/educatorCourses";
-import { toEmbedUrl } from "@/lib/videoEmbed";
-import type { Section } from "@/lib/courses";
+import { CATEGORIES, COURSE_ASSETS, ICONS, LEVELS, courseOwnership, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
+import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 
 export type CourseResult =
   | { ok: true; slug: string; message: string }
@@ -35,6 +24,7 @@ export interface NewCourseInput {
   category: string;
   icon: string;
   duration: string;
+  price: number;
   videoUrl: string;
   modul: UploadedDoc;
   tugas: UploadedDoc;
@@ -70,6 +60,7 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   const shortDesc = clean(input.shortDesc, 200);
   const longDesc = clean(input.longDesc, 4000) || shortDesc;
   const duration = clean(input.duration, 40) || "—";
+  const price = Number.isFinite(input.price) && input.price >= 0 ? Math.round(input.price) : 0;
 
   if (title.length < 4) return { ok: false, error: "Judul kursus minimal 4 karakter." };
   if (shortDesc.length < 10) return { ok: false, error: "Deskripsi singkat minimal 10 karakter." };
@@ -82,14 +73,6 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
 
   const icon = ICONS.includes(input.icon as (typeof ICONS)[number]) ? input.icon : "reading";
 
-  // Tautan divalidasi lewat pengubah embed yang sama dengan yang dipakai
-  // halaman belajar — kalau ia tidak mengenali tautannya, videonya juga tidak
-  // akan tampil di sana.
-  const embed = toEmbedUrl(clean(input.videoUrl, 300));
-  if (!embed) {
-    return { ok: false, error: "Tautan video tidak dikenali. Gunakan tautan YouTube." };
-  }
-
   for (const [label, doc] of [
     ["Modul materi", input.modul],
     ["Penugasan akhir", input.tugas],
@@ -100,47 +83,45 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
     }
   }
 
-  const slug = await uniqueSlug(toSlug(title) || "kursus");
-  const order = await nextOrder();
-  const now = new Date().toISOString();
-
-  // Satu section berisi tiga pelajaran — bentuknya sama persis dengan kursus
-  // lama, jadi katalog dan halaman belajar bekerja tanpa perlakuan khusus.
-  const sections: Section[] = [
+  // Bentuk awalnya cuma template starter — satu section, tiga pelajaran —
+  // tapi divalidasi lewat validator YANG SAMA dengan editor kurikulum
+  // (normalizeSections), supaya tidak ada dua aturan yang bisa melenceng.
+  // Tautan video ikut divalidasi di sana lewat toEmbedUrl().
+  const draft: SectionInput[] = [
     {
       title: "Materi Kursus",
-      position: 1,
       lessons: [
         {
-          slug: "modul-materi",
           title: "Modul Materi",
           type: "reading",
           duration: "Bacaan",
           free: true,
-          position: 1,
           attachments: [input.modul],
         },
         {
-          slug: "video",
           title: "Video Pembelajaran",
           type: "video",
           duration: "Video",
           free: true,
-          position: 2,
-          videoUrl: input.videoUrl.trim(),
+          videoUrl: input.videoUrl,
         },
         {
-          slug: "penugasan-akhir",
           title: "Penugasan Akhir",
           type: "quiz",
           duration: "Tugas",
           free: true,
-          position: 3,
           attachments: [input.tugas],
         },
       ],
     },
   ];
+
+  const normalized = normalizeSections(draft, [user.uid]);
+  if (!normalized.ok) return { ok: false, error: normalized.error };
+
+  const slug = await uniqueSlug(toSlug(title) || "kursus");
+  const order = await nextOrder();
+  const now = new Date().toISOString();
 
   await adminDb()
     .collection("courses")
@@ -158,7 +139,7 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       duration,
       rating: 0,
       reviews: 0,
-      price: 0,
+      price,
       thumbnail: null,
       enrolledStudents: 0,
       lastUpdated: now,
@@ -166,7 +147,7 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       instructorBio: "",
       whatYouLearn: [],
       requirements: [],
-      sections,
+      sections: normalized.sections,
       order,
 
       // Penanda kepemilikan: dipakai untuk menampilkan "Kursus Saya" dan
@@ -194,7 +175,12 @@ export async function deleteCourse(slug: string): Promise<CourseResult> {
   // mana pun, jadi tidak seorang pun boleh menghapusnya dari sini.
   if (ownerUid !== user.uid) return { ok: false, error: "Ini bukan kursus Anda." };
 
-  await adminDb().collection("courses").doc(slug).delete();
+  const db = adminDb();
+  // recursiveDelete, bukan .delete() biasa: begitu kuis (Fase 5) menambahkan
+  // subcollection courses/{slug}/quizzes/*, .delete() biasa hanya menghapus
+  // dokumen induknya dan meninggalkan subcollection itu yatim — dokumen tak
+  // terjangkau yang tetap ditagih selamanya.
+  await db.recursiveDelete(db.collection("courses").doc(slug));
 
   revalidatePath("/courses");
   revalidatePath("/educator/courses");

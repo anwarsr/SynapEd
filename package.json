@@ -15,8 +15,11 @@
     "set-role": "tsx scripts/set-role.ts",
     "verify:admin": "tsx scripts/verify-admin.ts",
     "verify:course": "tsx scripts/verify-course.ts",
+    "verify:curriculum": "tsx scripts/verify-curriculum.ts",
     "verify:educator": "tsx scripts/verify-educator.ts",
     "verify:enrollment": "tsx scripts/verify-enrollment.ts",
+    "verify:quiz": "tsx scripts/verify-quiz.ts",
+    "verify:certificate": "tsx scripts/verify-certificate.ts",
     "verify:google": "tsx scripts/verify-google-account.ts",
     "verify:rules": "tsx scripts/verify-rules.ts"
   },

@@ -248,9 +248,15 @@ async function run(educator: TestUser, biasa: TestUser) {
         belajar.html.includes("Penugasan Akhir"),
       String(belajar.status),
     );
+    // Slug pelajaran video diturunkan dari judulnya lewat normalizeSections
+    // (sama seperti editor kurikulum), bukan lagi hardcoded "video" —
+    // dibaca ulang dari Firestore, tidak diasumsikan.
+    const courseDoc = await db.collection("courses").doc(slug).get();
+    const videoLessonSlug = String(courseDoc.data()?.sections?.[0]?.lessons?.[1]?.slug ?? "video");
+
     // Halaman belajar membuka pelajaran PERTAMA (modul), jadi embed video
     // baru muncul saat pelajaran videonya yang dibuka.
-    const video = await probeText(`/courses/${slug}/learn/video`, educator.cookie);
+    const video = await probeText(`/courses/${slug}/learn/${videoLessonSlug}`, educator.cookie);
     check(
       "video ter-embed",
       video.status === 200 && video.html.includes("youtube.com/embed/"),

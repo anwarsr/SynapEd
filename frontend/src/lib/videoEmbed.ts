@@ -34,10 +34,18 @@ export function toEmbedUrl(raw: string): string | null {
   return null;
 }
 
-/** URL unduhan publik untuk berkas di Firebase Storage. */
-export function storageDownloadUrl(path: string): string {
-  const bucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "";
-  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(path)}?alt=media`;
+/**
+ * URL unduhan lampiran pelajaran — lewat route API kita sendiri, bukan
+ * langsung ke Storage.
+ *
+ * Storage untuk lesson-assets/course-assets sudah dikunci (allow read: if
+ * false); route ini yang memeriksa enrollment lalu menerbitkan signed URL
+ * berumur pendek. Dulu fungsi ini membangun URL Storage publik langsung —
+ * itulah sebabnya materi kursus berbayar bisa diunduh siapa saja yang
+ * punya tautannya, terlepas dari status bayar.
+ */
+export function lessonAssetUrl(courseSlug: string, path: string): string {
+  return `/api/courses/${courseSlug}/asset?path=${encodeURIComponent(path)}`;
 }
 
 export function formatBytes(bytes?: number): string | null {

@@ -11,6 +11,8 @@ import {
   type Enrollment,
 } from "@/lib/enrollments";
 import { getCurrentUser } from "@/lib/firebase/session";
+import { getQuiz } from "@/lib/quiz";
+import { issueCertificateIfComplete } from "@/lib/certificates";
 
 export type EnrollResult =
   | { ok: true; slug: string; message: string }
@@ -151,19 +153,36 @@ export async function markLessonComplete(slug: string, lessonSlug: string): Prom
   const course = await getCourse(slug);
   if (!course) return { ok: false, error: "Kursus tidak ditemukan." };
 
-  const lessonExists = flattenLessons(course).some((l) => l.slug === lessonSlug);
-  if (!lessonExists) return { ok: false, error: "Pelajaran tidak ditemukan." };
+  const lesson = flattenLessons(course).find((l) => l.slug === lessonSlug);
+  if (!lesson) return { ok: false, error: "Pelajaran tidak ditemukan." };
+
+  // Pelajaran kuis yang sudah punya soal hanya bisa selesai lewat submitQuiz
+  // (dan hanya kalau lulus) — bukan lewat tombol tandai-selesai generik ini.
+  // Diperiksa di server, bukan cuma disembunyikan di UI, supaya tidak bisa
+  // dilewati dengan memanggil action ini langsung. Kuis yang belum punya
+  // soal (mis. kursus hasil migrasi) tetap boleh lewat jalur ini — itulah
+  // jalan mundur yang menjaga kursus lama tetap berfungsi tanpa migrasi.
+  if (lesson.type === "quiz" && (await getQuiz(slug, lessonSlug))) {
+    return { ok: false, error: "Selesaikan pelajaran ini lewat kuis, bukan tombol ini." };
+  }
 
   const enrollment = await getEnrollment(user.uid, slug);
   if (!enrollment || !isActive(enrollment)) {
     return { ok: false, error: "Anda belum terdaftar di kursus ini." };
   }
 
+  const now = new Date().toISOString();
+  // Simulasi union yang sama dengan arrayUnion di server — lihat komentar
+  // serupa di quizActions.ts submitQuiz.
+  const finalCompletedLessons = Array.from(new Set([...enrollment.completedLessons, lessonSlug]));
+
   await enrollmentRef(user.uid, slug).update({
     completedLessons: FieldValue.arrayUnion(lessonSlug),
     lastLessonSlug: lessonSlug,
-    lastAccessedAt: new Date().toISOString(),
+    lastAccessedAt: now,
   });
+
+  await issueCertificateIfComplete(user, course, enrollment, finalCompletedLessons);
 
   revalidatePath(`/courses/${slug}/learn/${lessonSlug}`);
   revalidatePath("/dashboard");

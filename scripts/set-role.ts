@@ -31,7 +31,14 @@ async function main() {
   const auth = getAuth(initAdmin());
   console.log(`Target: ${targetLabel()}\n`);
 
-  const user = await auth.getUserByEmail(email).catch(() => null);
+  const user = await auth.getUserByEmail(email).catch((e: unknown) => {
+    // "auth/user-not-found" berarti akunnya memang tidak ada. Error lain
+    // (kredensial, jaringan, dsb.) BUKAN itu — menelannya di sini dulu
+    // pernah membuat kegagalan kredensial tampil seolah akunnya hilang.
+    const code = (e as { code?: string }).code;
+    if (code === "auth/user-not-found") return null;
+    throw e;
+  });
   if (!user) {
     console.error(`Akun "${email}" tidak ditemukan.`);
     process.exit(1);

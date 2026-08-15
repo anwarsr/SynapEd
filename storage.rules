@@ -18,13 +18,18 @@ service firebase.storage {
 
     // ── Lampiran pelajaran (PDF, DOCX, dsb) ────────────────────────────
     //
-    // PERINGATAN YANG DISENGAJA: akses baca publik dipilih secara sadar.
-    // Siapa pun yang memegang tautannya bisa mengunduh dan menyebarkannya,
-    // termasuk materi kursus berbayar. Kalau nanti berubah pikiran,
-    // ganti `allow read: if true` menjadi `if request.auth != null`
-    // dan sajikan berkas lewat URL bertanda tangan.
+    // Tertutup total dari klien — dulu `allow read: if true`, sengaja
+    // dipilih supaya materi mudah diakses, tapi itu berarti siapa pun yang
+    // memegang tautannya bisa mengunduh dan menyebarkannya, termasuk materi
+    // kursus berbayar, tanpa peduli status login atau bayar sama sekali.
+    //
+    // Satu-satunya jalan masuk sekarang: route API
+    // /api/courses/[slug]/asset, yang memeriksa enrollment/kepemilikan
+    // lewat getCourseAccess() lalu menerbitkan URL bertanda tangan berumur
+    // 5 menit. Rules di sini tidak perlu tahu apa-apa soal itu — Admin SDK
+    // yang dipakai route-nya melewati rules sepenuhnya.
     match /lesson-assets/{allPaths=**} {
-      allow read: if true;
+      allow read: if false;
       allow write: if false;   // unggah hanya lewat Firebase Console / Admin SDK
     }
 
@@ -38,7 +43,9 @@ service firebase.storage {
     // dipakai server. Pengguna biasa tidak punya claim itu, jadi tidak bisa
     // menitipkan berkas apa pun ke sini.
     match /course-assets/{uid}/{allPaths=**} {
-      allow read: if true;   // sama seperti lesson-assets: materi terbuka
+      // Sama seperti lesson-assets: materi tertutup dari klien, dibaca
+      // hanya lewat route API /api/courses/[slug]/asset.
+      allow read: if false;
 
       allow write: if request.auth != null
                    && request.auth.uid == uid

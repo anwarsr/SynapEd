@@ -86,10 +86,13 @@ export default async function DashboardPage() {
                   const progress = progressFromSnapshot(e);
 
                   return (
-                    <Link
+                    <div
                       key={e.courseSlug}
-                      href={`/courses/${e.courseSlug}/learn${e.lastLessonSlug ? `/${e.lastLessonSlug}` : ""}`}
                       className="group bg-paper-card border border-rule rounded-2xl p-4 transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft hover:-translate-y-0.5"
+                    >
+                    <Link
+                      href={`/courses/${e.courseSlug}/learn${e.lastLessonSlug ? `/${e.lastLessonSlug}` : ""}`}
+                      className="block"
                     >
                       <span className="flex items-center gap-4">
                         <span
@@ -127,6 +130,16 @@ export default async function DashboardPage() {
                         </span>
                       </span>
                     </Link>
+
+                    {e.certificateId && (
+                      <Link
+                        href={`/dashboard/certificates/${e.certificateId}`}
+                        className="mt-3 flex items-center gap-1.5 text-xs font-medium text-blue-700 hover:underline underline-offset-4"
+                      >
+                        Lihat Sertifikat →
+                      </Link>
+                    )}
+                    </div>
                   );
                 })}
               </div>

@@ -3,6 +3,7 @@ import LearnShell from "@/components/learn/LearnShell";
 import { flattenLessons, getCourse } from "@/lib/courses";
 import { canViewLesson, requireCourseAccess } from "@/lib/courseAccess";
 import { progressOf } from "@/lib/enrollments";
+import { getPublicQuizForViewer } from "@/lib/quiz";
 import type { Metadata } from "next";
 
 /**
@@ -47,16 +48,24 @@ export default async function LearnPage({ params }: Props) {
   // kursus tidak punya dokumen enrollment untuk dilacak.
   const canTrackProgress = access.reason === "enrolled";
 
+  const current = flat[index];
+  // Pembacaan ekstra HANYA terjadi saat merender pelajaran kuis — bukan di
+  // katalog, bukan di daftar kurikulum, bukan di pelajaran video/bacaan.
+  // null kalau belum ada soal tersimpan (kursus hasil migrasi): LearnShell
+  // jatuh ke tampilan lampiran lama tanpa perlakuan khusus.
+  const quiz = current.type === "quiz" ? await getPublicQuizForViewer(slug, current.slug, enrollment) : null;
+
   return (
     <LearnShell
       course={course}
-      current={flat[index]}
+      current={current}
       prev={index > 0 ? flat[index - 1] : null}
       next={index < flat.length - 1 ? flat[index + 1] : null}
       locked={flat.filter((l) => !canViewLesson(access, l)).map((l) => l.slug)}
       completed={enrollment?.completedLessons ?? []}
       progress={progressOf(course, enrollment)}
       canTrackProgress={canTrackProgress}
+      quiz={quiz}
     />
   );
 }

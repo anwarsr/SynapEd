@@ -3,60 +3,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { createCourse } from "@/lib/courseActions";
-import { DOC_ACCEPT, uploadCourseDoc, validateDoc } from "@/lib/courseUpload";
+import { uploadCourseDoc, validateDoc } from "@/lib/courseUpload";
 import { toEmbedUrl } from "@/lib/videoEmbed";
+import { FilePick, Label, inputClass } from "./fields";
 import { cn } from "@/lib/cn";
 
 interface Option {
   readonly value: string;
   readonly label?: string;
-}
-
-const inputClass =
-  "w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25";
-
-function Label({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
-  return (
-    <label htmlFor={htmlFor} className="block t-label text-ink-muted mb-2">
-      {children}
-    </label>
-  );
-}
-
-function FilePick({
-  id,
-  file,
-  error,
-  onPick,
-}: {
-  id: string;
-  file: File | null;
-  error: string | null;
-  onPick: (f: File | null) => void;
-}) {
-  return (
-    <div>
-      <input
-        id={id}
-        type="file"
-        accept={DOC_ACCEPT}
-        className="hidden"
-        onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-      />
-      <div className="flex flex-wrap items-center gap-3">
-        <label
-          htmlFor={id}
-          className="cursor-pointer rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
-        >
-          {file ? "Ganti Berkas" : "Pilih Berkas"}
-        </label>
-        <span className="text-sm text-ink-muted truncate max-w-[18rem]">
-          {file ? file.name : "PDF atau Word, maksimal 20 MB"}
-        </span>
-      </div>
-      {error && <p className="mt-2 text-sm text-rust-700">{error}</p>}
-    </div>
-  );
 }
 
 export default function CourseForm({
@@ -77,6 +31,7 @@ export default function CourseForm({
   const [category, setCategory] = useState(categories[0].value);
   const [icon, setIcon] = useState(icons[0]);
   const [duration, setDuration] = useState("");
+  const [price, setPrice] = useState("0");
   const [videoUrl, setVideoUrl] = useState("");
 
   const [modul, setModul] = useState<File | null>(null);
@@ -146,6 +101,7 @@ export default function CourseForm({
         category,
         icon,
         duration,
+        price: Number(price) || 0,
         videoUrl,
         modul: modulDoc,
         tugas: tugasDoc,
@@ -258,6 +214,22 @@ export default function CourseForm({
                 className={inputClass}
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="price">Harga (Rp)</Label>
+            <input
+              id="price"
+              type="number"
+              min={0}
+              step={1000}
+              inputMode="numeric"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0"
+              className={inputClass}
+            />
+            <p className="mt-2 text-xs text-ink-muted">Kosongkan atau isi 0 untuk kursus gratis.</p>
           </div>
 
           <div>
