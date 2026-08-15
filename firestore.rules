@@ -100,6 +100,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Kategori kursus ────────────────────────────────────────────────
+    // Dikelola admin lewat Server Action yang memakai Admin SDK, dan dibaca
+    // di server saat merender daftar filter maupun pilihan di form. Klien
+    // tidak pernah perlu menyentuhnya sendiri, jadi ditutup sepenuhnya.
+    match /categories/{slug} {
+      allow read, write: if false;
+    }
+
     // Tolak apa pun di luar yang tersebut di atas.
     match /{document=**} {
       allow read, write: if false;

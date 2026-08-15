@@ -9,14 +9,14 @@ import LearningPath from "@/components/sections/LearningPath";
 import Testimonials from "@/components/sections/Testimonials";
 import FAQ from "@/components/sections/FAQ";
 import Footer from "@/components/sections/Footer";
-import { listCategories, listCourses } from "@/lib/courses";
+import { listCourseCategories, listCourses } from "@/lib/courses";
 
 // Katalog dibaca dari Firestore saat permintaan datang — perubahan di
 // Firebase Console langsung tampil tanpa perlu rebuild.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [courses, categories] = await Promise.all([listCourses(), listCategories()]);
+  const [courses, categories] = await Promise.all([listCourses(), listCourseCategories()]);
 
   return (
     <>

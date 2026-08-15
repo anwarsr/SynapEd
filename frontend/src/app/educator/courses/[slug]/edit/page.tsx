@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
 import CourseMetaForm from "@/components/educator/CourseMetaForm";
 import CurriculumEditor from "@/components/educator/CurriculumEditor";
-import { CATEGORIES, ICONS, LEVELS, requireOwnedCourse } from "@/lib/educatorCourses";
+import { LEVELS, requireOwnedCourse } from "@/lib/educatorCourses";
+import { listCategories } from "@/lib/categories";
 import { requireUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
 
@@ -28,6 +29,8 @@ export default async function EditCoursePage({ params }: Props) {
   const course = await requireOwnedCourse(user, slug);
   if (!course) notFound();
 
+  const categories = await listCategories();
+
   return (
     <EducatorShell user={user}>
       <div className="container-reading space-y-10">
@@ -51,15 +54,14 @@ export default async function EditCoursePage({ params }: Props) {
             longDesc: course.longDesc,
             level: course.level,
             category: course.category,
-            icon: course.icon,
             duration: course.duration,
             price: course.price,
+            thumbnail: course.thumbnail,
             whatYouLearn: course.whatYouLearn,
             requirements: course.requirements,
           }}
           levels={LEVELS.map((l) => ({ value: l.value }))}
-          categories={CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
-          icons={ICONS}
+          categories={categories.map((c) => ({ value: c.slug, label: c.label }))}
         />
 
         <hr className="rule-line" />

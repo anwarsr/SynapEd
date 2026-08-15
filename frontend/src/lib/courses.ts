@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { listCategories } from "@/lib/categories";
 
 // ── Tipe ────────────────────────────────────────────────────────────────
 
@@ -42,12 +43,13 @@ export interface CourseSummary {
   rating: number;
   reviews: number;
   lessonsCount: number;
+  /** Gambar latar kartu. Kosong berarti memakai latar bawaan (tint + ikon). */
+  thumbnail: string | null;
 }
 
 export interface CourseDetail extends CourseSummary {
   longDesc: string;
   price: number;
-  thumbnail: string | null;
   enrolledStudents: number;
   lastUpdated: string | null;
   instructorName: string;
@@ -97,15 +99,9 @@ function toSummary(doc: CourseDoc): CourseSummary {
     rating: doc.rating,
     reviews: doc.reviews,
     lessonsCount: countLessons(doc.sections ?? []),
+    thumbnail: doc.thumbnail ?? null,
   };
 }
-
-// Label ini dulu hardcoded di CourseController Laravel.
-const CATEGORY_LABELS: Record<string, string> = {
-  neuroscience: "Neuroscience",
-  eeg: "Teknologi EEG",
-  analisis: "Analisis Data",
-};
 
 // ── API publik ──────────────────────────────────────────────────────────
 
@@ -132,18 +128,20 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
   return { ...data, sections, lessonsCount: countLessons(sections) };
 }
 
-export async function listCategories(): Promise<Category[]> {
-  const snapshot = await adminDb().collection("courses").orderBy("order").get();
-
-  const seen: string[] = [];
-  for (const d of snapshot.docs) {
-    const { category } = d.data() as CourseDoc;
-    if (category && !seen.includes(category)) seen.push(category);
-  }
+/**
+ * Pilihan filter di katalog.
+ *
+ * Dulu diturunkan dari kategori yang kebetulan dipakai kursus, dengan label
+ * hardcoded. Sekarang dibaca dari koleksi `categories` yang dikelola admin —
+ * kategori yang baru dibuat langsung muncul sebagai pilihan, bahkan sebelum
+ * ada kursus di dalamnya.
+ */
+export async function listCourseCategories(): Promise<Category[]> {
+  const categories = await listCategories();
 
   return [
     { slug: "semua", label: "Semua Materi" },
-    ...seen.map((slug) => ({ slug, label: CATEGORY_LABELS[slug] ?? slug })),
+    ...categories.map((c) => ({ slug: c.slug, label: c.label })),
   ];
 }
 

@@ -1,11 +1,16 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { firebaseAuth } from "@/lib/firebase/client";
 import { createCourse } from "@/lib/courseActions";
-import { uploadCourseDoc, validateDoc } from "@/lib/courseUpload";
-import { toEmbedUrl } from "@/lib/videoEmbed";
-import { FilePick, Label, inputClass } from "./fields";
+import { Label, inputClass } from "./fields";
+import ThumbnailPicker from "./ThumbnailPicker";
+import SectionList, {
+  newKey,
+  newSection,
+  toSectionInput,
+  validateDraft,
+  type DraftSection,
+} from "./curriculumDraft";
 import { cn } from "@/lib/cn";
 
 interface Option {
@@ -16,11 +21,9 @@ interface Option {
 export default function CourseForm({
   levels,
   categories,
-  icons,
 }: {
   levels: readonly Option[];
   categories: readonly Option[];
-  icons: readonly string[];
 }) {
   const router = useRouter();
 
@@ -28,99 +31,53 @@ export default function CourseForm({
   const [shortDesc, setShortDesc] = useState("");
   const [longDesc, setLongDesc] = useState("");
   const [level, setLevel] = useState(levels[0].value);
-  const [category, setCategory] = useState(categories[0].value);
-  const [icon, setIcon] = useState(icons[0]);
+  const [category, setCategory] = useState(categories[0]?.value ?? "");
   const [duration, setDuration] = useState("");
   const [price, setPrice] = useState("0");
-  const [videoUrl, setVideoUrl] = useState("");
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
 
-  const [modul, setModul] = useState<File | null>(null);
-  const [tugas, setTugas] = useState<File | null>(null);
-  const [modulError, setModulError] = useState<string | null>(null);
-  const [tugasError, setTugasError] = useState<string | null>(null);
+  const [sections, setSections] = useState<DraftSection[]>(() => [newSection("Materi Kursus")]);
 
-  const [step, setStep] = useState<string | null>(null);
+  // Berkas diunggah SEBELUM kursusnya ada, jadi belum ada slug untuk
+  // mengelompokkannya. Satu id draft dipakai seumur pengisian form ini.
+  const [draftId] = useState(newKey);
+
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const videoOk = videoUrl.trim() === "" || toEmbedUrl(videoUrl) !== null;
-  const pending = step !== null;
-
-  function pick(which: "modul" | "tugas") {
-    return (file: File | null) => {
-      const setFile = which === "modul" ? setModul : setTugas;
-      const setError_ = which === "modul" ? setModulError : setTugasError;
-
-      if (!file) {
-        setFile(null);
-        setError_(null);
-        return;
-      }
-
-      const invalid = validateDoc(file);
-      setError_(invalid);
-      setFile(invalid ? null : file);
-    };
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!modul || !tugas) {
-      setError("Modul materi dan penugasan akhir wajib diunggah.");
-      return;
-    }
-    if (!toEmbedUrl(videoUrl)) {
-      setError("Tautan video tidak dikenali. Gunakan tautan YouTube.");
+    const problem = validateDraft(sections);
+    if (problem) {
+      setError(problem);
       return;
     }
 
-    const uid = firebaseAuth().currentUser?.uid;
-    if (!uid) {
-      setError("Sesi berakhir. Silakan masuk kembali.");
+    setPending(true);
+    const result = await createCourse({
+      title,
+      shortDesc,
+      longDesc,
+      level,
+      category,
+      duration,
+      price: Number(price) || 0,
+      thumbnail,
+      sections: toSectionInput(sections),
+    });
+
+    if (!result.ok) {
+      setError(result.error);
+      setPending(false);
       return;
     }
 
-    // Satu draftId mengelompokkan kedua berkas, supaya berkas satu kursus
-    // tidak tercampur dengan kursus lain di dalam folder yang sama.
-    const draftId = crypto.randomUUID().slice(0, 8);
-
-    try {
-      setStep("Mengunggah modul materi…");
-      const modulDoc = await uploadCourseDoc(uid, draftId, "modul", modul);
-
-      setStep("Mengunggah penugasan akhir…");
-      const tugasDoc = await uploadCourseDoc(uid, draftId, "tugas", tugas);
-
-      setStep("Menyimpan kursus…");
-      const result = await createCourse({
-        title,
-        shortDesc,
-        longDesc,
-        level,
-        category,
-        icon,
-        duration,
-        price: Number(price) || 0,
-        videoUrl,
-        modul: modulDoc,
-        tugas: tugasDoc,
-      });
-
-      if (!result.ok) {
-        setError(result.error);
-        setStep(null);
-        return;
-      }
-
-      router.replace(`/courses/${result.slug}`);
-      router.refresh();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Gagal mengunggah berkas. Silakan coba lagi.",
-      );
-      setStep(null);
-    }
+    // Diantar ke halaman sunting, bukan ke halaman kursusnya: di sanalah soal
+    // kuis ditambahkan, dan itu langkah berikutnya yang paling mungkin.
+    router.replace(`/educator/courses/${result.slug}/edit`);
+    router.refresh();
   }
 
   return (
@@ -179,7 +136,12 @@ export default function CourseForm({
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="level">Tingkat</Label>
-              <select id="level" value={level} onChange={(e) => setLevel(e.target.value)} className={inputClass}>
+              <select
+                id="level"
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+                className={inputClass}
+              >
                 {levels.map((l) => (
                   <option key={l.value} value={l.value}>
                     {l.label ?? l.value}
@@ -216,7 +178,7 @@ export default function CourseForm({
             </div>
           </div>
 
-          <div>
+          <div className="max-w-xs">
             <Label htmlFor="price">Harga (Rp)</Label>
             <input
               id="price"
@@ -226,62 +188,25 @@ export default function CourseForm({
               inputMode="numeric"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="0"
               className={inputClass}
             />
-            <p className="mt-2 text-xs text-ink-muted">Kosongkan atau isi 0 untuk kursus gratis.</p>
+            <p className="mt-2 text-xs text-ink-muted">0 berarti gratis.</p>
           </div>
 
-          <div>
-            <Label htmlFor="icon">Ikon</Label>
-            <select id="icon" value={icon} onChange={(e) => setIcon(e.target.value)} className={inputClass}>
-              {icons.map((i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ThumbnailPicker prefix={draftId} onChange={(v) => setThumbnail(v ?? null)} />
         </div>
       </section>
 
-      {/* ── Isi kursus ──────────────────────────────────────── */}
-      <section className="bg-paper-card border border-rule rounded-2xl p-7">
+      {/* ── Kurikulum ───────────────────────────────────────── */}
+      <div>
         <h2 className="t-h3 mb-1.5">Isi Kursus</h2>
-        <p className="t-body text-sm mb-6">Tiga bagian, semuanya wajib diisi.</p>
+        <p className="t-body text-sm mb-5">
+          Tambahkan sebanyak yang Anda perlukan, dalam urutan mana pun. Tanda panah
+          memindahkan posisinya.
+        </p>
 
-        <div className="space-y-7">
-          <div>
-            <h3 className="text-sm font-semibold text-ink mb-1">1. Modul Materi</h3>
-            <p className="text-sm text-ink-muted mb-3">Bahan bacaan dalam bentuk PDF atau Word.</p>
-            <FilePick id="modul" file={modul} error={modulError} onPick={pick("modul")} />
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-ink mb-1">2. Video Pembelajaran</h3>
-            <p className="text-sm text-ink-muted mb-3">Tempel tautan YouTube.</p>
-            <input
-              id="videoUrl"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
-              className={cn(inputClass, !videoOk && "border-rust-700/50")}
-              required
-            />
-            {!videoOk && (
-              <p className="mt-2 text-sm text-rust-700">
-                Tautan belum dikenali. Salin dari bilah alamat YouTube.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-ink mb-1">3. Penugasan Akhir</h3>
-            <p className="text-sm text-ink-muted mb-3">Soal tugas dalam bentuk PDF atau Word.</p>
-            <FilePick id="tugas" file={tugas} error={tugasError} onPick={pick("tugas")} />
-          </div>
-        </div>
-      </section>
+        <SectionList sections={sections} setSections={setSections} uploadPrefix={draftId} />
+      </div>
 
       <div className="flex flex-wrap items-center gap-4">
         <button
@@ -289,16 +214,13 @@ export default function CourseForm({
           disabled={pending}
           className="rounded-lg bg-blue-600 px-7 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
         >
-          {pending ? "Memproses…" : "Terbitkan Kursus"}
+          {pending ? "Menerbitkan…" : "Terbitkan Kursus"}
         </button>
-
-        {/* Unggahan bisa memakan waktu, jadi langkahnya disebutkan —
-            tombol yang diam saja membuat orang menekannya berulang kali. */}
-        {step && <span className="text-sm text-ink-muted">{step}</span>}
       </div>
 
       <p className="text-xs text-ink-muted">
-        Kursus langsung tampil di katalog setelah diterbitkan.
+        Kursus langsung tampil di katalog setelah diterbitkan. Soal kuis ditambahkan
+        setelah itu, dari halaman sunting.
       </p>
     </form>
   );

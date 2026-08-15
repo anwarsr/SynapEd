@@ -142,17 +142,32 @@ async function main() {
       ok(`Firestore terhubung — ${snap.size} kursus`);
       if (snap.size === 0) info("Kosong. Jalankan: npm run migrate:firestore");
       else {
+        // Pemeriksaan ini hanya menjaga EMPAT kursus hasil migrasi. Dulu ia
+        // menghitung seluruh koleksi dan mengharuskan tepat 4/19/52 — begitu
+        // educator mulai membuat kursus sendiri, angka itu pasti berbeda dan
+        // pemeriksaannya berteriak gagal padahal tidak ada yang rusak.
+        const MIGRATED = ["dasar-neuroscience", "pengenalan-eeg", "implementasi-eeg-muse", "analisis-data-eeg"];
+
         let sections = 0;
         let lessons = 0;
+        let found = 0;
+
         snap.docs.forEach((d) => {
+          if (!MIGRATED.includes(d.id)) return;
+          found++;
           const data = d.data() as { sections?: { lessons?: unknown[] }[] };
           for (const s of data.sections ?? []) {
             sections++;
             lessons += s.lessons?.length ?? 0;
           }
         });
-        const good = snap.size === 4 && sections === 19 && lessons === 52;
-        (good ? ok : bad)(`${snap.size} kursus / ${sections} section / ${lessons} lesson` + (good ? "" : " — SEHARUSNYA 4/19/52"));
+
+        const good = found === 4 && sections === 19 && lessons === 52;
+        (good ? ok : bad)(
+          `kursus bawaan: ${found} kursus / ${sections} section / ${lessons} lesson` +
+            (good ? "" : " — SEHARUSNYA 4/19/52"),
+        );
+        info(`total di katalog: ${snap.size} kursus (termasuk buatan educator)`);
         if (!good) failures++;
       }
 

@@ -2,7 +2,9 @@
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { CATEGORIES, ICONS, LEVELS, ownerUidOf, requireOwnedCourse, tintFor } from "@/lib/educatorCourses";
+import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
+import { categoryExists } from "@/lib/categories";
+import { resolveThumbnail } from "@/lib/courseThumbnail";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 
 export type CurriculumResult = { ok: true; message: string } | { ok: false; error: string };
@@ -46,9 +48,15 @@ export interface CourseMetaInput {
   longDesc: string;
   level: string;
   category: string;
-  icon: string;
   duration: string;
   price: number;
+  /**
+   * Diisi HANYA kalau gambar latarnya diubah:
+   *   undefined -> biarkan seperti apa adanya
+   *   null      -> hapus gambarnya
+   *   string    -> path baru di Storage
+   */
+  thumbnail?: string | null;
   whatYouLearn: string[];
   requirements: string[];
 }
@@ -71,10 +79,8 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
   const level = LEVELS.find((l) => l.value === input.level);
   if (!level) return { ok: false, error: "Tingkat kesulitan tidak valid." };
 
-  const category = CATEGORIES.find((c) => c.value === input.category);
-  if (!category) return { ok: false, error: "Kategori tidak valid." };
-
-  const icon = ICONS.includes(input.icon as (typeof ICONS)[number]) ? input.icon : "reading";
+  const category = input.category.trim().slice(0, 60);
+  if (!(await categoryExists(category))) return { ok: false, error: "Kategori tidak valid." };
 
   // Harga bisa nol (kursus gratis) tapi tidak boleh negatif atau bukan angka.
   const price = Number.isFinite(input.price) && input.price >= 0 ? Math.round(input.price) : 0;
@@ -82,23 +88,32 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
   const whatYouLearn = input.whatYouLearn.map((s) => s.trim()).filter(Boolean).slice(0, 20);
   const requirements = input.requirements.map((s) => s.trim()).filter(Boolean).slice(0, 20);
 
-  await adminDb()
-    .collection("courses")
-    .doc(slug)
-    .update({
-      title,
-      shortDesc,
-      longDesc,
-      level: level.value,
-      levelColor: level.color,
-      category: category.value,
-      icon,
-      tint: tintFor(icon),
-      duration: input.duration.trim().slice(0, 40) || "—",
-      price,
-      whatYouLearn,
-      requirements,
-    });
+  const patch: Record<string, unknown> = {
+    title,
+    shortDesc,
+    longDesc,
+    level: level.value,
+    levelColor: level.color,
+    category,
+    duration: input.duration.trim().slice(0, 40) || "—",
+    price,
+    whatYouLearn,
+    requirements,
+  };
+
+  // `thumbnail` hanya ikut ditulis kalau memang diubah.
+  //
+  // Kursus hasil migrasi menyimpan URL penuh atau path di folder public/,
+  // yang tidak akan lolos resolveThumbnail. Kalau field ini selalu dikirim
+  // ulang, menyimpan perubahan judul saja akan gagal pada kursus-kursus itu —
+  // atau lebih buruk, diam-diam menghapus gambarnya.
+  if (input.thumbnail !== undefined) {
+    const thumbnail = resolveThumbnail(input.thumbnail, user.uid);
+    if (!thumbnail.ok) return { ok: false, error: thumbnail.error };
+    patch.thumbnail = thumbnail.value;
+  }
+
+  await adminDb().collection("courses").doc(slug).update(patch);
 
   revalidatePath(`/courses/${slug}`);
   revalidatePath("/educator/courses");

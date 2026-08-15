@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+
+    // Berkas pihak ketiga yang disalin apa adanya dari node_modules saat
+    // dev/build (lihat scripts/copy-pdf-worker.mjs). Bukan kode kita, dan
+    // ribuan peringatan dari berkas terminifikasi hanya menenggelamkan
+    // peringatan yang sungguhan.
+    "public/pdf.worker.min.mjs",
   ]),
 ]);
 

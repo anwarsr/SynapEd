@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateCourseMeta } from "@/lib/curriculumActions";
 import { Label, inputClass } from "./fields";
+import ThumbnailPicker from "./ThumbnailPicker";
 import { cn } from "@/lib/cn";
 
 interface Option {
@@ -21,7 +22,6 @@ export default function CourseMetaForm({
   initial,
   levels,
   categories,
-  icons,
 }: {
   slug: string;
   initial: {
@@ -30,15 +30,14 @@ export default function CourseMetaForm({
     longDesc: string;
     level: string;
     category: string;
-    icon: string;
     duration: string;
     price: number;
+    thumbnail: string | null;
     whatYouLearn: string[];
     requirements: string[];
   };
   levels: readonly Option[];
   categories: readonly Option[];
-  icons: readonly string[];
 }) {
   const router = useRouter();
 
@@ -47,8 +46,11 @@ export default function CourseMetaForm({
   const [longDesc, setLongDesc] = useState(initial.longDesc);
   const [level, setLevel] = useState(initial.level);
   const [category, setCategory] = useState(initial.category);
-  const [icon, setIcon] = useState(initial.icon);
   const [duration, setDuration] = useState(initial.duration);
+
+  // `undefined` berarti gambarnya tidak disentuh — nilainya dibiarkan apa
+  // adanya di server. Penting untuk kursus lama yang gambarnya berupa URL.
+  const [thumbnail, setThumbnail] = useState<string | null | undefined>(undefined);
   const [price, setPrice] = useState(String(initial.price));
   const [whatYouLearn, setWhatYouLearn] = useState(initial.whatYouLearn.join("\n"));
   const [requirements, setRequirements] = useState(initial.requirements.join("\n"));
@@ -69,9 +71,9 @@ export default function CourseMetaForm({
       longDesc,
       level,
       category,
-      icon,
       duration,
       price: Number(price) || 0,
+      thumbnail,
       whatYouLearn: whatYouLearn.split("\n"),
       requirements: requirements.split("\n"),
     });
@@ -170,33 +172,22 @@ export default function CourseMetaForm({
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="price">Harga (Rp)</Label>
-              <input
-                id="price"
-                type="number"
-                min={0}
-                step={1000}
-                inputMode="numeric"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className={inputClass}
-              />
-              <p className="mt-2 text-xs text-ink-muted">0 berarti gratis.</p>
-            </div>
-
-            <div>
-              <Label htmlFor="icon">Ikon</Label>
-              <select id="icon" value={icon} onChange={(e) => setIcon(e.target.value)} className={inputClass}>
-                {icons.map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="max-w-xs">
+            <Label htmlFor="price">Harga (Rp)</Label>
+            <input
+              id="price"
+              type="number"
+              min={0}
+              step={1000}
+              inputMode="numeric"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className={inputClass}
+            />
+            <p className="mt-2 text-xs text-ink-muted">0 berarti gratis.</p>
           </div>
+
+          <ThumbnailPicker initial={initial.thumbnail} prefix={slug} onChange={setThumbnail} />
 
           <div>
             <Label htmlFor="whatYouLearn">Yang akan dipelajari</Label>

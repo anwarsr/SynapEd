@@ -147,7 +147,7 @@ export function ProfileForm({ user }: { user: SessionUser }) {
 
       // Nama ikut tertanam di dalam session cookie, jadi cookie-nya harus
       // diterbitkan ulang — kalau tidak, navbar masih menampilkan nama lama.
-      await u.getIdToken(true);
+      // establishSession sudah mengambil ulang token sebelum menukarnya.
       await establishSession(u);
 
       setStatus({ kind: "ok", msg: "Nama berhasil diperbarui." });

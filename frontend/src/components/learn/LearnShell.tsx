@@ -5,9 +5,10 @@ import type { CourseDetail, Lesson } from "@/lib/courses";
 import type { Progress } from "@/lib/enrollments";
 import type { PublicQuiz } from "@/lib/quiz";
 import { lessonIcons } from "@/lib/courseUi";
-import { formatBytes, lessonAssetUrl, toEmbedUrl } from "@/lib/videoEmbed";
+import { formatBytes, lessonAssetUrl, previewKind, toEmbedUrl } from "@/lib/videoEmbed";
 import { cn } from "@/lib/cn";
 import LessonCompleteButton from "./LessonCompleteButton";
+import MaterialViewer from "./MaterialViewer";
 import QuizRunner from "./QuizRunner";
 
 interface Props {
@@ -34,6 +35,15 @@ interface Props {
   quiz: PublicQuiz | null;
 }
 
+/**
+ * Keadaan ciut daftar materi selama satu kunjungan.
+ *
+ * Sengaja di luar komponen: modul ini tetap hidup selama aplikasinya berjalan
+ * di tab yang sama, jadi nilainya bertahan saat berpindah pelajaran — tetapi
+ * ikut hilang begitu halamannya dimuat ulang.
+ */
+let railHiddenMemory = false;
+
 const typeLabel: Record<string, string> = {
   video: "Video",
   reading: "Bacaan",
@@ -56,17 +66,54 @@ export default function LearnShell({
   quiz,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Daftar materi bisa diciutkan di layar lebar supaya materi punya ruang
+  // lebih, tetapi SELALU terbuka saat kelas dibuka.
+  //
+  // Diingat lewat variabel modul, bukan localStorage maupun useState biasa:
+  //
+  //   localStorage — bertahan berhari-hari. Kelas jadi terbuka dalam keadaan
+  //   terciut padahal penggunanya sudah lupa pernah menciutkannya, dan
+  //   kehilangan peta kursusnya.
+  //
+  //   useState biasa — komponen ini DILEPAS setiap pindah pelajaran (sudah
+  //   diukur, bukan diduga), jadi railnya membuka sendiri tiap klik pelajaran
+  //   berikutnya dan tombolnya praktis tidak berguna.
+  //
+  // Variabel modul hidup selama aplikasinya berjalan di tab itu: bertahan
+  // saat berpindah pelajaran, dan hilang saat halaman dimuat ulang atau kelas
+  // dibuka dari awal — persis yang diinginkan.
+  const [railHidden, setRailHidden] = useState(railHiddenMemory);
+
+  function toggleRail() {
+    setRailHidden((v) => {
+      railHiddenMemory = !v;
+      return !v;
+    });
+  }
+
   const lockedSet = new Set(locked);
   const doneSet = new Set(completed);
 
   const embedUrl = current.videoUrl ? toEmbedUrl(current.videoUrl) : null;
   const attachments = current.attachments ?? [];
 
+  // Berkas pertama yang memang bisa ditampilkan. Sisanya tetap muncul sebagai
+  // unduhan di bawah — termasuk berkas ini sendiri, bagi yang ingin menyimpannya.
+  const readable = attachments.find((a) => previewKind(a.name, a.mime) !== "none") ?? null;
+
   return (
-    <div className="min-h-screen bg-paper flex flex-col">
+    /* h-screen + overflow-hidden, BUKAN min-h-screen.
+       Dengan min-h-screen tinggi pembungkus ikut isinya, jadi daftar materi
+       dan materi sama-sama setinggi isinya dan `overflow-y-auto` di keduanya
+       tidak pernah aktif — yang bergulir sebenarnya seluruh halaman, dan
+       keduanya ikut bergerak bersama. Tinggi yang dipatok layar membuat
+       masing-masing punya area gulirnya sendiri. */
+    <div className="h-screen overflow-hidden bg-paper flex flex-col">
       {/* ── Bilah atas ─────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-navy text-paper">
+      <header className="shrink-0 z-40 bg-navy text-paper">
         <div className="flex items-center gap-4 px-4 sm:px-6 h-14">
+          {/* Ponsel: buka/tutup panel melayang. Layar lebar: ciutkan railnya. */}
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 transition-colors"
@@ -77,6 +124,35 @@ export default function LearnShell({
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
+
+          {/* Ikon "panel kiri" — bentuk yang sudah lazim dipakai untuk
+              menciutkan sidebar (VS Code, Notion, Linear), jadi maksudnya
+              langsung terbaca. Diberi garis tepi dan latar tipis supaya
+              tampak sebagai tombol di atas navy; versi sebelumnya cuma
+              garis samar yang mudah dikira hiasan. */}
+          <button
+            onClick={toggleRail}
+            className={cn(
+              "hidden lg:inline-flex items-center justify-center w-9 h-9 rounded-lg border shrink-0",
+              "transition-colors duration-200 ease-out-soft",
+              railHidden
+                ? "border-white/20 bg-white/5 text-blue-100 hover:bg-white/15 hover:text-white"
+                : "border-white/25 bg-white/15 text-white hover:bg-white/25",
+            )}
+            aria-label={railHidden ? "Tampilkan daftar materi" : "Sembunyikan daftar materi"}
+            title={railHidden ? "Tampilkan daftar materi" : "Sembunyikan daftar materi"}
+            aria-expanded={!railHidden}
+          >
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <rect x="3" y="4.5" width="18" height="15" rx="2.5" strokeWidth={1.6} />
+              <line x1="9.5" y1="4.5" x2="9.5" y2="19.5" strokeWidth={1.6} />
+              {/* Kolom kiri diarsir saat daftar materi sedang tampil, jadi
+                  keadaan hidup/mati terlihat tanpa perlu menebak. */}
+              {!railHidden && <rect x="3.8" y="5.3" width="5" height="13.4" rx="1.8" fill="currentColor" stroke="none" />}
+            </svg>
+          </button>
+
+          <span aria-hidden="true" className="hidden lg:block w-px h-6 bg-white/15 shrink-0" />
 
           <Link
             href={`/courses/${course.slug}`}
@@ -114,12 +190,28 @@ export default function LearnShell({
         {/* ── Sidebar kurikulum ────────────────────────────── */}
         <aside
           className={cn(
-            "w-80 shrink-0 border-r border-rule bg-paper-alt overflow-y-auto",
-            "lg:block",
-            sidebarOpen ? "fixed inset-y-14 left-0 z-30 block shadow-lift" : "hidden",
+            "shrink-0 border-r border-rule bg-paper-alt overflow-hidden",
+            // Lebarnya yang dianimasikan, bukan display — display tidak bisa
+            // ditransisikan, dan itulah sebabnya dulu ia hilang seketika.
+            "transition-[width] duration-300 ease-out-soft motion-reduce:transition-none",
+            // Di layar lebar railnya menciut sampai nol; di ponsel ia tetap
+            // panel melayang yang dibuka lewat tombol menu.
+            railHidden ? "lg:w-0 lg:border-r-0" : "lg:w-80",
+            sidebarOpen ? "fixed inset-y-14 left-0 z-30 block w-80 shadow-lift" : "hidden lg:block",
           )}
+          // Saat menciut isinya tidak boleh bisa difokus lewat Tab —
+          // menggulir ke tautan yang tidak terlihat jelas membingungkan.
+          //
+          // React 19 memperlakukan `inert` sebagai atribut boolean sungguhan,
+          // jadi cukup diberi nilai. Menitipkan string kosong lewat spread —
+          // cara lama sebelum React 19 — justru dibaca sebagai false dan
+          // diprotes di konsol.
+          inert={railHidden && !sidebarOpen}
         >
-          <div className="p-5">
+          {/* Lebarnya dipatok supaya isinya tidak ikut memampat saat rail
+              menyempit — yang diinginkan adalah tergeser keluar, bukan
+              teksnya meremas jadi satu kolom sempit selama animasi. */}
+          <div className="w-80 h-full overflow-y-auto p-5">
             <p className="chapter-mark mb-4">
               <span aria-hidden="true" className="w-5 h-px bg-rule-strong" />
               <span>Daftar Materi</span>
@@ -208,7 +300,17 @@ export default function LearnShell({
 
         {/* ── Konten pelajaran ─────────────────────────────── */}
         <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-6 py-10">
+          {/* Materi butuh ruang lebih daripada teks biasa — halaman PDF punya
+              lebar tetap, dan kolom 3xl memaksanya mengecil sampai sulit
+              dibaca. Melebar lagi saat daftar materi diciutkan, mengikuti
+              animasi rail supaya keduanya bergerak sebagai satu gerakan. */}
+          <div
+            className={cn(
+              "mx-auto px-6 py-10",
+              "transition-[max-width] duration-300 ease-out-soft motion-reduce:transition-none",
+              railHidden ? "max-w-6xl" : "max-w-5xl",
+            )}
+          >
             <div className="flex items-center gap-2.5 mb-4">
               <span className="t-label text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md">
                 {typeLabel[current.type] ?? current.type}
@@ -240,9 +342,15 @@ export default function LearnShell({
                       allowFullScreen
                     />
                   </div>
+                ) : readable ? (
+                  /* Berkasnya dibaca langsung di halaman — peserta tidak perlu
+                     mengunduh apa pun untuk mulai belajar. */
+                  <div className="mb-8">
+                    <MaterialViewer key={readable.path} courseSlug={course.slug} file={readable} />
+                  </div>
                 ) : (
-                  /* Keadaan kosong yang jujur: struktur pelajaran sudah ada di
-                     Firestore, tapi videoUrl-nya belum diisi lewat Console. */
+                  /* Keadaan kosong yang jujur: struktur pelajaran sudah ada,
+                     tapi tidak ada video maupun berkas yang bisa dibaca. */
                   <div
                     className={cn(
                       "rounded-3xl border border-rule flex flex-col items-center justify-center text-center px-8 py-16 mb-8",
@@ -260,7 +368,9 @@ export default function LearnShell({
                       Materi belum tersedia
                     </p>
                     <p className={cn("text-sm max-w-sm", current.type === "video" ? "text-blue-100/70" : "text-ink-muted")}>
-                      Struktur pelajaran sudah ada, tetapi tautan video dan berkasnya belum diunggah.
+                      {attachments.length > 0
+                        ? "Berkasnya tidak bisa ditampilkan di halaman. Silakan unduh di bawah."
+                        : "Struktur pelajaran sudah ada, tetapi tautan video dan berkasnya belum diunggah."}
                     </p>
                   </div>
                 )}
@@ -274,9 +384,8 @@ export default function LearnShell({
                         return (
                           <li key={file.path}>
                             <a
-                              href={lessonAssetUrl(course.slug, file.path)}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                              href={lessonAssetUrl(course.slug, file.path, true)}
+                              download={file.name}
                               className="group flex items-center gap-3 rounded-2xl border border-rule bg-paper-card px-4 py-3 transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
                             >
                               <span className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">

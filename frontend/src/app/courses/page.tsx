@@ -3,6 +3,7 @@ import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
 import { listCourses } from "@/lib/courses";
+import CourseThumb from "@/components/ui/CourseThumb";
 import { iconPaths, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -48,18 +49,24 @@ export default async function CoursesPage() {
                 key={course.slug}
                 className="bg-paper-card border border-rule rounded-2xl overflow-hidden flex flex-col transition-[border-color,box-shadow] duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft"
               >
-                <div className={cn("h-32 flex items-center justify-center border-b border-rule", course.tint)}>
-                  <svg
-                    className="w-12 h-12 text-blue-600/40"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1}
-                    aria-hidden="true"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon] ?? iconPaths.reading} />
-                  </svg>
-                </div>
+                <CourseThumb
+                  thumbnail={course.thumbnail}
+                  className="h-32 w-full border-b border-rule"
+                  fallback={
+                    <div className={cn("h-32 flex items-center justify-center border-b border-rule", course.tint)}>
+                      <svg
+                        className="w-12 h-12 text-blue-600/40"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1}
+                        aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon] ?? iconPaths.reading} />
+                      </svg>
+                    </div>
+                  }
+                />
 
                 <div className="p-5 flex-1 flex flex-col">
                   <h2 className="t-h3 text-base mb-2">{course.title}</h2>

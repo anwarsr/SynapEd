@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Contoh env boleh ikut ter-commit
 !.env.example
+
+# Disalin dari node_modules saat dev/build (scripts/copy-pdf-worker.mjs)
+/public/pdf.worker.min.mjs

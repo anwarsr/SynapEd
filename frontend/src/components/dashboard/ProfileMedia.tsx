@@ -78,7 +78,6 @@ export function AvatarForm({ user }: { user: SessionUser }) {
 
       // photoURL ikut tertanam di session cookie, jadi cookie-nya harus
       // diterbitkan ulang supaya server melihat foto yang baru.
-      await current.getIdToken(true);
       await establishSession(current);
 
       setStatus({ kind: "ok", msg: "Foto profil diperbarui." });

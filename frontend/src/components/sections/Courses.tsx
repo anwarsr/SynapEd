@@ -6,6 +6,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import Tag from "@/components/ui/Tag";
 import type { Category, CourseSummary } from "@/lib/courses";
 import { levelTone } from "@/lib/courseUi";
+import CourseThumb from "@/components/ui/CourseThumb";
 import { cn } from "@/lib/cn";
 
 interface Props {
@@ -66,24 +67,30 @@ export default function Courses({ courses, categories }: Props) {
           {filtered.map((course, index) => (
             <Reveal key={course.slug} delay={index * 100} className="h-full">
               <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden group flex flex-col h-full transition-all duration-300 ease-out-soft hover:border-rule-strong hover:shadow-lift hover:-translate-y-1.5">
-                <div
-                  className={cn(
-                    "relative h-40 w-full flex justify-center items-end overflow-hidden pt-4 border-b border-rule",
-                    course.tint,
-                  )}
-                >
-                  <svg className="absolute bottom-0 w-full z-0 opacity-40" viewBox="0 0 400 150" fill="none" aria-hidden="true">
-                    <path d="M-20 150C-20 150 150 30 420 150" className="stroke-rule-strong" strokeWidth="40" />
-                    <path d="M20 150C20 150 180 60 380 150" className="stroke-blue-300" strokeWidth="20" />
-                    <path d="M60 150C60 150 210 90 340 150" className="stroke-rule" strokeWidth="60" />
-                  </svg>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`https://api.dicebear.com/8.x/notionists/svg?seed=${encodeURIComponent(course.title)}&size=150&backgroundColor=transparent`}
-                    className="relative z-10 h-32 w-auto object-contain transition-transform duration-200 ease-out-soft group-hover:-translate-y-1"
-                    alt=""
-                  />
-                </div>
+                <CourseThumb
+                  thumbnail={course.thumbnail}
+                  className="h-40 w-full border-b border-rule"
+                  fallback={
+                    <div
+                      className={cn(
+                        "relative h-40 w-full flex justify-center items-end overflow-hidden pt-4 border-b border-rule",
+                        course.tint,
+                      )}
+                    >
+                      <svg className="absolute bottom-0 w-full z-0 opacity-40" viewBox="0 0 400 150" fill="none" aria-hidden="true">
+                        <path d="M-20 150C-20 150 150 30 420 150" className="stroke-rule-strong" strokeWidth="40" />
+                        <path d="M20 150C20 150 180 60 380 150" className="stroke-blue-300" strokeWidth="20" />
+                        <path d="M60 150C60 150 210 90 340 150" className="stroke-rule" strokeWidth="60" />
+                      </svg>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`https://api.dicebear.com/8.x/notionists/svg?seed=${encodeURIComponent(course.title)}&size=150&backgroundColor=transparent`}
+                        className="relative z-10 h-32 w-auto object-contain transition-transform duration-200 ease-out-soft group-hover:-translate-y-1"
+                        alt=""
+                      />
+                    </div>
+                  }
+                />
 
                 <div className="p-5 flex flex-col flex-1">
                   <h3 className="t-h3 text-lg mb-2">{course.title}</h3>

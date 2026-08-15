@@ -7,6 +7,7 @@ import Tag from "@/components/ui/Tag";
 import EnrollButton from "@/components/courses/EnrollButton";
 import { getCourse } from "@/lib/courses";
 import { getCourseAccess } from "@/lib/courseAccess";
+import CourseThumb from "@/components/ui/CourseThumb";
 import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -148,11 +149,17 @@ export default async function CourseDetailPage({ params }: Props) {
 
             <aside>
               <div className="bg-paper-card border border-rule rounded-2xl p-6 sticky top-28">
-                <div className={cn("h-36 rounded-2xl flex items-center justify-center mb-6", course.tint)}>
-                  <svg className="w-16 h-16 text-blue-600/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.8} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon] ?? iconPaths.reading} />
-                  </svg>
-                </div>
+                <CourseThumb
+                  thumbnail={course.thumbnail}
+                  className="h-36 w-full rounded-2xl mb-6"
+                  fallback={
+                    <div className={cn("h-36 rounded-2xl flex items-center justify-center mb-6", course.tint)}>
+                      <svg className="w-16 h-16 text-blue-600/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.8} aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon] ?? iconPaths.reading} />
+                      </svg>
+                    </div>
+                  }
+                />
 
                 <h2 className="t-h3 text-lg mb-1.5">{course.title}</h2>
                 <p className="text-sm text-ink-muted mb-4">oleh {course.instructorName}</p>
