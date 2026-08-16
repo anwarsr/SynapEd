@@ -332,15 +332,41 @@ export default function LearnShell({
                 {embedUrl ? (
                   /* Rasio 16:9 dijaga lewat aspect-video supaya tidak bergeser
                      saat iframe dimuat. */
-                  <div className="aspect-video w-full rounded-3xl overflow-hidden border border-rule bg-navy mb-8">
-                    <iframe
-                      src={embedUrl}
-                      title={current.title}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
-                    />
+                  <div className="mb-8">
+                    <div className="aspect-video w-full rounded-3xl overflow-hidden border border-rule bg-navy">
+                      <iframe
+                        src={embedUrl}
+                        title={current.title}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                      />
+                    </div>
+
+                    {/* Jalan keluar kalau embed-nya tidak mau jalan.
+                        Penyematan YouTube bisa gagal karena hal-hal di luar
+                        jangkauan aplikasi — ekstensi pemblokir, kebijakan
+                        privasi peramban, jaringan yang menyaring. Tanpa
+                        tautan ini peserta hanya menatap layar berputar tanpa
+                        tahu harus berbuat apa. */}
+                    <p className="mt-3 text-right">
+                      <a
+                        href={current.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-blue-700 transition-colors"
+                      >
+                        Videonya tidak muncul? Tonton di YouTube
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </p>
                   </div>
                 ) : readable ? (
                   /* Berkasnya dibaca langsung di halaman — peserta tidak perlu

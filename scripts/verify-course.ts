@@ -419,6 +419,11 @@ async function run(educator: TestUser, biasa: TestUser) {
       video.status === 200 && video.html.includes("youtube.com/embed/"),
       "tautan diubah ke bentuk embed",
     );
+    check(
+      "ada jalan keluar kalau embed gagal",
+      video.html.includes("Tonton di YouTube") && video.html.includes(VIDEO),
+      "tautan ke YouTube tetap tersedia",
+    );
 
     check(
       "kartu katalog memakai gambar unggahan",
