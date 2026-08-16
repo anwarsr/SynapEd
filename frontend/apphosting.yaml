@@ -1,0 +1,60 @@
+# Konfigurasi Firebase App Hosting untuk aplikasi Next.js ini.
+#
+# Berkas ini berada di frontend/, bukan akar repo — itulah "root directory"
+# yang harus disetel saat membuat backend di Firebase Console, karena repo ini
+# juga berisi scripts/ dan berkas rules yang tidak ikut di-deploy.
+#
+# Admin SDK TIDAK memerlukan service-account JSON di sini: App Hosting berjalan
+# di dalam Google Cloud, jadi Application Default Credentials terbaca sendiri.
+# Lihat lib/firebase/admin.ts — jalur FIREBASE_SERVICE_ACCOUNT hanya dipakai
+# saat menjalankan skrip dari laptop.
+
+runConfig:
+  # minInstances: 0 berarti tidak ada biaya saat tidak ada pengunjung, dengan
+  # imbalan permintaan pertama setelah menganggur terasa lambat (cold start).
+  # Naikkan ke 1 kalau kelasnya sudah dipakai serentak dan jeda itu mengganggu.
+  minInstances: 0
+
+  # Batas atas yang disengaja. Tanpa batas, lonjakan trafik (atau perayapan
+  # bot) bisa menaikkan tagihan tanpa sepengetahuan siapa pun.
+  maxInstances: 2
+
+  cpu: 1
+  memoryMiB: 1024
+  concurrency: 80
+
+env:
+  # Seluruh nilai di bawah berawalan NEXT_PUBLIC_ dan MEMANG tampil di
+  # browser — apiKey Firebase bukan rahasia. Yang menjaga data adalah
+  # security rules, bukan kunci ini. Karena itu nilainya ditulis apa adanya,
+  # bukan lewat Secret Manager.
+  #
+  # availability BUILD wajib: Next.js menyisipkan variabel NEXT_PUBLIC_ ke
+  # dalam bundel saat build. Kalau hanya RUNTIME, nilainya kosong di browser
+  # dan Firebase klien gagal diinisialisasi.
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: synap-ed
+    availability: [BUILD, RUNTIME]
+
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyA1TjrImy1I1kQ_eyElC2IIuqO-Ze538WQ
+    availability: [BUILD, RUNTIME]
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: synap-ed.firebaseapp.com
+    availability: [BUILD, RUNTIME]
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: synap-ed.firebasestorage.app
+    availability: [BUILD, RUNTIME]
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:999026772568:web:2b73ef0e0f5b2297ee182d"
+    availability: [BUILD, RUNTIME]
+
+  # Dipatok "false" secara eksplisit. Kalau nilainya sampai "true" di
+  # produksi, aplikasi akan mencoba menghubungi emulator di 127.0.0.1 dan
+  # seluruh data menghilang dari pandangan.
+  - variable: NEXT_PUBLIC_USE_FIREBASE_EMULATOR
+    value: "false"
+    availability: [BUILD, RUNTIME]
