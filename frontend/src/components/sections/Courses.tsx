@@ -7,6 +7,7 @@ import Tag from "@/components/ui/Tag";
 import type { Category, CourseSummary } from "@/lib/courses";
 import { levelTone } from "@/lib/courseUi";
 import CourseThumb from "@/components/ui/CourseThumb";
+import CourseAuthor from "@/components/ui/CourseAuthor";
 import { cn } from "@/lib/cn";
 
 interface Props {
@@ -93,6 +94,7 @@ export default function Courses({ courses, categories }: Props) {
                 />
 
                 <div className="p-5 flex flex-col flex-1">
+                  <CourseAuthor name={course.instructorName} className="mb-3" />
                   <h3 className="t-h3 text-lg mb-2">{course.title}</h3>
                   <p className="t-body text-sm line-clamp-2 mb-5">{course.shortDesc}</p>
 

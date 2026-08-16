@@ -4,6 +4,7 @@ import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
 import { listCourses } from "@/lib/courses";
 import CourseThumb from "@/components/ui/CourseThumb";
+import CourseAuthor from "@/components/ui/CourseAuthor";
 import { iconPaths, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -69,6 +70,7 @@ export default async function CoursesPage() {
                 />
 
                 <div className="p-5 flex-1 flex flex-col">
+                  <CourseAuthor name={course.instructorName} className="mb-3" />
                   <h2 className="t-h3 text-base mb-2">{course.title}</h2>
                   <p className="t-body text-sm line-clamp-2 mb-5">{course.shortDesc}</p>
 

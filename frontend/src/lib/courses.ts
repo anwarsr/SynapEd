@@ -45,6 +45,15 @@ export interface CourseSummary {
   lessonsCount: number;
   /** Gambar latar kartu. Kosong berarti memakai latar bawaan (tint + ikon). */
   thumbnail: string | null;
+  /**
+   * Penyedia kursus — nama yang tampil sebagai pemilik di katalog.
+   *
+   * Ada di ringkasan, bukan hanya di detail: tanpa ini kartu katalog tidak
+   * memberi tahu kursus itu milik siapa, dan pengunjung baru tahu setelah
+   * membuka halamannya. Kursus hasil migrasi bisa saja kosong, jadi selalu
+   * perlakukan sebagai boleh-kosong.
+   */
+  instructorName: string;
 }
 
 export interface CourseDetail extends CourseSummary {
@@ -52,7 +61,6 @@ export interface CourseDetail extends CourseSummary {
   price: number;
   enrolledStudents: number;
   lastUpdated: string | null;
-  instructorName: string;
   instructorBio: string;
   whatYouLearn: string[];
   requirements: string[];
@@ -100,6 +108,7 @@ function toSummary(doc: CourseDoc): CourseSummary {
     reviews: doc.reviews,
     lessonsCount: countLessons(doc.sections ?? []),
     thumbnail: doc.thumbnail ?? null,
+    instructorName: doc.instructorName ?? "",
   };
 }
 
