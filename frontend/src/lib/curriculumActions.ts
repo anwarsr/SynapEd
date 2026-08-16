@@ -6,6 +6,8 @@ import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
+import { attachmentPaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
+import { COURSE_THUMBNAILS } from "@/lib/storagePaths";
 
 export type CurriculumResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -33,7 +35,23 @@ export async function saveCurriculum(slug: string, input: SectionInput[]): Promi
   const normalized = normalizeSections(input, ownerUids);
   if (!normalized.ok) return { ok: false, error: normalized.error };
 
+  // Daftar lampiran LAMA diambil sebelum ditimpa. Penyimpanan kurikulum
+  // mengganti `sections` seluruhnya, jadi setiap berkas yang tadi dirujuk dan
+  // sekarang tidak lagi — materi yang diganti, pelajaran yang dihapus — mulai
+  // detik ini tidak terjangkau siapa pun.
+  const before = attachmentPaths(course.sections);
+
   await adminDb().collection("courses").doc(slug).update({ sections: normalized.sections });
+
+  const keep = attachmentPaths(normalized.sections);
+  const keepSet = new Set(keep);
+
+  await deleteObjects(before.filter((path) => !keepSet.has(path)));
+
+  // Menyapu foldernya sekalian menangkap berkas yang diunggah lalu dibatalkan
+  // di tengah penyuntingan: berkas itu tidak pernah masuk `before` maupun
+  // `keep`, sehingga pembandingan di atas tidak akan pernah melihatnya.
+  await pruneAttachmentFolders([...before, ...keep], keep);
 
   revalidatePath(`/courses/${slug}`);
   revalidatePath(`/courses/${slug}/learn`);
@@ -114,6 +132,24 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
   }
 
   await adminDb().collection("courses").doc(slug).update(patch);
+
+  // Gambar latar yang tergantikan dibuang. Nama berkasnya mengandung cap waktu
+  // supaya peramban tidak menampilkan gambar lama dari cache, jadi setiap
+  // penggantian SELALU membuat berkas baru dan meninggalkan yang lama.
+  //
+  // Hanya path lama yang benar-benar tercatat yang dihapus, bukan berdasarkan
+  // awalan nama: gambar tersimpan datar sebagai `{slug}-{waktu}-{nama}`,
+  // sehingga menyapu awalan `tess-` akan ikut memakan gambar milik `tess-2`.
+  if (patch.thumbnail !== undefined) {
+    const previous = course.thumbnail;
+    if (
+      typeof previous === "string" &&
+      previous.startsWith(`${COURSE_THUMBNAILS}/`) &&
+      previous !== patch.thumbnail
+    ) {
+      await deleteObjects([previous]);
+    }
+  }
 
   revalidatePath(`/courses/${slug}`);
   revalidatePath("/educator/courses");

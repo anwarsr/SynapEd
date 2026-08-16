@@ -13,3 +13,6 @@ export const COURSE_ASSETS = "course-assets";
 
 /** Gambar latar kursus — terbuka, tampil di katalog publik. */
 export const COURSE_THUMBNAILS = "course-thumbnails";
+
+/** Foto profil — satu folder per pengguna. */
+export const AVATARS = "avatars";

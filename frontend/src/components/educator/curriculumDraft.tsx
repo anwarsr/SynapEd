@@ -1,7 +1,8 @@
 "use client";
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { uploadCourseDoc, validateDoc } from "@/lib/courseUpload";
+import { discardUpload } from "@/lib/uploadCleanupActions";
 import { toEmbedUrl } from "@/lib/videoEmbed";
 import type { CourseDetail } from "@/lib/courses";
 import type { LessonInput, SectionInput } from "@/lib/curriculum";
@@ -165,6 +166,23 @@ export default function SectionList({
 }) {
   const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null);
 
+  // Berkas yang diunggah DI HALAMAN INI dan belum tentu tersimpan.
+  //
+  // Hanya berkas inilah yang boleh langsung dibuang saat diganti. Lampiran
+  // yang sudah tersimpan sengaja dibiarkan: kursusnya masih memakainya sampai
+  // tombol simpan ditekan, dan educator bisa saja menutup halaman tanpa
+  // menyimpan. Yang lama itu dibuang server saat penyimpanan benar-benar
+  // terjadi, lewat pembandingan kurikulum lama dengan yang baru.
+  const freshUploads = useRef<Set<string>>(new Set());
+
+  function discardIfFresh(path: string | null | undefined) {
+    if (!path || !freshUploads.current.has(path)) return;
+    freshUploads.current.delete(path);
+    // Tidak ditunggu: mengganti berkas tidak boleh terasa lambat hanya karena
+    // berkas sebelumnya sedang dibersihkan.
+    void discardUpload(path).catch(() => undefined);
+  }
+
   // Semua perubahan memakai bentuk fungsional. Membaca `sections` dari closure
   // membuat dua klik cepat berturut-turut saling menimpa.
   function updateSection(si: number, patch: Partial<DraftSection>) {
@@ -185,7 +203,8 @@ export default function SectionList({
     );
   }
 
-  function removeLesson(si: number, li: number) {
+  function removeLesson(si: number, li: number, attachment: DraftAttachment | null) {
+    discardIfFresh(attachment?.path);
     setSections((prev) =>
       prev.map((s, i) => (i === si ? { ...s, lessons: s.lessons.filter((_, j) => j !== li) } : s)),
     );
@@ -197,8 +216,15 @@ export default function SectionList({
     );
   }
 
-  async function pickAttachment(si: number, li: number, lessonKey: string, file: File | null) {
+  async function pickAttachment(
+    si: number,
+    li: number,
+    lessonKey: string,
+    file: File | null,
+    current: DraftAttachment | null,
+  ) {
     if (!file) {
+      discardIfFresh(current?.path);
       updateLesson(si, li, { attachment: null, uploadError: null });
       return;
     }
@@ -218,6 +244,12 @@ export default function SectionList({
     updateLesson(si, li, { uploading: true, uploadError: null });
     try {
       const doc = await uploadCourseDoc(uid, uploadPrefix, `lesson-${lessonKey}`, file);
+      freshUploads.current.add(doc.path);
+
+      // Nama berkas yang sama menghasilkan path yang sama, jadi unggahan tadi
+      // MENIMPA yang lama alih-alih membuat berkas kedua. Tanpa penjagaan ini,
+      // membuang "yang lama" berarti menghapus berkas yang baru saja diunggah.
+      if (current?.path !== doc.path) discardIfFresh(current?.path);
       updateLesson(si, li, { attachment: doc, uploading: false });
     } catch {
       updateLesson(si, li, { uploading: false, uploadError: "Gagal mengunggah berkas. Coba lagi." });
@@ -321,7 +353,7 @@ export default function SectionList({
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeLesson(si, li)}
+                      onClick={() => removeLesson(si, li, l.attachment)}
                       disabled={s.lessons.length === 1}
                       className="p-2 rounded-lg text-rust-700 transition-colors hover:bg-rust-100 disabled:opacity-30 disabled:hover:bg-transparent"
                       aria-label="Hapus pelajaran"
@@ -369,7 +401,7 @@ export default function SectionList({
                     id={`attachment-${l.key}`}
                     file={l.attachment}
                     error={l.uploadError}
-                    onPick={(f) => pickAttachment(si, li, l.key, f)}
+                    onPick={(f) => pickAttachment(si, li, l.key, f, l.attachment)}
                   />
                 )}
                 {l.uploading && <p className="mt-2 text-sm text-ink-muted">Mengunggah…</p>}

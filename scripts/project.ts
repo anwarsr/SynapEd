@@ -21,12 +21,32 @@ import { cert, initializeApp, type App } from "firebase-admin/app";
  * kredensialnya sering tertangkap oleh blok catch pemanggil dan tersamar
  * jadi pesan lain yang menyesatkan (mis. "akun tidak ditemukan").
  */
-function loadServiceAccountFromEnvFile(): string | undefined {
+function readEnvLocal(key: string): string | undefined {
   const path = resolve(__dirname, "../frontend/.env.local");
   if (!existsSync(path)) return undefined;
 
-  const match = readFileSync(path, "utf8").match(/^FIREBASE_SERVICE_ACCOUNT=(.+)$/m);
+  const match = readFileSync(path, "utf8").match(new RegExp(`^${key}=(.+)$`, "m"));
   return match?.[1]?.trim();
+}
+
+function loadServiceAccountFromEnvFile(): string | undefined {
+  return readEnvLocal("FIREBASE_SERVICE_ACCOUNT");
+}
+
+/**
+ * Nama bucket Storage.
+ *
+ * Dibaca eksplisit, bukan dibiarkan ditebak Admin SDK: tanpa ini SDK menebak
+ * `<project-id>.appspot.com`, sementara proyek yang dibuat setelah perubahan
+ * penamaan Firebase memakai `<project-id>.firebasestorage.app`. Menebak salah
+ * berarti skrip memandangi bucket kosong dan menyimpulkan tidak ada apa-apa.
+ */
+export function resolveStorageBucket(): string {
+  return (
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ??
+    readEnvLocal("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET") ??
+    `${resolveProjectId()}.firebasestorage.app`
+  );
 }
 
 export function resolveProjectId(): string {
@@ -71,6 +91,7 @@ export function initAdmin(): App {
         privateKey: p.private_key.replace(/\\n/g, "\n"),
       }),
       projectId: p.project_id,
+      storageBucket: resolveStorageBucket(),
     });
   }
 
@@ -80,7 +101,7 @@ export function initAdmin(): App {
   // yang tersimpan di disk dan bisa bocor.
   //
   // Kalau emulator sedang dipakai, kredensial tidak diperiksa sama sekali.
-  return initializeApp({ projectId });
+  return initializeApp({ projectId, storageBucket: resolveStorageBucket() });
 }
 
 /** Label untuk log, supaya jelas skrip sedang menulis ke mana. */

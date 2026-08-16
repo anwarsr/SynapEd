@@ -2,10 +2,12 @@
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { LEVELS, courseOwnership, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
+import { LEVELS, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
+import { attachmentPaths, courseFilePaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
+import type { Section } from "@/lib/courses";
 
 export type CourseResult =
   | { ok: true; slug: string; message: string }
@@ -119,6 +121,14 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       createdAt: now,
     });
 
+  // Berkas yang diunggah selama mengisi form lalu diganti sebelum tombol
+  // simpan ditekan tidak pernah tercatat di Firestore, jadi tidak akan
+  // ditemukan pembandingan lama-vs-baru mana pun nanti. Folder draft-nya
+  // dibandingkan dengan kurikulum yang benar-benar tersimpan, sekarang juga —
+  // setelah ini, id draft-nya hilang bersama halaman formnya.
+  const keep = attachmentPaths(normalized.sections);
+  await pruneAttachmentFolders(keep, keep);
+
   revalidatePath("/courses");
   revalidatePath("/educator/courses");
 
@@ -130,19 +140,42 @@ export async function deleteCourse(slug: string): Promise<CourseResult> {
   const user = await requireEducator();
   if (!user) return { ok: false, error: "Hanya educator yang dapat menghapus kursus." };
 
-  const { exists, ownerUid } = await courseOwnership(slug);
-  if (!exists) return { ok: false, error: "Kursus tidak ditemukan." };
+  const db = adminDb();
+
+  // Dokumennya dibaca utuh, bukan lewat courseOwnership: begitu dokumen ini
+  // terhapus, tidak ada lagi cara mengetahui berkas mana yang miliknya. Daftar
+  // path harus diambil SEBELUM penghapusan, dan sekalian dipakai untuk
+  // memeriksa kepemilikan supaya tetap satu pembacaan.
+  const snap = await db.collection("courses").doc(slug).get();
+  if (!snap.exists) return { ok: false, error: "Kursus tidak ditemukan." };
+
+  const data = snap.data() ?? {};
 
   // Kursus bawaan tidak punya ownerUid — itu berarti bukan milik educator
   // mana pun, jadi tidak seorang pun boleh menghapusnya dari sini.
-  if (ownerUid !== user.uid) return { ok: false, error: "Ini bukan kursus Anda." };
+  if ((data.ownerUid as string | undefined) !== user.uid) {
+    return { ok: false, error: "Ini bukan kursus Anda." };
+  }
 
-  const db = adminDb();
+  const files = courseFilePaths({
+    sections: data.sections as Section[] | undefined,
+    thumbnail: data.thumbnail,
+  });
   // recursiveDelete, bukan .delete() biasa: begitu kuis (Fase 5) menambahkan
   // subcollection courses/{slug}/quizzes/*, .delete() biasa hanya menghapus
   // dokumen induknya dan meninggalkan subcollection itu yatim — dokumen tak
   // terjangkau yang tetap ditagih selamanya.
   await db.recursiveDelete(db.collection("courses").doc(slug));
+
+  // Materi dan gambar latarnya ikut dibuang. Firestore dan Storage terpisah:
+  // tanpa baris ini, seluruh berkas kursus tetap ada di bucket selamanya,
+  // tidak terjangkau dari aplikasi mana pun tapi tetap ditagih.
+  //
+  // pruneAttachmentFolders menyapu folder-nya sekalian (keep kosong), supaya
+  // berkas yang pernah diunggah lalu dilepas dari kurikulum — sehingga tidak
+  // ada di `files` — ikut terangkut.
+  await deleteObjects(files);
+  await pruneAttachmentFolders(files, []);
 
   revalidatePath("/courses");
   revalidatePath("/educator/courses");

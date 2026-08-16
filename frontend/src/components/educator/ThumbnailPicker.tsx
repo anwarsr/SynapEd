@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { IMAGE_ACCEPT, uploadCourseImage, validateImage } from "@/lib/courseUpload";
+import { discardUpload } from "@/lib/uploadCleanupActions";
 import { courseImageUrl } from "@/lib/videoEmbed";
 import { Label } from "./fields";
 
@@ -31,6 +32,20 @@ export default function ThumbnailPicker({
   const [localUrl, setLocalUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Path yang diunggah DI HALAMAN INI, bukan yang sudah tersimpan di kursus.
+  // Hanya berkas inilah yang boleh dibuang langsung: gambar yang sudah
+  // tersimpan masih dipakai kursusnya sampai form ini benar-benar disimpan,
+  // dan penghapusannya diurus server saat itu terjadi.
+  const justUploaded = useRef<string | null>(null);
+
+  function dropPrevious() {
+    const stale = justUploaded.current;
+    justUploaded.current = null;
+    // Tidak ditunggu: ini kebersihan penyimpanan, bukan sesuatu yang perlu
+    // menahan pemilihan gambar berikutnya.
+    if (stale) void discardUpload(stale).catch(() => undefined);
+  }
 
   // Pratinjau lokal memakai objek URL yang harus dilepas, kalau tidak
   // berkasnya tertahan di memori selama halaman terbuka.
@@ -64,6 +79,8 @@ export default function ThumbnailPicker({
 
     try {
       const path = await uploadCourseImage(uid, prefix, file);
+      dropPrevious();
+      justUploaded.current = path;
       onChange(path);
     } catch {
       setError("Gagal mengunggah gambar. Coba lagi.");
@@ -77,6 +94,7 @@ export default function ThumbnailPicker({
   function remove() {
     setPreview(null);
     setError(null);
+    dropPrevious();
     onChange(null);
   }
 

@@ -18,6 +18,7 @@ import {
   isRecentLoginRequired,
   reauthWithGoogle,
 } from "@/lib/authActions";
+import { purgeAvatarFiles } from "@/lib/uploadCleanupActions";
 import type { SignInMethods } from "@/lib/accountProviders";
 import type { SessionUser } from "@/lib/firebase/session";
 import { cn } from "@/lib/cn";
@@ -364,6 +365,13 @@ export function DeleteAccount({ methods }: { methods: SignInMethods }) {
     setStatus({ kind: "idle" });
     try {
       const u = viaGoogle ? await reauthGoogle() : await reauth(password);
+
+      // Foto profil dibersihkan SEBELUM akunnya hilang. Setelah deleteUser,
+      // cookie sesi tidak lagi mewakili siapa pun, sehingga Server Action
+      // pembersih tidak punya cara mengetahui folder milik siapa yang boleh
+      // disentuh — berkasnya akan tertinggal selamanya.
+      await purgeAvatarFiles().catch(() => undefined);
+
       await deleteUser(u);
 
       // Akun sudah tidak ada — cookie sesi wajib ikut dibersihkan.
