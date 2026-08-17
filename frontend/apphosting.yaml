@@ -83,14 +83,18 @@ env:
   # Server key BERBEDA sifatnya dari semua nilai di atas: ia kredensial
   # penuh. Siapa pun yang memegangnya bisa memalsukan tanda tangan notifikasi
   # pembayaran — yang berarti memberi dirinya akses ke seluruh kursus
-  # berbayar tanpa membayar. Karena itu ia lewat Secret Manager, bukan
-  # ditulis di berkas ini, dan RUNTIME saja: tidak ada gunanya saat build.
+  # berbayar tanpa membayar.
   #
-  # Simpan dulu dengan:
-  #   firebase apphosting:secrets:set MIDTRANS_SERVER_KEY
+  # Karena itu yang tertulis di sini hanya NAMA secret-nya; nilainya hidup di
+  # Google Secret Manager dan tidak pernah menyentuh repo ini. Dibuat dengan:
   #
-  # Baris ini sengaja dikomentari sampai secret-nya benar-benar ada —
-  # menunjuk secret yang belum dibuat membuat seluruh deploy gagal.
-  # - variable: MIDTRANS_SERVER_KEY
-  #   secret: MIDTRANS_SERVER_KEY
-  #   availability: [RUNTIME]
+  #   firebase apphosting:secrets:set MIDTRANS_SERVER_KEY --project synap-ed
+  #
+  # Perintah itu sekaligus memberi service account backend izin membacanya.
+  # Tanpa izin tersebut aplikasinya gagal start tanpa pesan yang jelas.
+  #
+  # Tanpa `availability`, App Hosting menyediakannya saat RUNTIME saja — dan
+  # memang begitu yang benar: kunci ini hanya dipakai server saat melayani
+  # permintaan, tidak ada gunanya saat build.
+  - variable: MIDTRANS_SERVER_KEY
+    secret: MIDTRANS_SERVER_KEY
