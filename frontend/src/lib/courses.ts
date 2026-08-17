@@ -107,18 +107,47 @@ const CATEGORY_LABELS: Record<string, string> = {
   analisis: "Analisis Data",
 };
 
+/** Kategori baru yang belum masuk CATEGORY_LABELS tetap tampil rapi
+ *  ("ai-terapan" -> "Ai Terapan"), bukan sebagai slug mentah. */
+function categoryLabel(slug: string): string {
+  const known = CATEGORY_LABELS[slug];
+  if (known) return known;
+
+  return slug
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 // ── API publik ──────────────────────────────────────────────────────────
 
+/**
+ * Diurutkan di memori, bukan lewat `orderBy('order')`.
+ *
+ * Firestore MENGHILANGKAN dokumen yang tidak punya field yang dipakai
+ * `orderBy` — jadi kursus yang ditambahkan manual lewat Console (atau
+ * yang `order`-nya belum sempat terisi) diam-diam tak pernah muncul di
+ * katalog. Katalognya kecil, jadi mengambil semua lalu mengurutkan di
+ * sini lebih aman daripada kehilangan baris tanpa peringatan.
+ * Dokumen tanpa `order` ditaruh paling belakang.
+ */
 export async function listCourses(category?: string): Promise<CourseSummary[]> {
   const collection = adminDb().collection("courses");
 
   const query =
     category && category !== "semua"
-      ? collection.where("category", "==", category).orderBy("order")
-      : collection.orderBy("order");
+      ? collection.where("category", "==", category)
+      : collection;
 
   const snapshot = await query.get();
-  return snapshot.docs.map((d) => toSummary(d.data() as CourseDoc));
+
+  return snapshot.docs
+    .map((d) => d.data() as CourseDoc)
+    // Dokumen "hantu" (hanya wadah subcollection) tidak punya slug/judul.
+    .filter((doc) => doc && doc.slug && doc.title)
+    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+    .map(toSummary);
 }
 
 /** Satu pembacaan dokumen — section & lesson tertanam di dalamnya. */
@@ -133,17 +162,21 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
 }
 
 export async function listCategories(): Promise<Category[]> {
-  const snapshot = await adminDb().collection("courses").orderBy("order").get();
+  // Tanpa orderBy, dengan alasan yang sama seperti listCourses di atas.
+  const snapshot = await adminDb().collection("courses").get();
+
+  const docs = snapshot.docs
+    .map((d) => d.data() as CourseDoc)
+    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
 
   const seen: string[] = [];
-  for (const d of snapshot.docs) {
-    const { category } = d.data() as CourseDoc;
+  for (const { category } of docs) {
     if (category && !seen.includes(category)) seen.push(category);
   }
 
   return [
     { slug: "semua", label: "Semua Materi" },
-    ...seen.map((slug) => ({ slug, label: CATEGORY_LABELS[slug] ?? slug })),
+    ...seen.map((slug) => ({ slug, label: categoryLabel(slug) })),
   ];
 }
 

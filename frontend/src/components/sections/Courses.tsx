@@ -2,7 +2,6 @@
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
-import SectionHeader from "@/components/ui/SectionHeader";
 import Tag from "@/components/ui/Tag";
 import type { Category, CourseSummary } from "@/lib/courses";
 import { levelTone } from "@/lib/courseUi";
@@ -13,6 +12,22 @@ interface Props {
   categories: Category[];
 }
 
+/** Tipografi judul disamakan dengan About.tsx: Inter tebal, tracking
+ *  rapat, biru identitas — bukan serif Fraunces. */
+const HEADING: React.CSSProperties = {
+  fontFamily: "var(--font-inter)",
+  fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
+  fontWeight: 800,
+  lineHeight: 1.03,
+  letterSpacing: "-0.04em",
+};
+
+const CARD_TITLE: React.CSSProperties = {
+  fontFamily: "var(--font-inter)",
+  fontWeight: 900,
+  letterSpacing: "-0.025em",
+};
+
 export default function Courses({ courses, categories }: Props) {
   const [filter, setFilter] = useState("semua");
 
@@ -21,93 +36,105 @@ export default function Courses({ courses, categories }: Props) {
   const filtered = filter === "semua" ? courses : courses.filter((c) => c.category === filter);
 
   return (
-    <section id="courses" className="relative py-28 bg-paper overflow-hidden">
-      {/* Kertas grafik tipis — motif buku catatan, bukan grid techy */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-60 pointer-events-none"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, var(--color-rule) 1px, transparent 1px), linear-gradient(to bottom, var(--color-rule) 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-          maskImage: "radial-gradient(ellipse 60% 50% at 50% 0%, #000 60%, transparent 100%)",
-          WebkitMaskImage: "radial-gradient(ellipse 60% 50% at 50% 0%, #000 60%, transparent 100%)",
-        }}
-      />
+    <section id="courses" className="bg-paper py-28">
+      <div className="container-page">
+        <Reveal>
+          <h2 className="text-blue-600 max-w-4xl" style={HEADING}>
+            Materi Pembelajaran
+          </h2>
+        </Reveal>
 
-      <div className="relative container-page">
-        <SectionHeader
-          chapter="03"
-          label="Materi"
-          sub="Berbagai modul terstruktur dari level dasar hingga lanjutan, dirancang untuk pengalaman belajar yang optimal."
-        >
-          Materi <span className="mark">pembelajaran</span>
-        </SectionHeader>
+        <Reveal delay={110}>
+          <p className="t-body mt-6 max-w-2xl text-ink-muted">
+            Berbagai modul terstruktur dari level dasar hingga lanjutan, dirancang untuk pengalaman
+            belajar yang optimal.
+          </p>
+        </Reveal>
 
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
-          {categories.map((cat) => (
-            <button
-              key={cat.slug}
-              onClick={() => setFilter(cat.slug)}
-              aria-pressed={filter === cat.slug}
-              className={cn(
-                "px-5 py-2 rounded-full text-sm border transition-colors duration-200 ease-out-soft",
-                filter === cat.slug
-                  ? "bg-blue-600 border-blue-600 text-white"
-                  : "bg-paper-card border-rule text-ink-body hover:border-blue-500 hover:text-blue-700",
-              )}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {filtered.map((course, index) => (
-            <Reveal key={course.slug} delay={index * 100} className="h-full">
-              <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden group flex flex-col h-full transition-all duration-300 ease-out-soft hover:border-rule-strong hover:shadow-lift hover:-translate-y-1.5">
-                <div
+        {categories.length > 1 && (
+          <Reveal delay={180}>
+            <div className="flex flex-wrap gap-2 mt-10">
+              {categories.map((cat) => (
+                <button
+                  key={cat.slug}
+                  onClick={() => setFilter(cat.slug)}
+                  aria-pressed={filter === cat.slug}
                   className={cn(
-                    "relative h-40 w-full flex justify-center items-end overflow-hidden pt-4 border-b border-rule",
-                    course.tint,
+                    "px-5 py-2.5 rounded-full text-sm border transition-all duration-200 ease-out-soft",
+                    filter === cat.slug
+                      ? "bg-blue-600 border-blue-600 text-white"
+                      : "bg-paper-card border-blue-100 text-ink-body hover:border-blue-600 hover:text-blue-600",
                   )}
+                  style={{ fontFamily: "var(--font-inter)", fontWeight: 600, letterSpacing: "-0.01em" }}
                 >
-                  <svg className="absolute bottom-0 w-full z-0 opacity-40" viewBox="0 0 400 150" fill="none" aria-hidden="true">
-                    <path d="M-20 150C-20 150 150 30 420 150" className="stroke-rule-strong" strokeWidth="40" />
-                    <path d="M20 150C20 150 180 60 380 150" className="stroke-blue-300" strokeWidth="20" />
-                    <path d="M60 150C60 150 210 90 340 150" className="stroke-rule" strokeWidth="60" />
-                  </svg>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`https://api.dicebear.com/8.x/notionists/svg?seed=${encodeURIComponent(course.title)}&size=150&backgroundColor=transparent`}
-                    className="relative z-10 h-32 w-auto object-contain transition-transform duration-200 ease-out-soft group-hover:-translate-y-1"
-                    alt=""
-                  />
-                </div>
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </Reveal>
+        )}
 
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="t-h3 text-lg mb-2">{course.title}</h3>
-                  <p className="t-body text-sm line-clamp-2 mb-5">{course.shortDesc}</p>
+        {filtered.length === 0 ? (
+          <Reveal className="mt-12 border border-blue-100 rounded-2xl bg-paper-card py-20 px-8 text-center">
+            <p className="text-blue-600 text-2xl mb-3" style={CARD_TITLE}>
+              Belum ada materi di sini.
+            </p>
+            <p className="t-body text-sm text-ink-muted max-w-md mx-auto">
+              Materi untuk kategori ini sedang disiapkan — coba lihat kategori lain, atau kembali
+              lagi sebentar lagi.
+            </p>
+          </Reveal>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+            {filtered.map((course, index) => (
+              <Reveal key={course.slug} delay={(index % 3) * 110} className="h-full">
+                <article className="group h-full flex flex-col overflow-hidden rounded-2xl border border-blue-100 bg-paper-card transition-all duration-400 ease-warm hover:border-blue-600 hover:shadow-lift hover:-translate-y-1.5">
+                  <div className={cn("relative h-44 overflow-hidden", course.tint || "bg-blue-50")}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://api.dicebear.com/8.x/notionists/svg?seed=${encodeURIComponent(course.title)}&size=200&backgroundColor=transparent`}
+                      className="absolute inset-0 h-full w-full object-contain p-5 transition-transform duration-700 ease-warm group-hover:scale-105"
+                      alt=""
+                    />
 
-                  <div className="mt-auto space-y-1 mb-5 text-[13px] text-ink-muted">
-                    <div>
-                      <span className="text-ink font-medium">{course.lessonsCount}</span> modul pelajaran
-                    </div>
-                    <div>
-                      <span className="text-ink font-medium">{course.duration}</span> estimasi durasi
-                    </div>
+                    {/* Nomor bulat biru pekat — motif yang sama dengan About.tsx. */}
+                    <span
+                      className="absolute top-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white text-xs shadow-lift"
+                      style={{ fontFamily: "var(--font-inter)", fontWeight: 800 }}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+
+                    <span className="absolute bottom-4 right-4">
+                      <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
+                    </span>
                   </div>
 
-                  <div className="flex items-center justify-between mb-5 pb-5 border-b border-rule">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-ink font-medium text-sm">{course.rating}</span>
+                  <div className="flex flex-1 flex-col p-6">
+                    <h3 className="text-blue-600 text-xl leading-tight mb-2" style={CARD_TITLE}>
+                      {course.title}
+                    </h3>
+                    <p className="t-body text-sm line-clamp-2 mb-6">{course.shortDesc}</p>
+
+                    <div className="mt-auto flex items-center gap-4 text-[13px] text-ink-muted mb-5">
+                      <span>
+                        <span className="text-ink font-semibold">{course.lessonsCount}</span> modul
+                      </span>
+                      <span aria-hidden="true" className="h-3 w-px bg-blue-100" />
+                      <span>
+                        <span className="text-ink font-semibold">{course.duration}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 mb-5 pb-5 border-b border-blue-100">
+                      <span className="text-ink font-semibold text-sm">{course.rating}</span>
                       <div className="flex gap-0.5" aria-hidden="true">
                         {[1, 2, 3, 4, 5].map((s) => (
                           <svg
                             key={s}
                             className={cn(
                               "w-3 h-3",
-                              s <= Math.round(course.rating) ? "text-amber-500" : "text-rule-strong",
+                              s <= Math.round(course.rating) ? "text-amber-500" : "text-blue-100",
                             )}
                             viewBox="0 0 20 20"
                             fill="currentColor"
@@ -118,22 +145,21 @@ export default function Courses({ courses, categories }: Props) {
                       </div>
                       <span className="text-ink-muted text-xs">({course.reviews})</span>
                     </div>
-                    <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button href={`/courses/${course.slug}`} variant="outline" size="sm">
-                      Detail
-                    </Button>
-                    <Button href="/register" variant="primary" size="sm">
-                      Beli
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button href={`/courses/${course.slug}`} variant="outline" size="sm">
+                        Detail
+                      </Button>
+                      <Button href="/register" variant="primary" size="sm">
+                        Beli
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
