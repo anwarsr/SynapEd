@@ -720,6 +720,49 @@ section[id] {
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
+/* ══ Testimoni — barisan kartu berjalan pelan ═══════════════
+   Daftar kartunya dirender DUA KALI di Testimonials.tsx, lalu
+   digeser dari -50% ke 0: begitu salinan pertama selesai lewat,
+   salinan kedua sudah persis menempati posisinya, jadi ulangannya
+   tidak terlihat melompat. Arahnya ke kanan, dan berhenti saat
+   disentuh kursor atau saat salah satu kartu menerima fokus
+   keyboard — supaya bisa dibaca dan diklik dengan tenang. */
+@keyframes testimonial-marquee {
+    from { transform: translateX(-50%); }
+    to   { transform: translateX(0); }
+}
+
+.testimonial-track {
+    overflow: hidden;
+    /* Tepi kiri-kanan dilembutkan supaya kartu tidak terpotong mentah. */
+    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.testimonial-marquee {
+    display: flex;
+    gap: 1.25rem;
+    width: max-content;
+    padding-block: .5rem;
+    animation: testimonial-marquee 60s linear infinite;
+}
+
+.testimonial-track:hover .testimonial-marquee,
+.testimonial-track:focus-within .testimonial-marquee {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* Tanpa gerak otomatis, barisnya harus bisa digeser sendiri. */
+    .testimonial-track {
+        overflow-x: auto;
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+
+    .testimonial-marquee { animation: none; }
+}
+
 /* ══ Reduced motion ═════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }

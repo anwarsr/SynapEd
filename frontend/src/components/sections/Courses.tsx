@@ -76,7 +76,7 @@ export default function Courses({ courses, categories }: Props) {
 
         {filtered.length === 0 ? (
           <Reveal className="mt-12 border border-blue-100 rounded-2xl bg-paper-card py-20 px-8 text-center">
-            <p className="text-blue-600 text-2xl mb-3" style={CARD_TITLE}>
+            <p className="text-black text-2xl mb-3" style={CARD_TITLE}>
               Belum ada materi di sini.
             </p>
             <p className="t-body text-sm text-ink-muted max-w-md mx-auto">
