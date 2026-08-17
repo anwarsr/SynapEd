@@ -1,4 +1,5 @@
 import "server-only";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { flattenLessons, type CourseDetail } from "@/lib/courses";
 
@@ -99,6 +100,73 @@ export function courseSnapshot(course: CourseDetail) {
     courseLevelColor: course.levelColor,
     lessonsTotal: course.lessonsCount,
   };
+}
+
+/**
+ * Membangun dokumen enrollment yang lengkap.
+ *
+ * Bentuknya sengaja sama persis untuk gratis, berbayar, dan pemberian admin —
+ * hanya `source`, `orderId`, dan `pricePaid` yang berbeda. Karena itu webhook
+ * pembayaran menulis dokumen yang identik strukturnya dan tidak ada migrasi
+ * yang perlu dijalankan.
+ */
+export function newEnrollment(
+  uid: string,
+  course: CourseDetail,
+  source: Enrollment["source"],
+  pricePaid: number,
+  orderId: string | null,
+): Enrollment {
+  const now = new Date().toISOString();
+
+  return {
+    uid,
+    courseSlug: course.slug,
+    status: "active",
+    source,
+    orderId,
+    pricePaid,
+    currency: "IDR",
+    enrolledAt: now,
+    expiresAt: null,
+    completedLessons: [],
+    quizScores: {},
+    lastLessonSlug: null,
+    lastAccessedAt: now,
+    completedAt: null,
+    certificateId: null,
+    ...courseSnapshot(course),
+  };
+}
+
+/**
+ * Menulis enrollment dan menaikkan jumlah peserta sekaligus.
+ *
+ * Transaksi, bukan dua tulisan terpisah: tanpanya sebuah klik ganda akan
+ * menghitung peserta yang sama dua kali. Mengembalikan false kalau pengguna
+ * memang sudah terdaftar — memanggilnya lagi tidak berefek apa pun.
+ *
+ * Sifat itulah yang membuat webhook pembayaran aman: Midtrans mengirim ulang
+ * notifikasi saat retry, dan pengiriman kedua tidak boleh menambah peserta
+ * atau menimpa progres belajar yang sudah berjalan.
+ *
+ * Tinggal di sini, bukan di enrollmentActions.ts, karena berkas "use server"
+ * memperlakukan SETIAP ekspornya sebagai endpoint yang bisa dipanggil browser.
+ * Fungsi yang menulis enrollment tanpa memeriksa apa pun tidak boleh berada
+ * di sana.
+ */
+export async function writeEnrollment(enrollment: Enrollment): Promise<boolean> {
+  const db = adminDb();
+  const eRef = enrollmentRef(enrollment.uid, enrollment.courseSlug);
+  const cRef = db.collection("courses").doc(enrollment.courseSlug);
+
+  return db.runTransaction(async (tx) => {
+    if ((await tx.get(eRef)).exists) return false;
+
+    tx.set(eRef, enrollment);
+    tx.update(cRef, { enrolledStudents: FieldValue.increment(1) });
+    return true;
+  });
 }
 
 /** Satu pembacaan langsung — tanpa query, tanpa indeks. */

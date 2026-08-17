@@ -1,14 +1,13 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { FieldValue } from "firebase-admin/firestore";
-import { adminDb } from "@/lib/firebase/admin";
-import { flattenLessons, getCourse, type CourseDetail } from "@/lib/courses";
+import { flattenLessons, getCourse } from "@/lib/courses";
 import {
-  courseSnapshot,
   enrollmentRef,
   getEnrollment,
   isActive,
-  type Enrollment,
+  newEnrollment,
+  writeEnrollment,
 } from "@/lib/enrollments";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { getQuiz } from "@/lib/quiz";
@@ -17,64 +16,6 @@ import { issueCertificateIfComplete } from "@/lib/certificates";
 export type EnrollResult =
   | { ok: true; slug: string; message: string }
   | { ok: false; error: string };
-
-/**
- * Membangun dokumen enrollment yang lengkap.
- *
- * Bentuknya sengaja sama persis untuk gratis, berbayar, dan pemberian admin —
- * hanya `source`, `orderId`, dan `pricePaid` yang berbeda. Dengan begitu
- * webhook Midtrans nanti menulis dokumen yang identik strukturnya dan tidak
- * ada migrasi yang perlu dijalankan.
- */
-function newEnrollment(
-  uid: string,
-  course: CourseDetail,
-  source: Enrollment["source"],
-  pricePaid: number,
-  orderId: string | null,
-): Enrollment {
-  const now = new Date().toISOString();
-
-  return {
-    uid,
-    courseSlug: course.slug,
-    status: "active",
-    source,
-    orderId,
-    pricePaid,
-    currency: "IDR",
-    enrolledAt: now,
-    expiresAt: null,
-    completedLessons: [],
-    quizScores: {},
-    lastLessonSlug: null,
-    lastAccessedAt: now,
-    completedAt: null,
-    certificateId: null,
-    ...courseSnapshot(course),
-  };
-}
-
-/**
- * Menulis enrollment dan menaikkan jumlah peserta sekaligus.
- *
- * Transaksi, bukan dua tulisan terpisah: tanpanya sebuah klik ganda akan
- * menghitung peserta yang sama dua kali. Mengembalikan false kalau pengguna
- * memang sudah terdaftar — memanggilnya lagi tidak berefek apa pun.
- */
-async function writeEnrollment(enrollment: Enrollment): Promise<boolean> {
-  const db = adminDb();
-  const eRef = enrollmentRef(enrollment.uid, enrollment.courseSlug);
-  const cRef = db.collection("courses").doc(enrollment.courseSlug);
-
-  return db.runTransaction(async (tx) => {
-    if ((await tx.get(eRef)).exists) return false;
-
-    tx.set(eRef, enrollment);
-    tx.update(cRef, { enrolledStudents: FieldValue.increment(1) });
-    return true;
-  });
-}
 
 /**
  * Mendaftar ke kursus gratis.

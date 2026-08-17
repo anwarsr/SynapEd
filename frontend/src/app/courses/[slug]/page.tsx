@@ -5,8 +5,10 @@ import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
 import EnrollButton from "@/components/courses/EnrollButton";
+import BuyButton from "@/components/courses/BuyButton";
 import { getCourse } from "@/lib/courses";
 import { getCourseAccess } from "@/lib/courseAccess";
+import { paymentsConfigured } from "@/lib/payments/midtrans";
 import CourseThumb from "@/components/ui/CourseThumb";
 import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
@@ -47,6 +49,12 @@ export default async function CourseDetailPage({ params }: Props) {
   const access = await getCourseAccess(slug);
   const enrolled = access?.level === "full";
   const resumeSlug = access?.enrollment?.lastLessonSlug;
+
+  // Dibaca di server lalu diteruskan sebagai prop. Client key memang publik —
+  // Snap membutuhkannya di browser — tapi membacanya di sini membuat satu
+  // tempat saja yang memutuskan apakah pembayaran sudah siap.
+  const paymentsReady = paymentsConfigured();
+  const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ?? "";
 
   return (
     <>
@@ -188,11 +196,20 @@ export default async function CourseDetailPage({ params }: Props) {
                       Masuk untuk Mendaftar
                     </Button>
                   ) : course.price > 0 ? (
-                    // Pembayaran belum ada. Katakan apa adanya alih-alih
-                    // menyodorkan tombol yang tidak melakukan apa-apa.
-                    <span className="w-full rounded-lg border border-rule bg-paper-alt px-6 py-3 text-center text-sm text-ink-muted">
-                      Pembayaran segera hadir
-                    </span>
+                    // Kunci Midtrans belum terpasang berarti tombolnya pasti
+                    // gagal. Lebih jujur mengatakannya daripada menyodorkan
+                    // tombol yang hanya menghasilkan pesan galat.
+                    paymentsReady ? (
+                      <BuyButton
+                        slug={slug}
+                        clientKey={midtransClientKey}
+                        production={process.env.MIDTRANS_IS_PRODUCTION === "true"}
+                      />
+                    ) : (
+                      <span className="w-full rounded-lg border border-rule bg-paper-alt px-6 py-3 text-center text-sm text-ink-muted">
+                        Pembayaran segera hadir
+                      </span>
+                    )
                   ) : (
                     <EnrollButton slug={slug} />
                   )}

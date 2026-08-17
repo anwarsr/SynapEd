@@ -58,3 +58,33 @@ env:
   - variable: NEXT_PUBLIC_USE_FIREBASE_EMULATOR
     value: "false"
     availability: [BUILD, RUNTIME]
+
+  # ── Pembayaran (Midtrans) ────────────────────────────────────────────
+  #
+  # Client key BOLEH tampil di browser — snap.js memang membutuhkannya di
+  # sana, sama seperti apiKey Firebase di atas.
+  - variable: NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
+    value: ""
+    availability: [BUILD, RUNTIME]
+
+  # "true" hanya setelah akun produksi Midtrans disetujui. Selama masih
+  # "false", seluruh transaksi memakai sandbox dan tidak ada uang sungguhan
+  # yang berpindah.
+  - variable: MIDTRANS_IS_PRODUCTION
+    value: "false"
+    availability: [RUNTIME]
+
+  # Server key BERBEDA sifatnya dari semua nilai di atas: ia kredensial
+  # penuh. Siapa pun yang memegangnya bisa memalsukan tanda tangan notifikasi
+  # pembayaran — yang berarti memberi dirinya akses ke seluruh kursus
+  # berbayar tanpa membayar. Karena itu ia lewat Secret Manager, bukan
+  # ditulis di berkas ini, dan RUNTIME saja: tidak ada gunanya saat build.
+  #
+  # Simpan dulu dengan:
+  #   firebase apphosting:secrets:set MIDTRANS_SERVER_KEY
+  #
+  # Baris ini sengaja dikomentari sampai secret-nya benar-benar ada —
+  # menunjuk secret yang belum dibuat membuat seluruh deploy gagal.
+  # - variable: MIDTRANS_SERVER_KEY
+  #   secret: MIDTRANS_SERVER_KEY
+  #   availability: [RUNTIME]

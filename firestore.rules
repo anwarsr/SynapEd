@@ -100,6 +100,21 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Pesanan pembayaran ─────────────────────────────────────────────
+    // Tertutup rapat dari klien, baca maupun tulis.
+    //
+    // Dokumen ini menentukan apakah seseorang berhak atas kursus berbayar,
+    // jadi ia harus mustahil disentuh dari browser. Kalau klien bisa menulis,
+    // siapa pun cukup mengubah status pesanannya sendiri menjadi "paid".
+    // Membacanya pun tidak perlu: halaman dirender di server.
+    //
+    // Pembuatnya adalah Server Action (createOrder) dan satu-satunya yang
+    // menandainya lunas adalah webhook Midtrans — keduanya memakai Admin SDK
+    // yang melewati rules ini.
+    match /orders/{orderId} {
+      allow read, write: if false;
+    }
+
     // ── Kategori kursus ────────────────────────────────────────────────
     // Dikelola admin lewat Server Action yang memakai Admin SDK, dan dibaca
     // di server saat merender daftar filter maupun pilihan di form. Klien
