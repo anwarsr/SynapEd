@@ -62,9 +62,15 @@ env:
   # ── Pembayaran (Midtrans) ────────────────────────────────────────────
   #
   # Client key BOLEH tampil di browser — snap.js memang membutuhkannya di
-  # sana, sama seperti apiKey Firebase di atas.
+  # sana, sama seperti apiKey Firebase di atas. Yang menjaga uang bukan kunci
+  # ini, melainkan verifikasi tanda tangan di webhook.
+  #
+  # JANGAN mengisinya dengan string kosong. App Hosting menolak seluruh berkas
+  # ini dengan "Invalid apphosting.yaml" kalau ada `value: ""` — pesannya
+  # menuding formatnya, padahal YAML-nya sendiri sah. Kalau kuncinya memang
+  # belum ada, komentari seluruh entri ini alih-alih mengosongkan nilainya.
   - variable: NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
-    value: ""
+    value: Mid-client-bOPniI701PgZf_Pt
     availability: [BUILD, RUNTIME]
 
   # "true" hanya setelah akun produksi Midtrans disetujui. Selama masih
@@ -72,7 +78,7 @@ env:
   # yang berpindah.
   - variable: MIDTRANS_IS_PRODUCTION
     value: "false"
-    availability: [RUNTIME]
+    availability: [BUILD, RUNTIME]
 
   # Server key BERBEDA sifatnya dari semua nilai di atas: ia kredensial
   # penuh. Siapa pun yang memegangnya bisa memalsukan tanda tangan notifikasi
