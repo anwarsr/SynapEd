@@ -26,9 +26,18 @@ const points = [
 ];
 
 export default function About() {
-  // Track scroll untuk menentukan card yang sedang aktif.
   const trackRef = useRef<HTMLDivElement>(null);
+
   const [active, setActive] = useState(0);
+  const [typedText, setTypedText] = useState("");
+  const [isGlitching, setIsGlitching] = useState(false);
+
+  const typingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const glitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* =========================================================
+     TRACK SCROLL
+     ========================================================= */
 
   useEffect(() => {
     const track = trackRef.current;
@@ -50,7 +59,13 @@ export default function About() {
         Math.floor(progress * points.length)
       );
 
-      setActive(idx);
+      setActive((prev) => {
+        if (prev !== idx) {
+          return idx;
+        }
+
+        return prev;
+      });
     };
 
     onScroll();
@@ -67,10 +82,69 @@ export default function About() {
     };
   }, []);
 
+  /* =========================================================
+     TYPING EFFECT
+     ========================================================= */
+
+  useEffect(() => {
+    const text = points[active].desc;
+
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current);
+    }
+
+    setTypedText("");
+
+    let index = 0;
+
+    typingTimerRef.current = setInterval(() => {
+      index += 1;
+
+      setTypedText(text.slice(0, index));
+
+      if (index >= text.length) {
+        if (typingTimerRef.current) {
+          clearInterval(typingTimerRef.current);
+        }
+      }
+    }, 18);
+
+    return () => {
+      if (typingTimerRef.current) {
+        clearInterval(typingTimerRef.current);
+      }
+    };
+  }, [active]);
+
+  /* =========================================================
+     GLITCH WHEN ACTIVE CARD CHANGES
+     ========================================================= */
+
+  useEffect(() => {
+    if (glitchTimerRef.current) {
+      clearTimeout(glitchTimerRef.current);
+    }
+
+    setIsGlitching(true);
+
+    glitchTimerRef.current = setTimeout(() => {
+      setIsGlitching(false);
+    }, 420);
+
+    return () => {
+      if (glitchTimerRef.current) {
+        clearTimeout(glitchTimerRef.current);
+      }
+    };
+  }, [active]);
+
   return (
     <section id="about" className="bg-paper">
+      {/* =====================================================
+          SECTION TITLE
+          ===================================================== */}
+
       <div className="container-page pt-32 pb-6">
-        {/* Penanda section ringkas */}
         <Reveal>
           <h1
             className="rise-in text-blue-600"
@@ -92,8 +166,8 @@ export default function About() {
 
       {/* =========================================================
           DESKTOP
-          Card bergerak dari bawah ke atas / atas ke bawah mengikuti scroll
           ========================================================= */}
+
       <div
         ref={trackRef}
         className="hidden md:block relative"
@@ -105,32 +179,26 @@ export default function About() {
           <div className="container-page w-full grid grid-cols-2 gap-30 items-center">
 
             {/* =====================================================
-                CARD
+                CARD AREA
                 ===================================================== */}
-            <div className="relative h-[75vh] flex items-center justify-center">
 
+            <div className="relative h-[75vh] flex items-center justify-center">
               {points.map((p, i) => {
                 const offset = i - active;
 
                 /*
                  * Card aktif:
-                 *   offset = 0
+                 * offset = 0
                  *
                  * Card berikutnya:
-                 *   offset = 1
-                 *   masuk dari bawah
+                 * offset = 1
                  *
                  * Card sebelumnya:
-                 *   offset = -1
-                 *   keluar ke atas
+                 * offset = -1
                  */
+
                 const translateY = offset * 105;
 
-                /*
-                 * Card aktif sedikit miring.
-                 * Card yang keluar/masuk memiliki arah kemiringan
-                 * yang berbeda agar terasa seperti kartu fisik.
-                 */
                 const rotation =
                   offset === 0
                     ? -1.5
@@ -150,10 +218,17 @@ export default function About() {
                     ? 1
                     : 0.35;
 
+                const isActiveCard = offset === 0;
+
                 return (
                   <div
                     key={p.title}
-                    className="absolute w-[82%] aspect-[4/5] overflow-hidden shadow-lift"
+                    className={cn(
+                      "absolute w-[82%] aspect-[4/5] overflow-hidden shadow-lift",
+                      isGlitching &&
+                        isActiveCard &&
+                        "card-glitch"
+                    )}
                     style={{
                       transform: `
                         translateY(${translateY}%)
@@ -167,19 +242,12 @@ export default function About() {
                         "transform 800ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 500ms ease",
 
                       zIndex:
-                        points.length - Math.abs(offset),
+                        points.length -
+                        Math.abs(offset),
 
-                      /*
-                       * Sudut dibuat sedikit berbeda supaya
-                       * tidak terlihat seperti kotak sempurna.
-                       */
                       borderRadius:
                         "18px 10px 22px 12px",
 
-                      /*
-                       * Sedikit condong / tidak simetris
-                       * pada keempat sudut card.
-                       */
                       clipPath:
                         "polygon(2% 0%, 98% 1%, 100% 96%, 96% 100%, 3% 98%, 0% 4%)",
 
@@ -188,25 +256,36 @@ export default function About() {
                     }}
                   >
                     {/* =================================================
-                        GAMBAR
-                        TIDAK DIUBAH
+                        IMAGE
                         ================================================= */}
 
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={p.image}
                       alt=""
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className={cn(
+                        "absolute inset-0 w-full h-full object-cover",
+                        isGlitching &&
+                          isActiveCard &&
+                          "image-glitch"
+                      )}
                     />
 
-                    {/* Overlay */}
+                    {/* =================================================
+                        OVERLAY
+                        ================================================= */}
+
                     <div className="absolute inset-0 bg-linear-to-t from-blue-900/60 via-blue-900/0 to-blue-900/0" />
 
-                    {/* Nomor */}
+                    {/* =================================================
+                        NUMBER
+                        ================================================= */}
+
                     <span
                       className="absolute top-5 left-5 w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm shadow-lift"
                       style={{
-                        fontFamily: "var(--font-inter)",
+                        fontFamily:
+                          "var(--font-inter)",
                         fontWeight: 800,
                       }}
                     >
@@ -220,8 +299,8 @@ export default function About() {
             {/* =====================================================
                 TEXT AREA
                 ===================================================== */}
-            <div className="flex flex-col">
 
+            <div className="flex flex-col">
               <div className="flex flex-col gap-8">
                 {points.map((p, i) => {
                   const isActive = active === i;
@@ -231,6 +310,8 @@ export default function About() {
                       key={p.title}
                       className="flex items-center gap-3"
                     >
+                      {/* Arrow */}
+
                       <svg
                         className={cn(
                           "w-6 h-6 shrink-0 text-blue-600 transition-all duration-400 ease-warm",
@@ -250,18 +331,26 @@ export default function About() {
                         />
                       </svg>
 
+                      {/* =================================================
+                          TITLE
+                          ================================================= */}
+
                       <h3
                         className={cn(
                           "font-sans tracking-tight transition-all duration-400 ease-warm",
                           isActive
                             ? "text-7xl text-blue-600"
-                            : "text-xl text-black"
+                            : "text-xl text-black",
+                          isActive &&
+                            isGlitching &&
+                            "title-glitch"
                         )}
                         style={{
                           fontFamily:
                             "var(--font-inter)",
                           fontWeight: 900,
-                          letterSpacing: "-0.025em",
+                          letterSpacing:
+                            "-0.025em",
                         }}
                       >
                         {p.title}
@@ -271,12 +360,18 @@ export default function About() {
                 })}
               </div>
 
-              {/* Deskripsi */}
+              {/* =====================================================
+                  DESCRIPTION / TYPING
+                  ===================================================== */}
+
               <p
                 key={active}
                 className="text-2xl text-justify rise-in t-body mt-8 max-w-md text-black"
               >
-                {points[active].desc}
+                {typedText}
+                <span className="typing-cursor">
+                  |
+                </span>
               </p>
             </div>
           </div>
@@ -285,8 +380,8 @@ export default function About() {
 
       {/* =========================================================
           MOBILE
-          Tidak diubah
           ========================================================= */}
+
       <div className="md:hidden container-page py-10">
         <div className="flex flex-col gap-5">
           {points.map((p, i) => (
@@ -295,6 +390,8 @@ export default function About() {
               delay={i * 110}
             >
               <div className="border border-blue-100 rounded-2xl overflow-hidden bg-paper-card">
+
+                {/* IMAGE */}
 
                 <div className="relative h-44 bg-blue-600">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -318,6 +415,8 @@ export default function About() {
                   </span>
                 </div>
 
+                {/* CONTENT */}
+
                 <div className="p-6">
                   <h3
                     className="tracking-tight text-blue-600 mb-2 text-xl"
@@ -325,7 +424,8 @@ export default function About() {
                       fontFamily:
                         "var(--font-inter)",
                       fontWeight: 900,
-                      letterSpacing: "-0.02em",
+                      letterSpacing:
+                        "-0.02em",
                     }}
                   >
                     {p.title}
@@ -335,7 +435,6 @@ export default function About() {
                     {p.desc}
                   </p>
                 </div>
-
               </div>
             </Reveal>
           ))}

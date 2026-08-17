@@ -36,20 +36,26 @@ export default function Courses({ courses, categories }: Props) {
   const filtered = filter === "semua" ? courses : courses.filter((c) => c.category === filter);
 
   return (
-    <section id="courses" className="bg-paper py-28">
+    <section id="courses" className="bg-hero-navy py-28">
       <div className="container-page">
-        <Reveal>
-          <h2 className="text-blue-600 max-w-4xl" style={HEADING}>
-            Materi Pembelajaran
-          </h2>
-        </Reveal>
+        {/* Judul di kanan atas, deskripsi menyusul tepat di bawahnya —
+            satu blok rata kanan, bukan ditumpuk rata kiri seperti section
+            lain. wrap-break-word jaring pengaman: pada font sebesar ini
+            kata "Pembelajaran" sendirian sudah cukup lebar. */}
+        <div className="flex flex-col md:items-end">
+          <Reveal className="md:text-right wrap-break-word">
+            <h2 className="text-paper" style={HEADING}>
+              Materi Pembelajaran
+            </h2>
+          </Reveal>
 
-        <Reveal delay={110}>
-          <p className="t-body mt-6 max-w-2xl text-ink-muted">
-            Berbagai modul terstruktur dari level dasar hingga lanjutan, dirancang untuk pengalaman
-            belajar yang optimal.
-          </p>
-        </Reveal>
+          <Reveal delay={110} className="mt-6 md:max-w-md">
+            <p className="t-body text-blue-100/80 md:text-right">
+              Berbagai modul terstruktur dari level dasar hingga lanjutan, dirancang untuk pengalaman
+              belajar yang optimal.
+            </p>
+          </Reveal>
+        </div>
 
         {categories.length > 1 && (
           <Reveal delay={180}>
@@ -62,8 +68,8 @@ export default function Courses({ courses, categories }: Props) {
                   className={cn(
                     "px-5 py-2.5 rounded-full text-sm border transition-all duration-200 ease-out-soft",
                     filter === cat.slug
-                      ? "bg-blue-600 border-blue-600 text-white"
-                      : "bg-paper-card border-blue-100 text-ink-body hover:border-blue-600 hover:text-blue-600",
+                      ? "bg-paper border-paper text-navy"
+                      : "bg-white/5 border-white/20 text-blue-100 hover:border-blue-300 hover:text-white",
                   )}
                   style={{ fontFamily: "var(--font-inter)", fontWeight: 600, letterSpacing: "-0.01em" }}
                 >
@@ -75,11 +81,11 @@ export default function Courses({ courses, categories }: Props) {
         )}
 
         {filtered.length === 0 ? (
-          <Reveal className="mt-12 border border-blue-100 rounded-2xl bg-paper-card py-20 px-8 text-center">
-            <p className="text-black text-2xl mb-3" style={CARD_TITLE}>
+          <Reveal className="mt-12 border border-white/15 rounded-2xl bg-white/5 py-20 px-8 text-center">
+            <p className="text-paper text-2xl mb-3" style={CARD_TITLE}>
               Belum ada materi di sini.
             </p>
-            <p className="t-body text-sm text-ink-muted max-w-md mx-auto">
+            <p className="t-body text-sm text-blue-100/80 max-w-md mx-auto">
               Materi untuk kategori ini sedang disiapkan — coba lihat kategori lain, atau kembali
               lagi sebentar lagi.
             </p>
