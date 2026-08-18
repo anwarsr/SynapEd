@@ -1,16 +1,12 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import Reveal from "@/components/ui/Reveal";
+
+import { useEffect, useRef } from "react";
 import { features } from "@/data/landing";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
-const WORDS = ["Terverifikasi.", "Berkualitas.", "Praktis.", "Fleksibel."];
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, v));
 
-const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
-
-/** Empat dari enam fitur, dipilih agar terasa seperti satu narasi
- *  (kurikulum → belajar → praktik → akses) saat dibaca satu-per-satu
- *  di kartu bertumpuk — bukan sekadar daftar. */
 const STAGE_CARDS = [0, 1, 3, 4].map((i, idx) => ({
   number: String(idx + 1).padStart(2, "0"),
   label: ["Kurikulum", "Pembelajaran", "Praktik", "Aksesibilitas"][idx],
@@ -19,22 +15,12 @@ const STAGE_CARDS = [0, 1, 3, 4].map((i, idx) => ({
 }));
 
 export default function Features() {
-  const [typedText, setTypedText] = useState("");
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    // Kartu disusun pada satu LINGKARAN 3D (komidi putar) dan diputar penuh
-    // 360° sepanjang scroll: kartu aktif berada di titik terdepan lingkaran,
-    // sisanya terus mengorbit ke samping lalu ke BELAKANG kartu aktif —
-    // makin ke belakang makin kecil (dimakan perspective) dan makin samar,
-    // jadi terbaca sebagai satu putaran melingkar yang utuh, bukan kartu
-    // yang saling lewat mendatar. Radiusnya sengaja kecil supaya orbitnya
-    // rapat dan kartu belakang tetap membayang di balik kartu depan.
-    // Semua dihitung ulang lewat ref DOM langsung (bukan setState) dan
-    // di-drive event scroll + rAF, supaya scroll tetap 60fps.
     if (reducedMotion) return;
 
     const track = trackRef.current;
@@ -44,184 +30,372 @@ export default function Features() {
 
     const update = () => {
       rafId = 0;
+
       const rect = track.getBoundingClientRect();
       const vh = window.innerHeight;
-      const range = rect.height - vh;
-      const progress = range > 0 ? clamp(-rect.top / range, 0, 1) : 0;
+
+      const range = Math.max(rect.height - vh, 1);
+
+      const progress = clamp(
+        -rect.top / range,
+        0,
+        1,
+      );
 
       const cards = cardRefs.current;
-      const n = cards.length;
-      // progress * n (bukan n-1) supaya lingkarannya menutup penuh 360°:
-      // di ujung scroll kartu pertama kembali persis ke titik terdepan.
-      const activeFloat = progress * n;
+      const count = cards.length;
+
+      if (!count) return;
+
+      /*
+       * Satu putaran penuh.
+       *
+       * Contoh:
+       * 0     = card pertama di depan
+       * 0.25  = card kedua mulai ke depan
+       * 0.50  = card ketiga
+       * 0.75  = card keempat
+       * 1.00  = kembali ke card pertama
+       */
+      const rotationProgress = progress * count;
+
       const vw = window.innerWidth;
       const mobile = vw < 640;
 
-      // Radius orbit — kecil supaya putarannya rapat dan kartu belakang
-      // tetap membayang di balik kartu depan, bukan terlempar ke tepi layar.
-      const radius = mobile ? Math.min(vw * 0.4, 180) : Math.min(vw * 0.26, 360);
-      const tilt = mobile ? 20 : 32;
-      const lag = mobile ? 8 : 16;
-      const step = (2 * Math.PI) / n;
+      /*
+       * Radius dibuat cukup besar agar card yang sedang
+       * berpindah dapat terlihat sebentar di samping.
+       */
+      const radiusX = mobile
+        ? Math.min(vw * 0.48, 190)
+        : Math.min(vw * 0.31, 440);
 
-      cards.forEach((card, i) => {
+      const radiusZ = mobile
+        ? Math.min(vw * 0.22, 120)
+        : Math.min(vw * 0.16, 220);
+
+      const step = (Math.PI * 2) / count;
+
+      cards.forEach((card, index) => {
         if (!card) return;
 
-        // Sudut posisi kartu pada lingkaran. Trigonometri sudah periodik,
-        // jadi tidak perlu dinormalkan saat activeFloat melewati n.
-        const angle = (i - activeFloat) * step;
+        const angle = (index - rotationProgress) * step;
+
         const sin = Math.sin(angle);
         const cos = Math.cos(angle);
 
-        // Lingkaran di bidang XZ: titik terdepan (cos = 1) adalah kartu
-        // aktif, dan z digeser -radius supaya kartu aktif duduk di z = 0.
-        const offsetX = sin * radius;
-        const depth = (cos - 1) * radius;
-        const front = (cos + 1) / 2; // 1 = paling depan, 0 = tepat di belakang
+        /*
+         * X = gerakan kiri / kanan
+         */
+        const x = sin * radiusX;
 
-        // Miring maksimum saat kartu di sisi, tegak menghadap penonton saat
-        // di depan maupun di belakang — supaya teksnya tak pernah terbalik.
-        const rotateY = sin * tilt;
+        /*
+         * Z = kedalaman.
+         *
+         * cos = 1  -> paling depan
+         * cos = -1 -> paling belakang
+         */
+        const z = (cos - 1) * radiusZ;
 
-        card.style.transform = `translate3d(${offsetX.toFixed(1)}px, 0px, ${depth.toFixed(1)}px) rotateY(${rotateY.toFixed(2)}deg)`;
-        card.style.opacity = (0.12 + 0.88 * Math.pow(front, 1.8)).toFixed(3);
-        card.style.zIndex = String(Math.round(front * 100));
-        card.style.pointerEvents = front > 0.85 ? "auto" : "none";
-        card.style.setProperty("--content-shift", `${(sin * lag).toFixed(1)}px`);
-        card.style.setProperty("--glare-shift", `${(sin * 70).toFixed(1)}%`);
-        card.style.setProperty("--holo-strength", `${(0.45 + (1 - front) * 0.35).toFixed(2)}`);
+        /*
+         * Nilai depth:
+         * 1 = depan
+         * 0 = belakang
+         */
+        const depth = (cos + 1) / 2;
+
+        /*
+         * Card di sisi mendapatkan rotasi.
+         * Card yang sudah di depan kembali menghadap viewer.
+         */
+        const rotateY = sin * (mobile ? 24 : 34);
+
+        /*
+         * Sedikit scale berdasarkan posisi.
+         */
+        const scale =
+          0.82 +
+          Math.pow(depth, 1.35) * 0.18;
+
+        /*
+         * Card belakang masih tetap terlihat.
+         * Ini penting supaya saat scroll card tidak
+         * langsung menghilang.
+         */
+        const opacity =
+          0.16 +
+          Math.pow(depth, 1.35) * 0.84;
+
+        /*
+         * Blur tipis pada card yang jauh.
+         */
+        const blur =
+          depth < 0.25
+            ? 1.8
+            : depth < 0.55
+              ? 0.7
+              : 0;
+
+        /*
+         * Card depan mendapatkan sedikit lift.
+         */
+        const y =
+          depth > 0.7
+            ? -(depth - 0.7) * 10
+            : 0;
+
+        card.style.transform = `
+          translate3d(
+            ${x.toFixed(2)}px,
+            ${y.toFixed(2)}px,
+            ${z.toFixed(2)}px
+          )
+          rotateY(${rotateY.toFixed(2)}deg)
+          scale(${scale.toFixed(3)})
+        `;
+
+        card.style.opacity = opacity.toFixed(3);
+
+        card.style.filter = `
+          blur(${blur.toFixed(2)}px)
+        `;
+
+        /*
+         * Card paling depan selalu berada di atas.
+         */
+        card.style.zIndex = String(
+          Math.round(depth * 1000),
+        );
+
+        /*
+         * Hanya card depan yang menerima interaction.
+         */
+        card.style.pointerEvents =
+          depth > 0.72
+            ? "auto"
+            : "none";
+
+        /*
+         * Custom properties untuk hologram.
+         */
+        card.style.setProperty(
+          "--card-depth",
+          depth.toFixed(3),
+        );
+
+        card.style.setProperty(
+          "--card-angle",
+          `${(sin * 100).toFixed(2)}%`,
+        );
+
+        card.style.setProperty(
+          "--holo-strength",
+          (
+            0.35 +
+            depth * 0.65
+          ).toFixed(3),
+        );
+
+        card.style.setProperty(
+          "--holo-shift",
+          `${(sin * 55).toFixed(2)}%`,
+        );
       });
     };
 
     const onScroll = () => {
-      if (!rafId) rafId = requestAnimationFrame(update);
-    };
-
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, [reducedMotion]);
-
-  useEffect(() => {
-    // Saat reduced-motion aktif, kata ditampilkan statis di bawah —
-    // tidak ada timer maupun observer yang dipasang.
-    if (reducedMotion) return;
-
-    let wordIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
-
-    const type = () => {
-      const current = WORDS[wordIndex];
-      if (isDeleting) {
-        setTypedText(current.substring(0, charIndex - 1));
-        charIndex--;
-        if (charIndex === 0) {
-          isDeleting = false;
-          wordIndex = (wordIndex + 1) % WORDS.length;
-        }
-        timeoutId = setTimeout(type, 65);
-      } else {
-        setTypedText(current.substring(0, charIndex + 1));
-        charIndex++;
-        if (charIndex === current.length) {
-          isDeleting = true;
-          timeoutId = setTimeout(type, 2600);
-        } else {
-          timeoutId = setTimeout(type, 130);
-        }
+      if (!rafId) {
+        rafId = requestAnimationFrame(update);
       }
     };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          type();
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 },
+    update();
+
+    window.addEventListener(
+      "scroll",
+      onScroll,
+      { passive: true },
     );
-    if (sectionRef.current) observer.observe(sectionRef.current);
+
+    window.addEventListener(
+      "resize",
+      onScroll,
+    );
 
     return () => {
-      clearTimeout(timeoutId);
-      observer.disconnect();
+      window.removeEventListener(
+        "scroll",
+        onScroll,
+      );
+
+      window.removeEventListener(
+        "resize",
+        onScroll,
+      );
+
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
     };
   }, [reducedMotion]);
 
-  const handlePointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--holo-px", `${((e.clientX - rect.left) / rect.width) * 100}%`);
-    e.currentTarget.style.setProperty("--holo-py", `${((e.clientY - rect.top) / rect.height) * 100}%`);
+  /*
+   * Mouse hologram.
+   */
+  const handlePointerMove = (
+    e: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    const rect =
+      e.currentTarget.getBoundingClientRect();
+
+    const x =
+      ((e.clientX - rect.left) / rect.width) * 100;
+
+    const y =
+      ((e.clientY - rect.top) / rect.height) * 100;
+
+    e.currentTarget.style.setProperty(
+      "--mouse-x",
+      `${x}%`,
+    );
+
+    e.currentTarget.style.setProperty(
+      "--mouse-y",
+      `${y}%`,
+    );
   };
 
-  const handlePointerLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.currentTarget.style.removeProperty("--holo-px");
-    e.currentTarget.style.removeProperty("--holo-py");
+  const handlePointerLeave = (
+    e: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    e.currentTarget.style.removeProperty(
+      "--mouse-x",
+    );
+
+    e.currentTarget.style.removeProperty(
+      "--mouse-y",
+    );
   };
 
   return (
-    <section ref={sectionRef} id="features" className="py-28">
+    <section
+      ref={sectionRef}
+      id="features"
+      className="features-section"
+    >
+      {/* =========================
+          HEADER
+      ========================== */}
       <div className="container-page">
-        <Reveal className="flex flex-col items-center text-center mb-14">
-          <p className="chapter-mark mb-5">
-            <span>§04</span>
-            <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-            <span>Keunggulan</span>
+        <div className="features-heading">
+          <h1
+            className="rise-in text-blue-600"
+            style={
+              {
+                fontFamily: "var(--font-inter)",
+                fontSize:
+                  "clamp(2.5rem, 6.5vw, 5.75rem)",
+                fontWeight: 800,
+                lineHeight: 1.03,
+                letterSpacing: "-0.04em",
+                "--rise-delay": "170ms",
+              } as React.CSSProperties
+            }
+          >
+            Keunggulan
+            <br />
+            SynapEd
+          </h1>
+
+          <p className="features-heading__desc">
+            Pembelajaran yang dirancang sistematis,
+            mudah dipahami, dan relevan untuk
+            kebutuhan belajar masa kini.
           </p>
-
-          <h2 className="t-h2 max-w-3xl">Kenapa harus SynapEd?</h2>
-
-          <p className="t-h2 text-blue-700 mt-2 min-h-[1.2em]" aria-live="polite">
-            {reducedMotion ? WORDS[0] : typedText}
-            {!reducedMotion && (
-              <span
-                className="inline-block w-[2px] h-[0.85em] align-middle bg-blue-500 ml-1 animate-pulse"
-                aria-hidden="true"
-              />
-            )}
-          </p>
-
-          <span className="rule-accent mt-6 mx-auto" aria-hidden="true" />
-
-          <p className="t-body mt-6 max-w-2xl text-ink-muted">
-            SynapEd menghadirkan pembelajaran dari berbagai bidang ilmu secara sistematis. Materi
-            dirancang agar mudah dipahami oleh pelajar dan pemula tanpa memerlukan latar belakang khusus.
-          </p>
-        </Reveal>
+        </div>
       </div>
 
-      <div ref={trackRef} className="features-track">
+      {/* =========================
+          3D CARD TRACK
+      ========================== */}
+      <div
+        ref={trackRef}
+        className="features-track"
+      >
         <div className="features-stage">
           <div className="cards-stack">
-            {STAGE_CARDS.map((feat, i) => (
+            {STAGE_CARDS.map((feat, index) => (
               <div
                 key={feat.number}
                 ref={(el) => {
-                  cardRefs.current[i] = el;
+                  cardRefs.current[index] = el;
                 }}
                 className="feature-card"
-                onMouseMove={reducedMotion ? undefined : handlePointerMove}
-                onMouseLeave={reducedMotion ? undefined : handlePointerLeave}
+                onMouseMove={
+                  reducedMotion
+                    ? undefined
+                    : handlePointerMove
+                }
+                onMouseLeave={
+                  reducedMotion
+                    ? undefined
+                    : handlePointerLeave
+                }
               >
-                <span className="feature-card__holo" aria-hidden="true" />
-                <span className="feature-card__glare" aria-hidden="true" />
-                <div className="feature-card__content">
-                  <span className="feature-card__number">{feat.number}</span>
+                {/* holographic foil */}
+                <span
+                  className="feature-card__foil"
+                  aria-hidden="true"
+                />
 
-                  <div>
-                    <p className="feature-card__label">{feat.label}</p>
-                    <h3 className="feature-card__title">{feat.title}</h3>
+                {/* moving rainbow reflection */}
+                <span
+                  className="feature-card__rainbow"
+                  aria-hidden="true"
+                />
+
+                {/* glossy reflection */}
+                <span
+                  className="feature-card__gloss"
+                  aria-hidden="true"
+                />
+
+                {/* grain */}
+                <span
+                  className="feature-card__grain"
+                  aria-hidden="true"
+                />
+
+                <div className="feature-card__content">
+                  <div className="feature-card__top">
+                    <span className="feature-card__number">
+                      {feat.number}
+                    </span>
+
+                    <span className="feature-card__label">
+                      {feat.label}
+                    </span>
                   </div>
 
-                  <p className="feature-card__desc">{feat.desc}</p>
+                  <div className="feature-card__middle">
+                    <h2 className="feature-card__title">
+                      {feat.title}
+                    </h2>
+
+                    <p className="feature-card__desc">
+                      {feat.desc}
+                    </p>
+                  </div>
+
+                  <div className="feature-card__bottom">
+                    <span>
+                      SynapEd
+                    </span>
+
+                    <span className="feature-card__arrow">
+                      ↗
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
