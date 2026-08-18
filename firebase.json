@@ -6,6 +6,23 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "hosting": {
+    "site": "synaped",
+    "public": "hosting-shell",
+    "ignore": ["**/.*", "README.md"],
+    "redirects": [
+      {
+        "source": "/",
+        "destination": "https://synaped--synap-ed.asia-southeast1.hosted.app/",
+        "type": 302
+      },
+      {
+        "source": "/:sisa*",
+        "destination": "https://synaped--synap-ed.asia-southeast1.hosted.app/:sisa*",
+        "type": 302
+      }
+    ]
+  },
   "emulators": {
     "auth": { "port": 9099 },
     "firestore": { "port": 8080 },

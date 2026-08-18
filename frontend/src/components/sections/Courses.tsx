@@ -5,6 +5,8 @@ import Reveal from "@/components/ui/Reveal";
 import Tag from "@/components/ui/Tag";
 import type { Category, CourseSummary } from "@/lib/courses";
 import { levelTone } from "@/lib/courseUi";
+import CourseThumb from "@/components/ui/CourseThumb";
+import CourseAuthor from "@/components/ui/CourseAuthor";
 import { cn } from "@/lib/cn";
 
 interface Props {
@@ -96,11 +98,20 @@ export default function Courses({ courses, categories }: Props) {
               <Reveal key={course.slug} delay={(index % 3) * 110} className="h-full">
                 <article className="group h-full flex flex-col overflow-hidden rounded-2xl border border-blue-100 bg-paper-card transition-all duration-400 ease-warm hover:border-blue-600 hover:shadow-lift hover:-translate-y-1.5">
                   <div className={cn("relative h-44 overflow-hidden", course.tint || "bg-blue-50")}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`https://api.dicebear.com/8.x/notionists/svg?seed=${encodeURIComponent(course.title)}&size=200&backgroundColor=transparent`}
-                      className="absolute inset-0 h-full w-full object-contain p-5 transition-transform duration-700 ease-warm group-hover:scale-105"
-                      alt=""
+                    {/* Gambar unggahan educator lebih diutamakan daripada ilustrasi
+                        bawaan. Tanpa CourseThumb di sini, latar kursus yang sudah
+                        diunggah tidak pernah tampil di beranda — hanya di katalog. */}
+                    <CourseThumb
+                      thumbnail={course.thumbnail}
+                      className="absolute inset-0 h-full w-full"
+                      fallback={
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={`https://api.dicebear.com/8.x/notionists/svg?seed=${encodeURIComponent(course.title)}&size=200&backgroundColor=transparent`}
+                          className="absolute inset-0 h-full w-full object-contain p-5 transition-transform duration-700 ease-warm group-hover:scale-105"
+                          alt=""
+                        />
+                      }
                     />
 
                     {/* Nomor bulat biru pekat — motif yang sama dengan About.tsx. */}
@@ -117,6 +128,7 @@ export default function Courses({ courses, categories }: Props) {
                   </div>
 
                   <div className="flex flex-1 flex-col p-6">
+                    <CourseAuthor name={course.instructorName} className="mb-3" />
                     <h3 className="text-blue-600 text-xl leading-tight mb-2" style={CARD_TITLE}>
                       {course.title}
                     </h3>

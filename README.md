@@ -85,8 +85,10 @@ tidak sinkron.
 |---|---|
 | `/` | publik — landing + katalog |
 | `/courses`, `/courses/:slug` | publik |
-| `/courses/:slug/learn[/:lessonSlug]` | **perlu masuk** |
-| `/dashboard` | **perlu masuk** — katalog + pengaturan akun |
+| `/courses/:slug/learn[/:lessonSlug]` | **perlu terdaftar** — kecuali pelajaran bertanda `free` |
+| `/dashboard` | **perlu masuk** — kursus saya + pengaturan akun |
+| `/dashboard/certificates/:id` | **pemilik sertifikat atau admin** — halaman cetak |
+| `/verify/:certificateId` | publik — verifikasi sertifikat |
 | `/login`, `/register` | publik |
 
 Rute terproteksi diperiksa di Server Component (`src/lib/firebase/session.ts`),
@@ -108,6 +110,15 @@ keluar  DELETE /api/auth/session + revokeRefreshTokens()
 `checkRevoked: true` membuat "keluar" berlaku seketika, bukan menunggu token
 kedaluwarsa sendiri.
 
+**`establishSession` selalu mengambil ulang ID token** (`getIdToken(true)`)
+sebelum menukarnya. Nama, foto, dan role ikut tertanam di dalam token lalu
+disalin ke cookie, sedangkan token yang ter-cache masih memuat isi lama.
+Melewatkan ini pernah membuat nama saat mendaftar terabaikan: akun dibuat lebih
+dulu — token terbit tanpa nama — nama disetel sesudahnya, lalu token lama itu
+yang ditukar. Server tidak menemukan nama dan jatuh ke potongan email, sehingga
+`digibinproject@gmail.com` menjadi `digibinproject`. Dijaga oleh
+`npm run verify:signup`.
+
 ## Model data
 
 Satu koleksi: `courses/{slug}`. Section dan lesson **ditanam di dalam dokumen
@@ -126,6 +137,114 @@ Dua field diisi lewat Firebase Console:
 |---|---|
 | `videoUrl` | tautan YouTube/Vimeo biasa — otomatis dikonversi ke URL embed |
 | `attachments` | `[{ name, path, size, mime }]`, `path` menunjuk ke Storage |
+
+## Pendaftaran kursus
+
+Koleksi kedua: `enrollments/{uid}_{slug}`. Document ID-nya **dihitung**, bukan
+auto-ID — dan itu bukan gaya-gayaan:
+
+```
+enrollmentRef(uid, slug).set({ … }, { merge: true })
+```
+
+Tulisan itu aman dijalankan berapa kali pun. Saat gerbang pembayaran dipasang
+nanti, webhook-nya bisa mengirim ulang notifikasi dan datang tidak berurutan —
+dengan ID tetap, tidak dibutuhkan transaksi atau read-before-write untuk
+mencegah pendaftaran ganda.
+
+Koleksinya **tertutup rapat dari klien** (`allow read, write: if false`), sama
+seperti `educatorApplications`: halaman belajar dan dashboard dirender di
+server, jadi browser tidak pernah perlu membacanya sendiri.
+
+Pelajaran yang boleh dibuka ditentukan satu baris di `src/lib/courseAccess.ts`:
+
+```ts
+access.level === "full" || lesson.free === true
+```
+
+Admin dan pemilik kursus mendapat `full` tanpa mendaftar — educator harus bisa
+meninjau kursusnya sendiri. Pelajaran terkunci **dialihkan ke halaman
+penjualan, bukan 404**: pelajarannya memang ada, dan di sanalah tempat
+memperoleh aksesnya.
+
+Kemajuan belajar dihitung dari **irisan** dengan kurikulum yang sedang berlaku,
+tidak pernah dari `completedLessons.length` begitu saja — alasannya sama dengan
+`lessonsCount` yang tidak disimpan: begitu sebuah pelajaran dihapus, angka
+turunan yang tersimpan akan melenceng (dan bisa merender 110%).
+
+Peserta menandai pelajaran bacaan/video selesai lewat tombol di halaman
+belajar (`markLessonComplete`), yang menulis `completedLessons` dengan
+`FieldValue.arrayUnion` — idempoten, jadi klik ganda atau dua tab terbuka
+tidak bisa menggandakan progres. Pelajaran bertipe kuis **tidak** bisa
+ditandai lewat tombol ini; lihat bagian *Kuis* di bawah.
+
+## Materi terkunci (Storage)
+
+`storage.rules` menolak semua pembacaan langsung ke `lesson-assets/**` dan
+`course-assets/{uid}/**` (`allow read: if false`). Satu-satunya jalan masuk
+adalah route API `GET /api/courses/:slug/asset?path=…`, yang:
+
+1. memeriksa `getCourseAccess()` — harus admin, pemilik kursus, atau peserta
+   terdaftar dengan akses penuh ke pelajaran itu;
+2. memverifikasi ulang bahwa `path` yang diminta **benar-benar** muncul di
+   `attachments` salah satu pelajaran kursus itu — tanpa ini, route-nya jadi
+   proxy terbuka ke seluruh bucket lewat `?path=avatars/…`;
+3. **mengalirkan berkasnya sendiri** dengan `Cache-Control: private, no-store`.
+
+Butir 3 dulu menerbitkan **signed URL** lalu mengalihkan ke sana. Itu tampak
+lebih hemat, tetapi menandatangani URL menuntut kunci privat, sedangkan
+Application Default Credentials dari `gcloud auth application-default login`
+tidak punya — jadi setiap unduhan **selalu 500 di komputer pengembang** meski
+berjalan di produksi. Mengalirkan sendiri bekerja sama di kedua tempat, dan
+sekaligus memungkinkan `Content-Disposition: inline` yang membuat berkasnya
+bisa ditampilkan di halaman. Lampiran dibatasi 20 MB oleh `storage.rules`,
+jadi melewatkannya lewat server masih murah.
+
+### Membaca materi di halaman
+
+Materi **hanya PDF**, dan dirender sendiri dengan **PDF.js** — bukan disematkan
+lewat `<iframe>`.
+
+Alasannya: penampil PDF bawaan peramban adalah konteks penjelajahan tersendiri
+yang **tidak bisa digayakan sama sekali**. Bilah alat abu-abunya tidak bisa
+disembunyikan, diganti, atau diselaraskan dengan sisa aplikasi. Merender
+sendiri ke canvas memberi bilah alat kita: navigasi halaman, zoom, layar
+penuh, dan unduh, semuanya dalam gaya "Tinta & Kertas".
+
+Halaman dirender **malas** — hanya yang mendekati layar, lewat
+`IntersectionObserver` dengan margin 800px. Modul di sini bisa mencapai 39
+halaman; merender semuanya sekaligus membekukan tab beberapa detik dan
+memakan ratusan megabyte canvas. Tinggi tiap halaman dipesan lebih dulu dari
+viewport PDF supaya bilah gulir tidak melompat saat halaman menyusul digambar.
+
+Worker PDF.js disalin ke `public/` oleh `scripts/copy-pdf-worker.mjs`, yang
+jalan otomatis sebelum `dev` dan `build`. Tidak dikomit: berkas terbangun di
+dalam repo pasti tertinggal versi begitu `pdfjs-dist` diperbarui, dan
+ketidakcocokan versi worker membuat PDF gagal dimuat dengan pesan yang
+membingungkan.
+
+**Word tidak lagi didukung.** Dukungan `.docx` sempat ada lewat `mammoth` lalu
+`docx-preview`, tetapi tampilannya tidak pernah setia: setiap pengurai harus
+menerka ulang tata letak Word, dan gambar latar sehalaman penuh selalu jadi
+korbannya. Lampiran `.docx` yang terlanjur tersimpan **tetap bisa diunduh** —
+yang hilang hanya penayangannya di halaman, dan halaman belajar mengatakan
+alasannya alih-alih berpura-pura materinya belum ada.
+
+Layanan pratinjau milik Microsoft dan Google tidak pernah dipakai: keduanya
+menuntut berkasnya dapat diakses publik dari internet — justru yang sengaja
+dicegah di sini.
+
+### Tata letak halaman belajar
+
+Daftar materi bisa **diciutkan** di layar lebar, dan kolom materi ikut melebar
+(`max-w-5xl` menjadi `max-w-6xl`). Pilihannya diingat di `localStorage` lewat
+`useLocalToggle` — mengulang klik yang sama tiap ganti pelajaran jelas
+menjengkelkan.
+
+Hook itu memakai `useSyncExternalStore`, bukan `useState` + `useEffect`:
+`localStorage` adalah sumber data di luar React, dan membacanya lewat efek
+lalu memanggil `setState` memicu render berantai — persis yang dilarang aturan
+`react-hooks/set-state-in-effect`.
 
 ## Menghubungkan ke proyek Firebase asli
 
@@ -328,18 +447,33 @@ Server Action dengan Admin SDK. Pengajuan yang ditolak boleh diajukan lagi.
 ### Educator membuat kursus
 
 Educator membuka **Kursus Saya** → **Buat Kursus**. Satu formulir, satu kali
-kirim, kursusnya jadi utuh:
+kirim, kursusnya jadi utuh.
 
-| Bagian | Bentuk |
+Kurikulumnya **bebas** — berapa pun bagian dan pelajarannya, dalam urutan mana
+pun. Tiga jenis pelajaran:
+
+| Jenis | Isi |
 |---|---|
-| Modul materi | unggah PDF atau Word |
-| Video pembelajaran | tautan YouTube |
-| Penugasan akhir | unggah PDF atau Word |
+| Modul / Bacaan | unggah PDF |
+| Video | tautan YouTube |
+| Penugasan / Kuis | unggah PDF, plus soal kuis dari halaman sunting |
+
+Penyusunnya (`components/educator/curriculumDraft.tsx`) **satu komponen yang
+sama** dengan yang dipakai halaman sunting. Sebelumnya form pembuatan memaksa
+template kaku — tepat satu modul, satu video, satu tugas — sementara editor
+sudah bebas, sehingga educator harus melewati bentuk yang tidak dia inginkan
+dulu lalu membetulkannya di halaman lain. Menyatukannya juga mencegah dua
+aturan yang perlahan melenceng, alasan yang sama dengan `normalizeSections`
+di sisi server.
 
 Kursus buatan educator memakai **struktur dokumen yang sama persis** dengan
-kursus hasil migrasi — satu section berisi tiga pelajaran. Karena itu katalog,
-halaman detail, dan halaman belajar bekerja tanpa satu baris pun kode khusus;
-`videoUrl` dan `attachments` memang sudah ada di model `Lesson`.
+kursus hasil migrasi. Karena itu katalog, halaman detail, dan halaman belajar
+bekerja tanpa satu baris pun kode khusus; `videoUrl` dan `attachments` memang
+sudah ada di model `Lesson`.
+
+Soal kuis baru bisa ditambahkan **setelah** kursus tersimpan: kuis hidup di
+dokumen terpisah berkunci `lessonSlug`, dan slug itu baru terbit di server.
+Karena itu setelah diterbitkan, educator langsung diantar ke halaman sunting.
 
 Beberapa hal yang mudah terlewat:
 
@@ -352,35 +486,189 @@ Beberapa hal yang mudah terlewat:
 - **Tautan video divalidasi memakai `toEmbedUrl`** — pengubah yang sama dengan
   yang dipakai halaman belajar. Kalau ia tidak mengenali tautannya, videonya
   juga tidak akan tampil di sana, jadi lebih baik ditolak saat dibuat.
-- **Kategori dibatasi** ke tiga yang sudah ada. Kategori bebas berarti kombinasi
-  indeks Firestore baru untuk tiap nilai, dan daftar filter yang terpecah oleh
-  salah ketik.
+- **Kategori dipilih dari daftar**, bukan diketik bebas — lihat bagian
+  *Kategori* di bawah.
 - **Kursus bawaan tidak punya `ownerUid`.** Itu berarti bukan milik educator
   mana pun, jadi tidak seorang pun bisa menghapusnya lewat panel educator.
 
 Berkas disimpan di `course-assets/{uid}/{draft}/…`. `storage.rules` hanya
 mengizinkan pemiliknya sendiri, hanya bila `role == 'educator'`, maksimal 20 MB,
-dan hanya tiga tipe: PDF, DOC, DOCX. Daftarnya sengaja tertutup — pola
+dan hanya satu tipe: PDF. Daftarnya sengaja tertutup — pola
 `application/.*` akan ikut mengizinkan berkas yang dapat dieksekusi.
 
-**Belum ada penyuntingan.** Kursus yang sudah terbit hanya bisa dihapus lalu
-dibuat ulang. Kursus juga **langsung tampil di katalog** begitu diterbitkan,
-tanpa peninjauan admin — gerbangnya ada di persetujuan educator, bukan per
-kursus.
+Kursus **langsung tampil di katalog** begitu diterbitkan, tanpa peninjauan
+admin — gerbangnya ada di persetujuan educator, bukan per kursus.
+
+### Menyunting kursus
+
+**Kursus Saya** → **Sunting** membuka `/educator/courses/:slug/edit` — pemilik
+kursus atau admin, diperiksa lewat `requireOwnedCourse()`. Dua formulir
+terpisah dengan tombol simpan masing-masing:
+
+- **Info kursus** (`updateCourseMeta`) — judul, deskripsi, tingkat, kategori,
+  ikon, durasi, **harga**, "Yang Akan Dipelajari", dan "Persyaratan".
+- **Kurikulum** (`saveCurriculum`) — penyusun yang sama dengan form buat baru.
+  Penggantian penuh setiap disimpan, bukan patch per pelajaran.
+
+Slug pelajaran yang sudah ada **dipertahankan apa adanya** — retitle tidak
+mengubah slug-nya, supaya progres peserta (`completedLessons`) tidak jadi
+yatim. Pelajaran baru mendapat slug dari judulnya di server, dijamin unik
+di dalam kursus itu. `position` juga ditulis ulang sebagai indeks array
+(0-based) setiap disimpan — jadi kursus lama dari form (dulu 1-based) dan
+kursus hasil migrasi (0-based) konvergen begitu disunting, tanpa migrasi
+data apa pun.
+
+`createCourse` dan `saveCurriculum` memakai **validator yang sama**
+(`normalizeSections` di `lib/curriculum.ts`) — bentuk tiga-pelajaran saat
+membuat kursus baru sekarang cuma templat awal, bukan struktur yang dikunci.
+
+`deleteCourse` memakai `recursiveDelete`, bukan `.delete()` biasa — supaya
+subcollection (`courses/{slug}/quizzes/*`) ikut terhapus, bukan tertinggal
+yatim dan tetap ditagih.
+
+### Kuis
+
+Pelajaran bertipe `quiz` bisa punya soal pilihan tunggal, dikelola lewat
+**Kelola Soal Kuis** di editor kurikulum (`QuizEditor.tsx`). Setiap soal punya
+2–8 pilihan, satu jawaban benar, poin, dan penjelasan opsional. `passingScore`
+dan `maxAttempts` (0 = tanpa batas) berlaku per kuis.
+
+Soal dan jawaban benarnya hidup di **subcollection terpisah**,
+`courses/{slug}/quizzes/{lessonSlug}` — bukan di dalam dokumen kursus.
+Alasannya satu kalimat: `courses/{slug}` bersifat `allow read: if true`, jadi
+apa pun yang bersarang di dalamnya otomatis publik. Firestore rules **tidak
+hierarkis** — `match /courses/{slug}` tidak menjangkau subcollection-nya sama
+sekali — sehingga dokumen kuis sudah tertutup total lewat penolakan
+menyeluruh, dan blok deny eksplisit di `firestore.rules` hanya jaga-jaga
+terhadap suntingan ceroboh di masa depan.
+
+Tiga lapis mencegah `correctOptionId` bocor ke peserta:
+
+1. Tipe `PublicQuestion`/`PublicQuiz` (`lib/quiz.ts`) tidak punya field untuk
+   dibocori — menyerahkan dokumen mentah ke komponen klien adalah galat tipe.
+2. `toPublicQuiz()` satu-satunya konversi yang disahkan, memilih field secara
+   eksplisit (bukan `{...spread}`).
+3. Rules Firestore menolak seluruh subcollection sebagai cadangan.
+
+Penilaian (`submitQuiz`) berjalan di server: memeriksa enrollment aktif,
+menghitung skor, menyimpan percobaan di `enrollments/{id}/quizAttempts`,
+memperbarui `quizScores[lessonSlug]` hanya kalau rekornya membaik, dan
+menandai pelajaran selesai **hanya kalau lulus**. Penjelasan tiap soal baru
+dikirim ke klien setelah peserta lulus atau kehabisan percobaan — bukan di
+setiap percobaan, supaya kuisnya tidak bisa "dibobol" dengan mencoba berkali-
+kali sambil membaca penjelasan tiap kali gagal.
+
+Kursus hasil migrasi yang pelajaran `quiz`-nya sebenarnya tugas unduhan tidak
+punya dokumen kuis — halaman belajar jatuh ke tampilan lampiran lama tanpa
+migrasi data apa pun.
+
+### Sertifikat
+
+Begitu **semua** pelajaran di kurikulum yang sedang berlaku tercatat selesai
+(termasuk kuis — yang berarti sudah lulus), `issueCertificateIfComplete`
+menerbitkan satu dokumen di `certificates/{id}`, dipicu dari dalam
+`markLessonComplete` dan `submitQuiz` setelah lulus. Transaksional dan
+idempoten: memicunya berkali-kali (dua tab, klik ulang) tidak menerbitkan
+dokumen kedua.
+
+ID sertifikat **acak** (`SYN-` + 10 karakter Crockford base32 dari
+`crypto.randomBytes`), bukan diturunkan dari `uid+slug` seperti ID enrollment
+— sengaja dibalik, karena halaman verifikasinya publik tanpa login, dan ID
+yang bisa dihitung akan membiarkan siapa pun memastikan kursus apa yang
+diselesaikan orang lain. `holderName` dan `courseTitle` di-snapshot saat
+terbit, supaya sertifikat lama tidak diam-diam berubah kalau penggantinya
+mengubah nama akun atau kursusnya disunting.
+
+| Halaman | Akses |
+|---|---|
+| `/verify/:certificateId` | publik, tanpa login — dibaca lewat Admin SDK di Server Component |
+| `/dashboard/certificates/:id` | pemilik sertifikat atau admin — halaman cetak (`window.print()`, tanpa pustaka PDF) |
+
+Koleksi `certificates` tertutup rapat dari klien (`allow read, write: if
+false`) sama seperti `enrollments`; halaman verifikasi tidak butuh
+pelonggaran rules karena tidak pernah memakai SDK klien untuk membacanya.
+
+### Kategori kursus
+
+Dikelola admin di **Panel Admin → Kategori**, disimpan di koleksi
+`categories/{slug}`. Dulu konstanta di dalam kode, jadi menambah kategori
+berarti mengubah kode dan men-deploy ulang.
+
+Disimpan sebagai koleksi tersendiri, **bukan diturunkan dari kursus yang ada**:
+kalau diturunkan, kategori baru mustahil dipilih educator karena belum ada satu
+pun kursus yang memakainya. Kategori yang baru dibuat langsung muncul di form
+educator maupun di filter katalog.
+
+Dua penjaga yang penting:
+
+- **Slug tidak ikut berubah saat nama diganti.** Slug tersimpan di setiap
+  dokumen kursus, jadi mengubahnya memutus tautan seluruh kursus di kategori
+  itu. Yang berubah hanya labelnya.
+- **Kategori yang masih dipakai tidak bisa dihapus.** Kalau boleh, kursusnya
+  tetap menyimpan slug yang sudah tidak ada: hilang dari filter, dan gagal
+  setiap kali educator menyimpan suntingan karena kategorinya dianggap tidak
+  valid.
+
+`npm run seed:categories` memindahkan kategori lama ke koleksi ini. Aman
+dijalankan berkali-kali, dan berhenti dengan galat kalau ada kursus yang
+kategorinya belum terdaftar.
+
+### Gambar latar kursus
+
+Educator mengunggah gambar sampul saat membuat atau menyunting kursus;
+pemilihan ikon dihapus. `icon` dan `tint` masih ada di dokumen, tetapi
+sekarang hanya dipakai sebagai **latar cadangan** untuk kursus yang belum
+punya gambar — termasuk empat kursus hasil migrasi.
+
+Gambar disimpan di `course-thumbnails/{uid}/…`, folder yang **terpisah** dari
+`course-assets`. Bedanya menentukan: sampul kursus `allow read: if true`
+karena memang tampil di katalog yang bisa dilihat tanpa masuk, sedangkan
+materi tertutup rapat dan hanya dilayani lewat route bertanda tangan.
+Menyatukan keduanya berarti memilih satu aturan baca untuk dua hal yang
+kebutuhan kerahasiaannya berlawanan.
+
+Nilai `thumbnail` punya tiga bentuk di data yang nyata, dan `courseImageUrl()`
+menangani ketiganya: path Storage (unggahan educator), URL penuh, dan path di
+folder `public/` (keduanya dari kursus hasil migrasi).
+
+Saat menyunting, field `thumbnail` **hanya dikirim kalau memang diubah**
+(`undefined` = biarkan, `null` = hapus, string = path baru). Kalau selalu
+dikirim ulang, menyimpan perubahan judul saja akan gagal pada kursus lama yang
+gambarnya berupa URL — atau lebih buruk, diam-diam menghapusnya.
 
 ### Menguji
 
-Tiga skrip menguji semuanya terhadap proyek asli. Ketiganya membuat akun uji
-sementara dan menghapusnya lagi di akhir; akun sungguhan tidak disentuh.
+Skrip-skrip ini menguji semuanya terhadap proyek asli. Semuanya membuat akun
+uji sementara dan menghapusnya lagi di akhir; akun sungguhan tidak disentuh.
 
 ```bash
-npm run typecheck         # skrip di scripts/ — tsx TIDAK memeriksa tipe
-npm run verify:admin      # penjagaan /admin              (butuh dev server)
-npm run verify:educator   # alur pengajuan sampai putusan (butuh dev server)
-npm run verify:course     # pembuatan kursus oleh educator (butuh dev server)
-npm run verify:google     # cara masuk & halaman profil   (butuh dev server)
-npm run verify:rules      # rules Firestore & Storage yang sedang ter-deploy
+npm run typecheck          # skrip di scripts/ — tsx TIDAK memeriksa tipe
+npm run verify:admin       # penjagaan /admin               (butuh dev server)
+npm run verify:educator    # alur pengajuan sampai putusan  (butuh dev server)
+npm run verify:course      # pembuatan kursus oleh educator (butuh dev server)
+npm run verify:category    # kategori yang dikelola admin    (butuh dev server)
+npm run verify:curriculum  # sunting info & kurikulum       (butuh dev server)
+npm run verify:enrollment  # pendaftaran & gerbang akses    (butuh dev server)
+npm run verify:quiz        # soal, penilaian, anti-bocor    (butuh dev server)
+npm run verify:certificate # penerbitan & verifikasi        (butuh dev server)
+npm run verify:material    # penyajian & unduhan berkas     (butuh dev server)
+npm run verify:pdf         # penampil PDF & tata letak di Chrome
+npm run verify:google      # cara masuk & halaman profil    (butuh dev server)
+npm run verify:signup      # nama saat mendaftar            (butuh dev server)
+npm run verify:rules       # rules Firestore & Storage yang sedang ter-deploy
 ```
+
+`verify:enrollment` menjaga invarian yang paling mudah hilang tanpa disadari:
+pengguna yang **sudah masuk tetapi belum mendaftar** tidak boleh membuka
+pelajaran berbayar, sementara pelajaran bertanda `free` tetap terbuka. Ia juga
+membuktikan pendaftarannya idempoten — mendaftar dua kali tidak menaikkan
+jumlah peserta dua kali.
+
+Yang memakai `scripts/testSupport.ts` (`verify:educator`, `verify:course`,
+`verify:curriculum`, `verify:enrollment`) ikut berjalan di emulator: setel
+`FIRESTORE_EMULATOR_HOST` dan `FIREBASE_AUTH_EMULATOR_HOST` sebelum
+menjalankannya. `verify:admin` dan `verify:rules` masih memanggil Identity
+Toolkit langsung, jadi keduanya tetap butuh proyek asli.
 
 `verify:google` meniru setiap keadaan lewat Admin SDK — melepas kata sandi,
 menandai email terverifikasi, menautkan google.com — sehingga keempat kombinasi
@@ -392,17 +680,26 @@ header `Next-Action`, persis seperti browser saat tombolnya ditekan — jadi yan
 teruji kode produksinya, bukan tiruan alurnya. ID action-nya dibaca dari
 manifest `.next/dev`, karena itu dev server harus berjalan.
 
-`verify:rules` membuktikan dua hal terpenting: pengguna biasa **tidak** bisa
-menulis field `role` ke dokumennya sendiri, dan **tidak** bisa menyentuh
-lamarannya sendiri untuk menandainya `accepted`.
+`verify:rules` membuktikan empat hal terpenting: pengguna biasa **tidak** bisa
+menulis field `role` ke dokumennya sendiri, **tidak** bisa menyentuh
+lamarannya sendiri untuk menandainya `accepted`, **tidak** bisa membaca
+dokumen kuis siapa pun, dan **tidak** bisa membaca enrollment orang lain.
+
+`verify:quiz` memuat titik pengujian paling kritis di seluruh proyek: setiap
+payload yang sampai ke peserta (HTML halaman belajar, tiap balasan
+`submitQuiz`) digeledah mencari literal `"correctOptionId"` — harus nol hasil,
+persis meniru cara memeriksa tab Network di DevTools. Ia juga membuktikan
+penjelasan soal baru terbuka setelah lulus atau kehabisan percobaan, dan skor
+terbaik tidak pernah turun akibat percobaan gagal berikutnya.
+
+`verify:certificate` membuktikan sertifikat baru terbit setelah **semua**
+pelajaran (termasuk kuis) selesai — bukan sebagian — penerbitannya idempoten
+(mengulang aksi yang sudah selesai tidak menerbitkan dokumen kedua), halaman
+verifikasi publik bisa dibuka tanpa login, dan halaman cetak di dashboard
+menolak siapa pun selain pemilik sertifikat atau admin.
 
 ## Yang belum ada
 
-- **Menyunting kursus.** Sekali terbit, yang bisa dilakukan hanya menghapus dan
-  membuat ulang.
-- **Kurikulum yang lebih dari tiga bagian.** Bentuknya masih tetap: satu modul,
-  satu video, satu tugas. Kursus hasil migrasi tetap boleh berlapis-lapis;
-  yang dibatasi hanya pembuatan lewat formulir.
 - **Pengumpulan tugas.** Penugasan akhir baru berupa berkas soal yang diunduh;
   peserta belum bisa mengirimkan jawaban.
 - **Peninjauan kursus.** Kursus langsung tampil di katalog tanpa persetujuan
@@ -419,13 +716,15 @@ lamarannya sendiri untuk menandainya `accepted`.
   belum terverifikasi, tetap melepas kata sandi itu. Firebase melakukannya di
   server sebelum aplikasi tahu apa-apa. Yang tersedia adalah jalur yang benar
   (*Tautkan Akun Google*) dan pemulihannya, bukan pencegahan di jalur itu.
-- **Enrollment & progres belajar.** Di Laravel dulu keduanya hanya angka
-  hardcoded di controller, bukan fitur yang berjalan — jadi dashboard di sini
-  sengaja tidak menampilkan angka kemajuan sama sekali.
-- **Proteksi berkas.** `storage.rules` memakai akses baca publik sesuai
-  keputusan awal. Konsekuensinya materi kursus berbayar dapat disebarluaskan
-  bebas. Untuk mengubahnya: ganti `allow read: if true` menjadi
-  `if request.auth != null` dan sajikan lewat URL bertanda tangan.
+- **Pembayaran.** Kursus berbayar menampilkan tombol **Pembayaran segera
+  hadir** yang nonaktif — belum ada gerbang pembayaran (Midtrans) yang
+  terpasang, jadi kursus berharga di atas Rp0 tidak bisa benar-benar dibeli.
+- **Kuis pilihan ganda-jamak.** Versi ini sengaja dibatasi pilihan tunggal;
+  tipe soal lain (`multiple`, isian singkat, dsb.) belum ada.
+- **Sertifikat PDF sisi server.** Halaman cetak memakai print-to-PDF bawaan
+  browser (`window.print()`), bukan generator PDF di server — keputusan
+  sadar untuk menghindari dependensi headless Chrome demi manfaat yang tidak
+  terlihat pengguna.
 - **Verifikasi email & reset kata sandi.** Tersedia gratis di Firebase Auth,
   tetapi belum dirangkai ke UI.
 

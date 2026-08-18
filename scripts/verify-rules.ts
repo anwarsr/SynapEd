@@ -80,6 +80,22 @@ async function readDoc(uid: string, token: string, collection: string): Promise<
   return res.status;
 }
 
+/**
+ * Baca lewat path dokumen penuh — dipakai untuk subcollection (quizzes) dan
+ * ID komposit (enrollments) yang tidak cocok dengan bentuk `docUrl`.
+ *
+ * Rules Firestore menolak permintaan SEBELUM memeriksa apakah dokumennya
+ * ada, jadi path yang dipakai di sini tidak perlu menunjuk dokumen sungguhan
+ * — 403 harus muncul terlepas dari itu.
+ */
+async function readPath(path: string, token: string): Promise<number> {
+  const res = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${path}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return res.status;
+}
+
 async function uploadFile(path: string, token: string, body: Buffer, mime: string): Promise<number> {
   const res = await fetch(
     `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(path)}`,
@@ -165,6 +181,24 @@ async function main() {
         selfAccept === 403,
         `HTTP ${selfAccept} (menerima diri sendiri harus mustahil)`,
       );
+    }
+
+    // ── Kuis: soal & jawaban tidak boleh terbaca klien ─────────
+    // Dokumen ini sudah tertutup lewat penolakan menyeluruh (subcollection
+    // TIDAK terjangkau `allow read: if true` di dokumen kursus induknya —
+    // rules Firestore tidak hierarkis) — ini menguji perilaku itu langsung,
+    // bukan hanya mempercayai teori di komentar rules.
+    {
+      const quizRead = await readPath("courses/verify-rules-fake-course/quizzes/lesson-1", token);
+      check("baca dokumen kuis -> DITOLAK", quizRead === 403, `HTTP ${quizRead}`);
+    }
+
+    // ── Enrollment orang lain tidak boleh terbaca klien ────────
+    // Kalau ini bocor, siapa pun bisa memastikan kursus apa yang diikuti
+    // pengguna lain hanya dengan menebak `{uid}_{slug}`.
+    {
+      const enrollRead = await readPath(`enrollments/${other.uid}_verify-rules-fake-course`, token);
+      check("baca enrollment orang lain -> DITOLAK", enrollRead === 403, `HTTP ${enrollRead}`);
     }
 
     // ── Storage avatars/{uid} ──────────────────────────────────

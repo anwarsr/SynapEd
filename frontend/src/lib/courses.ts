@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { listCategories } from "@/lib/categories";
 
 // ── Tipe ────────────────────────────────────────────────────────────────
 
@@ -42,15 +43,24 @@ export interface CourseSummary {
   rating: number;
   reviews: number;
   lessonsCount: number;
+  /** Gambar latar kartu. Kosong berarti memakai latar bawaan (tint + ikon). */
+  thumbnail: string | null;
+  /**
+   * Penyedia kursus — nama yang tampil sebagai pemilik di katalog.
+   *
+   * Ada di ringkasan, bukan hanya di detail: tanpa ini kartu katalog tidak
+   * memberi tahu kursus itu milik siapa, dan pengunjung baru tahu setelah
+   * membuka halamannya. Kursus hasil migrasi bisa saja kosong, jadi selalu
+   * perlakukan sebagai boleh-kosong.
+   */
+  instructorName: string;
 }
 
 export interface CourseDetail extends CourseSummary {
   longDesc: string;
   price: number;
-  thumbnail: string | null;
   enrolledStudents: number;
   lastUpdated: string | null;
-  instructorName: string;
   instructorBio: string;
   whatYouLearn: string[];
   requirements: string[];
@@ -97,27 +107,9 @@ function toSummary(doc: CourseDoc): CourseSummary {
     rating: doc.rating,
     reviews: doc.reviews,
     lessonsCount: countLessons(doc.sections ?? []),
+    thumbnail: doc.thumbnail ?? null,
+    instructorName: doc.instructorName ?? "",
   };
-}
-
-// Label ini dulu hardcoded di CourseController Laravel.
-const CATEGORY_LABELS: Record<string, string> = {
-  neuroscience: "Neuroscience",
-  eeg: "Teknologi EEG",
-  analisis: "Analisis Data",
-};
-
-/** Kategori baru yang belum masuk CATEGORY_LABELS tetap tampil rapi
- *  ("ai-terapan" -> "Ai Terapan"), bukan sebagai slug mentah. */
-function categoryLabel(slug: string): string {
-  const known = CATEGORY_LABELS[slug];
-  if (known) return known;
-
-  return slug
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }
 
 // ── API publik ──────────────────────────────────────────────────────────
@@ -161,22 +153,20 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
   return { ...data, sections, lessonsCount: countLessons(sections) };
 }
 
-export async function listCategories(): Promise<Category[]> {
-  // Tanpa orderBy, dengan alasan yang sama seperti listCourses di atas.
-  const snapshot = await adminDb().collection("courses").get();
-
-  const docs = snapshot.docs
-    .map((d) => d.data() as CourseDoc)
-    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
-
-  const seen: string[] = [];
-  for (const { category } of docs) {
-    if (category && !seen.includes(category)) seen.push(category);
-  }
+/**
+ * Pilihan filter di katalog.
+ *
+ * Dulu diturunkan dari kategori yang kebetulan dipakai kursus, dengan label
+ * hardcoded. Sekarang dibaca dari koleksi `categories` yang dikelola admin —
+ * kategori yang baru dibuat langsung muncul sebagai pilihan, bahkan sebelum
+ * ada kursus di dalamnya.
+ */
+export async function listCourseCategories(): Promise<Category[]> {
+  const categories = await listCategories();
 
   return [
     { slug: "semua", label: "Semua Materi" },
-    ...seen.map((slug) => ({ slug, label: categoryLabel(slug) })),
+    ...categories.map((c) => ({ slug: c.slug, label: c.label })),
   ];
 }
 

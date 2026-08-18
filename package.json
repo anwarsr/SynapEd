@@ -13,16 +13,26 @@
     "migrate:firestore": "tsx scripts/migrate-to-firestore.ts",
     "import:users": "tsx scripts/import-users-to-firebase.ts",
     "set-role": "tsx scripts/set-role.ts",
+    "seed:categories": "tsx scripts/seed-categories.ts",
     "verify:admin": "tsx scripts/verify-admin.ts",
+    "verify:category": "tsx scripts/verify-category.ts",
     "verify:course": "tsx scripts/verify-course.ts",
+    "verify:curriculum": "tsx scripts/verify-curriculum.ts",
     "verify:educator": "tsx scripts/verify-educator.ts",
+    "verify:enrollment": "tsx scripts/verify-enrollment.ts",
+    "verify:quiz": "tsx scripts/verify-quiz.ts",
+    "verify:certificate": "tsx scripts/verify-certificate.ts",
     "verify:google": "tsx scripts/verify-google-account.ts",
-    "verify:rules": "tsx scripts/verify-rules.ts"
+    "verify:material": "tsx scripts/verify-material.ts",
+    "verify:pdf": "tsx scripts/verify-pdf-viewer.ts",
+    "verify:rules": "tsx scripts/verify-rules.ts",
+    "verify:signup": "tsx scripts/verify-signup.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "firebase-admin": "^13.0.0",
     "firebase-tools": "^14.0.0",
+    "puppeteer-core": "^25.7.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.0"
   }

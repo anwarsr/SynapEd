@@ -2,6 +2,7 @@ import "server-only";
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getStorage, type Storage } from "firebase-admin/storage";
 
 /**
  * Admin SDK — hanya di server.
@@ -20,6 +21,12 @@ function adminApp(): App {
   const projectId =
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? process.env.GCLOUD_PROJECT;
 
+  // Dibaca eksplisit, bukan diteruskan begitu saja ke Storage: nama bucket
+  // "gaya baru" berakhiran .firebasestorage.app, sementara admin.storage()
+  // tanpa konfigurasi ini menebak <project-id>.appspot.com — bucket yang
+  // salah untuk proyek yang dibuat setelah perubahan penamaan itu.
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (raw) {
     const parsed = JSON.parse(raw) as {
@@ -35,10 +42,11 @@ function adminApp(): App {
         privateKey: parsed.private_key.replace(/\\n/g, "\n"),
       }),
       projectId: parsed.project_id,
+      storageBucket,
     });
   }
 
-  return initializeApp({ projectId });
+  return initializeApp({ projectId, storageBucket });
 }
 
 export function adminAuth(): Auth {
@@ -47,4 +55,8 @@ export function adminAuth(): Auth {
 
 export function adminDb(): Firestore {
   return getFirestore(adminApp());
+}
+
+export function adminStorage(): Storage {
+  return getStorage(adminApp());
 }

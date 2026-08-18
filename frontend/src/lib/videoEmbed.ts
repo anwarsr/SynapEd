@@ -34,10 +34,58 @@ export function toEmbedUrl(raw: string): string | null {
   return null;
 }
 
-/** URL unduhan publik untuk berkas di Firebase Storage. */
-export function storageDownloadUrl(path: string): string {
-  const bucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "";
-  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(path)}?alt=media`;
+/**
+ * URL unduhan lampiran pelajaran — lewat route API kita sendiri, bukan
+ * langsung ke Storage.
+ *
+ * Storage untuk lesson-assets/course-assets sudah dikunci (allow read: if
+ * false); route ini yang memeriksa enrollment lalu menerbitkan signed URL
+ * berumur pendek. Dulu fungsi ini membangun URL Storage publik langsung —
+ * itulah sebabnya materi kursus berbayar bisa diunduh siapa saja yang
+ * punya tautannya, terlepas dari status bayar.
+ */
+export function lessonAssetUrl(courseSlug: string, path: string, download = false): string {
+  const suffix = download ? "&download=1" : "";
+  return `/api/courses/${courseSlug}/asset?path=${encodeURIComponent(path)}${suffix}`;
+}
+
+/**
+ * Jenis berkas yang bisa ditampilkan langsung di halaman.
+ *
+ * Hanya PDF. Berkas Word sempat didukung, tetapi tampilannya tidak pernah
+ * setia — lihat catatan di courseUpload.ts. Lampiran .docx lama yang masih
+ * tersimpan jatuh ke "none": tetap bisa diunduh, hanya tidak ditampilkan.
+ */
+export type PreviewKind = "pdf" | "none";
+
+export function previewKind(name: string, mime?: string): PreviewKind {
+  const isPdf = mime === "application/pdf" || name.toLowerCase().endsWith(".pdf");
+  return isPdf ? "pdf" : "none";
+}
+
+/**
+ * Alamat gambar latar kursus, dari nilai `thumbnail` yang tersimpan.
+ *
+ * Ada tiga bentuk di data yang nyata, dan ketiganya harus tetap bekerja:
+ *   - path Storage  ("course-thumbnails/…")  -> unggahan educator
+ *   - URL penuh     ("https://…")            -> kursus hasil migrasi
+ *   - path lokal    ("images/…")             -> berkas di folder public/
+ *
+ * Gambar ini memang publik — tampil di katalog yang bisa dilihat tanpa masuk —
+ * jadi tidak lewat route bertanda tangan seperti lampiran pelajaran.
+ */
+export function courseImageUrl(thumbnail: string | null | undefined): string | null {
+  const value = thumbnail?.trim();
+  if (!value) return null;
+
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+
+  if (value.startsWith("course-thumbnails/")) {
+    const bucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "";
+    return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(value)}?alt=media`;
+  }
+
+  return value.startsWith("/") ? value : `/${value}`;
 }
 
 export function formatBytes(bytes?: number): string | null {

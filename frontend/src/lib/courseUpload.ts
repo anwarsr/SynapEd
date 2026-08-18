@@ -1,31 +1,25 @@
 "use client";
 import { ref, uploadBytes } from "firebase/storage";
 import { firebaseStorage } from "@/lib/firebase/client";
+import { COURSE_ASSETS, COURSE_THUMBNAILS } from "@/lib/storagePaths";
 import type { UploadedDoc } from "@/lib/courseActions";
 
 export const MAX_DOC_BYTES = 20 * 1024 * 1024;
 
-const DOC_MIMES = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
-
-/** Sebagian browser mengirim MIME kosong untuk .doc/.docx; ekstensi jadi cadangan. */
-const DOC_EXTENSIONS = [".pdf", ".doc", ".docx"];
-
-export const DOC_ACCEPT = ".pdf,.doc,.docx";
-
 /**
- * Pemeriksaan di sini hanya agar pesannya cepat dan jelas. Penjaganya yang
- * sebenarnya ada di storage.rules — form bisa dilewati, aturan Storage tidak.
+ * Hanya PDF.
+ *
+ * Word sempat didukung, tetapi tampilannya di halaman tidak pernah setia:
+ * pengurai .docx mana pun harus menerka ulang tata letak Word, dan gambar
+ * latar sehalaman penuh selalu jadi korbannya. PDF dirender peramban itu
+ * sendiri, jadi hasilnya persis seperti yang disusun educator.
  */
-export function validateDoc(file: File): string | null {
-  const named = DOC_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext));
+export const DOC_ACCEPT = "application/pdf,.pdf";
 
-  if (!named && !DOC_MIMES.includes(file.type)) {
-    return "Format harus PDF atau Word (.pdf, .doc, .docx).";
-  }
+export function validateDoc(file: File): string | null {
+  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+  if (!isPdf) return "Format harus PDF.";
   if (file.size > MAX_DOC_BYTES) return "Ukuran berkas maksimal 20 MB.";
   if (file.size === 0) return "Berkas kosong.";
 
@@ -47,26 +41,42 @@ function safeName(name: string): string {
 export async function uploadCourseDoc(
   uid: string,
   draftId: string,
-  kind: "modul" | "tugas",
+  kind: string,
   file: File,
 ): Promise<UploadedDoc> {
-  const path = `course-assets/${uid}/${draftId}/${kind}-${safeName(file.name)}`;
-  const storageRef = ref(firebaseStorage(), path);
+  const path = `${COURSE_ASSETS}/${uid}/${draftId}/${kind}-${safeName(file.name)}`;
 
-  // contentType disetel eksplisit: berkas .docx dari beberapa browser datang
-  // tanpa MIME, dan storage.rules menolak apa pun di luar daftar yang sah.
-  const contentType = DOC_MIMES.includes(file.type) ? file.type : mimeFromName(file.name);
+  await uploadBytes(ref(firebaseStorage(), path), file, { contentType: "application/pdf" });
 
-  await uploadBytes(storageRef, file, { contentType });
-
-  return { name: file.name, path, size: file.size, mime: contentType };
+  return { name: file.name, path, size: file.size, mime: "application/pdf" };
 }
 
-function mimeFromName(name: string): string {
-  const lower = name.toLowerCase();
-  if (lower.endsWith(".pdf")) return "application/pdf";
-  if (lower.endsWith(".docx")) {
-    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-  }
-  return "application/msword";
+// ── Gambar latar kursus ─────────────────────────────────────────────────
+
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const IMAGE_ACCEPT = "image/*";
+
+/** Sama seperti validateDoc: penjaga sebenarnya ada di storage.rules. */
+export function validateImage(file: File): string | null {
+  if (!file.type.startsWith("image/")) return "Berkas harus berupa gambar (JPG, PNG, atau WebP).";
+  if (file.size > MAX_IMAGE_BYTES) return "Ukuran gambar maksimal 5 MB.";
+  if (file.size === 0) return "Berkas kosong.";
+  return null;
+}
+
+/**
+ * Mengunggah gambar latar kursus dan mengembalikan PATH-nya, bukan URL.
+ *
+ * Path yang disimpan, karena itulah yang bisa diperiksa ulang server: cukup
+ * memastikan awalannya folder milik pengunggah. URL penuh jauh lebih mudah
+ * dipalsukan dan lebih rapuh saat diurai.
+ */
+export async function uploadCourseImage(
+  uid: string,
+  prefix: string,
+  file: File,
+): Promise<string> {
+  const path = `${COURSE_THUMBNAILS}/${uid}/${prefix}-${Date.now()}-${safeName(file.name)}`;
+  await uploadBytes(ref(firebaseStorage(), path), file, { contentType: file.type });
+  return path;
 }

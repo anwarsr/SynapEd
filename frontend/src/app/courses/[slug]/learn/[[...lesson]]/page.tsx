@@ -1,7 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import LearnShell from "@/components/learn/LearnShell";
 import { flattenLessons, getCourse } from "@/lib/courses";
-import { getCurrentUser } from "@/lib/firebase/session";
+import { canViewLesson, requireCourseAccess } from "@/lib/courseAccess";
+import { progressOf } from "@/lib/enrollments";
+import { getPublicQuizForViewer } from "@/lib/quiz";
 import type { Metadata } from "next";
 
 /**
@@ -24,12 +26,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LearnPage({ params }: Props) {
   const { slug, lesson } = await params;
 
-  // Sama seperti middleware 'auth' di rute Laravel lama.
-  const user = await getCurrentUser();
-  if (!user) redirect(`/login?next=/courses/${slug}/learn`);
-
-  const course = await getCourse(slug);
-  if (!course) notFound();
+  // Masuk DAN berhak. Sebelumnya di sini hanya ada pemeriksaan login, yang
+  // berarti siapa pun yang punya akun bisa membuka kursus mana pun.
+  const access = await requireCourseAccess(slug, `/courses/${slug}/learn`);
+  const { course, enrollment } = access;
 
   // Kurikulum diratakan sekali; urutan section & lesson sudah dijamin
   // oleh kolom `position` di database.
@@ -40,14 +40,32 @@ export default async function LearnPage({ params }: Props) {
   const index = requested ? flat.findIndex((l) => l.slug === requested) : 0;
   if (index === -1) notFound();
 
+  // Pelajaran terkunci dialihkan ke halaman penjualan, bukan 404: pelajarannya
+  // memang ada, dan di sanalah tempat memperoleh aksesnya.
+  if (!canViewLesson(access, flat[index])) redirect(`/courses/${slug}`);
+
+  // Progres hanya berarti untuk peserta sungguhan — pratinjau admin/pemilik
+  // kursus tidak punya dokumen enrollment untuk dilacak.
+  const canTrackProgress = access.reason === "enrolled";
+
+  const current = flat[index];
+  // Pembacaan ekstra HANYA terjadi saat merender pelajaran kuis — bukan di
+  // katalog, bukan di daftar kurikulum, bukan di pelajaran video/bacaan.
+  // null kalau belum ada soal tersimpan (kursus hasil migrasi): LearnShell
+  // jatuh ke tampilan lampiran lama tanpa perlakuan khusus.
+  const quiz = current.type === "quiz" ? await getPublicQuizForViewer(slug, current.slug, enrollment) : null;
+
   return (
     <LearnShell
       course={course}
-      current={flat[index]}
+      current={current}
       prev={index > 0 ? flat[index - 1] : null}
       next={index < flat.length - 1 ? flat[index + 1] : null}
-      position={index + 1}
-      total={flat.length}
+      locked={flat.filter((l) => !canViewLesson(access, l)).map((l) => l.slug)}
+      completed={enrollment?.completedLessons ?? []}
+      progress={progressOf(course, enrollment)}
+      canTrackProgress={canTrackProgress}
+      quiz={quiz}
     />
   );
 }
