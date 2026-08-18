@@ -184,7 +184,7 @@ export default function Features() {
       <div className="container-page">
         {/* Judul + subjudul di kanan atas, dengan jarak yang lega di
             antara keduanya. */}
-        <div className="flex flex-col items-end text-right">
+        <div className="flex flex-col items-start text-left">
           <h1
             className="rise-in text-blue-600"
             style={{
@@ -202,7 +202,7 @@ export default function Features() {
           </h1>
 
           <p
-            className="rise-in mt-8 max-w-md text-base leading-relaxed text-ink-muted md:text-lg"
+            className="rise-in mt-8 max-w-md text-justify text-base leading-relaxed text-ink-muted md:text-lg"
             style={{ "--rise-delay": "260ms" } as React.CSSProperties}
           >
             Pembelajaran yang dirancang sistematis, mudah dipahami, dan relevan untuk kebutuhan
