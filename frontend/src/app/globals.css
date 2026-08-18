@@ -399,25 +399,24 @@ section[id] {
    panggung sticky (.features-stage). Sepanjang .features-track discroll,
    lingkarannya berputar penuh 360°: kartu aktif berada di titik terdepan,
    sisanya mengorbit ke samping lalu ke BELAKANG kartu aktif — makin ke
-   belakang makin kecil (dimakan perspective 1100px) dan makin samar
-   (opacity turun sampai ~0.12), jadi terbaca sebagai satu putaran
-   melingkar yang utuh. Radius orbitnya sengaja kecil supaya kartu
-   belakang tetap membayang di balik kartu depan, bukan terlempar ke tepi
-   layar. Teks di dalam kartu (.feature-card__content) diberi parallax
-   lewat --content-shift sehingga tertinggal sedikit dari gerak kartunya.
-   Semua nilai dihitung dari posisi scroll dan ditulis langsung ke
-   style/CSS-var tiap kartu di Features.tsx (bukan React state), supaya
-   scroll tetap 60fps. Permukaannya kaca biru transparan (bukan kertas
-   putih): .feature-card pakai backdrop-filter blur supaya latar di
-   baliknya terlihat buram lewat tirai biru, .feature-card__holo cincin
-   prismatik biru yang BERPUTAR TERUS lewat CSS animation (kilau hologram,
-   jalan walau kartu diam), dan .feature-card__glare kilau yang bergeser
-   mengikuti scroll + titik terang yang mengikuti kursor lewat
-   --holo-px/-py. */
+   belakang makin kecil & buram (dimakan perspective 1100px) dan makin
+   samar, jadi terbaca sebagai satu putaran melingkar yang utuh, BUKAN
+   kartu yang saling bertabrakan/bertumpuk di tengah putaran (radius orbit
+   & kurva depth di Features.tsx sengaja dilebarkan/dicuram-kan untuk itu).
+   Teks di dalam kartu (.feature-card__content) diberi parallax lewat
+   --content-shift. Semua nilai dihitung dari posisi scroll dan ditulis
+   langsung ke style/CSS-var tiap kartu di Features.tsx (bukan React
+   state), supaya scroll tetap 60fps. Permukaannya kaca biru transparan:
+   .feature-card pakai backdrop-filter blur, .feature-card__foil titik
+   terang yang mengikuti kursor HANYA pada kartu yang sedang di depan
+   (lewat --mouse-x/-y — kartu itu juga yang "bergoyang" ikut kursor via
+   rotateX/Y tambahan di JS), .feature-card__rainbow cincin prismatik biru
+   yang BERPUTAR TERUS lewat CSS animation, .feature-card__gloss kilau
+   yang bergeser mengikuti scroll, dan .feature-card__grain tekstur
+   kertas tipis. */
 .features-track {
     position: relative;
     height: 260vh;
-    margin-top: 4rem;
 }
 
 .features-stage {
@@ -433,15 +432,14 @@ section[id] {
 
 .cards-stack {
     position: relative;
-    width: min(74vw, 560px);
-    height: min(60vh, 540px);
+    width: min(62vw, 460px);
+    height: min(58vh, 480px);
     transform-style: preserve-3d;
 }
 
 .feature-card {
     position: absolute;
     inset: 0;
-    display: grid;
     border-radius: 28px;
     overflow: hidden;
     transform-style: preserve-3d;
@@ -460,6 +458,17 @@ section[id] {
     box-shadow: var(--shadow-lift), 0 0 46px -18px color-mix(in srgb, var(--color-blue-500) 55%, transparent);
 }
 
+.feature-card__foil {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+        circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(255, 255, 255, .6),
+        transparent 45%
+    );
+}
+
 /* Prisma yang terus berputar pelan — sumber utama kesan "hologram":
    cincin biru monokrom (terang → identitas → gelap) yang berputar walau
    kartu sedang diam, seolah menangkap cahaya dari sudut yang berubah. */
@@ -469,7 +478,7 @@ section[id] {
     }
 }
 
-.feature-card__holo {
+.feature-card__rainbow {
     position: absolute;
     inset: -75%;
     pointer-events: none;
@@ -491,65 +500,29 @@ section[id] {
     will-change: transform;
 }
 
-.feature-card__glare {
+.feature-card__gloss {
     position: absolute;
     inset: -60%;
     pointer-events: none;
-    background:
-        radial-gradient(circle at var(--holo-px, 50%) var(--holo-py, 50%), rgba(255, 255, 255, .85), transparent 30%),
-        linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, .7) 50%, transparent 62%);
-    transform: translateX(var(--glare-shift, 0%)) rotate(12deg);
+    background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, .7) 50%, transparent 62%);
+    transform: translateX(var(--holo-shift, 0%)) rotate(12deg);
     mix-blend-mode: overlay;
+}
+
+.feature-card__grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: .05;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* --content-shift diisi per-frame di Features.tsx: teks tertinggal
    sepersekian dari gerak kartunya (parallax) supaya isinya terasa
    punya massa sendiri, bukan gambar datar yang ikut digeser. */
 .feature-card__content {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 2.25rem;
     transform: translateX(var(--content-shift, 0));
-}
-
-.feature-card__number {
-    font-family: var(--font-inter);
-    font-size: .8rem;
-    font-weight: 500;
-    color: var(--color-ink-faint);
-}
-
-.feature-card__label {
-    font-family: var(--font-inter);
-    font-size: .72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .14em;
-    color: var(--color-blue-600);
-    margin-bottom: .625rem;
-}
-
-/* Samakan dengan judul About.tsx: Inter 900, tracking rapat, biru
-   identitas — satu suara tipografi dengan section Tentang. */
-.feature-card__title {
-    font-family: var(--font-inter);
-    font-size: clamp(1.875rem, 4vw, 3rem);
-    font-weight: 900;
-    line-height: .98;
-    letter-spacing: -0.025em;
-    color: var(--color-blue-600);
-}
-
-.feature-card__desc {
-    max-width: 30ch;
-    font-family: var(--font-inter);
-    font-size: .9375rem;
-    line-height: 1.55;
-    color: var(--color-ink-muted);
 }
 
 @media (max-width: 640px) {
@@ -563,16 +536,12 @@ section[id] {
     }
 
     .cards-stack {
-        width: min(84vw, 380px);
-        height: min(56vh, 460px);
+        width: min(78vw, 320px);
+        height: min(52vh, 420px);
     }
 
     .feature-card {
         border-radius: 20px;
-    }
-
-    .feature-card__content {
-        padding: 1.5rem;
     }
 }
 
@@ -603,6 +572,7 @@ section[id] {
         inset: auto;
         transform: none !important;
         opacity: 1 !important;
+        filter: none !important;
         aspect-ratio: 3 / 4;
         box-shadow: var(--shadow-soft);
     }
@@ -616,11 +586,12 @@ section[id] {
         transform: none !important;
     }
 
-    .feature-card__glare {
+    .feature-card__gloss,
+    .feature-card__foil {
         display: none;
     }
 
-    .feature-card__holo {
+    .feature-card__rainbow {
         animation: none;
         opacity: .2;
     }
