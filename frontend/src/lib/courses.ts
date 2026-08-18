@@ -114,16 +114,32 @@ function toSummary(doc: CourseDoc): CourseSummary {
 
 // ── API publik ──────────────────────────────────────────────────────────
 
+/**
+ * Diurutkan di memori, bukan lewat `orderBy('order')`.
+ *
+ * Firestore MENGHILANGKAN dokumen yang tidak punya field yang dipakai
+ * `orderBy` — jadi kursus yang ditambahkan manual lewat Console (atau
+ * yang `order`-nya belum sempat terisi) diam-diam tak pernah muncul di
+ * katalog. Katalognya kecil, jadi mengambil semua lalu mengurutkan di
+ * sini lebih aman daripada kehilangan baris tanpa peringatan.
+ * Dokumen tanpa `order` ditaruh paling belakang.
+ */
 export async function listCourses(category?: string): Promise<CourseSummary[]> {
   const collection = adminDb().collection("courses");
 
   const query =
     category && category !== "semua"
-      ? collection.where("category", "==", category).orderBy("order")
-      : collection.orderBy("order");
+      ? collection.where("category", "==", category)
+      : collection;
 
   const snapshot = await query.get();
-  return snapshot.docs.map((d) => toSummary(d.data() as CourseDoc));
+
+  return snapshot.docs
+    .map((d) => d.data() as CourseDoc)
+    // Dokumen "hantu" (hanya wadah subcollection) tidak punya slug/judul.
+    .filter((doc) => doc && doc.slug && doc.title)
+    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+    .map(toSummary);
 }
 
 /** Satu pembacaan dokumen — section & lesson tertanam di dalamnya. */
