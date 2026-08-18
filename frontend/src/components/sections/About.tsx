@@ -141,7 +141,6 @@ function AboutCard({
     const rect = card.getBoundingClientRect();
 
     const x = ((e.clientX - rect.left) / rect.width) * 100;
-
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
     const rotateY = ((x - 50) / 50) * 4;
@@ -183,8 +182,9 @@ function AboutCard({
         bg-[#f8f7f2]
         p-6
         shadow-[0_18px_50px_rgba(0,0,0,0.07)]
-        transition-shadow
+        transition-[box-shadow,transform]
         duration-500
+        hover:-translate-y-1
         hover:shadow-[0_30px_80px_rgba(0,0,0,0.13)]
         sm:p-7
         lg:min-h-[590px]
@@ -237,7 +237,10 @@ function AboutCard({
           text-xs
           font-extrabold
           text-white
-          shadow-[0_8px_25px_rgba(37,99,235,.25)]
+          shadow-[0_8px_25px_rgba(0,0,0,.12)]
+          transition-transform
+          duration-500
+          group-hover:scale-105
         "
       >
         {point.num}
@@ -278,6 +281,9 @@ function AboutCard({
             leading-none
             tracking-[-0.05em]
             text-neutral-950
+            transition-transform
+            duration-500
+            group-hover:translate-x-1
           "
           style={{
             fontFamily: "var(--font-inter)",
@@ -293,6 +299,9 @@ function AboutCard({
             text-[13px]
             leading-[1.65]
             text-neutral-500
+            transition-transform
+            duration-500
+            group-hover:translate-x-1
             sm:text-sm
           "
         >
@@ -305,19 +314,6 @@ function AboutCard({
 
 /* =============================================================
    01 — TERSTRUKTUR
-   SATU TOMBOL SAJA
-
-   Kondisi awal:
-   tombol = shuffle
-
-   Setelah diacak:
-   tombol = undo
-
-   Setiap klik:
-   satu kertas dirapikan
-
-   Setelah semua rapi:
-   tombol kembali menjadi shuffle
 ============================================================= */
 
 type FileItem = {
@@ -366,69 +362,21 @@ const FILES: FileItem[] = [
 ];
 
 const ORIGINAL_POSITIONS: FilePosition[] = [
-  {
-    x: 50,
-    y: 53,
-    rotate: -3,
-  },
-  {
-    x: 50,
-    y: 51,
-    rotate: 2,
-  },
-  {
-    x: 50,
-    y: 49,
-    rotate: -2,
-  },
-  {
-    x: 50,
-    y: 47,
-    rotate: 3,
-  },
-  {
-    x: 50,
-    y: 45,
-    rotate: -4,
-  },
-  {
-    x: 50,
-    y: 43,
-    rotate: 2,
-  },
+  { x: 50, y: 53, rotate: -3 },
+  { x: 50, y: 51, rotate: 2 },
+  { x: 50, y: 49, rotate: -2 },
+  { x: 50, y: 47, rotate: 3 },
+  { x: 50, y: 45, rotate: -4 },
+  { x: 50, y: 43, rotate: 2 },
 ];
 
 const RANDOM_POSITIONS: FilePosition[] = [
-  {
-    x: 35,
-    y: 42,
-    rotate: -12,
-  },
-  {
-    x: 67,
-    y: 45,
-    rotate: 9,
-  },
-  {
-    x: 41,
-    y: 65,
-    rotate: 6,
-  },
-  {
-    x: 65,
-    y: 67,
-    rotate: -8,
-  },
-  {
-    x: 31,
-    y: 55,
-    rotate: 15,
-  },
-  {
-    x: 61,
-    y: 55,
-    rotate: -16,
-  },
+  { x: 35, y: 42, rotate: -12 },
+  { x: 67, y: 45, rotate: 9 },
+  { x: 41, y: 65, rotate: 6 },
+  { x: 65, y: 67, rotate: -8 },
+  { x: 31, y: 55, rotate: 15 },
+  { x: 61, y: 55, rotate: -16 },
 ];
 
 function StructuredGame({ hover }: { hover: boolean }) {
@@ -437,23 +385,11 @@ function StructuredGame({ hover }: { hover: boolean }) {
 
   const [dragging, setDragging] = useState<number | null>(null);
 
-  /*
-   * Menyimpan index kertas yang belum
-   * dikembalikan ke posisi awal.
-   */
   const [undoStack, setUndoStack] = useState<number[]>([]);
 
   const isMessy = undoStack.length > 0;
 
-  /* =========================================================
-     SATU-SATUNYA AKSI TOMBOL
-  ========================================================== */
-
   const handleAction = () => {
-    /*
-     * Jika masih rapi:
-     * acak semua kertas.
-     */
     if (undoStack.length === 0) {
       const shuffled: FilePosition[] = [];
       const used: number[] = [];
@@ -474,19 +410,11 @@ function StructuredGame({ hover }: { hover: boolean }) {
 
       setPositions(shuffled);
 
-      /*
-       * Rapikan dari kertas terakhir
-       * menuju kertas pertama.
-       */
       setUndoStack([5, 4, 3, 2, 1, 0]);
 
       return;
     }
 
-    /*
-     * Jika sudah berantakan:
-     * kembalikan SATU kertas.
-     */
     setUndoStack((current) => {
       if (current.length === 0) {
         return current;
@@ -512,10 +440,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
     });
   };
 
-  /* =========================================================
-     DRAG PAPER
-  ========================================================== */
-
   const handlePointerMove = (
     e: React.PointerEvent<HTMLButtonElement>,
     index: number,
@@ -529,7 +453,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
     const rect = parent.getBoundingClientRect();
 
     const x = ((e.clientX - rect.left) / rect.width) * 100;
-
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
     setPositions((current) => {
@@ -557,10 +480,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
         duration-200
       "
     >
-      {/* =====================================================
-          SHADOW
-      ====================================================== */}
-
       <div
         className="
           absolute
@@ -575,10 +494,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
         "
       />
 
-      {/* =====================================================
-          PAPERS
-      ====================================================== */}
-
       {FILES.map((file, index) => {
         const position = positions[index];
 
@@ -588,7 +503,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
             type="button"
             onPointerDown={(e) => {
               e.currentTarget.setPointerCapture(e.pointerId);
-
               setDragging(index);
             }}
             onPointerMove={(e) => handlePointerMove(e, index)}
@@ -668,10 +582,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
         );
       })}
 
-      {/* =====================================================
-          ONE BUTTON ONLY
-      ====================================================== */}
-
       <button
         type="button"
         onClick={handleAction}
@@ -688,7 +598,7 @@ function StructuredGame({ hover }: { hover: boolean }) {
           rounded-2xl
           bg-blue-600
           text-white
-          shadow-[0_15px_35px_rgba(37,99,235,.3)]
+          shadow-[0_15px_35px_rgba(0,0,0,.14)]
           transition-all
           duration-300
           hover:scale-110
@@ -701,7 +611,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
         aria-label={isMessy ? "Rapikan satu kertas" : "Acak kertas"}
       >
         {isMessy ? (
-          /* UNDO ICON */
           <svg
             className="h-6 w-6"
             viewBox="0 0 24 24"
@@ -722,7 +631,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
             />
           </svg>
         ) : (
-          /* SHUFFLE ICON */
           <svg
             className="h-6 w-6"
             viewBox="0 0 24 24"
@@ -752,7 +660,6 @@ function StructuredGame({ hover }: { hover: boolean }) {
 
 /* =============================================================
    02 — INTERAKTIF
-   QUICK QUIZ
 ============================================================= */
 
 type QuizQuestion = {
@@ -781,27 +688,16 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
 
 function InteractiveGame({ hover }: { hover: boolean }) {
   const [questionIndex, setQuestionIndex] = useState(0);
-
   const [selected, setSelected] = useState<number | null>(null);
-
   const [score, setScore] = useState(0);
-
   const [finished, setFinished] = useState(false);
 
   const question = QUIZ_QUESTIONS[questionIndex];
 
-  /*
-   * Progress benar-benar berdasarkan
-   * soal yang sudah dijawab.
-   */
   const progress = finished
     ? 100
     : ((questionIndex + (selected !== null ? 1 : 0)) / QUIZ_QUESTIONS.length) *
       100;
-
-  /* =========================================================
-     ANSWER
-  ========================================================== */
 
   const chooseAnswer = (index: number) => {
     if (selected !== null) return;
@@ -813,10 +709,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
     }
   };
 
-  /* =========================================================
-     NEXT
-  ========================================================== */
-
   const nextQuestion = () => {
     if (selected === null) return;
 
@@ -826,13 +718,8 @@ function InteractiveGame({ hover }: { hover: boolean }) {
     }
 
     setQuestionIndex((prev) => prev + 1);
-
     setSelected(null);
   };
-
-  /* =========================================================
-     RESTART
-  ========================================================== */
 
   const restart = () => {
     setQuestionIndex(0);
@@ -854,10 +741,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
         duration-200
       "
     >
-      {/* =====================================================
-          QUIZ CARD
-      ====================================================== */}
-
       <div
         className="
           absolute
@@ -876,8 +759,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
           [transform:translateZ(60px)]
         "
       >
-        {/* HEADER */}
-
         <div className="flex items-center justify-between">
           <span className="text-[8px] font-black tracking-[0.14em] text-neutral-400">
             QUICK QUIZ
@@ -887,10 +768,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
             {score}/{QUIZ_QUESTIONS.length}
           </span>
         </div>
-
-        {/* ===================================================
-            PROGRESS BAR
-        ==================================================== */}
 
         <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-blue-50">
           <div
@@ -910,10 +787,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
 
         {!finished ? (
           <div className="relative mt-3 h-[198px]">
-            {/* =================================================
-                QUESTION
-            ================================================== */}
-
             <div>
               <div className="text-[7px] font-black uppercase tracking-[0.1em] text-neutral-400">
                 Pertanyaan {questionIndex + 1} / {QUIZ_QUESTIONS.length}
@@ -933,18 +806,11 @@ function InteractiveGame({ hover }: { hover: boolean }) {
               </p>
             </div>
 
-            {/* =================================================
-                ANSWERS
-            ================================================== */}
-
             <div className="mt-3 space-y-1.5">
               {question.answers.map((answer, index) => {
                 const isSelected = selected === index;
-
                 const isCorrect = index === question.correct;
-
                 const showCorrect = selected !== null && isCorrect;
-
                 const showWrong = isSelected && !isCorrect;
 
                 return (
@@ -954,19 +820,19 @@ function InteractiveGame({ hover }: { hover: boolean }) {
                     onClick={() => chooseAnswer(index)}
                     className={cn(
                       `
-                          flex
-                          min-h-[32px]
-                          w-full
-                          items-center
-                          gap-2
-                          rounded-xl
-                          border
-                          px-2
-                          py-1.5
-                          text-left
-                          transition-all
-                          duration-300
-                        `,
+                        flex
+                        min-h-[32px]
+                        w-full
+                        items-center
+                        gap-2
+                        rounded-xl
+                        border
+                        px-2
+                        py-1.5
+                        text-left
+                        transition-all
+                        duration-300
+                      `,
                       showCorrect
                         ? "border-green-200 bg-green-50"
                         : showWrong
@@ -977,16 +843,16 @@ function InteractiveGame({ hover }: { hover: boolean }) {
                     <span
                       className={cn(
                         `
-                            flex
-                            h-6
-                            w-6
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-lg
-                            text-[8px]
-                            font-black
-                          `,
+                          flex
+                          h-6
+                          w-6
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-lg
+                          text-[8px]
+                          font-black
+                        `,
                         showCorrect
                           ? "bg-green-500 text-white"
                           : showWrong
@@ -1009,10 +875,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
               })}
             </div>
 
-            {/* =================================================
-                NEXT
-            ================================================== */}
-
             {selected !== null && (
               <button
                 type="button"
@@ -1028,7 +890,7 @@ function InteractiveGame({ hover }: { hover: boolean }) {
                   text-[8px]
                   font-black
                   text-white
-                  shadow-[0_8px_18px_rgba(37,99,235,.22)]
+                  shadow-[0_8px_18px_rgba(0,0,0,.12)]
                   transition-all
                   hover:scale-105
                   active:scale-95
@@ -1041,10 +903,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
             )}
           </div>
         ) : (
-          /* =================================================
-             RESULT
-          ================================================== */
-
           <div className="flex h-[195px] flex-col items-center justify-center text-center">
             <div
               className="
@@ -1092,10 +950,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
         )}
       </div>
 
-      {/* =====================================================
-          FLOATING SCORE
-      ====================================================== */}
-
       <div
         className="
           absolute
@@ -1110,7 +964,7 @@ function InteractiveGame({ hover }: { hover: boolean }) {
           rounded-2xl
           bg-blue-600
           text-white
-          shadow-[0_18px_40px_rgba(37,99,235,.3)]
+          shadow-[0_18px_40px_rgba(0,0,0,.14)]
           transition-all
           duration-500
         "
@@ -1133,7 +987,6 @@ function InteractiveGame({ hover }: { hover: boolean }) {
 
 /* =============================================================
    03 — BERBASIS RISET
-   REAL TEXT + MOVING MAGNIFIER
 ============================================================= */
 
 function ResearchGame({ hover }: { hover: boolean }) {
@@ -1153,7 +1006,6 @@ function ResearchGame({ hover }: { hover: boolean }) {
     const rect = paper.getBoundingClientRect();
 
     const x = ((e.clientX - rect.left) / rect.width) * 100;
-
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
     setPointer({
@@ -1183,10 +1035,6 @@ function ResearchGame({ hover }: { hover: boolean }) {
         duration-200
       "
     >
-      {/* =====================================================
-          PAPER
-      ====================================================== */}
-
       <div
         ref={paperRef}
         onPointerMove={handlePointerMove}
@@ -1209,56 +1057,7 @@ function ResearchGame({ hover }: { hover: boolean }) {
           [transform:translateZ(60px)_rotateZ(-3deg)]
         "
       >
-        {/* ===================================================
-            DOCUMENT
-        ==================================================== */}
-
-        <div className="select-none">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-black text-white">
-              R
-            </div>
-
-            <div>
-              <h3 className="text-[10px] font-black text-neutral-800">
-                Learning Research
-              </h3>
-
-              <p className="mt-1 text-[6px] text-neutral-400">
-                Evidence-based learning
-              </p>
-            </div>
-          </div>
-
-          <p className="mt-5 text-[7px] leading-[1.7] text-neutral-600">
-            Interactive learning can support student engagement by encouraging
-            learners to actively participate in the learning process.
-          </p>
-
-          <p className="mt-3 text-[7px] leading-[1.7] text-neutral-600">
-            Research-based learning materials can also help students connect
-            theoretical concepts with practical activities.
-          </p>
-
-          <div className="mt-4 rounded-xl bg-blue-50 p-3">
-            <p className="text-[6px] font-black uppercase tracking-[0.12em] text-blue-600">
-              Research finding
-            </p>
-
-            <p className="mt-2 text-[7px] leading-[1.6] text-blue-800">
-              Active participation may improve understanding and retention when
-              learners interact directly with the material.
-            </p>
-          </div>
-
-          <p className="mt-4 text-[6px] leading-[1.6] text-neutral-400">
-            Source: Educational Research Review · 2025
-          </p>
-        </div>
-
-        {/* ===================================================
-            MAGNIFIED AREA
-        ==================================================== */}
+        <ResearchDocument />
 
         {pointer.visible && (
           <div
@@ -1297,50 +1096,8 @@ function ResearchGame({ hover }: { hover: boolean }) {
                 transformOrigin: `${pointer.x}% ${pointer.y}%`,
               }}
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-black text-white">
-                  R
-                </div>
-
-                <div>
-                  <h3 className="text-[10px] font-black text-neutral-800">
-                    Learning Research
-                  </h3>
-
-                  <p className="mt-1 text-[6px] text-neutral-400">
-                    Evidence-based learning
-                  </p>
-                </div>
-              </div>
-
-              <p className="mt-5 text-[7px] leading-[1.7] text-neutral-600">
-                Interactive learning can support student engagement by
-                encouraging learners to actively participate in the learning
-                process.
-              </p>
-
-              <p className="mt-3 text-[7px] leading-[1.7] text-neutral-600">
-                Research-based learning materials can also help students connect
-                theoretical concepts with practical activities.
-              </p>
-
-              <div className="mt-4 rounded-xl bg-blue-50 p-3">
-                <p className="text-[6px] font-black uppercase tracking-[0.12em] text-blue-600">
-                  Research finding
-                </p>
-
-                <p className="mt-2 text-[7px] leading-[1.6] text-blue-800">
-                  Active participation may improve understanding and retention
-                  when learners interact directly with the material.
-                </p>
-              </div>
-
-              <p className="mt-4 text-[6px] leading-[1.6] text-neutral-400">
-                Source: Educational Research Review · 2025
-              </p>
+              <ResearchDocument />
             </div>
-
-            {/* GLASS REFLECTION */}
 
             <div
               className="
@@ -1359,10 +1116,6 @@ function ResearchGame({ hover }: { hover: boolean }) {
           </div>
         )}
 
-        {/* ===================================================
-            HINT
-        ==================================================== */}
-
         <div
           className="
             pointer-events-none
@@ -1380,10 +1133,6 @@ function ResearchGame({ hover }: { hover: boolean }) {
         </div>
       </div>
 
-      {/* =====================================================
-          MAGNIFYING GLASS
-      ====================================================== */}
-
       <div
         className="
           pointer-events-none
@@ -1400,8 +1149,6 @@ function ResearchGame({ hover }: { hover: boolean }) {
             : "translateZ(120px) rotate(8deg)",
         }}
       >
-        {/* LENS */}
-
         <div
           className="
             relative
@@ -1411,7 +1158,7 @@ function ResearchGame({ hover }: { hover: boolean }) {
             border-[6px]
             border-blue-600
             bg-white/20
-            shadow-[0_18px_40px_rgba(37,99,235,.25)]
+            shadow-[0_18px_40px_rgba(0,0,0,.14)]
             backdrop-blur-[1px]
           "
         >
@@ -1430,8 +1177,6 @@ function ResearchGame({ hover }: { hover: boolean }) {
           />
         </div>
 
-        {/* HANDLE */}
-
         <div
           className="
             absolute
@@ -1445,6 +1190,57 @@ function ResearchGame({ hover }: { hover: boolean }) {
           "
         />
       </div>
+    </div>
+  );
+}
+
+/* =============================================================
+   RESEARCH DOCUMENT
+============================================================= */
+
+function ResearchDocument() {
+  return (
+    <div className="select-none">
+      <div className="flex items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-black text-white">
+          R
+        </div>
+
+        <div>
+          <h3 className="text-[10px] font-black text-neutral-800">
+            Learning Research
+          </h3>
+
+          <p className="mt-1 text-[6px] text-neutral-400">
+            Evidence-based learning
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-5 text-[7px] leading-[1.7] text-neutral-600">
+        Interactive learning can support student engagement by encouraging
+        learners to actively participate in the learning process.
+      </p>
+
+      <p className="mt-3 text-[7px] leading-[1.7] text-neutral-600">
+        Research-based learning materials can also help students connect
+        theoretical concepts with practical activities.
+      </p>
+
+      <div className="mt-4 rounded-xl bg-blue-50 p-3">
+        <p className="text-[6px] font-black uppercase tracking-[0.12em] text-blue-600">
+          Research finding
+        </p>
+
+        <p className="mt-2 text-[7px] leading-[1.6] text-blue-800">
+          Active participation may improve understanding and retention when
+          learners interact directly with the material.
+        </p>
+      </div>
+
+      <p className="mt-4 text-[6px] leading-[1.6] text-neutral-400">
+        Source: Educational Research Review · 2025
+      </p>
     </div>
   );
 }

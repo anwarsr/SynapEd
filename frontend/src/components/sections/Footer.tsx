@@ -9,7 +9,7 @@ export default function Footer() {
   return (
     // Navy hangat menggantikan navy-kehitaman lama yang dingin —
     // tetap jadi jangkar gelap, tapi jelas biru SynapEd.
-    <footer className="bg-navy pt-16 pb-8">
+    <footer className="bg-hero-navy pt-16 pb-8">
       <div className="container-page">
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
@@ -22,7 +22,7 @@ export default function Footer() {
               height={667}
               className="w-28 h-auto -my-9 mb-1"
             />
-            <p className="text-sm leading-relaxed max-w-xs mb-6 text-blue-100/70">
+            <p className="text-sm leading-relaxed max-w-xs mb-6 text-white">
               Platform pembelajaran online terlengkap yang terbuka untuk semua kalangan. Pelajari
               berbagai bidang ilmu dan kembangkan potensimu bersama SynapEd.
             </p>
@@ -69,7 +69,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="h-px mb-8 bg-white/10" />
+        <div className="h-px mb-8 bg-white" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-100/60">
           <span>© {new Date().getFullYear()} SynapEd. Learn Anything, Anytime.</span>
