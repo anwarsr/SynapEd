@@ -5,7 +5,7 @@ import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
 import Tag from "@/components/ui/Tag";
 import type { Category, CourseSummary } from "@/lib/courses";
-import { levelTone } from "@/lib/courseUi";
+import { formatPrice, levelTone } from "@/lib/courseUi";
 import CourseThumb from "@/components/ui/CourseThumb";
 import CourseAuthor from "@/components/ui/CourseAuthor";
 import { cn } from "@/lib/cn";
@@ -963,18 +963,32 @@ export default function Courses({ courses, categories }: Props) {
                       </span>
                     </div>
 
-                    {/* Buttons */}
-                    <div className="mt-auto grid grid-cols-2 gap-2">
+                    {/* Harga + satu-satunya aksi
+                        Dulu ada dua tombol: "Detail" ke halaman kursus dan
+                        "Beli" yang dipatok ke /register — jadi menekan "Beli"
+                        justru melempar orang ke formulir pendaftaran akun,
+                        bukan ke kursus yang dia klik. Pembelian sendiri hanya
+                        mungkin dari halaman detail, karena di sanalah harga
+                        dibaca ulang dari server dan pesanan dibuat.
+                        Satu tujuan, dengan harga tampil lebih dulu. */}
+                    <div className="mt-auto flex items-center justify-between gap-3">
+                      <span className="t-numeral text-lg text-ink">
+                        {course.price > 0 ? formatPrice(course.price) : "Gratis"}
+                      </span>
+
+                      {/* after:inset-0 membentang tautan ini ke seluruh kartu
+                          (article-nya `relative`), sehingga mengklik di mana
+                          pun pada kartu membuka kursusnya — sementara di DOM
+                          tetap hanya ADA SATU tautan. Membungkus kartunya
+                          dengan <a> akan menghasilkan anchor bersarang, yang
+                          tidak sah dan membingungkan pembaca layar. */}
                       <Button
                         href={`/courses/${course.slug}`}
-                        variant="outline"
+                        variant="primary"
                         size="sm"
+                        className="after:absolute after:inset-0 after:content-['']"
                       >
-                        Detail
-                      </Button>
-
-                      <Button href="/register" variant="primary" size="sm">
-                        Beli
+                        Lihat Detail
                       </Button>
                     </div>
                   </div>

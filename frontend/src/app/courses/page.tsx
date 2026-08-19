@@ -5,7 +5,7 @@ import Tag from "@/components/ui/Tag";
 import { listCourses } from "@/lib/courses";
 import CourseThumb from "@/components/ui/CourseThumb";
 import CourseAuthor from "@/components/ui/CourseAuthor";
-import { iconPaths, levelTone } from "@/lib/courseUi";
+import { formatPrice, iconPaths, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
 
@@ -88,6 +88,10 @@ export default async function CoursesPage() {
                     </div>
                     <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
                   </div>
+
+                  <p className="t-numeral text-lg text-ink mb-4">
+                    {course.price > 0 ? formatPrice(course.price) : "Gratis"}
+                  </p>
 
                   <Button href={`/courses/${course.slug}`} variant="primary" size="sm" className="w-full">
                     Lihat Detail

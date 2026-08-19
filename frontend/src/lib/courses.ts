@@ -54,11 +54,19 @@ export interface CourseSummary {
    * perlakukan sebagai boleh-kosong.
    */
   instructorName: string;
+  /**
+   * Harga dalam rupiah penuh; 0 berarti gratis.
+   *
+   * Ada di ringkasan, bukan hanya di detail, karena kartu katalog perlu
+   * menampilkannya. Tanpa itu pengunjung baru tahu harga setelah membuka
+   * kursusnya satu per satu — padahal justru itu yang dibandingkan saat
+   * memilih.
+   */
+  price: number;
 }
 
 export interface CourseDetail extends CourseSummary {
   longDesc: string;
-  price: number;
   enrolledStudents: number;
   lastUpdated: string | null;
   instructorBio: string;
@@ -109,6 +117,7 @@ function toSummary(doc: CourseDoc): CourseSummary {
     lessonsCount: countLessons(doc.sections ?? []),
     thumbnail: doc.thumbnail ?? null,
     instructorName: doc.instructorName ?? "",
+    price: doc.price ?? 0,
   };
 }
 

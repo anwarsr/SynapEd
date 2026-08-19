@@ -26,15 +26,47 @@ export default function Navbar() {
 
   const isHome = pathname === "/";
   const activeId = useActiveSection(SECTION_IDS, isHome);
-  const overHero = activeId === "hero" || activeId === null;
-  const light = isHome && !overHero;
+
+  /**
+   * Apakah hero yang gelap masih berada TEPAT di belakang navbar?
+   *
+   * Satu-satunya permukaan gelap di aplikasi ini adalah hero beranda
+   * (`bg-hero-navy`); seluruh section lain dan seluruh halaman lain memakai
+   * `bg-paper` yang krem terang.
+   *
+   * Diukur dari geometri hero, bukan dari "section mana yang sedang aktif".
+   * Dua cara itu terlihat setara padahal tidak: penanda section aktif memakai
+   * IntersectionObserver yang berpindah ke section berikutnya saat section itu
+   * baru menyentuh tengah layar — sekitar 150px SEBELUM hero benar-benar lewat
+   * dari belakang navbar. Selama pita itu, logo gelap tergambar di atas biru.
+   */
+  const [overDarkHero, setOverDarkHero] = useState(isHome);
+  const light = !overDarkHero;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    // Titik tengah kapsul navbar secara vertikal — bukan tepi bawahnya.
+    //
+    // Peralihan warna diambil di titik ini karena logo dan teks memang duduk di
+    // sana. Memakai tepi bawah (84) membuat warnanya berganti terlalu cepat:
+    // saat hero tinggal menyisakan 80px, ia masih menutupi hampir seluruh
+    // navbar, tetapi logonya sudah berubah gelap di atas biru.
+    const NAVBAR_MID = 48;
+
+    const onScroll = () => {
+      setScrolled(window.scrollY > 24);
+
+      if (!isHome) {
+        setOverDarkHero(false);
+        return;
+      }
+      const hero = document.getElementById("hero");
+      setOverDarkHero(hero ? hero.getBoundingClientRect().bottom > NAVBAR_MID : false);
+    };
+
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [isHome]);
 
   return (
     // Kapsul mengambang, bukan bilah penuh — memberi navbar bentuk sendiri
@@ -48,8 +80,8 @@ export default function Navbar() {
           scrolled
             ? "bg-paper/10 backdrop-blur-xl border-0 shadow-soft"
             : light
-              ? "bg-white/10 backdrop-blur-md border-white/15"
-              : "bg-paper-card/0 backdrop-blur-md border-0",
+              ? "bg-paper-card/0 backdrop-blur-md border-0"
+              : "bg-white/10 backdrop-blur-md border-white/15",
         )}
       >
         {/* Aset logo berukuran 667x667 (persegi) dengan margin transparan tebal.
@@ -81,12 +113,13 @@ export default function Navbar() {
                 className={cn(
                   "relative px-3.5 py-2 rounded-full text-sm",
                   "transition-colors duration-200 ease-out-soft",
-                  light
-                    ? isActive
-                      ? "text-black bg-black/5"
-                      : "text-black-100/20 hover:text-white hover:bg-black/10"
-                    : isActive
-                      ? "text-blue-700 bg-blue-50"
+                  // Keping section aktif sama di kedua latar: teks biru tua di
+                  // atas keping biru muda cukup kontras baik di kertas maupun
+                  // di atas navy. Hanya keadaan tidak-aktif yang berbeda.
+                  isActive
+                    ? "text-blue-700 bg-blue-50"
+                    : light
+                      ? "text-ink-body hover:text-blue-700 hover:bg-blue-50/60"
                       : "text-white hover:text-blue-700 hover:bg-blue-50/60",
                 )}
               >
@@ -112,8 +145,8 @@ export default function Navbar() {
                     // amber-500 hanya boleh dipakai sebagai teks di atas navy
                     // (5.8:1); di atas kertas ia gagal, jadi di sana amber-700.
                     light
-                      ? "text-amber-500 hover:text-white hover:bg-white/8"
-                      : "text-amber-700 hover:bg-amber-100",
+                      ? "text-amber-700 hover:bg-amber-100"
+                      : "text-amber-500 hover:text-white hover:bg-white/8",
                   )}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -136,8 +169,8 @@ export default function Navbar() {
                     "px-4 py-2 text-sm font-medium rounded-full border",
                     "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
                     light
-                      ? "border-white/25 text-white hover:bg-white/10"
-                      : "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700",
+                      ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
+                      : "border-white/25 text-white hover:bg-white/10",
                   )}
                 >
                   Jadi Educator
@@ -151,8 +184,8 @@ export default function Navbar() {
                     "px-4 py-2 text-sm font-medium rounded-full border",
                     "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
                     light
-                      ? "border-white/25 text-white hover:bg-white/10"
-                      : "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700",
+                      ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
+                      : "border-white/25 text-white hover:bg-white/10",
                   )}
                 >
                   Kursus Saya
@@ -170,8 +203,8 @@ export default function Navbar() {
                   "rounded-full transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
                   "focus:outline-none focus-visible:ring-2",
                   light
-                    ? "ring-offset-0 hover:ring-2 hover:ring-white/40 focus-visible:ring-white/60"
-                    : "hover:ring-2 hover:ring-blue-500/30 focus-visible:ring-blue-500/40",
+                    ? "hover:ring-2 hover:ring-blue-500/30 focus-visible:ring-blue-500/40"
+                    : "ring-offset-0 hover:ring-2 hover:ring-white/40 focus-visible:ring-white/60",
                 )}
               >
                 <UserAvatar name={user.name} photoURL={user.photoURL} size="sm" />
@@ -184,7 +217,7 @@ export default function Navbar() {
                 className={cn(
                   "px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ease-out-soft",
                   light
-                    ? "text-black hover:text-white hover:bg-white/8"
+                    ? "text-ink-body hover:text-blue-700 hover:bg-blue-50/60"
                     : "text-white hover:text-blue-700 hover:bg-blue-50/60",
                 )}
               >
@@ -195,9 +228,13 @@ export default function Navbar() {
                 className={cn(
                   "group inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold rounded-full",
                   "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                  // Kedua keadaan hover sengaja tetap kontras: sebelumnya versi
+                  // terang menuju bg-white padahal teksnya putih, dan versi
+                  // gelap menuju bg-blue-700 padahal teksnya biru — dua-duanya
+                  // membuat tombolnya hilang tepat saat kursor menyentuhnya.
                   light
-                    ? "bg-blue-600 text-white hover:bg-white hover:shadow-lift"
-                    : "bg-white text-blue-600 hover:bg-blue-700 hover:shadow-soft",
+                    ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lift"
+                    : "bg-white text-blue-600 hover:bg-blue-50 hover:shadow-soft",
                 )}
               >
                 Daftar Gratis
@@ -215,7 +252,7 @@ export default function Navbar() {
         <button
           className={cn(
             "md:hidden p-1.5 rounded-full transition-colors",
-            light ? "text-paper hover:bg-white/10" : "text-ink hover:bg-blue-50",
+            light ? "text-ink hover:bg-blue-50" : "text-paper hover:bg-white/10",
           )}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}

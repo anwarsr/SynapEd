@@ -116,6 +116,7 @@ export async function listOwnedCourses(uid: string): Promise<EducatorCourseRow[]
         lessonsCount: sections.reduce((n, s) => n + s.lessons.length, 0),
         thumbnail: (data.thumbnail as string | null | undefined) ?? null,
         instructorName: (data.instructorName as string | undefined) ?? "",
+        price: (data.price as number | undefined) ?? 0,
         createdAt: (data.createdAt as string | undefined) ?? null,
       };
     })

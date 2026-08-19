@@ -217,6 +217,30 @@ export default async function CourseDetailPage({ params }: Props) {
                   <Button href="/courses" variant="outline" className="w-full">
                     Lihat Kursus Lain
                   </Button>
+
+                  {/* Ketentuan pembelian harus terbaca SEBELUM membayar, bukan
+                      hanya tersembunyi di footer. Khusus kursus berbayar:
+                      pada kursus gratis tidak ada uang yang berpindah dan
+                      kalimat ini hanya jadi kebisingan. */}
+                  {course.price > 0 && (
+                    <p className="text-xs text-ink-muted leading-relaxed text-center pt-1">
+                      Pembelian tunduk pada{" "}
+                      <Link
+                        href="/syarat-ketentuan"
+                        className="text-blue-700 hover:underline underline-offset-4"
+                      >
+                        Syarat &amp; Ketentuan
+                      </Link>{" "}
+                      dan{" "}
+                      <Link
+                        href="/pengembalian-dana"
+                        className="text-blue-700 hover:underline underline-offset-4"
+                      >
+                        Kebijakan Pengembalian Dana
+                      </Link>
+                      .
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-7 pt-6 border-t border-rule">

@@ -1,4 +1,22 @@
 import Image from "next/image";
+import Link from "next/link";
+import { COMPANY } from "@/lib/company";
+
+/** Tautan navigasi menunjuk section di beranda; dari halaman lain tetap sampai. */
+const NAV_LINKS = [
+  { label: "Beranda", href: "/#hero" },
+  { label: "Tentang", href: "/#about" },
+  { label: "Kurikulum", href: "/#value" },
+  { label: "Kursus", href: "/courses" },
+  { label: "FAQ", href: "/#faq" },
+];
+
+const LEGAL_LINKS = [
+  { label: "Syarat & Ketentuan", href: "/syarat-ketentuan" },
+  { label: "Kebijakan Privasi", href: "/kebijakan-privasi" },
+  { label: "Pengembalian Dana", href: "/pengembalian-dana" },
+  { label: "Kontak", href: "/kontak" },
+];
 
 const socialPaths = [
   "M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z",
@@ -45,28 +63,58 @@ export default function Footer() {
           <div>
             <h2 className="t-label text-white mb-5">Navigasi</h2>
             <ul className="flex flex-col gap-3">
-              {["Beranda", "Tentang", "Kurikulum", "Kursus", "FAQ"].map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-sm text-blue-100/70 hover:text-blue-300 transition-colors duration-200">
-                    {link}
-                  </a>
+              {NAV_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-blue-100/70 hover:text-blue-300 transition-colors duration-200"
+                  >
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
 
+          {/* Dulu kolom "Materi" berisi lima kategori yang dipatok di kode dan
+              semuanya href="#". Kategori sekarang dikelola admin lewat panel,
+              jadi daftar tetap di sini pasti melenceng dari isi katalog. Diganti
+              dokumen legal — yang justru dicari peninjau pembayaran. */}
           <div>
-            <h2 className="t-label text-white mb-5">Materi</h2>
+            <h2 className="t-label text-white mb-5">Informasi</h2>
             <ul className="flex flex-col gap-3">
-              {["Neuroscience", "Teknologi & Data", "Pemrograman", "Sains", "Lihat Semua →"].map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-sm text-blue-100/70 hover:text-blue-300 transition-colors duration-200">
-                    {link}
-                  </a>
+              {LEGAL_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-blue-100/70 hover:text-blue-300 transition-colors duration-200"
+                  >
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
+        </div>
+
+        {/* Identitas penyelenggara — bagian "Legal Notice" pada template
+            Midtrans, dan hal pertama yang dicari saat menilai kelayakan
+            merchant: siapa yang bertanggung jawab, dan di mana. */}
+        <div className="mb-10 text-sm text-blue-100/70 leading-relaxed max-w-2xl">
+          <p className="text-white font-medium mb-1">
+            {COMPANY.name} — {COMPANY.legalName}
+          </p>
+          <p>{COMPANY.address}</p>
+          <p className="mt-2">
+            <a href={`mailto:${COMPANY.supportEmail}`} className="hover:text-blue-300 transition-colors">
+              {COMPANY.supportEmail}
+            </a>
+            {" · "}
+            <a href={`tel:${COMPANY.phoneHref}`} className="hover:text-blue-300 transition-colors">
+              {COMPANY.phone}
+            </a>
+          </p>
+          <p className="text-blue-100/50">{COMPANY.supportHours}</p>
         </div>
 
         <div className="h-px mb-8 bg-white" />
@@ -74,8 +122,12 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-100/60">
           <span>© {new Date().getFullYear()} SynapEd. Learn Anything, Anytime.</span>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-blue-300 transition-colors duration-200">Kebijakan Privasi</a>
-            <a href="#" className="hover:text-blue-300 transition-colors duration-200">Syarat Penggunaan</a>
+            <Link href="/kebijakan-privasi" className="hover:text-blue-300 transition-colors duration-200">
+              Kebijakan Privasi
+            </Link>
+            <Link href="/syarat-ketentuan" className="hover:text-blue-300 transition-colors duration-200">
+              Syarat &amp; Ketentuan
+            </Link>
           </div>
         </div>
       </div>
