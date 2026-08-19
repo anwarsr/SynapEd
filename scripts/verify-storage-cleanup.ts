@@ -34,6 +34,9 @@ const bucket = getStorage(app).bucket();
 const NEW_ROUTE = "educator/courses/new";
 const EDIT_ROUTE = "educator/courses/[slug]/edit";
 const LIST_ROUTE = "educator/courses";
+// deleteCourse pindah ke halaman sunting dan kini KHUSUS ADMIN sejak alur
+// persetujuan berlaku — educator mengajukan, admin menerapkan.
+const DELETE_ROUTE = "educator/courses/[slug]/edit";
 const DASH_ROUTE = "dashboard";
 
 async function put(path: string, body = "berkas uji"): Promise<string> {
@@ -69,7 +72,6 @@ function lesson(attachmentPath: string | null) {
     title: "Modul Uji",
     type: "reading" as const,
     duration: "5 menit",
-    free: true,
     attachments: attachmentPath
       ? [{ name: "modul.pdf", path: attachmentPath, size: 11, mime: "application/pdf" }]
       : undefined,
@@ -82,6 +84,7 @@ async function main() {
 
   const educator = await createTestUser("educator", "storage");
   const other = await createTestUser("educator", "storage-lain");
+  const adminUser = await createTestUser("admin", "storage-adm");
   const draft = randomUUID().slice(0, 8);
 
   const created: string[] = [];
@@ -157,7 +160,7 @@ async function main() {
       `/educator/courses/${slug}/edit`,
       saveId,
       [slug, [{ title: "Bagian Uji", lessons: [lesson(modul2)] }]],
-      educator.cookie,
+      adminUser.cookie,
     );
 
     // modul1 dijangkau penyapuan folder; modulDatar hanya bisa dijangkau
@@ -188,14 +191,14 @@ async function main() {
           requirements: [],
         },
       ],
-      educator.cookie,
+      adminUser.cookie,
     );
 
     await expectFiles("Gambar latar diganti", [gambar1], [gambar2, modul2]);
 
     // ── 5. deleteCourse membuang seluruh berkas kursus ───────────────────
-    const deleteId = await actionId(LIST_ROUTE, "deleteCourse");
-    await callAction(`/${LIST_ROUTE}`, deleteId, [slug], educator.cookie);
+    const deleteId = await actionId(DELETE_ROUTE, "deleteCourse");
+    await callAction(`/educator/courses/${slug}/edit`, deleteId, [slug], adminUser.cookie);
 
     const gone = await db.collection("courses").doc(slug).get();
     check("Dokumen kursus terhapus", !gone.exists, slug);
@@ -231,7 +234,7 @@ async function main() {
     ]);
 
     await Promise.allSettled(
-      [educator, other].map((u: TestUser) => auth.deleteUser(u.uid)),
+      [educator, other, adminUser].map((u: TestUser) => auth.deleteUser(u.uid)),
     );
   }
 

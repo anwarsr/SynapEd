@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/firebase/session";
 import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
+import { canonicalDuration } from "@/lib/duration";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 import { attachmentPaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
 import { COURSE_THUMBNAILS } from "@/lib/storagePaths";
@@ -19,11 +20,22 @@ export type CurriculumResult = { ok: true; message: string } | { ok: false; erro
  * halaman sunting yang memanggilnya.
  */
 export async function saveCurriculum(slug: string, input: SectionInput[]): Promise<CurriculumResult> {
+  // KHUSUS ADMIN sejak alur persetujuan berlaku.
+  //
+  // Educator tidak lagi menyunting langsung; ia mengajukan lewat
+  // requestCourseEdit() dan admin yang menerapkannya saat menyetujui. Fungsi
+  // ini tetap ada sebagai jalur admin — pihak yang memang memutuskan, sehingga
+  // mengantrekan pekerjaannya sendiri tidak menambah pengawasan apa pun.
   const user = await getCurrentUser();
-  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+  if (user?.role !== "admin") {
+    return {
+      ok: false,
+      error: "Perubahan kurikulum perlu persetujuan admin. Gunakan tombol Ajukan Perubahan.",
+    };
+  }
 
   const course = await requireOwnedCourse(user, slug);
-  if (!course) return { ok: false, error: "Anda tidak berhak menyunting kursus ini." };
+  if (!course) return { ok: false, error: "Kursus tidak ditemukan." };
 
   // Lampiran yang sudah ada boleh berasal dari folder pemilik ASLI kursus
   // (educator yang membuatnya); lampiran baru yang baru saja diunggah lewat
@@ -81,11 +93,17 @@ export interface CourseMetaInput {
 
 /** Menyunting judul, deskripsi, harga, dan metadata lain — bukan kurikulum. */
 export async function updateCourseMeta(slug: string, input: CourseMetaInput): Promise<CurriculumResult> {
+  // KHUSUS ADMIN — alasan yang sama seperti saveCurriculum di atas.
   const user = await getCurrentUser();
-  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+  if (user?.role !== "admin") {
+    return {
+      ok: false,
+      error: "Perubahan info kursus perlu persetujuan admin. Gunakan tombol Ajukan Perubahan.",
+    };
+  }
 
   const course = await requireOwnedCourse(user, slug);
-  if (!course) return { ok: false, error: "Anda tidak berhak menyunting kursus ini." };
+  if (!course) return { ok: false, error: "Kursus tidak ditemukan." };
 
   const title = input.title.trim().slice(0, 120);
   const shortDesc = input.shortDesc.trim().slice(0, 200);
@@ -113,7 +131,7 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
     level: level.value,
     levelColor: level.color,
     category,
-    duration: input.duration.trim().slice(0, 40) || "—",
+    duration: canonicalDuration(input.duration, "course") || "—",
     price,
     whatYouLearn,
     requirements,
@@ -126,7 +144,7 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
   // ulang, menyimpan perubahan judul saja akan gagal pada kursus-kursus itu —
   // atau lebih buruk, diam-diam menghapus gambarnya.
   if (input.thumbnail !== undefined) {
-    const thumbnail = resolveThumbnail(input.thumbnail, user.uid);
+    const thumbnail = resolveThumbnail(input.thumbnail, [user.uid, ownerUidOf(course) ?? ""]);
     if (!thumbnail.ok) return { ok: false, error: thumbnail.error };
     patch.thumbnail = thumbnail.value;
   }

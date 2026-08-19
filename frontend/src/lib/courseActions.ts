@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
+import { canonicalDuration } from "@/lib/duration";
 import { LEVELS, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
@@ -55,7 +56,13 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   const title = clean(input.title, 120);
   const shortDesc = clean(input.shortDesc, 200);
   const longDesc = clean(input.longDesc, 4000) || shortDesc;
-  const duration = clean(input.duration, 40) || "—";
+  // Bentuknya dibakukan DI SINI, bukan hanya di form.
+  //
+  // Formnya memang sudah angka + dropdown, tapi Server Action bisa dipanggil
+  // lewat POST langsung — persis alasan harga selalu dibaca ulang dari server.
+  // Tanpa ini, satu panggilan mentah cukup untuk mengembalikan "Tugas" atau
+  // "1 Tahun" ke basis data dan membatalkan konversi yang sudah dijalankan.
+  const duration = canonicalDuration(input.duration, "course") || "—";
   const price = Number.isFinite(input.price) && input.price >= 0 ? Math.round(input.price) : 0;
 
   if (title.length < 4) return { ok: false, error: "Judul kursus minimal 4 karakter." };
@@ -106,6 +113,11 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       price,
       thumbnail: thumbnail.value,
       enrolledStudents: 0,
+
+      // Kursus baru TIDAK langsung tayang. Educator menyusunnya dengan tenang
+      // dalam keadaan tersembunyi, lalu mengajukan tayang saat siap — supaya
+      // admin meninjau kursus yang sudah utuh, bukan yang setengah jadi.
+      visibility: "private",
       lastUpdated: now,
       instructorName: user.name,
       instructorBio: "",
@@ -135,10 +147,22 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   return { ok: true, slug, message: "Kursus berhasil dibuat." };
 }
 
-/** Menghapus kursus — hanya buatan sendiri. */
+/**
+ * Menghapus kursus seketika — kini KHUSUS ADMIN.
+ *
+ * Educator tidak lagi menghapus langsung; ia mengajukan lewat
+ * requestCourseDeletion() dan admin yang memutuskan. Fungsi ini tetap ada
+ * sebagai jalur admin, sekaligus yang dipanggil saat sebuah pengajuan
+ * penghapusan disetujui.
+ */
 export async function deleteCourse(slug: string): Promise<CourseResult> {
-  const user = await requireEducator();
-  if (!user) return { ok: false, error: "Hanya educator yang dapat menghapus kursus." };
+  const user = await getCurrentUser();
+  if (user?.role !== "admin") {
+    return {
+      ok: false,
+      error: "Penghapusan kursus perlu persetujuan admin. Ajukan dari halaman sunting.",
+    };
+  }
 
   const db = adminDb();
 
@@ -151,12 +175,12 @@ export async function deleteCourse(slug: string): Promise<CourseResult> {
 
   const data = snap.data() ?? {};
 
-  // Kursus bawaan tidak punya ownerUid — itu berarti bukan milik educator
-  // mana pun, jadi tidak seorang pun boleh menghapusnya dari sini.
-  if ((data.ownerUid as string | undefined) !== user.uid) {
-    return { ok: false, error: "Ini bukan kursus Anda." };
-  }
-
+  // Tidak ada lagi pemeriksaan kepemilikan di sini.
+  //
+  // Dulu fungsi ini dipakai educator, jadi ia wajib memastikan yang dihapus
+  // memang kursus si pemanggil. Sekarang hanya admin yang sampai ke titik ini,
+  // dan admin memang berwenang atas kursus siapa pun — termasuk kursus bawaan
+  // yang tidak punya ownerUid sama sekali.
   const files = courseFilePaths({
     sections: data.sections as Section[] | undefined,
     thumbnail: data.thumbnail,

@@ -4,13 +4,25 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import type { SessionUser } from "@/lib/firebase/session";
+import type { AdminBadges } from "@/lib/adminBadges";
 import { cn } from "@/lib/cn";
 
+/**
+ * `badge` menunjuk field mana di AdminBadges yang jadi angkanya. Ditulis
+ * begini, bukan dicocokkan dari href di dalam JSX seperti dulu — waktu itu
+ * lencananya diikat mati ke satu tautan, sehingga menambah tautan kedua yang
+ * juga perlu lencana berarti menambah cabang if di tengah render.
+ */
 const NAV = [
   { href: "/admin", label: "Akun Pengguna" },
   { href: "/admin/categories", label: "Kategori" },
-  { href: "/admin/notifications", label: "Notifikasi" },
-] as const;
+  { href: "/admin/notifications", label: "Pengajuan Edukator", badge: "applications" },
+  { href: "/admin/course-requests", label: "Pengajuan Kursus", badge: "requests" },
+] as const satisfies readonly {
+  href: string;
+  label: string;
+  badge?: keyof AdminBadges;
+}[];
 
 /**
  * Kerangka halaman khusus admin.
@@ -19,16 +31,16 @@ const NAV = [
  * Kursus, Kurikulum, dan materi — isi yang tidak ada hubungannya dengan
  * pekerjaan admin dan hanya jadi gangguan di sini. Panel ini berdiri sendiri.
  *
- * `user` dan `pendingCount` datang dari server supaya keduanya sudah benar
- * pada render pertama, tanpa menunggu jawaban dari browser.
+ * `user` dan `badges` datang dari server supaya keduanya sudah benar pada
+ * render pertama, tanpa menunggu jawaban dari browser.
  */
 export default function AdminShell({
   user,
-  pendingCount,
+  badges,
   children,
 }: {
   user: SessionUser;
-  pendingCount: number;
+  badges: AdminBadges;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -72,6 +84,8 @@ export default function AdminShell({
                     ? pathname === "/admin" || pathname.startsWith("/admin/users")
                     : pathname.startsWith(item.href);
 
+                const menunggu = "badge" in item ? badges[item.badge] : 0;
+
                 return (
                   <Link
                     key={item.href}
@@ -86,12 +100,12 @@ export default function AdminShell({
                     )}
                   >
                     {item.label}
-                    {item.href === "/admin/notifications" && pendingCount > 0 && (
+                    {menunggu > 0 && (
                       <span
                         className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-amber-700 text-white text-[10px] font-semibold"
-                        aria-label={`${pendingCount} pengajuan menunggu`}
+                        aria-label={`${menunggu} pengajuan menunggu`}
                       >
-                        {pendingCount}
+                        {menunggu}
                       </span>
                     )}
                   </Link>

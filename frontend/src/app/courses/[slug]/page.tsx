@@ -143,7 +143,6 @@ export default async function CourseDetailPage({ params }: Props) {
                                 <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[lesson.type] ?? lessonIcons.reading} />
                               </svg>
                               <span className="text-ink-body truncate">{lesson.title}</span>
-                              {lesson.free && <Tag tone="amber">Gratis</Tag>}
                             </div>
                             <span className="text-xs text-ink-muted flex-shrink-0">{lesson.duration}</span>
                           </li>

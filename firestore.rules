@@ -100,6 +100,20 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Pengajuan perubahan kursus ─────────────────────────────────────
+    // Tertutup rapat dari klien, baca maupun tulis.
+    //
+    // Dokumen ini memuat usulan perubahan beserta salinan "sebelum" dan
+    // "sesudah" isi kursus. Kalau klien bisa menulis, educator dapat
+    // menyetujui pengajuannya sendiri hanya dengan mengubah field `status`,
+    // dan seluruh gunanya persetujuan admin lenyap.
+    //
+    // Educator melihat pengajuannya lewat halaman yang dirender server, jadi
+    // akses baca langsung pun tidak diperlukan.
+    match /courseChangeRequests/{id} {
+      allow read, write: if false;
+    }
+
     // ── Pesanan pembayaran ─────────────────────────────────────────────
     // Tertutup rapat dari klien, baca maupun tulis.
     //

@@ -17,7 +17,6 @@ export interface Lesson {
   title: string;
   type: "video" | "reading" | "quiz" | string;
   duration: string;
-  free: boolean;
   position: number;
   /** Tautan YouTube/Vimeo. Kosong berarti materi belum diunggah. */
   videoUrl?: string;
@@ -63,7 +62,17 @@ export interface CourseSummary {
    * memilih.
    */
   price: number;
+  /**
+   * Terlihat publik atau disembunyikan sementara.
+   *
+   * Kursus hasil migrasi dan yang dibuat sebelum fitur ini TIDAK punya field
+   * ini. Ketiadaannya dibaca sebagai "public" — kalau dibaca sebaliknya,
+   * seluruh katalog akan lenyap begitu kode ini terpasang.
+   */
+  visibility: CourseVisibility;
 }
+
+export type CourseVisibility = "public" | "private";
 
 export interface CourseDetail extends CourseSummary {
   longDesc: string;
@@ -118,6 +127,7 @@ function toSummary(doc: CourseDoc): CourseSummary {
     thumbnail: doc.thumbnail ?? null,
     instructorName: doc.instructorName ?? "",
     price: doc.price ?? 0,
+    visibility: doc.visibility === "private" ? "private" : "public",
   };
 }
 
@@ -147,6 +157,11 @@ export async function listCourses(category?: string): Promise<CourseSummary[]> {
     .map((d) => d.data() as CourseDoc)
     // Dokumen "hantu" (hanya wadah subcollection) tidak punya slug/judul.
     .filter((doc) => doc && doc.slug && doc.title)
+    // Kursus yang disembunyikan tidak pernah masuk katalog publik.
+    // Disaring di sini, bukan lewat where(): dokumen tanpa field `visibility`
+    // (seluruh kursus lama) akan DIABAIKAN Firestore pada kueri kesamaan,
+    // sehingga katalognya ikut kosong tanpa satu pun pesan galat.
+    .filter((doc) => doc.visibility !== "private")
     .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
     .map(toSummary);
 }
@@ -159,7 +174,24 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
   const data = doc.data() as CourseDoc;
   const sections = sortSections(data.sections ?? []);
 
-  return { ...data, sections, lessonsCount: countLessons(sections) };
+  return {
+    ...data,
+    sections,
+    lessonsCount: countLessons(sections),
+
+    // WAJIB dinormalkan di sini, bukan hanya di toSummary.
+    //
+    // Cast `as CourseDoc` di atas membuat TypeScript percaya `visibility`
+    // selalu ada, padahal seluruh kursus yang dibuat sebelum fitur ini tidak
+    // punya field itu sama sekali. Nilai `undefined` lalu lolos ke UI dan
+    // jatuh ke cabang `else` di setiap perbandingan — sehingga satu halaman
+    // bisa menulis "Tersembunyi" dan "muncul di katalog" sekaligus.
+    //
+    // Ketiadaan field dibaca sebagai "public": itu keadaan kursus-kursus lama
+    // sebelum visibility ada, dan membacanya terbalik akan menyembunyikan
+    // seluruh katalog.
+    visibility: data.visibility === "private" ? "private" : "public",
+  };
 }
 
 /**

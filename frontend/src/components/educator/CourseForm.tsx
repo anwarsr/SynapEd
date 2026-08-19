@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { createCourse } from "@/lib/courseActions";
 import { Label, inputClass } from "./fields";
 import ThumbnailPicker from "./ThumbnailPicker";
+import DurationField from "./DurationField";
 import SectionList, {
   newKey,
-  newSection,
+  firstSection,
   toSectionInput,
   validateDraft,
   type DraftSection,
@@ -36,7 +37,7 @@ export default function CourseForm({
   const [price, setPrice] = useState("0");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
 
-  const [sections, setSections] = useState<DraftSection[]>(() => [newSection("Materi Kursus")]);
+  const [sections, setSections] = useState<DraftSection[]>(() => firstSection("Materi Kursus"));
 
   // Berkas diunggah SEBELUM kursusnya ada, jadi belum ada slug untuk
   // mengelompokkannya. Satu id draft dipakai seumur pengisian form ini.
@@ -168,13 +169,7 @@ export default function CourseForm({
 
             <div>
               <Label htmlFor="duration">Perkiraan durasi</Label>
-              <input
-                id="duration"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                placeholder="3 jam"
-                className={inputClass}
-              />
+              <DurationField id="duration" scope="course" value={duration} onChange={setDuration} />
             </div>
           </div>
 

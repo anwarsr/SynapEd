@@ -14,13 +14,24 @@ import { COURSE_THUMBNAILS } from "@/lib/storagePaths";
  */
 export function resolveThumbnail(
   raw: string | null | undefined,
-  uid: string,
+  /**
+   * Folder siapa saja yang sah untuk kursus ini.
+   *
+   * Boleh lebih dari satu, dan itu bukan kelonggaran: sejak penyuntingan
+   * langsung menjadi khusus admin, gambar yang sudah ada berada di folder
+   * PEMILIK kursus sementara pemanggilnya admin. Dengan satu uid saja, admin
+   * tidak akan pernah bisa menyentuh gambar latar kursus milik orang lain —
+   * dan kegagalannya muncul sebagai "Gambar latar tidak sah", pesan yang
+   * menyesatkan karena gambarnya justru sah.
+   */
+  uids: string | readonly string[],
 ): { ok: true; value: string | null } | { ok: false; error: string } {
   const value = typeof raw === "string" ? raw.trim() : "";
   if (!value) return { ok: true, value: null };
 
-  if (!value.startsWith(`${COURSE_THUMBNAILS}/${uid}/`)) {
-    return { ok: false, error: "Gambar latar tidak sah." };
-  }
+  const allowed = typeof uids === "string" ? [uids] : uids;
+  const owned = allowed.some((uid) => uid && value.startsWith(`${COURSE_THUMBNAILS}/${uid}/`));
+
+  if (!owned) return { ok: false, error: "Gambar latar tidak sah." };
   return { ok: true, value };
 }

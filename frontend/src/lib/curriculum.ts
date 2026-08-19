@@ -1,5 +1,6 @@
 import "server-only";
 import { COURSE_ASSETS, toSlug } from "@/lib/educatorCourses";
+import { canonicalDuration } from "@/lib/duration";
 import { toEmbedUrl } from "@/lib/videoEmbed";
 import type { Attachment, Lesson, Section } from "@/lib/courses";
 
@@ -30,7 +31,6 @@ export interface LessonInput {
   title: string;
   type: "video" | "reading" | "quiz";
   duration: string;
-  free: boolean;
   videoUrl?: string;
   attachments?: AttachmentInput[];
 }
@@ -99,8 +99,10 @@ export function normalizeSections(
         slug,
         title: lessonTitle,
         type: l.type,
-        duration: l.duration.trim().slice(0, 40) || "—",
-        free: Boolean(l.free),
+        // Satu-satunya jalan masuk kurikulum, jadi pembakuan satuan pelajaran
+        // cukup di sini — createCourse, saveCurriculum, dan pengajuan sunting
+        // semuanya lewat sini.
+        duration: canonicalDuration(l.duration, "lesson") || "—",
         position: li,
       };
 

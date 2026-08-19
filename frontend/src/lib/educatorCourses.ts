@@ -1,6 +1,12 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
-import { getCourse, type CourseDetail, type CourseSummary, type Section } from "@/lib/courses";
+import {
+  getCourse,
+  type CourseDetail,
+  type CourseSummary,
+  type CourseVisibility,
+  type Section,
+} from "@/lib/courses";
 import type { SessionUser } from "@/lib/firebase/session";
 
 export const COURSE_ASSETS = "course-assets";
@@ -117,6 +123,7 @@ export async function listOwnedCourses(uid: string): Promise<EducatorCourseRow[]
         thumbnail: (data.thumbnail as string | null | undefined) ?? null,
         instructorName: (data.instructorName as string | undefined) ?? "",
         price: (data.price as number | undefined) ?? 0,
+        visibility: (data.visibility === "private" ? "private" : "public") as CourseVisibility,
         createdAt: (data.createdAt as string | undefined) ?? null,
       };
     })

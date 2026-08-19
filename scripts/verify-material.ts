@@ -179,7 +179,6 @@ async function run(educator: TestUser, orang: TestUser) {
             title: "Modul PDF",
             type: "reading",
             duration: "10 menit",
-            free: true,
             position: 0,
             attachments: [{ name: "modul.pdf", path: pdfPath, size: PDF_TEXT.length, mime: "application/pdf" }],
           },
@@ -188,7 +187,6 @@ async function run(educator: TestUser, orang: TestUser) {
             title: "Modul Word Lama",
             type: "reading",
             duration: "10 menit",
-            free: true,
             position: 1,
             attachments: [
               {
@@ -270,8 +268,9 @@ async function run(educator: TestUser, orang: TestUser) {
     const anon = await get(asset(pdfPath));
     check("anonim ditolak", anon.status === 401, `HTTP ${anon.status}`);
 
-    // Pelajarannya bertanda free, jadi pengguna yang sudah masuk memang boleh.
-    // Yang diuji di sini: berkas yang BUKAN lampiran kursus ini.
+    // Yang diuji di sini: berkas yang BUKAN lampiran kursus ini. Ditolak 404
+    // sebelum pemeriksaan akses sempat berjalan — jadi tetap berlaku sekarang
+    // setelah pratinjau per-pelajaran dihapus.
     const bocor = await get(asset(rahasia), orang.cookie);
     check(
       "berkas di luar kursus ini ditolak",

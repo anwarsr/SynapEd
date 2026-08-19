@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
-import CourseMetaForm from "@/components/educator/CourseMetaForm";
-import CurriculumEditor from "@/components/educator/CurriculumEditor";
+import CourseChangePanel from "@/components/educator/CourseChangePanel";
+import CourseRequestPanel from "@/components/educator/CourseRequestPanel";
+import Tag from "@/components/ui/Tag";
 import { LEVELS, requireOwnedCourse } from "@/lib/educatorCourses";
 import { listCategories } from "@/lib/categories";
+import { pendingRequestFor } from "@/lib/courseRequests";
 import { requireUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
 
@@ -29,7 +31,20 @@ export default async function EditCoursePage({ params }: Props) {
   const course = await requireOwnedCourse(user, slug);
   if (!course) notFound();
 
-  const categories = await listCategories();
+  const [categories, pendingRequest] = await Promise.all([
+    listCategories(),
+    pendingRequestFor(slug),
+  ]);
+
+  /**
+   * Admin menulis langsung; educator mengajukan.
+   *
+   * Admin adalah pihak yang menyetujui, jadi mengantrekan pekerjaannya sendiri
+   * untuk disetujui dirinya sendiri hanya menambah langkah tanpa menambah
+   * pengawasan.
+   */
+  const mode = user.role === "admin" ? "direct" : "request";
+  const locked = mode === "request" && pendingRequest !== null;
 
   return (
     <EducatorShell user={user}>
@@ -42,35 +57,40 @@ export default async function EditCoursePage({ params }: Props) {
           <span className="text-ink">Sunting</span>
         </nav>
 
-        <h1 className="t-h2">
-          Sunting <span className="mark">{course.title}</span>
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="t-h2">
+            Sunting <span className="mark">{course.title}</span>
+          </h1>
+          <Tag tone={course.visibility === "public" ? "blue" : "neutral"}>
+            {course.visibility === "public" ? "Tayang" : "Tersembunyi"}
+          </Tag>
+        </div>
 
-        <CourseMetaForm
+        {mode === "request" && (
+          <p className="t-body text-sm text-ink-muted -mt-4">
+            Setiap perubahan ditinjau admin lebih dulu. Kursus yang sedang tayang tetap seperti
+            sekarang sampai pengajuan Anda disetujui.
+          </p>
+        )}
+
+        <CourseRequestPanel
           slug={slug}
-          initial={{
-            title: course.title,
-            shortDesc: course.shortDesc,
-            longDesc: course.longDesc,
-            level: course.level,
-            category: course.category,
-            duration: course.duration,
-            price: course.price,
-            thumbnail: course.thumbnail,
-            whatYouLearn: course.whatYouLearn,
-            requirements: course.requirements,
-          }}
-          levels={LEVELS.map((l) => ({ value: l.value }))}
-          categories={categories.map((c) => ({ value: c.slug, label: c.label }))}
+          title={course.title}
+          visibility={course.visibility}
+          mode={mode}
+          pendingRequest={pendingRequest}
         />
 
         <hr className="rule-line" />
 
-        <div>
-          <h2 className="t-h3 mb-1.5">Kurikulum</h2>
-          <p className="t-body text-sm text-ink-muted mb-6">Bagian dan pelajaran di dalam kursus ini.</p>
-          <CurriculumEditor slug={slug} course={course} />
-        </div>
+        <CourseChangePanel
+          slug={slug}
+          course={course}
+          levels={LEVELS.map((l) => ({ value: l.value }))}
+          categories={categories.map((c) => ({ value: c.slug, label: c.label }))}
+          mode={mode}
+          locked={locked}
+        />
       </div>
     </EducatorShell>
   );

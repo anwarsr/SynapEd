@@ -31,7 +31,6 @@ interface RawLesson {
   title: string;
   type: string;
   duration: string;
-  free: boolean;
 }
 interface RawSection {
   title: string;
@@ -120,7 +119,6 @@ async function main() {
             title: l.title,
             type: l.type,
             duration: l.duration,
-            free: Boolean(l.free),
             position: li,
             // Diisi belakangan lewat Firebase Console:
             //   videoUrl    -> tautan embed YouTube/Vimeo

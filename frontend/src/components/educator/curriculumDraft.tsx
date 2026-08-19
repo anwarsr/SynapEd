@@ -7,6 +7,7 @@ import { toEmbedUrl } from "@/lib/videoEmbed";
 import type { CourseDetail } from "@/lib/courses";
 import type { LessonInput, SectionInput } from "@/lib/curriculum";
 import { FilePick, Label, inputClass } from "./fields";
+import DurationField from "./DurationField";
 import QuizEditor from "./QuizEditor";
 import { cn } from "@/lib/cn";
 
@@ -45,7 +46,6 @@ export interface DraftLesson {
   title: string;
   type: LessonType;
   duration: string;
-  free: boolean;
   videoUrl: string;
   attachment: DraftAttachment | null;
   uploading: boolean;
@@ -58,8 +58,28 @@ export interface DraftSection {
   lessons: DraftLesson[];
 }
 
+/**
+ * Kunci sebuah baris — dipakai sebagai React key SEKALIGUS sebagai id elemen
+ * form (`section-{key}`, `durasi-{key}`, `attachment-{key}`).
+ *
+ * Nilainya acak, jadi fungsi ini TIDAK BOLEH ikut membangun keadaan awal yang
+ * dirender server. Inisialisasi useState dijalankan dua kali — sekali di
+ * server, sekali lagi di browser saat hydration — sehingga server menulis
+ * `htmlFor="section-c8dcc25f"` sementara browser menghitung
+ * `htmlFor="section-2721bf13"`, dan React melaporkannya sebagai hydration
+ * mismatch.
+ *
+ * Keadaan awal memakai kunci turunan posisi (draftFromCourse, firstSection).
+ * Yang acak hanya untuk baris yang DITAMBAHKAN educator setelah halaman hidup —
+ * di situ server tidak ikut menghitung apa pun.
+ */
 export function newKey(): string {
   return crypto.randomUUID().slice(0, 8);
+}
+
+/** Kunci tetap untuk keadaan awal — sengaja tidak acak, lihat newKey(). */
+function seedKey(si: number, li?: number): string {
+  return li === undefined ? `s${si}` : `s${si}l${li}`;
 }
 
 export function newLesson(type: LessonType = "reading"): DraftLesson {
@@ -68,7 +88,6 @@ export function newLesson(type: LessonType = "reading"): DraftLesson {
     title: "",
     type,
     duration: "",
-    free: false,
     videoUrl: "",
     attachment: null,
     uploading: false,
@@ -80,17 +99,27 @@ export function newSection(title = ""): DraftSection {
   return { key: newKey(), title, lessons: [newLesson()] };
 }
 
+/**
+ * Bagian pembuka form "buat kursus".
+ *
+ * Terpisah dari newSection() justru karena kuncinya harus tetap: inilah satu-
+ * satunya bagian yang sudah ada sebelum educator menyentuh apa pun, jadi
+ * satu-satunya yang ikut dirender server.
+ */
+export function firstSection(title: string): DraftSection[] {
+  return [{ key: seedKey(0), title, lessons: [{ ...newLesson(), key: seedKey(0, 0) }] }];
+}
+
 export function draftFromCourse(course: CourseDetail): DraftSection[] {
-  return course.sections.map((s) => ({
-    key: newKey(),
+  return course.sections.map((s, si) => ({
+    key: seedKey(si),
     title: s.title,
-    lessons: s.lessons.map((l) => ({
-      key: newKey(),
+    lessons: s.lessons.map((l, li) => ({
+      key: seedKey(si, li),
       slug: l.slug,
       title: l.title,
       type: (l.type === "video" || l.type === "quiz" ? l.type : "reading") as LessonType,
       duration: l.duration,
-      free: l.free,
       videoUrl: l.videoUrl ?? "",
       attachment: l.attachments?.[0] ?? null,
       uploading: false,
@@ -132,7 +161,6 @@ export function toSectionInput(sections: DraftSection[]): SectionInput[] {
         title: l.title,
         type: l.type,
         duration: l.duration,
-        free: l.free,
         videoUrl: l.type === "video" ? l.videoUrl : undefined,
         attachments: l.attachment ? [l.attachment] : undefined,
       }),
@@ -363,22 +391,16 @@ export default function SectionList({
                   </div>
                 </div>
 
-                <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-end mb-3">
-                  <input
+                <div className="mb-3 sm:max-w-md">
+                  <Label htmlFor={`durasi-${l.key}`}>Durasi</Label>
+                  {/* Satuan pelajaran berhenti di Jam — sebuah pelajaran yang
+                      diukur berhari-hari sebenarnya beberapa pelajaran. */}
+                  <DurationField
+                    id={`durasi-${l.key}`}
+                    scope="lesson"
                     value={l.duration}
-                    onChange={(e) => updateLesson(si, li, { duration: e.target.value })}
-                    placeholder="Perkiraan durasi, mis. 10 menit"
-                    className={inputClass}
+                    onChange={(v) => updateLesson(si, li, { duration: v })}
                   />
-                  <label className="flex items-center gap-2 text-sm text-ink-body pb-2.5 whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      checked={l.free}
-                      onChange={(e) => updateLesson(si, li, { free: e.target.checked })}
-                      className="rounded border-rule"
-                    />
-                    Bisa dipratinjau gratis
-                  </label>
                 </div>
 
                 {l.type === "video" ? (

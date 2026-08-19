@@ -79,7 +79,6 @@ function courseDoc(slug: string, price: number) {
             title: "Pelajaran Pratinjau",
             type: "reading",
             duration: "5 menit",
-            free: true,
             position: 0,
           },
           {
@@ -87,7 +86,6 @@ function courseDoc(slug: string, price: number) {
             title: "Pelajaran Terkunci",
             type: "reading",
             duration: "5 menit",
-            free: false,
             position: 1,
           },
         ],
@@ -133,9 +131,9 @@ async function run(student: TestUser, other: TestUser) {
 
     const preview = await probe(`/courses/${freeSlug}/learn/pratinjau`, student.cookie);
     check(
-      "pelajaran bertanda free tetap terbuka tanpa mendaftar",
-      preview.status === 200,
-      `status ${preview.status}`,
+      "pelajaran yang dulu bisa dipratinjau kini IKUT terkunci",
+      isRedirectTo(preview, `/courses/${freeSlug}`),
+      `${preview.status} ${preview.location ?? ""}`,
     );
 
     const detail = await probeText(`/courses/${freeSlug}`, student.cookie);

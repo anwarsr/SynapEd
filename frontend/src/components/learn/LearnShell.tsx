@@ -316,9 +316,6 @@ export default function LearnShell({
                 {typeLabel[current.type] ?? current.type}
               </span>
               <span className="text-xs text-ink-muted">{current.duration}</span>
-              {current.free && (
-                <span className="t-label text-amber-700 bg-amber-100 px-2.5 py-1 rounded-md">Gratis</span>
-              )}
             </div>
 
             <h1 className="t-h2 mb-8">{current.title}</h1>

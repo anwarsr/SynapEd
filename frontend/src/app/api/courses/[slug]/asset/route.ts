@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ message: "Berkas tidak ditemukan di kursus ini." }, { status: 404 });
   }
 
-  if (!canViewLesson(access, owningLesson)) {
+  if (!canViewLesson(access)) {
     return NextResponse.json({ message: "Anda belum berhak mengakses berkas ini." }, { status: 403 });
   }
 

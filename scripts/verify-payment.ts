@@ -86,7 +86,7 @@ function courseDoc(slug: string, price: number) {
         title: "Bagian Uji",
         position: 0,
         lessons: [
-          { slug: "pelajaran-satu", title: "Pelajaran Satu", type: "reading", duration: "5 menit", free: false, position: 0 },
+          { slug: "pelajaran-satu", title: "Pelajaran Satu", type: "reading", duration: "5 menit", position: 0 },
         ],
       },
     ],

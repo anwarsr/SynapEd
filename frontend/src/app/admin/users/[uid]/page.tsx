@@ -5,7 +5,8 @@ import DecisionButtons from "@/components/admin/DecisionButtons";
 import Tag from "@/components/ui/Tag";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { formatDate, getUser } from "@/lib/adminUsers";
-import { getApplication, pendingApplicationCount, statusLabel } from "@/lib/educator";
+import { getApplication, statusLabel } from "@/lib/educator";
+import { adminBadges } from "@/lib/adminBadges";
 import { requireAdmin } from "@/lib/firebase/session";
 import { roleLabel, type Role } from "@/lib/roles";
 import type { Metadata } from "next";
@@ -44,13 +45,13 @@ export default async function AdminUserDetailPage({ params }: Props) {
   const user = await getUser(uid);
   if (!user) notFound();
 
-  const [application, pending] = await Promise.all([
+  const [application, badges] = await Promise.all([
     getApplication(uid),
-    pendingApplicationCount(),
+    adminBadges(),
   ]);
 
   return (
-    <AdminShell user={admin} pendingCount={pending}>
+    <AdminShell user={admin} badges={badges}>
       <div className="container-reading">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
           <Link href="/admin" className="hover:text-blue-700 transition-colors">

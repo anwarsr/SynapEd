@@ -66,15 +66,15 @@ function curriculum(modul: Doc, tugas: Doc) {
     {
       title: "Pendahuluan",
       lessons: [
-        { title: "Modul Pertama", type: "reading", duration: "10 menit", free: true, attachments: [modul] },
-        { title: "Modul Kedua", type: "reading", duration: "10 menit", free: false, attachments: [modul] },
-        { title: "Video Pengantar", type: "video", duration: "8 menit", free: false, videoUrl: VIDEO },
+        { title: "Modul Pertama", type: "reading", duration: "10 menit", attachments: [modul] },
+        { title: "Modul Kedua", type: "reading", duration: "10 menit", attachments: [modul] },
+        { title: "Video Pengantar", type: "video", duration: "8 menit", videoUrl: VIDEO },
       ],
     },
     {
       title: "Penutup",
       lessons: [
-        { title: "Penugasan Akhir", type: "quiz", duration: "Tugas", free: false, attachments: [tugas] },
+        { title: "Penugasan Akhir", type: "quiz", duration: "Tugas", attachments: [tugas] },
       ],
     },
   ];
@@ -103,14 +103,15 @@ const PNG = Buffer.from(
 
 const created: string[] = [];
 
-async function run(educator: TestUser, biasa: TestUser) {
+async function run(educator: TestUser, biasa: TestUser, adminUser: TestUser) {
   // Manifest action baru ditulis setelah rutenya dikompilasi, dan di mode dev
   // Next mengompilasi rute saat pertama diminta.
   await probe("/educator/courses/new", educator.cookie);
   await probe("/educator/courses", educator.cookie);
+  await probe("/educator/courses/pemanasan/edit", educator.cookie);
 
   const createId = await actionId("educator/courses/new", "createCourse");
-  const deleteId = await actionId("educator/courses", "deleteCourse");
+  const deleteId = await actionId("educator/courses/[slug]/edit", "deleteCourse");
 
   const NEW = "/educator/courses/new";
   const LIST = "/educator/courses";
@@ -256,7 +257,7 @@ async function run(educator: TestUser, biasa: TestUser) {
             {
               title: "Bagian",
               lessons: [
-                { title: "Video Rusak", type: "video", duration: "-", free: false, videoUrl: "https://contoh.com/v" },
+                { title: "Video Rusak", type: "video", duration: "-", videoUrl: "https://contoh.com/v" },
               ],
             },
           ],
@@ -375,22 +376,32 @@ async function run(educator: TestUser, biasa: TestUser) {
         Boolean((closing[0]?.attachments as unknown[])?.length),
       "lampiran & tautan",
     );
-    check(
-      "tanda gratis mengikuti kiriman",
-      lessons[0]?.free === true && lessons[1]?.free === false,
-      "free per pelajaran",
-    );
     check("instruktur adalah pembuatnya", data?.instructorName === "Uji educator", String(data?.instructorName));
     check("gambar latar tersimpan", data?.thumbnail === thumbPath, String(data?.thumbnail));
   }
 
   // ── Terlihat di katalog dan halaman belajar ───────────────────────
   {
+    // Kursus baru kini dibuat TERSEMBUNYI dan baru tayang setelah pengajuan
+    // "publish" disetujui admin. Jadi tepat setelah dibuat, ia justru TIDAK
+    // boleh terlihat di katalog publik.
+    const sebelumTayang = await probeText("/courses");
+    check(
+      "kursus baru TIDAK langsung tayang",
+      !sebelumTayang.html.includes("Kursus Uji Otomatis"),
+      "dibuat private, menunggu persetujuan",
+    );
+
+    // Ditayangkan langsung lewat jalur admin supaya sisa pemeriksaan katalog
+    // di bawah ini menguji tampilan, bukan alur persetujuannya (yang diuji
+    // terpisah di suite pengajuan kursus).
+    await db.collection("courses").doc(slug).update({ visibility: "public" });
+
     const katalog = await probeText("/courses");
     check(
-      "muncul di katalog publik",
+      "setelah ditayangkan, muncul di katalog publik",
       katalog.html.includes("Kursus Uji Otomatis"),
-      "orderBy('order') tidak menyembunyikannya",
+      "visibility public",
     );
 
     const detail = await probeText(`/courses/${slug}`);
@@ -452,23 +463,28 @@ async function run(educator: TestUser, biasa: TestUser) {
 
   // ── Menghapus ─────────────────────────────────────────────────────
   {
-    const byUser = await callAction(LIST, deleteId, [slug], biasa.cookie);
-    check("pengguna biasa tidak bisa menghapus", byUser.includes("Hanya educator"), "role");
+    const editPath = `/educator/courses/${slug}/edit`;
 
-    const foreign = await callAction(LIST, deleteId, ["dasar-neuroscience"], educator.cookie);
+    // Aturan berubah sejak alur persetujuan berlaku: penghapusan langsung
+    // kini KHUSUS ADMIN. Educator mengajukan lewat requestCourseDeletion dan
+    // admin yang menerapkannya — diuji terpisah di suite pengajuan kursus.
+    const byUser = await callAction(editPath, deleteId, [slug], biasa.cookie);
+    check("pengguna biasa tidak bisa menghapus", byUser.includes("persetujuan admin"), "role");
+
+    const byEducator = await callAction(editPath, deleteId, [slug], educator.cookie);
     check(
-      "educator tidak bisa menghapus kursus orang lain",
-      foreign.includes("bukan kursus Anda"),
-      "kursus bawaan tetap aman",
+      "educator tidak bisa menghapus langsung",
+      byEducator.includes("persetujuan admin"),
+      "harus lewat pengajuan",
     );
     check(
-      "kursus bawaan masih ada",
-      (await db.collection("courses").doc("dasar-neuroscience").get()).exists,
-      "tidak terhapus",
+      "  kursusnya masih ada",
+      (await db.collection("courses").doc(slug).get()).exists,
+      slug,
     );
 
-    const out = await callAction(LIST, deleteId, [slug], educator.cookie);
-    check("educator menghapus kursusnya sendiri", out.includes("dihapus"), "pesan hasil");
+    const out = await callAction(editPath, deleteId, [slug], adminUser.cookie);
+    check("admin menghapus langsung", out.includes("dihapus"), "pesan hasil");
     check(
       "dokumen benar-benar hilang",
       !(await db.collection("courses").doc(slug).get()).exists,
@@ -482,14 +498,15 @@ async function main() {
 
   const educator = await createTestUser("educator");
   const biasa = await createTestUser("user", "biasa");
+  const adminUser = await createTestUser("admin", "course-adm");
 
   console.log(`educator : ${educator.email}`);
   console.log(`biasa    : ${biasa.email}\n`);
 
   try {
-    await run(educator, biasa);
+    await run(educator, biasa, adminUser);
   } finally {
-    await auth.deleteUsers([educator.uid, biasa.uid]);
+    await auth.deleteUsers([educator.uid, biasa.uid, adminUser.uid]);
     await Promise.all(
       created.map((slug) => db.collection("courses").doc(slug).delete().catch(() => undefined)),
     );

@@ -2,13 +2,18 @@ import Link from "next/link";
 import AdminShell from "@/components/admin/AdminShell";
 import Tag from "@/components/ui/Tag";
 import UserAvatar from "@/components/ui/UserAvatar";
+import {
+  ClearNotificationsButton,
+  DeleteNotificationButton,
+} from "@/components/admin/NotificationActions";
 import { formatDate } from "@/lib/adminUsers";
-import { listApplications, pendingApplicationCount, statusLabel } from "@/lib/educator";
+import { listApplications, statusLabel } from "@/lib/educator";
+import { adminBadges } from "@/lib/adminBadges";
 import { requireAdmin } from "@/lib/firebase/session";
 import type { ApplicationStatus } from "@/lib/educator";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Notifikasi – Panel Admin SynapEd" };
+export const metadata: Metadata = { title: "Pengajuan Edukator – Panel Admin SynapEd" };
 
 export const dynamic = "force-dynamic";
 
@@ -20,37 +25,52 @@ const tone: Record<ApplicationStatus, "amber" | "blue" | "rust"> = {
 
 export default async function AdminNotificationsPage() {
   const admin = await requireAdmin("/admin/notifications");
-  const [applications, pending] = await Promise.all([
-    listApplications(),
-    pendingApplicationCount(),
-  ]);
+  const [applications, badges] = await Promise.all([listApplications(), adminBadges()]);
+
+  const pending = badges.applications;
+
+  // Hanya yang sudah diputuskan yang boleh dibersihkan — lihat alasannya di
+  // deleteApplication(). Dihitung dari daftar yang sudah dibaca, bukan query
+  // kedua ke Firestore.
+  const decided = applications.filter((a) => a.status !== "pending").length;
 
   return (
-    <AdminShell user={admin} pendingCount={pending}>
+    <AdminShell user={admin} badges={badges}>
       <div className="container-page">
         <h1 className="t-h2 mb-3">
           Pengajuan <span className="mark">menjadi educator</span>
         </h1>
-        <p className="t-body text-ink-muted mb-10">
-          {pending > 0
-            ? `${pending} pengajuan menunggu keputusan Anda.`
-            : "Tidak ada pengajuan yang menunggu keputusan."}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
+          <p className="t-body text-ink-muted">
+            {pending > 0
+              ? `${pending} pengajuan menunggu keputusan Anda.`
+              : "Tidak ada pengajuan yang menunggu keputusan."}
+          </p>
+
+          <ClearNotificationsButton count={decided} />
+        </div>
 
         {applications.length === 0 ? (
           <div className="bg-paper-card border border-rule rounded-2xl p-12 text-center">
             <p className="t-body text-ink-muted">
-              Belum ada pengajuan. Notifikasi akan muncul di sini.
+              Belum ada pengajuan. Permintaan educator akan muncul di sini.
             </p>
           </div>
         ) : (
           <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden">
             <ul className="divide-y divide-rule">
+              {/* Tombol hapus berdiri di SEBELAH Link, bukan di dalamnya:
+                  <button> bersarang di <a> bukan HTML yang sah, dan pembaca
+                  layar tidak bisa memisahkan keduanya. Efek hover dipindah ke
+                  <li> supaya seluruh baris tetap terasa satu kesatuan. */}
               {applications.map((a) => (
-                <li key={a.uid}>
+                <li
+                  key={a.uid}
+                  className="flex items-center gap-1 pr-3 transition-colors duration-200 hover:bg-blue-50/50"
+                >
                   <Link
                     href={`/admin/notifications/${a.uid}`}
-                    className="group flex flex-wrap items-center gap-4 px-6 py-4 transition-colors duration-200 hover:bg-blue-50/50"
+                    className="group flex flex-1 flex-wrap items-center gap-4 px-6 py-4 min-w-0"
                   >
                     {/* Titik penanda untuk yang belum diputuskan — sinyal yang
                         terbaca sekilas tanpa harus membaca labelnya. */}
@@ -75,6 +95,12 @@ export default async function AdminNotificationsPage() {
 
                     <Tag tone={tone[a.status]}>{statusLabel[a.status]}</Tag>
                   </Link>
+
+                  {/* Yang masih menunggu tidak punya tombol hapus: catatannya
+                      adalah satu-satunya jejak permintaan orang itu. */}
+                  {a.status !== "pending" && (
+                    <DeleteNotificationButton uid={a.uid} name={a.name} />
+                  )}
                 </li>
               ))}
             </ul>

@@ -1,7 +1,7 @@
 import AdminShell from "@/components/admin/AdminShell";
 import CategoryManager, { type CategoryRow } from "@/components/admin/CategoryManager";
 import { countCoursesInCategory, listCategories } from "@/lib/categories";
-import { pendingApplicationCount } from "@/lib/educator";
+import { adminBadges } from "@/lib/adminBadges";
 import { requireAdmin } from "@/lib/firebase/session";
 import type { Metadata } from "next";
 
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminCategoriesPage() {
   const admin = await requireAdmin("/admin/categories");
 
-  const [categories, pending] = await Promise.all([listCategories(), pendingApplicationCount()]);
+  const [categories, badges] = await Promise.all([listCategories(), adminBadges()]);
 
   // Jumlah kursus per kategori dipakai untuk menonaktifkan tombol hapus.
   // Kategorinya sedikit, jadi satu hitungan per kategori masih murah.
@@ -25,7 +25,7 @@ export default async function AdminCategoriesPage() {
   );
 
   return (
-    <AdminShell user={admin} pendingCount={pending}>
+    <AdminShell user={admin} badges={badges}>
       <div className="container-reading">
         <h1 className="t-h2 mb-3">
           Kategori <span className="mark">kursus</span>
