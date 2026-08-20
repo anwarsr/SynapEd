@@ -41,12 +41,12 @@ function isValidMessages(value: unknown): value is ChatMessage[] {
 }
 
 /**
- * Riwayat dirangkai jadi satu string transkrip biasa, bukan array
- * `Content[]` bergiliran-per-peran milik Gemini — sengaja. Server ini
- * tanpa status (klien mengirim ulang riwayat utuh tiap giliran, tidak ada
- * yang disimpan), dan `contents` menerima string biasa dengan aman
- * (bagian dari `ContentListUnion`), jadi tidak perlu menyusun ulang objek
- * giliran yang lebih rumit untuk kasus pemakaian yang sesederhana ini.
+ * Riwayat dirangkai jadi satu string transkrip biasa, bukan struktur
+ * giliran-per-giliran milik Gemini — sengaja. API Interactions Gemini
+ * merekonstruksi riwayat dari objek `Step` yang dikembalikannya sendiri,
+ * yang tidak kita simpan (klien hanya menyimpan teks polos). Transkrip
+ * string dijamin diterima ("input" memang menerima string biasa) dan
+ * tidak butuh menebak bentuk objek yang tidak sepenuhnya terdokumentasi.
  */
 function buildTranscriptInput(messages: ChatMessage[]): string {
   return messages
@@ -97,10 +97,14 @@ export async function POST(request: NextRequest) {
 
   let geminiStream;
   try {
-    geminiStream = await client.models.generateContentStream({
+    geminiStream = await client.interactions.create({
       model: CHAT_MODEL,
-      contents: buildTranscriptInput(messages),
-      config: { systemInstruction: systemPrompt },
+      system_instruction: systemPrompt,
+      input: buildTranscriptInput(messages),
+      // Tidak ada yang perlu disimpan Google — riwayat sudah dikirim ulang
+      // utuh oleh klien tiap giliran.
+      store: false,
+      stream: true,
     });
   } catch (e) {
     console.error("[api/chat] Gagal memulai stream Gemini:", e);
@@ -111,8 +115,10 @@ export async function POST(request: NextRequest) {
   const responseBody = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        for await (const chunk of geminiStream) {
-          if (chunk.text) controller.enqueue(encoder.encode(chunk.text));
+        for await (const event of geminiStream) {
+          if (event.event_type === "step.delta" && event.delta.type === "text") {
+            controller.enqueue(encoder.encode(event.delta.text));
+          }
         }
       } catch (e) {
         // Respons 200 sudah terkirim begitu stream mulai dikonsumsi —

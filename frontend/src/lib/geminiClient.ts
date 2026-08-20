@@ -23,10 +23,9 @@ export function getGeminiClient(): GoogleGenAI {
 }
 
 /**
- * "gemini-3.6-flash" — model cepat & murah, cocok untuk menjawab FAQ yang
- * sudah digroundkan lewat system prompt. Dikonfirmasi tersedia lewat
- * ai.models.list() terhadap kunci proyek ini. Kalau model ini pernah
- * dipensiunkan Google, `npm run check:chat` akan gagal dengan galat
- * "model not found" — ganti string ini saat itu terjadi.
+ * "gemini-3.6-flash" — model cepat & murah (ada di tingkat gratis Gemini),
+ * cocok untuk menjawab FAQ yang sudah digroundkan lewat system prompt.
+ * Kalau model ini pernah dipensiunkan Google, `npm run check:chat` akan
+ * gagal dengan galat "model not found" — ganti string ini saat itu terjadi.
  */
 export const CHAT_MODEL = "gemini-3.6-flash";

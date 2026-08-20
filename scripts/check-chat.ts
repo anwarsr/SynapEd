@@ -65,15 +65,16 @@ async function main() {
   console.log("\n3. Panggilan uji ke Gemini");
   const client = new GoogleGenAI({ apiKey });
   try {
-    const response = await client.models.generateContent({
+    const interaction = await client.interactions.create({
       model: "gemini-3.6-flash",
-      contents: "Balas dengan satu kata: OK",
+      input: "Balas dengan satu kata: OK",
+      store: false,
     });
-    if (response.text) {
+    if (interaction.steps.length > 0) {
       ok("berhasil dapat balasan dari Gemini");
-      info(`balasan: ${response.text.trim()}`);
+      info(`id: ${interaction.id}, status: ${interaction.status}`);
     } else {
-      fail("panggilan berhasil tapi tidak ada teks balasan", "Kemungkinan diblokir oleh filter keamanan — periksa response.promptFeedback");
+      fail("panggilan berhasil tapi tidak ada langkah balasan", "Kemungkinan model diblokir/ditolak — periksa Google AI Studio");
     }
   } catch (e) {
     if (e instanceof ApiError) {
