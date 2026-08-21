@@ -605,7 +605,17 @@ export default function Hero() {
             style={
               {
                 fontFamily: "var(--font-inter)",
-                fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
+                /* Lantai clamp sengaja RENDAH, bukan 2.5rem.
+                   Kedua baris judul dikunci whitespace-nowrap supaya
+                   pemenggalannya tetap "Platform Terbaik / Kuasai Ilmu
+                   Apapun". Karena tidak boleh membungkus, lantai 2.5rem
+                   (40px) membuat baris kedua — yang terpanjang — melebihi
+                   layar sempit dan terpotong: 15px di 375px, 70px di 320px.
+                   Lebar baris itu ~9,15x ukuran font, jadi 1.8rem (28.8px)
+                   pas di area konten 320px yang cuma 272px.
+                   Nilai 6.5vw dan batas 5.75rem TIDAK diubah — di layar
+                   lebar keduanya tetap menang, jadi desktop tidak bergeser. */
+                fontSize: "clamp(1.8rem, 6.5vw, 5.75rem)",
                 fontWeight: 800,
                 lineHeight: 1.03,
                 letterSpacing: "-0.04em",
