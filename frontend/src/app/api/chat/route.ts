@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { buildChatSystemPrompt } from "@/lib/chatPrompt";
 import { checkChatRateLimit } from "@/lib/chatRateLimit";
-import { CHAT_MODEL, getGeminiClient } from "@/lib/geminiClient";
+import { OpenRouterError, openRouterStream } from "@/lib/openrouter";
 
 /**
  * Batas ukuran percakapan yang dikirim klien. Server di sini TANPA STATUS
@@ -40,20 +40,6 @@ function isValidMessages(value: unknown): value is ChatMessage[] {
   return value[value.length - 1].role === "user";
 }
 
-/**
- * Riwayat dirangkai jadi satu string transkrip biasa, bukan struktur
- * giliran-per-giliran milik Gemini — sengaja. API Interactions Gemini
- * merekonstruksi riwayat dari objek `Step` yang dikembalikannya sendiri,
- * yang tidak kita simpan (klien hanya menyimpan teks polos). Transkrip
- * string dijamin diterima ("input" memang menerima string biasa) dan
- * tidak butuh menebak bentuk objek yang tidak sepenuhnya terdokumentasi.
- */
-function buildTranscriptInput(messages: ChatMessage[]): string {
-  return messages
-    .map((m) => `${m.role === "user" ? "Pengguna" : "Asisten"}: ${m.content}`)
-    .join("\n\n");
-}
-
 const FRIENDLY_STREAM_ERROR =
   "\n\nMaaf, terjadi gangguan saat menyusun jawaban. Coba kirim ulang pertanyaanmu.";
 
@@ -85,40 +71,48 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let client;
-  try {
-    client = getGeminiClient();
-  } catch (e) {
-    console.error("[api/chat] Gemini belum dikonfigurasi:", e);
-    return NextResponse.json({ message: "Asisten belum dikonfigurasi. Coba lagi nanti." }, { status: 500 });
-  }
-
+  // System prompt jadi giliran pertama percakapan — peran "user"/"assistant"
+  // dari klien dipakai apa adanya karena OpenRouter memakai nama peran yang
+  // sama persis (tidak perlu terjemahan bentuk seperti kasus Gemini).
   const systemPrompt = await buildChatSystemPrompt();
+  const chatMessages = [
+    { role: "system" as const, content: systemPrompt },
+    ...messages,
+  ];
 
-  let geminiStream;
+  let stream: AsyncIterable<string>;
   try {
-    geminiStream = await client.interactions.create({
-      model: CHAT_MODEL,
-      system_instruction: systemPrompt,
-      input: buildTranscriptInput(messages),
-      // Tidak ada yang perlu disimpan Google — riwayat sudah dikirim ulang
-      // utuh oleh klien tiap giliran.
-      store: false,
-      stream: true,
-    });
+    stream = await openRouterStream(chatMessages);
   } catch (e) {
-    console.error("[api/chat] Gagal memulai stream Gemini:", e);
-    return NextResponse.json({ message: "Asisten sedang tidak bisa dihubungi. Coba lagi nanti." }, { status: 502 });
+    if (e instanceof OpenRouterError) {
+      console.error("[api/chat] OpenRouter menolak permintaan:", e.message);
+
+      // Dibedakan dari 429 pembatas laju kita sendiri di atas: yang ini
+      // berarti jatah harian akun OpenRouter habis, dan menunggu beberapa
+      // menit tidak menolong — penyebabnya beda, jadi pesannya beda.
+      if (e.status === 429) {
+        return NextResponse.json(
+          { message: "Kuota harian asisten sudah habis. Coba lagi besok, ya." },
+          { status: 429 },
+        );
+      }
+      return NextResponse.json(
+        { message: "Asisten sedang tidak bisa dihubungi. Coba lagi nanti." },
+        { status: 502 },
+      );
+    }
+
+    // Satu-satunya galat non-OpenRouterError di sini: OPENROUTER_API_KEY kosong.
+    console.error("[api/chat] Asisten belum dikonfigurasi:", e);
+    return NextResponse.json({ message: "Asisten belum dikonfigurasi. Coba lagi nanti." }, { status: 500 });
   }
 
   const encoder = new TextEncoder();
   const responseBody = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        for await (const event of geminiStream) {
-          if (event.event_type === "step.delta" && event.delta.type === "text") {
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
+        for await (const text of stream) {
+          controller.enqueue(encoder.encode(text));
         }
       } catch (e) {
         // Respons 200 sudah terkirim begitu stream mulai dikonsumsi —
@@ -126,7 +120,7 @@ export async function POST(request: NextRequest) {
         // jalan adalah mencatatnya di server dan menyisipkan kalimat
         // ramah seolah itu balasan asisten, supaya widget tidak butuh
         // penanganan khusus untuk kasus ini.
-        console.error("[api/chat] Galat saat streaming dari Gemini:", e);
+        console.error("[api/chat] Galat saat streaming dari OpenRouter:", e);
         controller.enqueue(encoder.encode(FRIENDLY_STREAM_ERROR));
       } finally {
         controller.close();

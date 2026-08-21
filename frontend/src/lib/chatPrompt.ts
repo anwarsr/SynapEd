@@ -5,8 +5,8 @@ import { listCourses, type CourseSummary } from "@/lib/courses";
  * Instruksi pemandu Asisten SynapEd — batasan topik, larangan mengarang,
  * dan kejujuran soal apa yang belum bisa dilakukan (pembayaran, bantuan
  * di dalam materi kursus). Ini bagian STABIL dari prompt: sama persis di
- * setiap permintaan, ditulis di depan supaya Gemini bisa menghemat biaya
- * lewat context caching kalau/ketika itu dipasang nanti.
+ * setiap permintaan, ditulis di depan supaya penyedia model bisa menghemat
+ * biaya lewat prompt caching kalau/ketika itu dipasang nanti.
  */
 const GUARDRAILS = `Kamu adalah asisten FAQ dan onboarding resmi SynapEd, sebuah platform
 pembelajaran daring. Jawab HANYA dalam Bahasa Indonesia, dengan nada ramah,
@@ -105,7 +105,7 @@ function formatCatalog(courses: CourseSummary[]): string {
  * dicache) diikuti katalog kursus hidup (berubah tiap kursus baru/diedit).
  *
  * Tidak ada personalisasi nama pengguna di sini — sengaja, supaya isinya
- * identik lintas pengguna kalau context caching Gemini dipasang nanti.
+ * identik lintas pengguna kalau prompt caching dipasang nanti.
  */
 export async function buildChatSystemPrompt(): Promise<string> {
   const courses = await listCourses();
