@@ -1,102 +1,187 @@
 "use client";
+
 import { useState } from "react";
 import Reveal from "@/components/ui/Reveal";
-import SectionHeader from "@/components/ui/SectionHeader";
 import { faqs } from "@/data/landing";
 import { cn } from "@/lib/cn";
+
+/** Tipografi FAQ */
+const HEADING: React.CSSProperties = {
+  fontFamily: "var(--font-inter)",
+  fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
+  fontWeight: 800,
+  lineHeight: 1.03,
+  letterSpacing: "-0.04em",
+};
+
+const QUESTION: React.CSSProperties = {
+  fontFamily: "var(--font-inter)",
+  fontWeight: 700,
+  letterSpacing: "-0.015em",
+};
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const toggle = (i: number) => setOpenIndex(openIndex === i ? null : i);
+  const toggle = (i: number) => {
+    setOpenIndex(openIndex === i ? null : i);
+  };
 
   return (
-    <section id="faq" className="relative py-28 bg-paper overflow-hidden">
+    <section
+      id="faq"
+      className="relative py-28 bg-paper overflow-hidden"
+    >
       <div className="relative container-reading">
-        <SectionHeader chapter="07" label="Pertanyaan">
-          Pertanyaan yang <span className="text-blue-600">sering diajukan</span>
-        </SectionHeader>
+        {/* Heading */}
+        <Reveal className="flex flex-col items-center text-center mb-14">
+          <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 mb-6">
+            <span
+              aria-hidden="true"
+              className="w-6 h-px bg-blue-600/30"
+            />
 
+            Pertanyaan
+
+            <span
+              aria-hidden="true"
+              className="w-6 h-px bg-blue-600/30"
+            />
+          </p>
+
+          <h2
+            className="text-blue-600 max-w-3xl"
+            style={HEADING}
+          >
+            Pertanyaan yang sering diajukan
+          </h2>
+        </Reveal>
+
+        {/* FAQ Cards */}
         <div className="flex flex-col gap-4 items-center">
           {faqs.map((faq, i) => {
             const isOpen = openIndex === i;
 
             return (
-              <Reveal key={i} delay={i * 90} className="relative w-full flex justify-center items-center py-1">
-                {/* Maskot — muncul saat kartu terbuka */}
+              <Reveal
+                key={i}
+                delay={i * 90}
+                className="group relative w-full flex justify-center items-center py-1"
+              >
+                {/* Maskot */}
                 <div
                   aria-hidden="true"
                   className={cn(
                     "absolute left-[5%] lg:left-[10%] bottom-[-10px] z-30 pointer-events-none",
                     "transition-all duration-200 ease-out-soft hidden lg:block",
-                    isOpen ? "opacity-100 translate-x-2" : "opacity-0 -translate-x-8",
+                    "group-hover:opacity-100 group-hover:translate-x-2",
+                    isOpen
+                      ? "opacity-100 translate-x-2"
+                      : "opacity-0 -translate-x-8"
                   )}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/3.png" alt="" className="h-56 w-auto object-contain" />
+                  <img
+                    src="/images/3.png"
+                    alt=""
+                    className="h-56 w-auto object-contain"
+                  />
                 </div>
 
+                {/* Card */}
                 <div
                   className={cn(
-                    "relative z-20 w-full max-w-2xl transition-transform duration-200 ease-out-soft",
-                    isOpen && "lg:translate-x-16",
+                    "relative z-20 w-full max-w-2xl",
+                    "transition-transform duration-200 ease-out-soft",
+                    "group-hover:lg:translate-x-16",
+                    isOpen && "lg:translate-x-16"
                   )}
                 >
-                  {/* Gelembung percakapan — rounded-tl kecil membentuk "ekor" */}
                   <div
                     className={cn(
-                      "bg-paper-card rounded-3xl rounded-tl-sm border transition-colors duration-200 ease-out-soft",
-                      isOpen ? "border-blue-300 shadow-soft" : "border-rule",
+                      "rounded-3xl rounded-tl-sm border",
+                      "bg-paper transition-all duration-200 ease-out-soft",
+                      isOpen
+                        ? "border-blue-600 shadow-sm"
+                        : "border-black/10 group-hover:border-blue-600/40"
                     )}
                   >
+                    {/* Question Button */}
                     <button
                       onClick={() => toggle(i)}
                       aria-expanded={isOpen}
                       className="w-full flex items-center justify-between gap-4 p-6 md:p-8 text-left"
                     >
                       <div className="flex items-center gap-5">
+                        {/* Indicator */}
                         <span
                           aria-hidden="true"
                           className={cn(
                             "w-1 h-8 rounded-full transition-colors duration-200",
-                            isOpen ? "bg-amber-500" : "bg-rule-strong",
+                            isOpen
+                              ? "bg-blue-600"
+                              : "bg-black/15 group-hover:bg-blue-600/50"
                           )}
                         />
+
+                        {/* Question */}
                         <span
-                          className={cn(
-                            "t-h3 text-base md:text-lg transition-colors duration-200",
-                            isOpen && "text-blue-700",
-                          )}
+                          className="text-base md:text-lg text-black"
+                          style={QUESTION}
                         >
                           {faq.question}
                         </span>
                       </div>
 
+                      {/* Arrow */}
                       <span
                         aria-hidden="true"
                         className={cn(
-                          "flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-colors duration-200",
-                          isOpen ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600",
+                          "flex-shrink-0 w-9 h-9",
+                          "flex items-center justify-center",
+                          "rounded-full transition-all duration-200",
+                          isOpen
+                            ? "bg-blue-600 text-white"
+                            : "bg-black/5 text-black group-hover:bg-blue-600 group-hover:text-white"
                         )}
                       >
                         <svg
-                          className={cn("w-4 h-4 transition-transform duration-200", isOpen && "rotate-180")}
+                          className={cn(
+                            "w-4 h-4 transition-transform duration-200",
+                            isOpen && "rotate-180"
+                          )}
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
                           strokeWidth={2.5}
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 9l-7 7-7-7"
+                          />
                         </svg>
                       </span>
                     </button>
 
+                    {/* Answer */}
                     <div
                       className="overflow-hidden transition-all duration-200 ease-out-soft"
-                      style={{ maxHeight: isOpen ? "320px" : "0px" }}
+                      style={{
+                        maxHeight: isOpen ? "320px" : "0px",
+                      }}
                     >
                       <div className="px-8 md:px-[4.5rem] pb-8 pt-1">
-                        <p className="t-body text-sm border-t border-rule pt-5">{faq.answer}</p>
+                        <p
+                          className={cn(
+                            "text-sm text-black/70",
+                            "leading-relaxed",
+                            "border-t border-black/10",
+                            "pt-5"
+                          )}
+                        >
+                          {faq.answer}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -106,9 +191,13 @@ export default function FAQ() {
           })}
         </div>
 
-        <p className="text-center text-ink-muted text-sm mt-12">
+        {/* Contact */}
+        <p className="text-center text-black/50 text-sm mt-12">
           Masih ada pertanyaan?{" "}
-          <a href="#" className="text-blue-700 font-medium hover:underline underline-offset-4">
+          <a
+            href="#"
+            className="text-blue-600 font-medium hover:underline underline-offset-4"
+          >
             Hubungi kami
           </a>
         </p>

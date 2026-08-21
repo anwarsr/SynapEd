@@ -2,8 +2,13 @@
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { CATEGORIES, ICONS, LEVELS, ownerUidOf, requireOwnedCourse, tintFor } from "@/lib/educatorCourses";
+import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
+import { categoryExists } from "@/lib/categories";
+import { resolveThumbnail } from "@/lib/courseThumbnail";
+import { canonicalDuration } from "@/lib/duration";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
+import { attachmentPaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
+import { COURSE_THUMBNAILS } from "@/lib/storagePaths";
 
 export type CurriculumResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -15,11 +20,22 @@ export type CurriculumResult = { ok: true; message: string } | { ok: false; erro
  * halaman sunting yang memanggilnya.
  */
 export async function saveCurriculum(slug: string, input: SectionInput[]): Promise<CurriculumResult> {
+  // KHUSUS ADMIN sejak alur persetujuan berlaku.
+  //
+  // Educator tidak lagi menyunting langsung; ia mengajukan lewat
+  // requestCourseEdit() dan admin yang menerapkannya saat menyetujui. Fungsi
+  // ini tetap ada sebagai jalur admin — pihak yang memang memutuskan, sehingga
+  // mengantrekan pekerjaannya sendiri tidak menambah pengawasan apa pun.
   const user = await getCurrentUser();
-  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+  if (user?.role !== "admin") {
+    return {
+      ok: false,
+      error: "Perubahan kurikulum perlu persetujuan admin. Gunakan tombol Ajukan Perubahan.",
+    };
+  }
 
   const course = await requireOwnedCourse(user, slug);
-  if (!course) return { ok: false, error: "Anda tidak berhak menyunting kursus ini." };
+  if (!course) return { ok: false, error: "Kursus tidak ditemukan." };
 
   // Lampiran yang sudah ada boleh berasal dari folder pemilik ASLI kursus
   // (educator yang membuatnya); lampiran baru yang baru saja diunggah lewat
@@ -31,7 +47,23 @@ export async function saveCurriculum(slug: string, input: SectionInput[]): Promi
   const normalized = normalizeSections(input, ownerUids);
   if (!normalized.ok) return { ok: false, error: normalized.error };
 
+  // Daftar lampiran LAMA diambil sebelum ditimpa. Penyimpanan kurikulum
+  // mengganti `sections` seluruhnya, jadi setiap berkas yang tadi dirujuk dan
+  // sekarang tidak lagi — materi yang diganti, pelajaran yang dihapus — mulai
+  // detik ini tidak terjangkau siapa pun.
+  const before = attachmentPaths(course.sections);
+
   await adminDb().collection("courses").doc(slug).update({ sections: normalized.sections });
+
+  const keep = attachmentPaths(normalized.sections);
+  const keepSet = new Set(keep);
+
+  await deleteObjects(before.filter((path) => !keepSet.has(path)));
+
+  // Menyapu foldernya sekalian menangkap berkas yang diunggah lalu dibatalkan
+  // di tengah penyuntingan: berkas itu tidak pernah masuk `before` maupun
+  // `keep`, sehingga pembandingan di atas tidak akan pernah melihatnya.
+  await pruneAttachmentFolders([...before, ...keep], keep);
 
   revalidatePath(`/courses/${slug}`);
   revalidatePath(`/courses/${slug}/learn`);
@@ -46,20 +78,32 @@ export interface CourseMetaInput {
   longDesc: string;
   level: string;
   category: string;
-  icon: string;
   duration: string;
   price: number;
+  /**
+   * Diisi HANYA kalau gambar latarnya diubah:
+   *   undefined -> biarkan seperti apa adanya
+   *   null      -> hapus gambarnya
+   *   string    -> path baru di Storage
+   */
+  thumbnail?: string | null;
   whatYouLearn: string[];
   requirements: string[];
 }
 
 /** Menyunting judul, deskripsi, harga, dan metadata lain — bukan kurikulum. */
 export async function updateCourseMeta(slug: string, input: CourseMetaInput): Promise<CurriculumResult> {
+  // KHUSUS ADMIN — alasan yang sama seperti saveCurriculum di atas.
   const user = await getCurrentUser();
-  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+  if (user?.role !== "admin") {
+    return {
+      ok: false,
+      error: "Perubahan info kursus perlu persetujuan admin. Gunakan tombol Ajukan Perubahan.",
+    };
+  }
 
   const course = await requireOwnedCourse(user, slug);
-  if (!course) return { ok: false, error: "Anda tidak berhak menyunting kursus ini." };
+  if (!course) return { ok: false, error: "Kursus tidak ditemukan." };
 
   const title = input.title.trim().slice(0, 120);
   const shortDesc = input.shortDesc.trim().slice(0, 200);
@@ -71,10 +115,8 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
   const level = LEVELS.find((l) => l.value === input.level);
   if (!level) return { ok: false, error: "Tingkat kesulitan tidak valid." };
 
-  const category = CATEGORIES.find((c) => c.value === input.category);
-  if (!category) return { ok: false, error: "Kategori tidak valid." };
-
-  const icon = ICONS.includes(input.icon as (typeof ICONS)[number]) ? input.icon : "reading";
+  const category = input.category.trim().slice(0, 60);
+  if (!(await categoryExists(category))) return { ok: false, error: "Kategori tidak valid." };
 
   // Harga bisa nol (kursus gratis) tapi tidak boleh negatif atau bukan angka.
   const price = Number.isFinite(input.price) && input.price >= 0 ? Math.round(input.price) : 0;
@@ -82,23 +124,50 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
   const whatYouLearn = input.whatYouLearn.map((s) => s.trim()).filter(Boolean).slice(0, 20);
   const requirements = input.requirements.map((s) => s.trim()).filter(Boolean).slice(0, 20);
 
-  await adminDb()
-    .collection("courses")
-    .doc(slug)
-    .update({
-      title,
-      shortDesc,
-      longDesc,
-      level: level.value,
-      levelColor: level.color,
-      category: category.value,
-      icon,
-      tint: tintFor(icon),
-      duration: input.duration.trim().slice(0, 40) || "—",
-      price,
-      whatYouLearn,
-      requirements,
-    });
+  const patch: Record<string, unknown> = {
+    title,
+    shortDesc,
+    longDesc,
+    level: level.value,
+    levelColor: level.color,
+    category,
+    duration: canonicalDuration(input.duration, "course") || "—",
+    price,
+    whatYouLearn,
+    requirements,
+  };
+
+  // `thumbnail` hanya ikut ditulis kalau memang diubah.
+  //
+  // Kursus hasil migrasi menyimpan URL penuh atau path di folder public/,
+  // yang tidak akan lolos resolveThumbnail. Kalau field ini selalu dikirim
+  // ulang, menyimpan perubahan judul saja akan gagal pada kursus-kursus itu —
+  // atau lebih buruk, diam-diam menghapus gambarnya.
+  if (input.thumbnail !== undefined) {
+    const thumbnail = resolveThumbnail(input.thumbnail, [user.uid, ownerUidOf(course) ?? ""]);
+    if (!thumbnail.ok) return { ok: false, error: thumbnail.error };
+    patch.thumbnail = thumbnail.value;
+  }
+
+  await adminDb().collection("courses").doc(slug).update(patch);
+
+  // Gambar latar yang tergantikan dibuang. Nama berkasnya mengandung cap waktu
+  // supaya peramban tidak menampilkan gambar lama dari cache, jadi setiap
+  // penggantian SELALU membuat berkas baru dan meninggalkan yang lama.
+  //
+  // Hanya path lama yang benar-benar tercatat yang dihapus, bukan berdasarkan
+  // awalan nama: gambar tersimpan datar sebagai `{slug}-{waktu}-{nama}`,
+  // sehingga menyapu awalan `tess-` akan ikut memakan gambar milik `tess-2`.
+  if (patch.thumbnail !== undefined) {
+    const previous = course.thumbnail;
+    if (
+      typeof previous === "string" &&
+      previous.startsWith(`${COURSE_THUMBNAILS}/`) &&
+      previous !== patch.thumbnail
+    ) {
+      await deleteObjects([previous]);
+    }
+  }
 
   revalidatePath(`/courses/${slug}`);
   revalidatePath("/educator/courses");

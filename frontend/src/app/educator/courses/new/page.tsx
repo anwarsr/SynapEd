@@ -1,7 +1,8 @@
 import Link from "next/link";
 import EducatorShell from "@/components/educator/EducatorShell";
 import CourseForm from "@/components/educator/CourseForm";
-import { CATEGORIES, ICONS, LEVELS } from "@/lib/educatorCourses";
+import { LEVELS } from "@/lib/educatorCourses";
+import { listCategories } from "@/lib/categories";
 import { requireEducator } from "@/lib/firebase/session";
 import type { Metadata } from "next";
 
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewCoursePage() {
   const user = await requireEducator("/educator/courses/new");
+  const categories = await listCategories();
 
   return (
     <EducatorShell user={user}>
@@ -27,13 +29,12 @@ export default async function NewCoursePage() {
           Buat <span className="mark">kursus baru</span>
         </h1>
         <p className="t-body text-ink-muted mb-10">
-          Satu modul materi, satu video, dan satu penugasan akhir.
+          Susun sendiri isinya: modul, video, dan penugasan, sebanyak dan seurut yang Anda mau.
         </p>
 
         <CourseForm
           levels={LEVELS.map((l) => ({ value: l.value }))}
-          categories={CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
-          icons={ICONS}
+          categories={categories.map((c) => ({ value: c.slug, label: c.label }))}
         />
       </div>
     </EducatorShell>

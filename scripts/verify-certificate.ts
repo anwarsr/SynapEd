@@ -63,8 +63,8 @@ function courseDoc(slug: string, ownerUid: string, ownerName: string) {
         title: "Bagian Uji",
         position: 0,
         lessons: [
-          { slug: "materi-satu", title: "Materi Satu", type: "reading", duration: "5 menit", free: true, position: 0 },
-          { slug: "kuis-akhir", title: "Kuis Akhir", type: "quiz", duration: "10 menit", free: false, position: 1 },
+          { slug: "materi-satu", title: "Materi Satu", type: "reading", duration: "5 menit", position: 0 },
+          { slug: "kuis-akhir", title: "Kuis Akhir", type: "quiz", duration: "10 menit", position: 1 },
         ],
       },
     ],

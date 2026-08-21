@@ -54,14 +54,35 @@ service firebase.storage {
                    && isDocument();
     }
 
-    // PDF, DOC lama, dan DOCX. Sengaja daftar tertutup, bukan pola —
-    // 'application/.*' akan ikut mengizinkan berkas yang dapat dieksekusi.
+    // ── Gambar latar kursus ────────────────────────────────────────────
+    //
+    // Berbeda dari materi: gambar ini TERBUKA untuk dibaca siapa saja, karena
+    // memang tampil di katalog publik yang bisa dilihat tanpa masuk. Tidak ada
+    // yang rahasia di sini — hanya sampul kursus.
+    //
+    // Sengaja terpisah dari course-assets, yang tertutup rapat. Menyatukan
+    // keduanya berarti memilih satu aturan baca untuk dua hal yang kebutuhan
+    // kerahasiaannya berlawanan.
+    match /course-thumbnails/{uid}/{allPaths=**} {
+      allow read: if true;
+
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.auth.token.role == 'educator'
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Hanya PDF.
+    //
+    // Word sempat diizinkan, tetapi tampilannya di halaman tidak pernah setia
+    // — pengurai .docx mana pun harus menerka ulang tata letak Word. Sekarang
+    // materi selalu PDF, yang dirender apa adanya.
+    //
+    // Tetap ditulis sebagai daftar tertutup, bukan pola: 'application/.*'
+    // akan ikut mengizinkan berkas yang dapat dieksekusi.
     function isDocument() {
-      return request.resource.contentType in [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ];
+      return request.resource.contentType in ['application/pdf'];
     }
 
     match /{allPaths=**} {

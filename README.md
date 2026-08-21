@@ -110,6 +110,15 @@ keluar  DELETE /api/auth/session + revokeRefreshTokens()
 `checkRevoked: true` membuat "keluar" berlaku seketika, bukan menunggu token
 kedaluwarsa sendiri.
 
+**`establishSession` selalu mengambil ulang ID token** (`getIdToken(true)`)
+sebelum menukarnya. Nama, foto, dan role ikut tertanam di dalam token lalu
+disalin ke cookie, sedangkan token yang ter-cache masih memuat isi lama.
+Melewatkan ini pernah membuat nama saat mendaftar terabaikan: akun dibuat lebih
+dulu — token terbit tanpa nama — nama disetel sesudahnya, lalu token lama itu
+yang ditukar. Server tidak menemukan nama dan jatuh ke potongan email, sehingga
+`digibinproject@gmail.com` menjadi `digibinproject`. Dijaga oleh
+`npm run verify:signup`.
+
 ## Model data
 
 Satu koleksi: `courses/{slug}`. Section dan lesson **ditanam di dalam dokumen
@@ -180,13 +189,62 @@ adalah route API `GET /api/courses/:slug/asset?path=…`, yang:
 2. memverifikasi ulang bahwa `path` yang diminta **benar-benar** muncul di
    `attachments` salah satu pelajaran kursus itu — tanpa ini, route-nya jadi
    proxy terbuka ke seluruh bucket lewat `?path=avatars/…`;
-3. menerbitkan **signed URL** V4 berumur 5 menit dan mengalihkan ke sana
-   (`302`, `Cache-Control: private, no-store`) — tidak ada byte yang lewat
-   server Next.js sendiri.
+3. **mengalirkan berkasnya sendiri** dengan `Cache-Control: private, no-store`.
 
-Konsekuensinya: `videoUrl` YouTube tetap bisa dibagikan siapa saja yang punya
-tautannya (unlisted, bukan DRM) — batasan yang disengaja, bukan celah yang
-terlewat.
+Butir 3 dulu menerbitkan **signed URL** lalu mengalihkan ke sana. Itu tampak
+lebih hemat, tetapi menandatangani URL menuntut kunci privat, sedangkan
+Application Default Credentials dari `gcloud auth application-default login`
+tidak punya — jadi setiap unduhan **selalu 500 di komputer pengembang** meski
+berjalan di produksi. Mengalirkan sendiri bekerja sama di kedua tempat, dan
+sekaligus memungkinkan `Content-Disposition: inline` yang membuat berkasnya
+bisa ditampilkan di halaman. Lampiran dibatasi 20 MB oleh `storage.rules`,
+jadi melewatkannya lewat server masih murah.
+
+### Membaca materi di halaman
+
+Materi **hanya PDF**, dan dirender sendiri dengan **PDF.js** — bukan disematkan
+lewat `<iframe>`.
+
+Alasannya: penampil PDF bawaan peramban adalah konteks penjelajahan tersendiri
+yang **tidak bisa digayakan sama sekali**. Bilah alat abu-abunya tidak bisa
+disembunyikan, diganti, atau diselaraskan dengan sisa aplikasi. Merender
+sendiri ke canvas memberi bilah alat kita: navigasi halaman, zoom, layar
+penuh, dan unduh, semuanya dalam gaya "Tinta & Kertas".
+
+Halaman dirender **malas** — hanya yang mendekati layar, lewat
+`IntersectionObserver` dengan margin 800px. Modul di sini bisa mencapai 39
+halaman; merender semuanya sekaligus membekukan tab beberapa detik dan
+memakan ratusan megabyte canvas. Tinggi tiap halaman dipesan lebih dulu dari
+viewport PDF supaya bilah gulir tidak melompat saat halaman menyusul digambar.
+
+Worker PDF.js disalin ke `public/` oleh `scripts/copy-pdf-worker.mjs`, yang
+jalan otomatis sebelum `dev` dan `build`. Tidak dikomit: berkas terbangun di
+dalam repo pasti tertinggal versi begitu `pdfjs-dist` diperbarui, dan
+ketidakcocokan versi worker membuat PDF gagal dimuat dengan pesan yang
+membingungkan.
+
+**Word tidak lagi didukung.** Dukungan `.docx` sempat ada lewat `mammoth` lalu
+`docx-preview`, tetapi tampilannya tidak pernah setia: setiap pengurai harus
+menerka ulang tata letak Word, dan gambar latar sehalaman penuh selalu jadi
+korbannya. Lampiran `.docx` yang terlanjur tersimpan **tetap bisa diunduh** —
+yang hilang hanya penayangannya di halaman, dan halaman belajar mengatakan
+alasannya alih-alih berpura-pura materinya belum ada.
+
+Layanan pratinjau milik Microsoft dan Google tidak pernah dipakai: keduanya
+menuntut berkasnya dapat diakses publik dari internet — justru yang sengaja
+dicegah di sini.
+
+### Tata letak halaman belajar
+
+Daftar materi bisa **diciutkan** di layar lebar, dan kolom materi ikut melebar
+(`max-w-5xl` menjadi `max-w-6xl`). Pilihannya diingat di `localStorage` lewat
+`useLocalToggle` — mengulang klik yang sama tiap ganti pelajaran jelas
+menjengkelkan.
+
+Hook itu memakai `useSyncExternalStore`, bukan `useState` + `useEffect`:
+`localStorage` adalah sumber data di luar React, dan membacanya lewat efek
+lalu memanggil `setState` memicu render berantai — persis yang dilarang aturan
+`react-hooks/set-state-in-effect`.
 
 ## Asisten chat (FAQ)
 
@@ -431,18 +489,33 @@ Server Action dengan Admin SDK. Pengajuan yang ditolak boleh diajukan lagi.
 ### Educator membuat kursus
 
 Educator membuka **Kursus Saya** → **Buat Kursus**. Satu formulir, satu kali
-kirim, kursusnya jadi utuh:
+kirim, kursusnya jadi utuh.
 
-| Bagian | Bentuk |
+Kurikulumnya **bebas** — berapa pun bagian dan pelajarannya, dalam urutan mana
+pun. Tiga jenis pelajaran:
+
+| Jenis | Isi |
 |---|---|
-| Modul materi | unggah PDF atau Word |
-| Video pembelajaran | tautan YouTube |
-| Penugasan akhir | unggah PDF atau Word |
+| Modul / Bacaan | unggah PDF |
+| Video | tautan YouTube |
+| Penugasan / Kuis | unggah PDF, plus soal kuis dari halaman sunting |
+
+Penyusunnya (`components/educator/curriculumDraft.tsx`) **satu komponen yang
+sama** dengan yang dipakai halaman sunting. Sebelumnya form pembuatan memaksa
+template kaku — tepat satu modul, satu video, satu tugas — sementara editor
+sudah bebas, sehingga educator harus melewati bentuk yang tidak dia inginkan
+dulu lalu membetulkannya di halaman lain. Menyatukannya juga mencegah dua
+aturan yang perlahan melenceng, alasan yang sama dengan `normalizeSections`
+di sisi server.
 
 Kursus buatan educator memakai **struktur dokumen yang sama persis** dengan
-kursus hasil migrasi — satu section berisi tiga pelajaran. Karena itu katalog,
-halaman detail, dan halaman belajar bekerja tanpa satu baris pun kode khusus;
-`videoUrl` dan `attachments` memang sudah ada di model `Lesson`.
+kursus hasil migrasi. Karena itu katalog, halaman detail, dan halaman belajar
+bekerja tanpa satu baris pun kode khusus; `videoUrl` dan `attachments` memang
+sudah ada di model `Lesson`.
+
+Soal kuis baru bisa ditambahkan **setelah** kursus tersimpan: kuis hidup di
+dokumen terpisah berkunci `lessonSlug`, dan slug itu baru terbit di server.
+Karena itu setelah diterbitkan, educator langsung diantar ke halaman sunting.
 
 Beberapa hal yang mudah terlewat:
 
@@ -455,15 +528,14 @@ Beberapa hal yang mudah terlewat:
 - **Tautan video divalidasi memakai `toEmbedUrl`** — pengubah yang sama dengan
   yang dipakai halaman belajar. Kalau ia tidak mengenali tautannya, videonya
   juga tidak akan tampil di sana, jadi lebih baik ditolak saat dibuat.
-- **Kategori dibatasi** ke tiga yang sudah ada. Kategori bebas berarti kombinasi
-  indeks Firestore baru untuk tiap nilai, dan daftar filter yang terpecah oleh
-  salah ketik.
+- **Kategori dipilih dari daftar**, bukan diketik bebas — lihat bagian
+  *Kategori* di bawah.
 - **Kursus bawaan tidak punya `ownerUid`.** Itu berarti bukan milik educator
   mana pun, jadi tidak seorang pun bisa menghapusnya lewat panel educator.
 
 Berkas disimpan di `course-assets/{uid}/{draft}/…`. `storage.rules` hanya
 mengizinkan pemiliknya sendiri, hanya bila `role == 'educator'`, maksimal 20 MB,
-dan hanya tiga tipe: PDF, DOC, DOCX. Daftarnya sengaja tertutup — pola
+dan hanya satu tipe: PDF. Daftarnya sengaja tertutup — pola
 `application/.*` akan ikut mengizinkan berkas yang dapat dieksekusi.
 
 Kursus **langsung tampil di katalog** begitu diterbitkan, tanpa peninjauan
@@ -477,9 +549,8 @@ terpisah dengan tombol simpan masing-masing:
 
 - **Info kursus** (`updateCourseMeta`) — judul, deskripsi, tingkat, kategori,
   ikon, durasi, **harga**, "Yang Akan Dipelajari", dan "Persyaratan".
-- **Kurikulum** (`saveCurriculum`) — bagian dan pelajaran bebas jumlahnya,
-  bukan lagi tiga pelajaran tetap. Penggantian penuh setiap disimpan, bukan
-  patch per pelajaran.
+- **Kurikulum** (`saveCurriculum`) — penyusun yang sama dengan form buat baru.
+  Penggantian penuh setiap disimpan, bukan patch per pelajaran.
 
 Slug pelajaran yang sudah ada **dipertahankan apa adanya** — retitle tidak
 mengubah slug-nya, supaya progres peserta (`completedLessons`) tidak jadi
@@ -559,6 +630,54 @@ Koleksi `certificates` tertutup rapat dari klien (`allow read, write: if
 false`) sama seperti `enrollments`; halaman verifikasi tidak butuh
 pelonggaran rules karena tidak pernah memakai SDK klien untuk membacanya.
 
+### Kategori kursus
+
+Dikelola admin di **Panel Admin → Kategori**, disimpan di koleksi
+`categories/{slug}`. Dulu konstanta di dalam kode, jadi menambah kategori
+berarti mengubah kode dan men-deploy ulang.
+
+Disimpan sebagai koleksi tersendiri, **bukan diturunkan dari kursus yang ada**:
+kalau diturunkan, kategori baru mustahil dipilih educator karena belum ada satu
+pun kursus yang memakainya. Kategori yang baru dibuat langsung muncul di form
+educator maupun di filter katalog.
+
+Dua penjaga yang penting:
+
+- **Slug tidak ikut berubah saat nama diganti.** Slug tersimpan di setiap
+  dokumen kursus, jadi mengubahnya memutus tautan seluruh kursus di kategori
+  itu. Yang berubah hanya labelnya.
+- **Kategori yang masih dipakai tidak bisa dihapus.** Kalau boleh, kursusnya
+  tetap menyimpan slug yang sudah tidak ada: hilang dari filter, dan gagal
+  setiap kali educator menyimpan suntingan karena kategorinya dianggap tidak
+  valid.
+
+`npm run seed:categories` memindahkan kategori lama ke koleksi ini. Aman
+dijalankan berkali-kali, dan berhenti dengan galat kalau ada kursus yang
+kategorinya belum terdaftar.
+
+### Gambar latar kursus
+
+Educator mengunggah gambar sampul saat membuat atau menyunting kursus;
+pemilihan ikon dihapus. `icon` dan `tint` masih ada di dokumen, tetapi
+sekarang hanya dipakai sebagai **latar cadangan** untuk kursus yang belum
+punya gambar — termasuk empat kursus hasil migrasi.
+
+Gambar disimpan di `course-thumbnails/{uid}/…`, folder yang **terpisah** dari
+`course-assets`. Bedanya menentukan: sampul kursus `allow read: if true`
+karena memang tampil di katalog yang bisa dilihat tanpa masuk, sedangkan
+materi tertutup rapat dan hanya dilayani lewat route bertanda tangan.
+Menyatukan keduanya berarti memilih satu aturan baca untuk dua hal yang
+kebutuhan kerahasiaannya berlawanan.
+
+Nilai `thumbnail` punya tiga bentuk di data yang nyata, dan `courseImageUrl()`
+menangani ketiganya: path Storage (unggahan educator), URL penuh, dan path di
+folder `public/` (keduanya dari kursus hasil migrasi).
+
+Saat menyunting, field `thumbnail` **hanya dikirim kalau memang diubah**
+(`undefined` = biarkan, `null` = hapus, string = path baru). Kalau selalu
+dikirim ulang, menyimpan perubahan judul saja akan gagal pada kursus lama yang
+gambarnya berupa URL — atau lebih buruk, diam-diam menghapusnya.
+
 ### Menguji
 
 Skrip-skrip ini menguji semuanya terhadap proyek asli. Semuanya membuat akun
@@ -569,11 +688,15 @@ npm run typecheck          # skrip di scripts/ — tsx TIDAK memeriksa tipe
 npm run verify:admin       # penjagaan /admin               (butuh dev server)
 npm run verify:educator    # alur pengajuan sampai putusan  (butuh dev server)
 npm run verify:course      # pembuatan kursus oleh educator (butuh dev server)
+npm run verify:category    # kategori yang dikelola admin    (butuh dev server)
 npm run verify:curriculum  # sunting info & kurikulum       (butuh dev server)
 npm run verify:enrollment  # pendaftaran & gerbang akses    (butuh dev server)
 npm run verify:quiz        # soal, penilaian, anti-bocor    (butuh dev server)
 npm run verify:certificate # penerbitan & verifikasi        (butuh dev server)
+npm run verify:material    # penyajian & unduhan berkas     (butuh dev server)
+npm run verify:pdf         # penampil PDF & tata letak di Chrome
 npm run verify:google      # cara masuk & halaman profil    (butuh dev server)
+npm run verify:signup      # nama saat mendaftar            (butuh dev server)
 npm run verify:rules       # rules Firestore & Storage yang sedang ter-deploy
 ```
 

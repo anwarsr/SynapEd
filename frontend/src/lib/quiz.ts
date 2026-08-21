@@ -84,9 +84,13 @@ export async function getQuiz(courseSlug: string, lessonSlug: string): Promise<Q
  * Component (bukan lewat Server Action, karena ini pembacaan yang dipicu
  * server, bukan mutasi yang dipicu klien).
  *
- * `enrollment` boleh null: pelajaran kuis bertanda `free` tetap bisa
- * dipratinjau tanpa mendaftar (soal-soalnya tampil), tapi mengerjakannya
- * tetap butuh enrollment aktif — itu ditegakkan di submitQuiz, bukan di sini.
+ * `enrollment` boleh null: admin dan pemilik kursus membuka halaman belajar
+ * tanpa punya dokumen enrollment. Soalnya tampil, tapi mengerjakannya tetap
+ * butuh enrollment aktif — itu ditegakkan di submitQuiz, bukan di sini.
+ *
+ * Dulu null juga berarti pengunjung yang mempratinjau pelajaran bertanda
+ * `free`; penandaan itu sudah dihapus, dan halaman belajar kini mengalihkan
+ * siapa pun yang aksesnya belum penuh sebelum sampai ke sini.
  */
 export async function getPublicQuizForViewer(
   courseSlug: string,

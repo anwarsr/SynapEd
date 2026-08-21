@@ -48,7 +48,7 @@ export function FilePick({
           {file ? "Ganti Berkas" : "Pilih Berkas"}
         </label>
         <span className="text-sm text-ink-muted truncate max-w-[18rem]">
-          {file ? file.name : "PDF atau Word, maksimal 20 MB"}
+          {file ? file.name : "PDF, maksimal 20 MB"}
         </span>
       </div>
       {error && <p className="mt-2 text-sm text-rust-700">{error}</p>}

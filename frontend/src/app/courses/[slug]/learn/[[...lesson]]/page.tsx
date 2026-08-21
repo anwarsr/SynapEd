@@ -42,7 +42,7 @@ export default async function LearnPage({ params }: Props) {
 
   // Pelajaran terkunci dialihkan ke halaman penjualan, bukan 404: pelajarannya
   // memang ada, dan di sanalah tempat memperoleh aksesnya.
-  if (!canViewLesson(access, flat[index])) redirect(`/courses/${slug}`);
+  if (!canViewLesson(access)) redirect(`/courses/${slug}`);
 
   // Progres hanya berarti untuk peserta sungguhan — pratinjau admin/pemilik
   // kursus tidak punya dokumen enrollment untuk dilacak.
@@ -61,7 +61,9 @@ export default async function LearnPage({ params }: Props) {
       current={current}
       prev={index > 0 ? flat[index - 1] : null}
       next={index < flat.length - 1 ? flat[index + 1] : null}
-      locked={flat.filter((l) => !canViewLesson(access, l)).map((l) => l.slug)}
+      /* Terkunci seluruhnya atau tidak sama sekali — tidak ada lagi
+         pratinjau per-pelajaran. */
+      locked={canViewLesson(access) ? [] : flat.map((l) => l.slug)}
       completed={enrollment?.completedLessons ?? []}
       progress={progressOf(course, enrollment)}
       canTrackProgress={canTrackProgress}

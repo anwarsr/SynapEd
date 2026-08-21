@@ -1,6 +1,12 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
-import { getCourse, type CourseDetail, type CourseSummary, type Section } from "@/lib/courses";
+import {
+  getCourse,
+  type CourseDetail,
+  type CourseSummary,
+  type CourseVisibility,
+  type Section,
+} from "@/lib/courses";
 import type { SessionUser } from "@/lib/firebase/session";
 
 export const COURSE_ASSETS = "course-assets";
@@ -21,17 +27,13 @@ export const LEVELS = [
 ] as const;
 
 /**
- * Kategori dibatasi ke yang sudah ada, bukan kolom bebas.
+ * Kategori TIDAK lagi hidup di sini.
  *
- * Katalog menyaring dengan `where('category') + orderBy('order')`, dan tiap
- * kategori baru berarti kombinasi indeks baru. Membatasinya juga menjaga
- * daftar filter tetap terbaca alih-alih terpecah oleh salah ketik.
+ * Dulu konstanta, sehingga menambah kategori berarti mengubah kode. Sekarang
+ * dikelola admin lewat panel dan disimpan di koleksi `categories` — lihat
+ * lib/categories.ts. Tetap bukan kolom bebas: educator memilih dari daftar,
+ * jadi katalog tidak terpecah oleh salah ketik.
  */
-export const CATEGORIES = [
-  { value: "neuroscience", label: "Neuroscience" },
-  { value: "eeg", label: "Teknologi EEG" },
-  { value: "analisis", label: "Analisis Data" },
-] as const;
 
 export const ICONS = ["brain", "wave", "headset", "chart", "reading"] as const;
 
@@ -118,6 +120,10 @@ export async function listOwnedCourses(uid: string): Promise<EducatorCourseRow[]
         rating: (data.rating as number) ?? 0,
         reviews: (data.reviews as number) ?? 0,
         lessonsCount: sections.reduce((n, s) => n + s.lessons.length, 0),
+        thumbnail: (data.thumbnail as string | null | undefined) ?? null,
+        instructorName: (data.instructorName as string | undefined) ?? "",
+        price: (data.price as number | undefined) ?? 0,
+        visibility: (data.visibility === "private" ? "private" : "public") as CourseVisibility,
         createdAt: (data.createdAt as string | undefined) ?? null,
       };
     })

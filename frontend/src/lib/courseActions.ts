@@ -2,8 +2,13 @@
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { CATEGORIES, COURSE_ASSETS, ICONS, LEVELS, courseOwnership, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
+import { canonicalDuration } from "@/lib/duration";
+import { LEVELS, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
+import { categoryExists } from "@/lib/categories";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
+import { resolveThumbnail } from "@/lib/courseThumbnail";
+import { attachmentPaths, courseFilePaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
+import type { Section } from "@/lib/courses";
 
 export type CourseResult =
   | { ok: true; slug: string; message: string }
@@ -22,13 +27,14 @@ export interface NewCourseInput {
   longDesc: string;
   level: string;
   category: string;
-  icon: string;
   duration: string;
   price: number;
-  videoUrl: string;
-  modul: UploadedDoc;
-  tugas: UploadedDoc;
+  /** Path gambar latar di Storage. Kosong berarti memakai latar bawaan. */
+  thumbnail: string | null;
+  /** Kurikulum bebas: berapa pun bagian & pelajarannya, dalam urutan mana pun. */
+  sections: SectionInput[];
 }
+
 
 /**
  * Server Action bisa dipanggil lewat POST langsung, bukan hanya lewat form.
@@ -37,15 +43,6 @@ export interface NewCourseInput {
 async function requireEducator() {
   const user = await getCurrentUser();
   return user?.role === "educator" ? user : null;
-}
-
-/**
- * Berkas diunggah dari browser, jadi path-nya datang dari klien dan TIDAK
- * boleh dipercaya. Tanpa pemeriksaan ini, seorang educator bisa menunjuk
- * berkas milik akun lain lalu menerbitkannya sebagai miliknya.
- */
-function ownsPath(path: string, uid: string): boolean {
-  return path.startsWith(`${COURSE_ASSETS}/${uid}/`);
 }
 
 function clean(value: unknown, max: number): string {
@@ -59,7 +56,13 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   const title = clean(input.title, 120);
   const shortDesc = clean(input.shortDesc, 200);
   const longDesc = clean(input.longDesc, 4000) || shortDesc;
-  const duration = clean(input.duration, 40) || "—";
+  // Bentuknya dibakukan DI SINI, bukan hanya di form.
+  //
+  // Formnya memang sudah angka + dropdown, tapi Server Action bisa dipanggil
+  // lewat POST langsung — persis alasan harga selalu dibaca ulang dari server.
+  // Tanpa ini, satu panggilan mentah cukup untuk mengembalikan "Tugas" atau
+  // "1 Tahun" ke basis data dan membatalkan konversi yang sudah dijalankan.
+  const duration = canonicalDuration(input.duration, "course") || "—";
   const price = Number.isFinite(input.price) && input.price >= 0 ? Math.round(input.price) : 0;
 
   if (title.length < 4) return { ok: false, error: "Judul kursus minimal 4 karakter." };
@@ -68,55 +71,18 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   const level = LEVELS.find((l) => l.value === input.level);
   if (!level) return { ok: false, error: "Tingkat kesulitan tidak valid." };
 
-  const category = CATEGORIES.find((c) => c.value === input.category);
-  if (!category) return { ok: false, error: "Kategori tidak valid." };
+  const category = clean(input.category, 60);
+  if (!(await categoryExists(category))) return { ok: false, error: "Kategori tidak valid." };
 
-  const icon = ICONS.includes(input.icon as (typeof ICONS)[number]) ? input.icon : "reading";
+  const thumbnail = resolveThumbnail(input.thumbnail, user.uid);
+  if (!thumbnail.ok) return { ok: false, error: thumbnail.error };
 
-  for (const [label, doc] of [
-    ["Modul materi", input.modul],
-    ["Penugasan akhir", input.tugas],
-  ] as const) {
-    if (!doc?.path || !doc.name) return { ok: false, error: `${label} belum diunggah.` };
-    if (!ownsPath(doc.path, user.uid)) {
-      return { ok: false, error: `Berkas ${label.toLowerCase()} tidak sah.` };
-    }
-  }
-
-  // Bentuk awalnya cuma template starter — satu section, tiga pelajaran —
-  // tapi divalidasi lewat validator YANG SAMA dengan editor kurikulum
-  // (normalizeSections), supaya tidak ada dua aturan yang bisa melenceng.
-  // Tautan video ikut divalidasi di sana lewat toEmbedUrl().
-  const draft: SectionInput[] = [
-    {
-      title: "Materi Kursus",
-      lessons: [
-        {
-          title: "Modul Materi",
-          type: "reading",
-          duration: "Bacaan",
-          free: true,
-          attachments: [input.modul],
-        },
-        {
-          title: "Video Pembelajaran",
-          type: "video",
-          duration: "Video",
-          free: true,
-          videoUrl: input.videoUrl,
-        },
-        {
-          title: "Penugasan Akhir",
-          type: "quiz",
-          duration: "Tugas",
-          free: true,
-          attachments: [input.tugas],
-        },
-      ],
-    },
-  ];
-
-  const normalized = normalizeSections(draft, [user.uid]);
+  // Kurikulum datang apa adanya dari form dan divalidasi lewat validator YANG
+  // SAMA dengan editor sunting (normalizeSections), supaya tidak ada dua aturan
+  // yang bisa melenceng. Di sanalah tautan video diperiksa lewat toEmbedUrl()
+  // dan path setiap lampiran dipastikan berada di folder milik pengunggahnya —
+  // path datang dari browser, jadi tidak boleh dipercaya begitu saja.
+  const normalized = normalizeSections(input.sections ?? [], [user.uid]);
   if (!normalized.ok) return { ok: false, error: normalized.error };
 
   const slug = await uniqueSlug(toSlug(title) || "kursus");
@@ -133,15 +99,25 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       longDesc,
       level: level.value,
       levelColor: level.color,
-      category: category.value,
-      icon,
-      tint: tintFor(icon),
+      category,
+
+      // icon & tint tidak lagi dipilih educator — keduanya hanya dipakai
+      // sebagai latar cadangan saat kursus belum punya gambar, dan kursus
+      // hasil migrasi masih memakainya.
+      icon: "reading",
+      tint: tintFor("reading"),
+
       duration,
       rating: 0,
       reviews: 0,
       price,
-      thumbnail: null,
+      thumbnail: thumbnail.value,
       enrolledStudents: 0,
+
+      // Kursus baru TIDAK langsung tayang. Educator menyusunnya dengan tenang
+      // dalam keadaan tersembunyi, lalu mengajukan tayang saat siap — supaya
+      // admin meninjau kursus yang sudah utuh, bukan yang setengah jadi.
+      visibility: "private",
       lastUpdated: now,
       instructorName: user.name,
       instructorBio: "",
@@ -157,30 +133,73 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       createdAt: now,
     });
 
+  // Berkas yang diunggah selama mengisi form lalu diganti sebelum tombol
+  // simpan ditekan tidak pernah tercatat di Firestore, jadi tidak akan
+  // ditemukan pembandingan lama-vs-baru mana pun nanti. Folder draft-nya
+  // dibandingkan dengan kurikulum yang benar-benar tersimpan, sekarang juga —
+  // setelah ini, id draft-nya hilang bersama halaman formnya.
+  const keep = attachmentPaths(normalized.sections);
+  await pruneAttachmentFolders(keep, keep);
+
   revalidatePath("/courses");
   revalidatePath("/educator/courses");
 
   return { ok: true, slug, message: "Kursus berhasil dibuat." };
 }
 
-/** Menghapus kursus — hanya buatan sendiri. */
+/**
+ * Menghapus kursus seketika — kini KHUSUS ADMIN.
+ *
+ * Educator tidak lagi menghapus langsung; ia mengajukan lewat
+ * requestCourseDeletion() dan admin yang memutuskan. Fungsi ini tetap ada
+ * sebagai jalur admin, sekaligus yang dipanggil saat sebuah pengajuan
+ * penghapusan disetujui.
+ */
 export async function deleteCourse(slug: string): Promise<CourseResult> {
-  const user = await requireEducator();
-  if (!user) return { ok: false, error: "Hanya educator yang dapat menghapus kursus." };
-
-  const { exists, ownerUid } = await courseOwnership(slug);
-  if (!exists) return { ok: false, error: "Kursus tidak ditemukan." };
-
-  // Kursus bawaan tidak punya ownerUid — itu berarti bukan milik educator
-  // mana pun, jadi tidak seorang pun boleh menghapusnya dari sini.
-  if (ownerUid !== user.uid) return { ok: false, error: "Ini bukan kursus Anda." };
+  const user = await getCurrentUser();
+  if (user?.role !== "admin") {
+    return {
+      ok: false,
+      error: "Penghapusan kursus perlu persetujuan admin. Ajukan dari halaman sunting.",
+    };
+  }
 
   const db = adminDb();
+
+  // Dokumennya dibaca utuh, bukan lewat courseOwnership: begitu dokumen ini
+  // terhapus, tidak ada lagi cara mengetahui berkas mana yang miliknya. Daftar
+  // path harus diambil SEBELUM penghapusan, dan sekalian dipakai untuk
+  // memeriksa kepemilikan supaya tetap satu pembacaan.
+  const snap = await db.collection("courses").doc(slug).get();
+  if (!snap.exists) return { ok: false, error: "Kursus tidak ditemukan." };
+
+  const data = snap.data() ?? {};
+
+  // Tidak ada lagi pemeriksaan kepemilikan di sini.
+  //
+  // Dulu fungsi ini dipakai educator, jadi ia wajib memastikan yang dihapus
+  // memang kursus si pemanggil. Sekarang hanya admin yang sampai ke titik ini,
+  // dan admin memang berwenang atas kursus siapa pun — termasuk kursus bawaan
+  // yang tidak punya ownerUid sama sekali.
+  const files = courseFilePaths({
+    sections: data.sections as Section[] | undefined,
+    thumbnail: data.thumbnail,
+  });
   // recursiveDelete, bukan .delete() biasa: begitu kuis (Fase 5) menambahkan
   // subcollection courses/{slug}/quizzes/*, .delete() biasa hanya menghapus
   // dokumen induknya dan meninggalkan subcollection itu yatim — dokumen tak
   // terjangkau yang tetap ditagih selamanya.
   await db.recursiveDelete(db.collection("courses").doc(slug));
+
+  // Materi dan gambar latarnya ikut dibuang. Firestore dan Storage terpisah:
+  // tanpa baris ini, seluruh berkas kursus tetap ada di bucket selamanya,
+  // tidak terjangkau dari aplikasi mana pun tapi tetap ditagih.
+  //
+  // pruneAttachmentFolders menyapu folder-nya sekalian (keep kosong), supaya
+  // berkas yang pernah diunggah lalu dilepas dari kurikulum — sehingga tidak
+  // ada di `files` — ikut terangkut.
+  await deleteObjects(files);
+  await pruneAttachmentFolders(files, []);
 
   revalidatePath("/courses");
   revalidatePath("/educator/courses");

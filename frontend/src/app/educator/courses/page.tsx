@@ -1,7 +1,6 @@
 import Link from "next/link";
 import EducatorShell from "@/components/educator/EducatorShell";
 import Tag from "@/components/ui/Tag";
-import DeleteCourseButton from "@/components/educator/DeleteCourseButton";
 import { listOwnedCourses } from "@/lib/educatorCourses";
 import { requireEducator } from "@/lib/firebase/session";
 import { iconPaths, levelTone } from "@/lib/courseUi";
@@ -97,6 +96,10 @@ export default async function MyCoursesPage() {
                   </span>
                 </span>
 
+                <Tag tone={c.visibility === "public" ? "blue" : "neutral"}>
+                  {c.visibility === "public" ? "Tayang" : "Tersembunyi"}
+                </Tag>
+
                 <Tag tone={levelTone(c.levelColor)}>{c.level}</Tag>
 
                 <span className="flex items-center gap-4">
@@ -112,7 +115,9 @@ export default async function MyCoursesPage() {
                   >
                     Lihat
                   </Link>
-                  <DeleteCourseButton slug={c.slug} title={c.title} />
+                  {/* Tombol hapus langsung dicabut dari sini. Penghapusan kini
+                      melewati persetujuan admin, dan formulir alasannya ada di
+                      halaman sunting — bukan di daftar. */}
                 </span>
               </li>
             ))}

@@ -57,8 +57,8 @@ function courseDoc(slug: string, ownerUid: string, ownerName: string) {
         title: "Bagian Awal",
         position: 0,
         lessons: [
-          { slug: "pelajaran-satu", title: "Pelajaran Satu", type: "reading", duration: "10 menit", free: true, position: 0 },
-          { slug: "pelajaran-dua", title: "Pelajaran Dua", type: "reading", duration: "10 menit", free: false, position: 1 },
+          { slug: "pelajaran-satu", title: "Pelajaran Satu", type: "reading", duration: "10 menit", position: 0 },
+          { slug: "pelajaran-dua", title: "Pelajaran Dua", type: "reading", duration: "10 menit", position: 1 },
         ],
       },
     ],
@@ -121,20 +121,20 @@ async function run(owner: TestUser, other: TestUser, admin: TestUser) {
 
       const byOther = await callAction(path, metaId, [slug, validInput], other.cookie);
       check(
-        "educator lain tidak bisa mengubah info kursus orang lain",
-        byOther.includes("tidak berhak"),
-        "penjaga requireOwnedCourse di server action",
+        "educator tidak bisa mengubah info kursus langsung",
+        byOther.includes("persetujuan admin"),
+        "harus lewat pengajuan",
       );
 
       const tooShort = await callAction(
         path,
         metaId,
         [slug, { ...validInput, title: "ab" }],
-        owner.cookie,
+        admin.cookie,
       );
       check("judul terlalu pendek ditolak", tooShort.includes("minimal 4 karakter"), "validasi judul");
 
-      const ok = await callAction(path, metaId, [slug, validInput], owner.cookie);
+      const ok = await callAction(path, metaId, [slug, validInput], admin.cookie);
       check("pemilik berhasil mengubah info kursus", ok.includes("tersimpan"), "pesan hasil");
 
       const doc = await db.collection("courses").doc(slug).get();
@@ -166,21 +166,21 @@ async function run(owner: TestUser, other: TestUser, admin: TestUser) {
         {
           title: "Bagian Awal (Disunting)",
           lessons: [
-            { slug: existingSlug, title: "Pelajaran Satu (Disunting)", type: "reading", duration: "15 menit", free: true },
-            { title: "Pelajaran Baru", type: "reading", duration: "5 menit", free: false },
+            { slug: existingSlug, title: "Pelajaran Satu (Disunting)", type: "reading", duration: "15 menit" },
+            { title: "Pelajaran Baru", type: "reading", duration: "5 menit" },
           ],
         },
         {
           title: "Bagian Kedua",
-          lessons: [{ title: "Pelajaran di Bagian Kedua", type: "video", duration: "8 menit", free: false, videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }],
+          lessons: [{ title: "Pelajaran di Bagian Kedua", type: "video", duration: "8 menit", videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }],
         },
       ];
 
       const byOther = await callAction(path, curriculumId, [slug, validCurriculum], other.cookie);
       check(
-        "educator lain tidak bisa menyunting kurikulum orang lain",
-        byOther.includes("tidak berhak"),
-        "penjaga requireOwnedCourse",
+        "educator tidak bisa menyunting kurikulum langsung",
+        byOther.includes("persetujuan admin"),
+        "harus lewat pengajuan",
       );
 
       const badVideo = await callAction(
@@ -188,9 +188,9 @@ async function run(owner: TestUser, other: TestUser, admin: TestUser) {
         curriculumId,
         [
           slug,
-          [{ title: "Bagian", lessons: [{ title: "Video Rusak", type: "video", duration: "1 menit", free: true, videoUrl: "bukan-url-youtube" }] }],
+          [{ title: "Bagian", lessons: [{ title: "Video Rusak", type: "video", duration: "1 menit", videoUrl: "bukan-url-youtube" }] }],
         ],
-        owner.cookie,
+        admin.cookie,
       );
       check("tautan video tidak dikenali ditolak", badVideo.includes("tidak dikenali"), "validasi videoUrl");
 
@@ -198,11 +198,11 @@ async function run(owner: TestUser, other: TestUser, admin: TestUser) {
         path,
         curriculumId,
         [slug, [{ title: "Bagian Kosong", lessons: [] }]],
-        owner.cookie,
+        admin.cookie,
       );
       check("bagian tanpa pelajaran ditolak", emptySection.includes("belum punya pelajaran"), "validasi minimal 1 pelajaran");
 
-      const ok = await callAction(path, curriculumId, [slug, validCurriculum], owner.cookie);
+      const ok = await callAction(path, curriculumId, [slug, validCurriculum], admin.cookie);
       check("pemilik berhasil menyimpan kurikulum", ok.includes("tersimpan"), "pesan hasil");
 
       const after = (await db.collection("courses").doc(slug).get()).data();
@@ -231,11 +231,40 @@ async function run(owner: TestUser, other: TestUser, admin: TestUser) {
       );
 
       // Halaman publik dan halaman belajar ikut menampilkan hasil sunting.
-      const detail = await probeText(`/courses/${slug}`, owner.cookie);
+      const detail = await probeText(`/courses/${slug}`, admin.cookie);
       check(
         "halaman detail publik menampilkan judul & harga baru",
         detail.html.includes("Kursus Uji Kurikulum (Disunting)"),
         "revalidatePath bekerja",
+      );
+    }
+
+    // ── id form tidak boleh acak ────────────────────────────────────
+    //
+    // Kunci baris kurikulum dipakai sebagai id elemen (`section-…`,
+    // `durasi-…`). Dulu kunci itu crypto.randomUUID(), dan karena inisialisasi
+    // useState dijalankan di server LALU diulang di browser, keduanya
+    // menghasilkan id berbeda — React melaporkannya sebagai hydration mismatch
+    // dan halaman sunting dibanjiri galat merah.
+    //
+    // Diuji tanpa browser: dua permintaan SSR yang sama harus menghasilkan id
+    // yang sama. Kunci acak gagal di sini, kunci turunan posisi lolos.
+    {
+      const idsOf = (html: string) =>
+        (html.match(/id="(?:section|durasi)-[^"]+"/g) ?? []).join(",");
+
+      const a = await probeText(`/educator/courses/${slug}/edit`, admin.cookie);
+      const b = await probeText(`/educator/courses/${slug}/edit`, admin.cookie);
+
+      check(
+        "halaman sunting memang memasang id kurikulum",
+        idsOf(a.html).length > 0,
+        idsOf(a.html).slice(0, 60) || "(tidak ada id — pemeriksaan berikutnya jadi hampa)",
+      );
+      check(
+        "id form sama di dua render — bukan acak, jadi tidak memicu hydration mismatch",
+        idsOf(a.html) === idsOf(b.html),
+        idsOf(a.html) === idsOf(b.html) ? "stabil" : `${idsOf(a.html)} vs ${idsOf(b.html)}`,
       );
     }
 
@@ -246,9 +275,21 @@ async function run(owner: TestUser, other: TestUser, admin: TestUser) {
       // biasa.
       await db.collection("courses").doc(slug).collection("quizzes").doc("contoh").set({ soal: [] });
 
-      const deleteId = await actionId("educator/courses", "deleteCourse");
-      const out = await callAction("/educator/courses", deleteId, [slug], owner.cookie);
-      check("kursus berhasil dihapus", out.includes("dihapus"), "pesan hasil");
+      // deleteCourse kini berada di halaman sunting dan KHUSUS ADMIN —
+      // educator mengajukan lewat requestCourseDeletion. Yang diuji di sini
+      // tetap sama: penghapusannya rekursif.
+      const editPath = `/educator/courses/${slug}/edit`;
+      const deleteId = await actionId(EDIT_ROUTE, "deleteCourse");
+
+      const byOwner = await callAction(editPath, deleteId, [slug], owner.cookie);
+      check(
+        "educator tidak bisa menghapus langsung",
+        byOwner.includes("persetujuan admin"),
+        "harus lewat pengajuan",
+      );
+
+      const out = await callAction(editPath, deleteId, [slug], admin.cookie);
+      check("admin menghapus kursus", out.includes("dihapus"), "pesan hasil");
 
       const courseGone = !(await db.collection("courses").doc(slug).get()).exists;
       check("dokumen kursus hilang", courseGone, "Firestore");

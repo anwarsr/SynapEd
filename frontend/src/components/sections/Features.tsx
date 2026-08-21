@@ -1,123 +1,737 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import Card from "@/components/ui/Card";
-import Reveal from "@/components/ui/Reveal";
+
+import { useEffect, useRef } from "react";
 import { features } from "@/data/landing";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
-const WORDS = ["Terverifikasi.", "Berkualitas.", "Praktis.", "Fleksibel."];
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, v));
+
+const lerp = (a: number, b: number, t: number) =>
+  a + (b - a) * t;
+
+const STAGE_CARDS = [0, 1, 3, 4].map((i) => ({
+  title: features[i].title,
+  desc: features[i].desc,
+}));
 
 export default function Features() {
-  const [typedText, setTypedText] = useState("");
-  const sectionRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const reducedMotion = useReducedMotion();
 
+  // ============================
+  // CAROUSEL ROTATION
+  // ============================
+
+  const rotationRef = useRef(0);
+  const rotationTargetRef = useRef(0);
+
+  // ============================
+  // DRAG
+  // ============================
+
+  const dragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartRotation = useRef(0);
+
+  // ============================
+  // CURSOR WOBBLE
+  // ============================
+
+  const wobbleTarget = useRef({
+    x: 0,
+    y: 0,
+  });
+
+  const wobbleCurrent = useRef({
+    x: 0,
+    y: 0,
+  });
+
+  const frontIndexRef = useRef(0);
+
   useEffect(() => {
-    // Saat reduced-motion aktif, kata ditampilkan statis di bawah —
-    // tidak ada timer maupun observer yang dipasang.
-    if (reducedMotion) return;
+    const stage = stageRef.current;
 
-    let wordIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
+    if (!stage) return;
 
-    const type = () => {
-      const current = WORDS[wordIndex];
-      if (isDeleting) {
-        setTypedText(current.substring(0, charIndex - 1));
-        charIndex--;
-        if (charIndex === 0) {
-          isDeleting = false;
-          wordIndex = (wordIndex + 1) % WORDS.length;
-        }
-        timeoutId = setTimeout(type, 65);
-      } else {
-        setTypedText(current.substring(0, charIndex + 1));
-        charIndex++;
-        if (charIndex === current.length) {
-          isDeleting = true;
-          timeoutId = setTimeout(type, 2600);
-        } else {
-          timeoutId = setTimeout(type, 130);
-        }
+    let raf = 0;
+
+    // ========================================
+    // APPLY 3D CARD TRANSFORMS
+    // ========================================
+
+    const applyTransforms = () => {
+      const cards = cardRefs.current;
+      const count = cards.length;
+
+      if (!count) {
+        raf = requestAnimationFrame(applyTransforms);
+        return;
       }
+
+      // Smooth rotation
+      rotationRef.current = lerp(
+        rotationRef.current,
+        rotationTargetRef.current,
+        0.12
+      );
+
+      // Smooth cursor wobble
+      wobbleCurrent.current.x = lerp(
+        wobbleCurrent.current.x,
+        wobbleTarget.current.x,
+        0.12
+      );
+
+      wobbleCurrent.current.y = lerp(
+        wobbleCurrent.current.y,
+        wobbleTarget.current.y,
+        0.12
+      );
+
+      const vw = window.innerWidth;
+      const mobile = vw < 640;
+
+      const radiusX = mobile
+        ? Math.min(vw * 0.78, 300)
+        : Math.min(vw * 0.34, 480);
+
+      const radiusZ = mobile
+        ? Math.min(vw * 0.3, 160)
+        : Math.min(vw * 0.18, 240);
+
+      const step = (Math.PI * 2) / count;
+
+      // ========================================
+      // FIND FRONT CARD
+      // ========================================
+
+      let frontIndex = 0;
+      let frontDepth = -1;
+
+      cards.forEach((card, index) => {
+        if (!card) return;
+
+        const angle =
+          (index - rotationRef.current) * step;
+
+        const cos = Math.cos(angle);
+        const depth = (cos + 1) / 2;
+
+        if (depth > frontDepth) {
+          frontDepth = depth;
+          frontIndex = index;
+        }
+      });
+
+      frontIndexRef.current = frontIndex;
+
+      // ========================================
+      // POSITION EVERY CARD
+      // ========================================
+
+      cards.forEach((card, index) => {
+        if (!card) return;
+
+        const angle =
+          (index - rotationRef.current) * step;
+
+        const sin = Math.sin(angle);
+        const cos = Math.cos(angle);
+
+        const x = sin * radiusX;
+
+        const z =
+          (cos - 1) * radiusZ;
+
+        const depth =
+          (cos + 1) / 2;
+
+        const rotateY =
+          sin * (mobile ? 22 : 32);
+
+        const scale =
+          0.74 +
+          Math.pow(depth, 1.6) * 0.26;
+
+        const opacity =
+          0.1 +
+          Math.pow(depth, 1.6) * 0.9;
+
+        const blur =
+          depth < 0.3
+            ? 2.2
+            : depth < 0.6
+              ? 0.8
+              : 0;
+
+        const y =
+          depth > 0.7
+            ? -(depth - 0.7) * 10
+            : 0;
+
+        const isFront =
+          index === frontIndex;
+
+        const wobbleRotX = isFront
+          ? wobbleCurrent.current.y * -8
+          : 0;
+
+        const wobbleRotY = isFront
+          ? wobbleCurrent.current.x * 8
+          : 0;
+
+        card.style.transform = `
+          translate3d(
+            ${x.toFixed(2)}px,
+            ${y.toFixed(2)}px,
+            ${z.toFixed(2)}px
+          )
+          rotateX(${wobbleRotX.toFixed(2)}deg)
+          rotateY(
+            ${(rotateY + wobbleRotY).toFixed(2)}deg
+          )
+          scale(${scale.toFixed(3)})
+        `;
+
+        card.style.opacity =
+          opacity.toFixed(3);
+
+        card.style.filter = blur
+          ? `blur(${blur.toFixed(2)}px)`
+          : "";
+
+        card.style.zIndex =
+          String(Math.round(depth * 1000));
+
+        card.style.pointerEvents =
+          depth > 0.72
+            ? "auto"
+            : "none";
+
+        card.style.setProperty(
+          "--holo-strength",
+          (
+            0.35 +
+            depth * 0.65
+          ).toFixed(3)
+        );
+
+        card.style.setProperty(
+          "--holo-shift",
+          `${(sin * 55).toFixed(2)}%`
+        );
+
+        card.style.setProperty(
+          "--content-shift",
+          `${(sin * 14).toFixed(2)}px`
+        );
+      });
+
+      raf = requestAnimationFrame(
+        applyTransforms
+      );
     };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          type();
-          observer.disconnect();
+    // ========================================
+    // UPDATE CURSOR POSITION
+    // ========================================
+
+    const updateWobble = (
+      clientX: number,
+      clientY: number
+    ) => {
+      const rect =
+        stage.getBoundingClientRect();
+
+      if (
+        rect.width <= 0 ||
+        rect.height <= 0
+      ) {
+        return;
+      }
+
+      wobbleTarget.current = {
+        x: clamp(
+          ((clientX - rect.left) /
+            rect.width) *
+            2 -
+            1,
+          -1,
+          1
+        ),
+
+        y: clamp(
+          ((clientY - rect.top) /
+            rect.height) *
+            2 -
+            1,
+          -1,
+          1
+        ),
+      };
+
+      // ========================================
+      // HOLOGRAM LIGHT
+      // ========================================
+
+      const front =
+        cardRefs.current[
+          frontIndexRef.current
+        ];
+
+      if (!front) return;
+
+      const rectCard =
+        front.getBoundingClientRect();
+
+      if (
+        rectCard.width <= 0 ||
+        rectCard.height <= 0
+      ) {
+        return;
+      }
+
+      front.style.setProperty(
+        "--mouse-x",
+        `${(
+          ((clientX - rectCard.left) /
+            rectCard.width) *
+          100
+        ).toFixed(2)}%`
+      );
+
+      front.style.setProperty(
+        "--mouse-y",
+        `${(
+          ((clientY - rectCard.top) /
+            rectCard.height) *
+          100
+        ).toFixed(2)}%`
+      );
+    };
+
+    // ========================================
+    // POINTER DOWN
+    // ========================================
+
+    const handlePointerDown = (
+      e: PointerEvent
+    ) => {
+      dragging.current = true;
+
+      dragStartX.current =
+        e.clientX;
+
+      dragStartRotation.current =
+        rotationTargetRef.current;
+
+      stage.setPointerCapture(
+        e.pointerId
+      );
+
+      stage.style.cursor =
+        "grabbing";
+
+      updateWobble(
+        e.clientX,
+        e.clientY
+      );
+    };
+
+    // ========================================
+    // POINTER MOVE
+    // ========================================
+
+    const handlePointerMove = (
+      e: PointerEvent
+    ) => {
+      updateWobble(
+        e.clientX,
+        e.clientY
+      );
+
+      if (!dragging.current) {
+        return;
+      }
+
+      const deltaX =
+        e.clientX -
+        dragStartX.current;
+
+      const sensitivity = 180;
+
+      rotationTargetRef.current =
+        dragStartRotation.current -
+        deltaX / sensitivity;
+    };
+
+    // ========================================
+    // POINTER UP
+    // ========================================
+
+    const handlePointerUp = (
+      e: PointerEvent
+    ) => {
+      dragging.current = false;
+
+      try {
+        stage.releasePointerCapture(
+          e.pointerId
+        );
+      } catch {
+        // Pointer capture sudah dilepas.
+      }
+
+      stage.style.cursor =
+        "grab";
+    };
+
+    // ========================================
+    // POINTER LEAVE
+    // ========================================
+
+    const handlePointerLeave = () => {
+      if (dragging.current) {
+        return;
+      }
+
+      wobbleTarget.current = {
+        x: 0,
+        y: 0,
+      };
+
+      cardRefs.current.forEach(
+        (card) => {
+          if (!card) return;
+
+          card.style.removeProperty(
+            "--mouse-x"
+          );
+
+          card.style.removeProperty(
+            "--mouse-y"
+          );
         }
-      },
-      { threshold: 0.3 },
+      );
+    };
+
+    // ========================================
+    // EVENT LISTENERS
+    // ========================================
+
+    stage.addEventListener(
+      "pointerdown",
+      handlePointerDown
     );
-    if (sectionRef.current) observer.observe(sectionRef.current);
+
+    stage.addEventListener(
+      "pointermove",
+      handlePointerMove
+    );
+
+    stage.addEventListener(
+      "pointerup",
+      handlePointerUp
+    );
+
+    stage.addEventListener(
+      "pointercancel",
+      handlePointerUp
+    );
+
+    stage.addEventListener(
+      "pointerleave",
+      handlePointerLeave
+    );
+
+    stage.style.cursor =
+      "grab";
+
+    // ========================================
+    // START ANIMATION
+    // ========================================
+
+    if (!reducedMotion) {
+      raf =
+        requestAnimationFrame(
+          applyTransforms
+        );
+    } else {
+      applyTransforms();
+    }
+
+    // ========================================
+    // CLEANUP
+    // ========================================
 
     return () => {
-      clearTimeout(timeoutId);
-      observer.disconnect();
+      stage.removeEventListener(
+        "pointerdown",
+        handlePointerDown
+      );
+
+      stage.removeEventListener(
+        "pointermove",
+        handlePointerMove
+      );
+
+      stage.removeEventListener(
+        "pointerup",
+        handlePointerUp
+      );
+
+      stage.removeEventListener(
+        "pointercancel",
+        handlePointerUp
+      );
+
+      stage.removeEventListener(
+        "pointerleave",
+        handlePointerLeave
+      );
+
+      if (raf) {
+        cancelAnimationFrame(raf);
+      }
     };
   }, [reducedMotion]);
 
-  const featureIcons = [
-    "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
-    "M15 10l4.553-2.069A1 1 0 0121 8.873v6.254a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z",
-    "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z",
-    "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z",
-    "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z",
-    "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z",
-  ];
-
   return (
-    <section ref={sectionRef} id="features" className="py-28 bg-paper">
+    <section
+      id="features"
+      className="py-28"
+    >
       <div className="container-page">
-        <Reveal className="flex flex-col items-center text-center mb-14">
-          <p className="chapter-mark mb-5">
-            <span>§04</span>
-            <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-            <span>Keunggulan</span>
+
+        {/* ======================================
+            HEADING
+        ====================================== */}
+
+        <div className="flex flex-col items-start text-left">
+
+          <h1
+            className="rise-in text-blue-600"
+            style={{
+              fontFamily:
+                "var(--font-inter)",
+
+              fontSize:
+                "clamp(2.5rem, 6.5vw, 5.75rem)",
+
+              fontWeight: 800,
+
+              lineHeight: 1.03,
+
+              letterSpacing:
+                "-0.04em",
+
+              "--rise-delay":
+                "170ms",
+            } as React.CSSProperties}
+          >
+            Keunggulan
+            <br />
+            SynapEd
+          </h1>
+
+          <p
+            className="
+              rise-in
+              mt-8
+              max-w-md
+              text-justify
+              text-base
+              leading-relaxed
+              text-ink-muted
+              md:text-lg
+            "
+            style={{
+              "--rise-delay":
+                "260ms",
+            } as React.CSSProperties}
+          >
+            Pembelajaran yang dirancang
+            sistematis, mudah dipahami,
+            dan relevan untuk kebutuhan
+            belajar masa kini.
           </p>
 
-          <h2 className="t-h2 max-w-3xl">Kenapa harus SynapEd?</h2>
-
-          <p className="t-h2 text-blue-700 mt-2 min-h-[1.2em]" aria-live="polite">
-            {reducedMotion ? WORDS[0] : typedText}
-            {!reducedMotion && (
-              <span
-                className="inline-block w-[2px] h-[0.85em] align-middle bg-blue-500 ml-1 animate-pulse"
-                aria-hidden="true"
-              />
-            )}
-          </p>
-
-          <span className="rule-accent mt-6 mx-auto" aria-hidden="true" />
-
-          <p className="t-body mt-6 max-w-2xl text-ink-muted">
-            SynapEd menghadirkan pembelajaran dari berbagai bidang ilmu secara sistematis. Materi
-            dirancang agar mudah dipahami oleh pelajar dan pemula tanpa memerlukan latar belakang khusus.
-          </p>
-        </Reveal>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map((feat, i) => (
-            <Reveal key={i} delay={(i % 3) * 110} className="h-full">
-              <Card hover className="group p-8 h-full transition-transform duration-300 ease-out-soft hover:-translate-y-1.5">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-6 transition-colors duration-300 group-hover:bg-blue-600">
-                  <svg
-                    className="w-6 h-6 text-blue-700 transition-colors duration-300 group-hover:text-white"
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d={featureIcons[i]} />
-                  </svg>
-                </div>
-                <h3 className="t-h3 text-lg mb-2">{feat.title}</h3>
-                <p className="t-body text-sm">{feat.desc}</p>
-              </Card>
-            </Reveal>
-          ))}
         </div>
+
+        {/* ======================================
+            CARD STAGE
+        ====================================== */}
+
+        <div className="relative mt-8">
+
+          <div
+            ref={stageRef}
+            className="
+              features-stage
+              relative
+              select-none
+              touch-pan-y
+            "
+            style={{
+              height:
+                "min(620px, 75vh)",
+
+              overflow:
+                "visible",
+
+              touchAction:
+                "pan-y",
+            }}
+          >
+
+            <div className="cards-stack">
+
+              {STAGE_CARDS.map(
+                (feat, index) => (
+
+                  <div
+                    key={feat.title}
+                    ref={(el) => {
+                      cardRefs.current[
+                        index
+                      ] = el;
+                    }}
+                    className="
+                      feature-card
+                      border-none
+                      outline-none
+                      ring-0
+                    "
+                    style={{
+                      border:
+                        "none",
+
+                      outline:
+                        "none",
+
+                      boxShadow:
+                        "none",
+                    }}
+                  >
+
+                    {/* =================================
+                        FOIL
+                    ================================= */}
+
+                    <span
+                      className="
+                        feature-card__foil
+                      "
+                      aria-hidden="true"
+                    />
+
+                    {/* =================================
+                        RAINBOW
+                    ================================= */}
+
+                    <span
+                      className="
+                        feature-card__rainbow
+                      "
+                      aria-hidden="true"
+                    />
+
+                    {/* =================================
+                        GLOSS
+                    ================================= */}
+
+                    <span
+                      className="
+                        feature-card__gloss
+                      "
+                      aria-hidden="true"
+                    />
+
+                    {/* =================================
+                        GRAIN
+                    ================================= */}
+
+                    <span
+                      className="
+                        feature-card__grain
+                      "
+                      aria-hidden="true"
+                    />
+
+                    {/* =================================
+                        CONTENT
+                    ================================= */}
+
+                    <div
+                      className="
+                        feature-card__content
+                        relative
+                        z-10
+                        flex
+                        h-full
+                        flex-col
+                        justify-start
+                        p-9
+                        max-sm:p-6
+                      "
+                    >
+
+                      <h2
+                        className="
+                          text-black
+                        "
+                        style={{
+                          fontFamily:
+                            "var(--font-inter)",
+
+                          fontSize:
+                            "clamp(1.75rem, 3.6vw, 2.75rem)",
+
+                          fontWeight: 900,
+
+                          lineHeight:
+                            0.98,
+
+                          letterSpacing:
+                            "-0.025em",
+                        }}
+                      >
+                        {feat.title}
+                      </h2>
+
+                      <p
+                        className="
+                          mt-4
+                          max-w-[30ch]
+                          text-[0.9375rem]
+                          leading-relaxed
+                          text-ink-muted
+                        "
+                        style={{
+                          fontFamily:
+                            "var(--font-inter)",
+                        }}
+                      >
+                        {feat.desc}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
     </section>
   );

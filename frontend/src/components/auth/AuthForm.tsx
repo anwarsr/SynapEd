@@ -268,6 +268,33 @@ export default function AuthForm({
             >
               {pending ? "Memproses…" : t.submit}
             </button>
+
+            {/* Persetujuan ketentuan.
+                Ditulis sebagai pernyataan, bukan kotak centang, karena
+                pendaftaran bisa lewat email MAUPUN Google — kotak centang
+                harus mengunci kedua jalur itu sekaligus, dan tombol Google
+                berada di atas formulir ini. Kalimatnya sengaja menyebut
+                tindakan yang memicu persetujuan, dan kedua tautannya
+                benar-benar bisa dibuka sebelum akun dibuat. */}
+            {mode === "register" && (
+              <p className="text-xs text-ink-muted leading-relaxed text-center">
+                Dengan mendaftar, Anda menyetujui{" "}
+                <Link
+                  href="/syarat-ketentuan"
+                  className="text-blue-700 hover:underline underline-offset-4"
+                >
+                  Syarat &amp; Ketentuan
+                </Link>{" "}
+                dan{" "}
+                <Link
+                  href="/kebijakan-privasi"
+                  className="text-blue-700 hover:underline underline-offset-4"
+                >
+                  Kebijakan Privasi
+                </Link>{" "}
+                SynapEd.
+              </p>
+            )}
           </form>
 
           <p className="mt-7 pt-6 border-t border-rule text-center text-sm text-ink-muted">

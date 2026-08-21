@@ -1,6 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
-import { getCourse, type CourseDetail, type Lesson } from "@/lib/courses";
+import { getCourse, type CourseDetail } from "@/lib/courses";
 import { ownerUidOf } from "@/lib/educatorCourses";
 import { getEnrollment, isActive, type Enrollment } from "@/lib/enrollments";
 import { getCurrentUser, type SessionUser } from "@/lib/firebase/session";
@@ -72,14 +72,16 @@ export async function requireCourseAccess(slug: string, next?: string): Promise<
 }
 
 /**
- * Boleh membuka satu pelajaran tertentu?
+ * Boleh membuka isi kursus?
  *
- * Predikat murni tanpa I/O supaya bisa dipanggil di mana saja — termasuk saat
- * merender sidebar untuk menentukan pelajaran mana yang bergembok.
+ * Dulu ini menerima satu pelajaran karena tiap pelajaran bisa ditandai `free`
+ * — bisa dipratinjau tanpa mendaftar. Penandaan itu dihapus atas permintaan
+ * pemilik, jadi aksesnya kini seragam: penuh, atau tidak sama sekali.
  *
- * Baris kedua inilah yang akhirnya menegakkan `lesson.free`: flag itu sudah
- * ada di data sejak migrasi, tetapi belum pernah dibaca oleh kode mana pun.
+ * Namanya sengaja dipertahankan supaya pemanggilnya tetap terbaca sebagai
+ * pertanyaan tentang satu pelajaran, dan supaya pengembalian pratinjau
+ * per-pelajaran nanti cukup menambah parameter di sini.
  */
-export function canViewLesson(access: CourseAccess, lesson: Lesson): boolean {
-  return access.level === "full" || lesson.free === true;
+export function canViewLesson(access: CourseAccess): boolean {
+  return access.level === "full";
 }

@@ -7,12 +7,14 @@ interface Props {
   /** Jeda mulai, untuk efek berurutan antar kartu (ms). */
   delay?: number;
   className?: string;
+  /** "fade" (default): naik + memudar. "tilt": kartu miring 3D lalu tegak, kesan hologram. */
+  variant?: "fade" | "tilt";
 }
 
 /** Muncul lembut saat masuk layar: naik + memudar masuk, sekali saja.
  *  Animasinya sendiri ada di .reveal / .is-visible (globals.css), jadi
  *  saat prefers-reduced-motion aktif konten tetap terlihat penuh. */
-export default function Reveal({ children, delay = 0, className }: Props) {
+export default function Reveal({ children, delay = 0, className, variant = "fade" }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -38,7 +40,7 @@ export default function Reveal({ children, delay = 0, className }: Props) {
   return (
     <div
       ref={ref}
-      className={cn("reveal", visible && "is-visible", className)}
+      className={cn(variant === "tilt" ? "tilt-reveal" : "reveal", visible && "is-visible", className)}
       style={delay ? ({ "--reveal-delay": `${delay}ms` } as React.CSSProperties) : undefined}
     >
       {children}

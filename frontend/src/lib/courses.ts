@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { listCategories } from "@/lib/categories";
 
 // ── Tipe ────────────────────────────────────────────────────────────────
 
@@ -16,7 +17,6 @@ export interface Lesson {
   title: string;
   type: "video" | "reading" | "quiz" | string;
   duration: string;
-  free: boolean;
   position: number;
   /** Tautan YouTube/Vimeo. Kosong berarti materi belum diunggah. */
   videoUrl?: string;
@@ -42,15 +42,42 @@ export interface CourseSummary {
   rating: number;
   reviews: number;
   lessonsCount: number;
+  /** Gambar latar kartu. Kosong berarti memakai latar bawaan (tint + ikon). */
+  thumbnail: string | null;
+  /**
+   * Penyedia kursus — nama yang tampil sebagai pemilik di katalog.
+   *
+   * Ada di ringkasan, bukan hanya di detail: tanpa ini kartu katalog tidak
+   * memberi tahu kursus itu milik siapa, dan pengunjung baru tahu setelah
+   * membuka halamannya. Kursus hasil migrasi bisa saja kosong, jadi selalu
+   * perlakukan sebagai boleh-kosong.
+   */
+  instructorName: string;
+  /**
+   * Harga dalam rupiah penuh; 0 berarti gratis.
+   *
+   * Ada di ringkasan, bukan hanya di detail, karena kartu katalog perlu
+   * menampilkannya. Tanpa itu pengunjung baru tahu harga setelah membuka
+   * kursusnya satu per satu — padahal justru itu yang dibandingkan saat
+   * memilih.
+   */
+  price: number;
+  /**
+   * Terlihat publik atau disembunyikan sementara.
+   *
+   * Kursus hasil migrasi dan yang dibuat sebelum fitur ini TIDAK punya field
+   * ini. Ketiadaannya dibaca sebagai "public" — kalau dibaca sebaliknya,
+   * seluruh katalog akan lenyap begitu kode ini terpasang.
+   */
+  visibility: CourseVisibility;
 }
+
+export type CourseVisibility = "public" | "private";
 
 export interface CourseDetail extends CourseSummary {
   longDesc: string;
-  price: number;
-  thumbnail: string | null;
   enrolledStudents: number;
   lastUpdated: string | null;
-  instructorName: string;
   instructorBio: string;
   whatYouLearn: string[];
   requirements: string[];
@@ -97,28 +124,46 @@ function toSummary(doc: CourseDoc): CourseSummary {
     rating: doc.rating,
     reviews: doc.reviews,
     lessonsCount: countLessons(doc.sections ?? []),
+    thumbnail: doc.thumbnail ?? null,
+    instructorName: doc.instructorName ?? "",
+    price: doc.price ?? 0,
+    visibility: doc.visibility === "private" ? "private" : "public",
   };
 }
 
-// Label ini dulu hardcoded di CourseController Laravel.
-const CATEGORY_LABELS: Record<string, string> = {
-  neuroscience: "Neuroscience",
-  eeg: "Teknologi EEG",
-  analisis: "Analisis Data",
-};
-
 // ── API publik ──────────────────────────────────────────────────────────
 
+/**
+ * Diurutkan di memori, bukan lewat `orderBy('order')`.
+ *
+ * Firestore MENGHILANGKAN dokumen yang tidak punya field yang dipakai
+ * `orderBy` — jadi kursus yang ditambahkan manual lewat Console (atau
+ * yang `order`-nya belum sempat terisi) diam-diam tak pernah muncul di
+ * katalog. Katalognya kecil, jadi mengambil semua lalu mengurutkan di
+ * sini lebih aman daripada kehilangan baris tanpa peringatan.
+ * Dokumen tanpa `order` ditaruh paling belakang.
+ */
 export async function listCourses(category?: string): Promise<CourseSummary[]> {
   const collection = adminDb().collection("courses");
 
   const query =
     category && category !== "semua"
-      ? collection.where("category", "==", category).orderBy("order")
-      : collection.orderBy("order");
+      ? collection.where("category", "==", category)
+      : collection;
 
   const snapshot = await query.get();
-  return snapshot.docs.map((d) => toSummary(d.data() as CourseDoc));
+
+  return snapshot.docs
+    .map((d) => d.data() as CourseDoc)
+    // Dokumen "hantu" (hanya wadah subcollection) tidak punya slug/judul.
+    .filter((doc) => doc && doc.slug && doc.title)
+    // Kursus yang disembunyikan tidak pernah masuk katalog publik.
+    // Disaring di sini, bukan lewat where(): dokumen tanpa field `visibility`
+    // (seluruh kursus lama) akan DIABAIKAN Firestore pada kueri kesamaan,
+    // sehingga katalognya ikut kosong tanpa satu pun pesan galat.
+    .filter((doc) => doc.visibility !== "private")
+    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+    .map(toSummary);
 }
 
 /** Satu pembacaan dokumen — section & lesson tertanam di dalamnya. */
@@ -129,21 +174,40 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
   const data = doc.data() as CourseDoc;
   const sections = sortSections(data.sections ?? []);
 
-  return { ...data, sections, lessonsCount: countLessons(sections) };
+  return {
+    ...data,
+    sections,
+    lessonsCount: countLessons(sections),
+
+    // WAJIB dinormalkan di sini, bukan hanya di toSummary.
+    //
+    // Cast `as CourseDoc` di atas membuat TypeScript percaya `visibility`
+    // selalu ada, padahal seluruh kursus yang dibuat sebelum fitur ini tidak
+    // punya field itu sama sekali. Nilai `undefined` lalu lolos ke UI dan
+    // jatuh ke cabang `else` di setiap perbandingan — sehingga satu halaman
+    // bisa menulis "Tersembunyi" dan "muncul di katalog" sekaligus.
+    //
+    // Ketiadaan field dibaca sebagai "public": itu keadaan kursus-kursus lama
+    // sebelum visibility ada, dan membacanya terbalik akan menyembunyikan
+    // seluruh katalog.
+    visibility: data.visibility === "private" ? "private" : "public",
+  };
 }
 
-export async function listCategories(): Promise<Category[]> {
-  const snapshot = await adminDb().collection("courses").orderBy("order").get();
-
-  const seen: string[] = [];
-  for (const d of snapshot.docs) {
-    const { category } = d.data() as CourseDoc;
-    if (category && !seen.includes(category)) seen.push(category);
-  }
+/**
+ * Pilihan filter di katalog.
+ *
+ * Dulu diturunkan dari kategori yang kebetulan dipakai kursus, dengan label
+ * hardcoded. Sekarang dibaca dari koleksi `categories` yang dikelola admin —
+ * kategori yang baru dibuat langsung muncul sebagai pilihan, bahkan sebelum
+ * ada kursus di dalamnya.
+ */
+export async function listCourseCategories(): Promise<Category[]> {
+  const categories = await listCategories();
 
   return [
     { slug: "semua", label: "Semua Materi" },
-    ...seen.map((slug) => ({ slug, label: CATEGORY_LABELS[slug] ?? slug })),
+    ...categories.map((c) => ({ slug: c.slug, label: c.label })),
   ];
 }
 

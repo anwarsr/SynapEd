@@ -5,8 +5,11 @@ import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
 import EnrollButton from "@/components/courses/EnrollButton";
+import BuyButton from "@/components/courses/BuyButton";
 import { getCourse } from "@/lib/courses";
 import { getCourseAccess } from "@/lib/courseAccess";
+import { paymentsConfigured } from "@/lib/payments/midtrans";
+import CourseThumb from "@/components/ui/CourseThumb";
 import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -46,6 +49,12 @@ export default async function CourseDetailPage({ params }: Props) {
   const access = await getCourseAccess(slug);
   const enrolled = access?.level === "full";
   const resumeSlug = access?.enrollment?.lastLessonSlug;
+
+  // Dibaca di server lalu diteruskan sebagai prop. Client key memang publik —
+  // Snap membutuhkannya di browser — tapi membacanya di sini membuat satu
+  // tempat saja yang memutuskan apakah pembayaran sudah siap.
+  const paymentsReady = paymentsConfigured();
+  const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ?? "";
 
   return (
     <>
@@ -134,7 +143,6 @@ export default async function CourseDetailPage({ params }: Props) {
                                 <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[lesson.type] ?? lessonIcons.reading} />
                               </svg>
                               <span className="text-ink-body truncate">{lesson.title}</span>
-                              {lesson.free && <Tag tone="amber">Gratis</Tag>}
                             </div>
                             <span className="text-xs text-ink-muted flex-shrink-0">{lesson.duration}</span>
                           </li>
@@ -148,11 +156,17 @@ export default async function CourseDetailPage({ params }: Props) {
 
             <aside>
               <div className="bg-paper-card border border-rule rounded-2xl p-6 sticky top-28">
-                <div className={cn("h-36 rounded-2xl flex items-center justify-center mb-6", course.tint)}>
-                  <svg className="w-16 h-16 text-blue-600/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.8} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon] ?? iconPaths.reading} />
-                  </svg>
-                </div>
+                <CourseThumb
+                  thumbnail={course.thumbnail}
+                  className="h-36 w-full rounded-2xl mb-6"
+                  fallback={
+                    <div className={cn("h-36 rounded-2xl flex items-center justify-center mb-6", course.tint)}>
+                      <svg className="w-16 h-16 text-blue-600/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.8} aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon] ?? iconPaths.reading} />
+                      </svg>
+                    </div>
+                  }
+                />
 
                 <h2 className="t-h3 text-lg mb-1.5">{course.title}</h2>
                 <p className="text-sm text-ink-muted mb-4">oleh {course.instructorName}</p>
@@ -181,11 +195,20 @@ export default async function CourseDetailPage({ params }: Props) {
                       Masuk untuk Mendaftar
                     </Button>
                   ) : course.price > 0 ? (
-                    // Pembayaran belum ada. Katakan apa adanya alih-alih
-                    // menyodorkan tombol yang tidak melakukan apa-apa.
-                    <span className="w-full rounded-lg border border-rule bg-paper-alt px-6 py-3 text-center text-sm text-ink-muted">
-                      Pembayaran segera hadir
-                    </span>
+                    // Kunci Midtrans belum terpasang berarti tombolnya pasti
+                    // gagal. Lebih jujur mengatakannya daripada menyodorkan
+                    // tombol yang hanya menghasilkan pesan galat.
+                    paymentsReady ? (
+                      <BuyButton
+                        slug={slug}
+                        clientKey={midtransClientKey}
+                        production={process.env.MIDTRANS_IS_PRODUCTION === "true"}
+                      />
+                    ) : (
+                      <span className="w-full rounded-lg border border-rule bg-paper-alt px-6 py-3 text-center text-sm text-ink-muted">
+                        Pembayaran segera hadir
+                      </span>
+                    )
                   ) : (
                     <EnrollButton slug={slug} />
                   )}
@@ -193,6 +216,30 @@ export default async function CourseDetailPage({ params }: Props) {
                   <Button href="/courses" variant="outline" className="w-full">
                     Lihat Kursus Lain
                   </Button>
+
+                  {/* Ketentuan pembelian harus terbaca SEBELUM membayar, bukan
+                      hanya tersembunyi di footer. Khusus kursus berbayar:
+                      pada kursus gratis tidak ada uang yang berpindah dan
+                      kalimat ini hanya jadi kebisingan. */}
+                  {course.price > 0 && (
+                    <p className="text-xs text-ink-muted leading-relaxed text-center pt-1">
+                      Pembelian tunduk pada{" "}
+                      <Link
+                        href="/syarat-ketentuan"
+                        className="text-blue-700 hover:underline underline-offset-4"
+                      >
+                        Syarat &amp; Ketentuan
+                      </Link>{" "}
+                      dan{" "}
+                      <Link
+                        href="/pengembalian-dana"
+                        className="text-blue-700 hover:underline underline-offset-4"
+                      >
+                        Kebijakan Pengembalian Dana
+                      </Link>
+                      .
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-7 pt-6 border-t border-rule">

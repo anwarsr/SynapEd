@@ -19,7 +19,16 @@ import { toRole, type Role } from "@/lib/roles";
  * tidak akan mengenali sesi dan halaman terproteksi tetap mengalihkan ke /login.
  */
 export async function establishSession(user: User): Promise<void> {
-  const idToken = await user.getIdToken();
+  // `true` memaksa token diterbitkan ulang, dan itu WAJIB di sini.
+  //
+  // Nama, foto, dan role ikut tertanam di dalam token, lalu disalin ke dalam
+  // session cookie. Token yang ter-cache masih memuat isi lama, jadi tanpa
+  // pengambilan ulang, perubahan yang baru saja terjadi tidak akan sampai ke
+  // cookie. Itu yang dulu membuat nama saat mendaftar terabaikan: akun dibuat
+  // dulu (token terbit tanpa nama), nama disetel sesudahnya, lalu token lama
+  // itu yang ditukar — server tidak menemukan nama dan jatuh ke potongan
+  // email, sehingga "digibinproject@gmail.com" menjadi "digibinproject".
+  const idToken = await user.getIdToken(true);
 
   const res = await fetch("/api/auth/session", {
     method: "POST",

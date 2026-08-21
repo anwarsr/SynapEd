@@ -3,7 +3,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import Tag from "@/components/ui/Tag";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { formatDate, listUsers } from "@/lib/adminUsers";
-import { pendingApplicationCount } from "@/lib/educator";
+import { adminBadges } from "@/lib/adminBadges";
 import { requireAdmin } from "@/lib/firebase/session";
 import { roleLabel } from "@/lib/roles";
 import type { Role } from "@/lib/roles";
@@ -22,13 +22,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const admin = await requireAdmin("/admin");
-  const [users, pending] = await Promise.all([listUsers(), pendingApplicationCount()]);
+  const [users, badges] = await Promise.all([listUsers(), adminBadges()]);
 
   const admins = users.filter((u) => u.role === "admin").length;
   const educators = users.filter((u) => u.role === "educator").length;
 
   return (
-    <AdminShell user={admin} pendingCount={pending}>
+    <AdminShell user={admin} badges={badges}>
       <div className="container-page">
         <h1 className="t-h2 mb-3">
           Daftar <span className="mark">akun pengguna</span>

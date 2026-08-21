@@ -115,3 +115,96 @@ export async function decideApplication(
         : "Pengajuan ditolak.",
   };
 }
+
+/**
+ * Menghapus satu catatan pengajuan dari daftar notifikasi.
+ *
+ * Yang MENUNGGU keputusan sengaja ditolak. Halaman ini bukan sekadar riwayat —
+ * ia satu-satunya tempat lamaran seseorang muncul. Menghapus yang berstatus
+ * "pending" berarti membuang permintaan orang tanpa jawaban, tanpa jejak, dan
+ * tanpa pelamarnya pernah tahu. Putuskan dulu (terima atau tolak), baru
+ * catatannya boleh dibersihkan.
+ *
+ * Menghapus catatan yang sudah diputuskan TIDAK mengubah role siapa pun. Role
+ * hidup sebagai custom claim di Firebase Auth, bukan di dokumen ini; educator
+ * yang catatannya dihapus tetap educator. Itu memang disengaja — kenaikan
+ * menjadi educator bersifat permanen.
+ */
+export async function deleteApplication(uid: string): Promise<ActionResult> {
+  const admin = await requireRole("admin");
+  if (!admin) return { ok: false, error: "Hanya admin yang dapat menghapus pengajuan." };
+
+  const ref = adminDb().collection(APPLICATIONS).doc(uid);
+  const existing = (await ref.get()).data();
+
+  if (!existing) return { ok: false, error: "Pengajuan tidak ditemukan." };
+
+  if ((existing.status as ApplicationStatus) === "pending") {
+    // Pengecualian: akun pelamarnya sudah tidak ada.
+    //
+    // Tanpa ini, catatan semacam itu terkunci selamanya — decideApplication
+    // menolaknya karena tidak ada akun yang role-nya bisa diubah, sementara
+    // aturan "putuskan dulu" di atas melarang menghapusnya. Lencana pengajuan
+    // menunggu pun tidak akan pernah bisa bersih.
+    //
+    // Aman dilonggarkan justru karena alasan aturan itu sendiri gugur: tidak
+    // ada lagi orang yang menanti jawaban atas lamaran ini.
+    const pelamarMasihAda = await adminAuth()
+      .getUser(uid)
+      .then(() => true)
+      .catch(() => false);
+
+    if (pelamarMasihAda) {
+      return {
+        ok: false,
+        error: "Pengajuan ini belum diputuskan. Terima atau tolak dulu sebelum menghapusnya.",
+      };
+    }
+  }
+
+  await ref.delete();
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/notifications");
+  revalidatePath(`/admin/users/${uid}`);
+
+  return { ok: true, message: "Pengajuan dihapus." };
+}
+
+/**
+ * Membersihkan seluruh catatan yang sudah diputuskan sekaligus.
+ *
+ * Yang menunggu keputusan tetap ditinggal, dengan alasan yang sama seperti di
+ * atas: sekali terhapus, tidak ada tempat lain untuk menemukannya kembali.
+ * Jadi tombol ini aman ditekan kapan pun — ia tidak akan pernah menghilangkan
+ * pekerjaan yang belum selesai.
+ */
+export async function clearDecidedApplications(): Promise<ActionResult> {
+  const admin = await requireRole("admin");
+  if (!admin) return { ok: false, error: "Hanya admin yang dapat menghapus pengajuan." };
+
+  const db = adminDb();
+  const snap = await db.collection(APPLICATIONS).get();
+  const decided = snap.docs.filter((d) => (d.data().status as ApplicationStatus) !== "pending");
+
+  if (decided.length === 0) {
+    return { ok: false, error: "Tidak ada pengajuan yang bisa dibersihkan." };
+  }
+
+  // Batch: satu penulisan, bukan N. Batas Firestore 500 operasi per batch
+  // tidak akan tersentuh di sini, tapi pemotongannya tetap ditulis supaya
+  // tidak diam-diam gagal kalau suatu saat lamarannya membludak.
+  for (let i = 0; i < decided.length; i += 450) {
+    const batch = db.batch();
+    for (const doc of decided.slice(i, i + 450)) batch.delete(doc.ref);
+    await batch.commit();
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/notifications");
+
+  return {
+    ok: true,
+    message: `${decided.length} pengajuan dibersihkan.`,
+  };
+}

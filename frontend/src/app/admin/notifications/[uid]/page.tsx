@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
 import DecisionButtons from "@/components/admin/DecisionButtons";
+import { DeleteStuckApplicationButton } from "@/components/admin/NotificationActions";
 import Tag from "@/components/ui/Tag";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { formatDate, getUser } from "@/lib/adminUsers";
-import { getApplication, pendingApplicationCount, statusLabel } from "@/lib/educator";
+import { getApplication, statusLabel } from "@/lib/educator";
+import { adminBadges } from "@/lib/adminBadges";
 import { requireAdmin } from "@/lib/firebase/session";
 import { roleLabel } from "@/lib/roles";
 import type { ApplicationStatus } from "@/lib/educator";
@@ -46,20 +48,20 @@ export default async function ApplicationDetailPage({ params }: Props) {
   const admin = await requireAdmin();
 
   const { uid } = await params;
-  const [application, user, pending] = await Promise.all([
+  const [application, user, badges] = await Promise.all([
     getApplication(uid),
     getUser(uid),
-    pendingApplicationCount(),
+    adminBadges(),
   ]);
 
   if (!application) notFound();
 
   return (
-    <AdminShell user={admin} pendingCount={pending}>
+    <AdminShell user={admin} badges={badges}>
       <div className="container-reading">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
           <Link href="/admin/notifications" className="hover:text-blue-700 transition-colors">
-            Notifikasi
+            Pengajuan Edukator
           </Link>
           <span aria-hidden="true">/</span>
           <span className="text-ink">{application.name}</span>
@@ -108,7 +110,21 @@ export default async function ApplicationDetailPage({ params }: Props) {
           </dl>
         </div>
 
-        {application.status === "pending" ? (
+        {application.status === "pending" && !user ? (
+          /* Terkunci: masih menunggu, tetapi akun pelamarnya sudah dihapus.
+             Menampilkan tombol Terima/Tolak di sini hanya menyodorkan aksi
+             yang PASTI gagal — tidak ada akun yang role-nya bisa diubah.
+             Yang tersisa dan masuk akal hanyalah membersihkan catatannya. */
+          <div className="mt-8">
+            <h2 className="t-h3 text-base mb-2">Tidak dapat diputuskan</h2>
+            <p className="text-sm text-ink-muted mb-5 max-w-xl leading-relaxed">
+              Akun pelamar sudah dihapus, sehingga pengajuan ini tidak bisa diterima maupun
+              ditolak. Selama catatannya ada, ia terus terhitung sebagai pengajuan yang menunggu
+              di lencana Pengajuan Edukator.
+            </p>
+            <DeleteStuckApplicationButton uid={application.uid} name={application.name} />
+          </div>
+        ) : application.status === "pending" ? (
           <div className="mt-8">
             <h2 className="t-h3 text-base mb-2">Keputusan</h2>
             <p className="text-sm text-ink-muted mb-5">
@@ -129,7 +145,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Kembali ke notifikasi
+          Kembali ke Pengajuan Edukator
         </Link>
       </div>
     </AdminShell>
