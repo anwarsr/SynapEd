@@ -66,11 +66,13 @@ export default function Testimonials() {
     const full = testimonials[active].content;
 
     if (reducedMotion) {
-      setTyped(full);
-      return;
+      // setState dijadwalkan lewat setTimeout, bukan dipanggil langsung di
+      // badan efek — konsisten dengan pola timeout yang sudah dipakai di
+      // cabang animasi ketikan di bawah, dan menghindari cascading render
+      // sinkron yang ditandai react-hooks/set-state-in-effect.
+      const id = setTimeout(() => setTyped(full), 0);
+      return () => clearTimeout(id);
     }
-
-    setTyped("");
 
     let i = 0;
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -84,9 +86,17 @@ export default function Testimonials() {
       }
     };
 
-    timeoutId = setTimeout(type, 220);
+    // Reset ke string kosong dijadwalkan lewat timeout 0ms — bukan
+    // dipanggil langsung di badan efek — dengan alasan yang sama seperti
+    // cabang reducedMotion di atas. Tetap terasa seketika bagi pengguna,
+    // jauh di bawah jeda 220ms sebelum animasi ketikan mulai.
+    timeoutId = setTimeout(() => setTyped(""), 0);
+    const startId = setTimeout(type, 220);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(startId);
+    };
   }, [active, reducedMotion]);
 
   const current = active === null ? null : testimonials[active];
