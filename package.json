@@ -35,7 +35,6 @@
     "verify:signup": "tsx scripts/verify-signup.ts"
   },
   "devDependencies": {
-    "@google/genai": "^2.17.1",
     "@types/node": "^22.0.0",
     "firebase-admin": "^13.0.0",
     "firebase-tools": "^14.0.0",

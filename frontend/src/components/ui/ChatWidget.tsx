@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { extractChatOptions, renderChatText } from "@/lib/chatMarkdown";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -159,18 +160,47 @@ export default function ChatWidget() {
             </div>
           )}
 
-          {messages.map((m, i) => (
-            <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-              <div
-                className={cn(
-                  "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm",
-                  m.role === "user" ? "bg-blue-600 text-white" : "border border-rule bg-paper text-ink-body",
+          {messages.map((m, i) => {
+            const isLast = i === messages.length - 1;
+            // Baris [[options: ...]] hanya berguna sekali balasan selesai —
+            // saat masih streaming ia tampil apa adanya (belum terpotong).
+            const { text, options } =
+              m.role === "assistant" && !(isLast && isStreaming) ? extractChatOptions(m.content) : { text: m.content, options: [] };
+
+            return (
+              <div key={i} className={cn("flex flex-col gap-2", m.role === "user" ? "items-end" : "items-start")}>
+                <div
+                  className={cn(
+                    "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm",
+                    m.role === "user" ? "bg-blue-600 text-white" : "border border-rule bg-paper text-ink-body",
+                  )}
+                >
+                  {m.role === "assistant"
+                    ? text
+                      ? renderChatText(text)
+                      : isTyping && isLast
+                        ? "Mengetik…"
+                        : ""
+                    : m.content}
+                </div>
+                {options.length > 0 && (
+                  <div className="flex max-w-[85%] flex-wrap gap-2">
+                    {options.map((o) => (
+                      <button
+                        key={o}
+                        type="button"
+                        onClick={() => sendMessage(o)}
+                        disabled={isStreaming}
+                        className="rounded-full border border-rule px-3 py-1.5 text-xs text-ink-body transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700 disabled:opacity-50"
+                      >
+                        {o}
+                      </button>
+                    ))}
+                  </div>
                 )}
-              >
-                {m.content || (isTyping && i === messages.length - 1 ? "Mengetik…" : "")}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {error && (
             <div role="alert" className="rounded-lg border border-rust-700/25 bg-rust-100 px-3 py-2 text-xs text-rust-700">

@@ -254,35 +254,86 @@ masuk, karena pertanyaan seperti "bagaimana cara mendaftar" justru konten
 pra-daftar. Dipasang sekali di `frontend/src/app/layout.tsx`, jadi tidak
 perlu disentuh di halaman mana pun.
 
-Dijalankan lewat **Google Gemini API** (`@google/genai`, model
-`gemini-3.6-flash`) lewat route API streaming `POST /api/chat` — bukan
-Server Action, karena chat butuh respons mengalir token demi token, bentuk
-yang tidak dimiliki Server Action. Gemini dipilih (bukan Claude) karena
-punya tingkat gratis nyata untuk trafik awal; Claude tetap jadi acuan default
-untuk pekerjaan pengembangan lain di proyek ini.
+Dijalankan lewat **OpenRouter** dengan model gratis, lewat route API
+streaming `POST /api/chat` — bukan Server Action, karena chat butuh respons
+mengalir token demi token, bentuk yang tidak dimiliki Server Action.
+Memakai `fetch()` biasa, **tanpa SDK**: format `/chat/completions` + SSE
+sudah jadi standar de-facto yang stabil, jadi tidak ada dependensi baru
+sama sekali. (Percobaan sebelumnya dengan `@google/genai` — SDK resmi
+Gemini — kandas justru pada metode yang direkomendasikan dokumentasinya
+sendiri, melempar `TypeError` saat dipanggil sungguhan padahal typecheck
+lulus. Itu alasan `fetch()` polos dipilih di sini, bukan sekadar selera.)
 
-Yang perlu diketahui:
+### Rantai model, bukan satu model
+
+`frontend/src/lib/openrouter.ts` mengirim tiga model sekaligus lewat
+parameter `models`; OpenRouter otomatis pindah ke berikutnya kalau yang
+pertama sedang penuh:
+
+1. `nvidia/nemotron-3-ultra-550b-a55b:free` — model 550B, jawaban paling
+   berkualitas, tapi lambat (~2–10 detik ke token pertama, teruji langsung).
+2. `google/gemma-4-26b-a4b-it:free`
+3. `nvidia/nemotron-3-super-120b-a12b:free`
+
+Model `:free` dilayani dari kolam bersama SELURUH pengguna OpenRouter, jadi
+HTTP 429 "upstream_provider_shared_pool" bisa muncul walau jatah harian
+kita masih utuh — rantai fallback inilah yang menyelamatkan permintaan saat
+itu terjadi, bukan sekadar redundansi.
+
+**Kalau menambah/mengganti model di rantai itu, uji dulu dua hal**: model
+harus menerima `reasoning: {enabled:false}` (mis. `openai/gpt-oss-20b:free`
+menolaknya dengan "Reasoning is mandatory" dan mematahkan seluruh rantai),
+dan harus menjawab Bahasa Indonesia dengan wajar.
+
+### Dua setelan yang wajib, bukan selera
+
+- **`temperature: 0.3`** (default OpenRouter 1.0). Ini perbaikan bug, bukan
+  penyetelan gaya: pada temperature 1, `gemma-4-26b` meluruh jadi sampah —
+  `<pad><pad><pad>…` berulang, atau kalimat Indonesia yang berubah jadi
+  teks Hindi berulang di tengah jawaban. Pada 0.3 jawabannya rapi.
+- **`reasoning: {enabled:false}`**. Model reasoning bisa boros token cuma
+  untuk bernalar sebelum menjawab satu kata. Untuk FAQ yang jawabannya
+  sudah digroundkan ke system prompt, penalaran tidak menambah kualitas —
+  hanya memperlambat.
+
+### Yang perlu diketahui
 
 - **Hanya jawab topik SynapEd.** System prompt (`lib/chatPrompt.ts`) berisi
   instruksi pemandu + basis FAQ tulisan tangan + katalog kursus hidup dari
-  `listCourses()`. Pertanyaan di luar topik ditolak sopan; asisten diinstruksikan
-  untuk tidak pernah mengarang harga/kebijakan yang tidak tercantum.
-- **Kursus berbayar belum bisa dibeli** — asisten diinstruksikan eksplisit
-  untuk jujur soal ini, konsisten dengan tombol "Pembayaran segera hadir" di
-  halaman kursus.
+  `listCourses()`. Pertanyaan di luar topik ditolak sopan; asisten
+  diinstruksikan tidak pernah mengarang harga/kebijakan.
+- **Kursus berbayar belum bisa dibeli** — asisten jujur soal ini, konsisten
+  dengan tombol "Pembayaran segera hadir" di halaman kursus.
+- **Klien tidak bisa menyuntik system prompt.** Route menolak `role` selain
+  `user`/`assistant`, jadi `{"role":"system"}` dari browser ditolak `400`.
 - **Tanpa riwayat di server.** Klien mengirim ulang seluruh percakapan tiap
   giliran; server tidak menyimpan apa pun. Muat ulang halaman = percakapan
   hilang — batasan MVP yang disengaja.
-- **Pembatas laju in-memory** (`lib/chatRateLimit.ts`) per `uid`/IP, ~8
-  pesan/menit. Keterbatasan yang disadari: state hidup di memori satu proses,
-  jadi tidak berlaku silang kalau nanti di-deploy multi-instance.
-- **Belum bisa membantu di dalam halaman belajar** suatu kursus (menjelaskan
-  materi, membantu kuis, dsb.) — direncanakan fase berikutnya; asisten sudah
-  diinstruksikan menjelaskan ini kalau ditanya, bukan berpura-pura bisa.
+- **Pembatas laju in-memory** (`lib/chatRateLimit.ts`) per `uid`/IP, 8
+  pesan/menit. Keterbatasan yang disadari: state hidup di memori satu
+  proses, jadi tidak berlaku silang kalau nanti di-deploy multi-instance.
+- **Kecepatan**: ~2–10 detik sampai kata pertama muncul (model utama
+  550B relatif besar). Indikator "Mengetik…" di widget itu penting, bukan
+  hiasan.
+- **Belum bisa membantu di dalam halaman belajar** suatu kursus — direncanakan
+  fase berikutnya; asisten menjelaskan ini kalau ditanya, bukan berpura-pura bisa.
 
-Env var baru: `GEMINI_API_KEY` di `frontend/.env.local` (server-only, ambil
-di https://aistudio.google.com/apikey). Tanpa ini `/api/chat` mengembalikan
-`500`. Periksa kunci & pemasangan SDK dengan satu panggilan uji murah:
+### Batas tingkat gratis
+
+| | Tanpa isi kredit | Pernah isi kredit $10 |
+|---|---|---|
+| Permintaan/hari | **50** (untuk SELURUH pengunjung) | **1000** |
+| Permintaan/menit | 20 | 20 |
+
+Kredit $10 itu **tidak terpakai** oleh model `:free` — hanya syarat pembuka
+tingkat. 50/hari cukup untuk demo, tapi satu pengunjung antusias bisa
+menghabiskannya dalam beberapa menit; naikkan ke 1000/hari sebelum situs
+dipakai orang banyak. Dokumentasi OpenRouter sendiri menyebut model `:free`
+"usually not suitable for production use".
+
+Env var: `OPENROUTER_API_KEY` di `frontend/.env.local` (server-only, ambil di
+https://openrouter.ai/keys). Tanpa ini `/api/chat` mengembalikan `500`.
+Periksa kunci & model dengan satu panggilan uji:
 
 ```bash
 npm run check:chat

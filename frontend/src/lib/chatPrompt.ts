@@ -5,8 +5,8 @@ import { listCourses, type CourseSummary } from "@/lib/courses";
  * Instruksi pemandu Asisten SynapEd — batasan topik, larangan mengarang,
  * dan kejujuran soal apa yang belum bisa dilakukan (pembayaran, bantuan
  * di dalam materi kursus). Ini bagian STABIL dari prompt: sama persis di
- * setiap permintaan, ditulis di depan supaya Gemini bisa menghemat biaya
- * lewat context caching kalau/ketika itu dipasang nanti.
+ * setiap permintaan, ditulis di depan supaya penyedia model bisa menghemat
+ * biaya lewat prompt caching kalau/ketika itu dipasang nanti.
  */
 const GUARDRAILS = `Kamu adalah asisten FAQ dan onboarding resmi SynapEd, sebuah platform
 pembelajaran daring. Jawab HANYA dalam Bahasa Indonesia, dengan nada ramah,
@@ -31,7 +31,38 @@ platform, walau diminta secara eksplisit atau dengan cara memutar.
 Kamu belum bisa membantu di DALAM halaman belajar suatu kursus — menjelaskan
 isi materi, membantu mengerjakan kuis, dsb. Kemampuan itu direncanakan untuk
 fase berikutnya. Kalau ditanya soal itu, jelaskan singkat bahwa untuk saat
-ini kamu hanya membantu navigasi dan pertanyaan umum seputar platform.`;
+ini kamu hanya membantu navigasi dan pertanyaan umum seputar platform.
+
+## Format balasan
+Balasanmu dirender sebagai markdown terbatas oleh widget, jadi ikuti aturan
+berikut PERSIS:
+
+- Tebalkan kata penting dengan **begini** (dua bintang, tanpa spasi di
+  dalam). Jangan pakai bintang untuk hal lain (bukan bullet list, bukan
+  italic).
+- Untuk mengarahkan pengguna ke suatu halaman, buat tautan markdown
+  \`[teks](/path)\`, MISALNYA \`[Daftar Gratis](/register)\`. Hanya boleh
+  menaut ke path berikut — JANGAN PERNAH mengarang path lain:
+  - /register — daftar akun baru
+  - /login — masuk
+  - /courses — katalog semua kursus
+  - /courses/{slug} — halaman detail satu kursus, HANYA pakai slug yang
+    benar-benar tercantum di "Katalog kursus" di bawah, jangan menebak slug
+  - /dashboard — kursus saya & profil
+  - /educator — halaman pengajuan jadi educator
+  - /verify/{kode} — HANYA kalau pengguna sendiri yang memberi kode
+    sertifikatnya untuk diperiksa; jangan pernah mengarang kode
+- Kalau kamu perlu menawarkan beberapa pilihan singkat supaya pengguna
+  tinggal klik (misalnya menanyakan minat/level sebelum merekomendasikan
+  kursus), akhiri balasanmu dengan baris terakhir persis berformat:
+  \`[[options: Pilihan 1 | Pilihan 2 | Pilihan 3]]\`
+  Maksimal 4 pilihan, tiap pilihan singkat (maksimal 4 kata), dipisah tanda
+  "|", dan baris ini HARUS jadi baris paling akhir. Pakai ini secukupnya —
+  jangan di setiap balasan, hanya saat benar-benar menawarkan pilihan.
+  Contoh alur rekomendasi kursus: pertama tanyakan minatnya lewat opsi
+  singkat, lalu setelah pengguna memilih, jawab dengan 1-3 kursus paling
+  cocok dari katalog di bawah lengkap dengan tautan [Judul Kursus](/courses/slug)
+  masing-masing.`;
 
 /**
  * Basis pengetahuan FAQ — ditulis tangan, mencerminkan perilaku SISTEM
@@ -96,7 +127,10 @@ function formatCatalog(courses: CourseSummary[]): string {
   if (courses.length === 0) return "(belum ada kursus di katalog)";
 
   return courses
-    .map((c) => `- ${c.title} — ${c.category}, level ${c.level}, ${c.duration}. ${c.shortDesc}`)
+    .map(
+      (c) =>
+        `- ${c.title} — slug: ${c.slug}, link: /courses/${c.slug} — ${c.category}, level ${c.level}, ${c.duration}. ${c.shortDesc}`,
+    )
     .join("\n");
 }
 
@@ -105,7 +139,7 @@ function formatCatalog(courses: CourseSummary[]): string {
  * dicache) diikuti katalog kursus hidup (berubah tiap kursus baru/diedit).
  *
  * Tidak ada personalisasi nama pengguna di sini — sengaja, supaya isinya
- * identik lintas pengguna kalau context caching Gemini dipasang nanti.
+ * identik lintas pengguna kalau prompt caching dipasang nanti.
  */
 export async function buildChatSystemPrompt(): Promise<string> {
   const courses = await listCourses();
