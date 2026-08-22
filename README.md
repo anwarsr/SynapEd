@@ -246,6 +246,48 @@ Hook itu memakai `useSyncExternalStore`, bukan `useState` + `useEffect`:
 lalu memanggil `setState` memicu render berantai — persis yang dilarang aturan
 `react-hooks/set-state-in-effect`.
 
+## Asisten chat (FAQ)
+
+Widget mengambang **"Asisten SynapEd"** muncul di setiap halaman publik
+(kecuali `/login` dan `/register`) — termasuk untuk pengunjung yang belum
+masuk, karena pertanyaan seperti "bagaimana cara mendaftar" justru konten
+pra-daftar. Dipasang sekali di `frontend/src/app/layout.tsx`, jadi tidak
+perlu disentuh di halaman mana pun.
+
+Dijalankan lewat **Google Gemini API** (`@google/genai`, model
+`gemini-3.6-flash`) lewat route API streaming `POST /api/chat` — bukan
+Server Action, karena chat butuh respons mengalir token demi token, bentuk
+yang tidak dimiliki Server Action. Gemini dipilih (bukan Claude) karena
+punya tingkat gratis nyata untuk trafik awal; Claude tetap jadi acuan default
+untuk pekerjaan pengembangan lain di proyek ini.
+
+Yang perlu diketahui:
+
+- **Hanya jawab topik SynapEd.** System prompt (`lib/chatPrompt.ts`) berisi
+  instruksi pemandu + basis FAQ tulisan tangan + katalog kursus hidup dari
+  `listCourses()`. Pertanyaan di luar topik ditolak sopan; asisten diinstruksikan
+  untuk tidak pernah mengarang harga/kebijakan yang tidak tercantum.
+- **Kursus berbayar belum bisa dibeli** — asisten diinstruksikan eksplisit
+  untuk jujur soal ini, konsisten dengan tombol "Pembayaran segera hadir" di
+  halaman kursus.
+- **Tanpa riwayat di server.** Klien mengirim ulang seluruh percakapan tiap
+  giliran; server tidak menyimpan apa pun. Muat ulang halaman = percakapan
+  hilang — batasan MVP yang disengaja.
+- **Pembatas laju in-memory** (`lib/chatRateLimit.ts`) per `uid`/IP, ~8
+  pesan/menit. Keterbatasan yang disadari: state hidup di memori satu proses,
+  jadi tidak berlaku silang kalau nanti di-deploy multi-instance.
+- **Belum bisa membantu di dalam halaman belajar** suatu kursus (menjelaskan
+  materi, membantu kuis, dsb.) — direncanakan fase berikutnya; asisten sudah
+  diinstruksikan menjelaskan ini kalau ditanya, bukan berpura-pura bisa.
+
+Env var baru: `GEMINI_API_KEY` di `frontend/.env.local` (server-only, ambil
+di https://aistudio.google.com/apikey). Tanpa ini `/api/chat` mengembalikan
+`500`. Periksa kunci & pemasangan SDK dengan satu panggilan uji murah:
+
+```bash
+npm run check:chat
+```
+
 ## Menghubungkan ke proyek Firebase asli
 
 **→ Panduan lengkap: [docs/SETUP-FIREBASE.md](docs/SETUP-FIREBASE.md)**
@@ -721,6 +763,10 @@ menolak siapa pun selain pemilik sertifikat atau admin.
   terpasang, jadi kursus berharga di atas Rp0 tidak bisa benar-benar dibeli.
 - **Kuis pilihan ganda-jamak.** Versi ini sengaja dibatasi pilihan tunggal;
   tipe soal lain (`multiple`, isian singkat, dsb.) belum ada.
+- **Asisten di dalam halaman belajar.** Widget chat saat ini hanya menjawab
+  FAQ dan navigasi umum — belum bisa membantu di dalam materi/kuis suatu
+  kursus. Bentuk body `/api/chat` dan `buildChatSystemPrompt()` sudah
+  disiapkan untuk diperluas ke sana tanpa merombak fondasinya.
 - **Sertifikat PDF sisi server.** Halaman cetak memakai print-to-PDF bawaan
   browser (`window.print()`), bukan generator PDF di server — keputusan
   sadar untuk menghindari dependensi headless Chrome demi manfaat yang tidak

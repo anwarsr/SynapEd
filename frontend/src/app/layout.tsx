@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import ChatWidget from "@/components/ui/ChatWidget";
 import "./globals.css";
 
 // Fraunces variabel. `axes` wajib — secara default next/font hanya
@@ -43,6 +44,7 @@ export default function RootLayout({
     <html lang="id" className={`${fraunces.variable} ${inter.variable}`}>
       <body className="antialiased font-body bg-paper text-ink-body">
         {children}
+        <ChatWidget />
       </body>
     </html>
   );

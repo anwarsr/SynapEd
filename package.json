@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "check": "tsx scripts/check-firebase.ts",
     "check:google": "tsx scripts/check-google-signin.ts",
+    "check:chat": "tsx scripts/check-chat.ts",
     "emulators": "firebase emulators:start --import=.emulator-data --export-on-exit=.emulator-data",
     "emulators:fresh": "firebase emulators:start",
     "migrate:firestore": "tsx scripts/migrate-to-firestore.ts",
@@ -34,6 +35,7 @@
     "verify:signup": "tsx scripts/verify-signup.ts"
   },
   "devDependencies": {
+    "@google/genai": "^2.17.1",
     "@types/node": "^22.0.0",
     "firebase-admin": "^13.0.0",
     "firebase-tools": "^14.0.0",
