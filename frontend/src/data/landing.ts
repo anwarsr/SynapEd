@@ -6,15 +6,6 @@ export interface Stat {
   icon: string;
 }
 
-export interface Testimonial {
-  name: string;
-  position: string;
-  content: string;
-  rating: number;
-  image: string;
-  work_image: string;
-}
-
 export interface FAQ {
   question: string;
   answer: string;
@@ -30,57 +21,6 @@ export const courseCategories: CourseCategory[] = [
   { slug: 'neuroscience', label: 'Neuroscience' },
   { slug: 'eeg', label: 'Teknologi EEG' },
   { slug: 'analisis', label: 'Analisis Data' },
-];
-
-export const testimonials: Testimonial[] = [
-  {
-    name: 'Anak Senku',
-    position: 'Mahasiswa Teknik Biomedik',
-    content: 'Materi di SynapEd disajikan dengan sangat sistematis. Saya bisa memahami berbagai topik kompleks dari nol dengan mudah.',
-    rating: 5,
-    image: '/images/2.jpeg',
-    work_image: 'https://rsa.ugm.ac.id/wp-content/uploads/sites/60/eeg_40_channel_rsa_ugm_2.jpg',
-  },
-  {
-    name: 'Pengguna Aktif',
-    position: 'Tenaga Pendidik',
-    content: 'Kontennya informatif dan terstruktur. Sangat membantu saya dalam mempersiapkan materi pembelajaran untuk siswa saya.',
-    rating: 5,
-    image: '/images/mikey.jpeg',
-    work_image: 'https://rsa.ugm.ac.id/wp-content/uploads/sites/60/eeg_40_channel_rsa_ugm_3.jpg',
-  },
-  {
-    name: 'King Olga 67',
-    position: 'Ilmuan Internasional',
-    content: 'Modulnya sangat cocok untuk siapa saja yang ingin memperdalam ilmu di berbagai bidang.',
-    rating: 5,
-    image: '/images/king.png',
-    work_image: 'https://imotions.com/wp-content/uploads/2022/10/EEG-Visuals.jpg',
-  },
-  {
-    name: 'Reza N',
-    position: 'Penjelajah',
-    content: 'Bahasa yang digunakan pada modul sangat mudah dipahami, bahkan untuk saya yang awam sekalipun.',
-    rating: 5,
-    image: '/images/reja.jpeg',
-    work_image: 'https://glomeda.co.id/wp-content/uploads/2021/08/Pemeriksaan-EEG-800x475.jpg',
-  },
-  {
-    name: 'Ardik A',
-    position: 'Mandor Sawit',
-    content: 'Modulnya sangat mudah dipahami. Saya merasa lebih percaya diri untuk mulai belajar hal-hal baru di SynapEd.',
-    rating: 5,
-    image: '/images/1.jpeg',
-    work_image: 'https://portal.riau24.com/news/20220223/riau24_1645581863.png',
-  },
-  {
-    name: 'Alumni Kursus',
-    position: 'Peneliti & Praktisi',
-    content: 'Modul-modul di SynapEd sangat praktis. Panduan dan studi kasusnya langsung bisa diterapkan pada pekerjaan saya. Sangat direkomendasikan.',
-    rating: 5,
-    image: '/images/logo.png',
-    work_image: 'https://rsa.ugm.ac.id/wp-content/uploads/sites/60/eeg_40_channel_rsa_ugm_5.jpg',
-  },
 ];
 
 export const faqs: FAQ[] = [

@@ -29,6 +29,7 @@
     "verify:google": "tsx scripts/verify-google-account.ts",
     "verify:material": "tsx scripts/verify-material.ts",
     "verify:pdf": "tsx scripts/verify-pdf-viewer.ts",
+    "verify:review": "tsx scripts/verify-review.ts",
     "verify:rules": "tsx scripts/verify-rules.ts",
     "verify:signup": "tsx scripts/verify-signup.ts"
   },

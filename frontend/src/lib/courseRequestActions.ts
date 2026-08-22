@@ -7,6 +7,7 @@ import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
 import { canonicalDuration } from "@/lib/duration";
+import { purgeCourseReviews } from "@/lib/reviewActions";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 import {
   COURSE_REQUESTS,
@@ -453,6 +454,7 @@ export async function decideCourseRequest(
         thumbnail: data.thumbnail,
       });
       await db.recursiveDelete(courseRef);
+      await purgeCourseReviews(req.courseSlug);
       await deleteObjects(files);
       await pruneAttachmentFolders(files, []);
     }

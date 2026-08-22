@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { canonicalDuration } from "@/lib/duration";
+import { purgeCourseReviews } from "@/lib/reviewActions";
 import { LEVELS, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
@@ -190,6 +191,11 @@ export async function deleteCourse(slug: string): Promise<CourseResult> {
   // dokumen induknya dan meninggalkan subcollection itu yatim — dokumen tak
   // terjangkau yang tetap ditagih selamanya.
   await db.recursiveDelete(db.collection("courses").doc(slug));
+
+  // Ulasan hidup di koleksi terpisah, jadi recursiveDelete tidak menjangkaunya.
+  // Tanpa baris ini ulasannya tetap tampil di beranda sambil menunjuk kursus
+  // yang tautannya sudah 404.
+  await purgeCourseReviews(slug);
 
   // Materi dan gambar latarnya ikut dibuang. Firestore dan Storage terpisah:
   // tanpa baris ini, seluruh berkas kursus tetap ada di bucket selamanya,

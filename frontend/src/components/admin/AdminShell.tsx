@@ -18,6 +18,9 @@ const NAV = [
   { href: "/admin/categories", label: "Kategori" },
   { href: "/admin/notifications", label: "Pengajuan Edukator", badge: "applications" },
   { href: "/admin/course-requests", label: "Pengajuan Kursus", badge: "requests" },
+  // Tanpa lencana: ulasan tidak menunggu keputusan siapa pun, jadi tidak ada
+  // angka yang berarti "belum dikerjakan".
+  { href: "/admin/reviews", label: "Ulasan" },
 ] as const satisfies readonly {
   href: string;
   label: string;

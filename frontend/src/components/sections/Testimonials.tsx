@@ -1,15 +1,46 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
-import { testimonials } from "@/data/landing";
+import Stars from "@/components/ui/Stars";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { cn } from "@/lib/cn";
 
 /**
- * Tipografi disamakan dengan About.tsx:
- * Inter tebal, tracking rapat, biru identitas.
+ * "Apa Kata Mereka" — ulasan sungguhan dari peserta yang sudah menyelesaikan
+ * kursusnya.
+ *
+ * Dulu isinya array testimoni yang ditulis tangan di data/landing.ts. Sekarang
+ * datanya datang dari koleksi `reviews`, dan yang boleh menulis hanya pemilik
+ * enrollment berstatus selesai — lihat reviewActions.ts.
+ *
+ * Dua akibat dari data yang nyata, dan keduanya disengaja:
+ *
+ *   - Bagian ini TIDAK dirender sama sekali kalau belum ada ulasan. Judul
+ *     besar dengan ruang kosong di bawahnya lebih buruk daripada tidak ada.
+ *     Pemanggilnya cukup merender <Testimonials items={...} /> apa adanya.
+ *   - Marquee hanya dipakai saat kartunya cukup banyak. Dengan satu-dua
+ *     ulasan, pita berjalan yang mengulang orang yang sama berkali-kali
+ *     terbaca seperti mengarang jumlah.
  */
+
+export interface TestimonialItem {
+  id: string;
+  name: string;
+  avatar: string | null;
+  content: string;
+  rating: number;
+  courseTitle: string;
+  courseSlug: string;
+  /** URL siap pakai, sudah lewat courseImageUrl(). */
+  courseImage: string | null;
+}
+
+/** Di bawah ini kartunya ditata diam, tanpa pita berjalan. */
+const MARQUEE_MIN = 4;
+
 const HEADING: React.CSSProperties = {
   fontFamily: "var(--font-inter)",
   fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
@@ -31,214 +62,123 @@ const QUOTE: React.CSSProperties = {
   letterSpacing: "-0.02em",
 };
 
-export default function Testimonials() {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+/** Latar kartu saat kursusnya belum punya gambar. */
+function CardImage({ src }: { src: string | null }) {
+  if (!src) {
+    return <div className="absolute inset-0 bg-linear-to-br from-blue-600 to-blue-800" />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-warm group-hover:scale-105"
+    />
+  );
+}
 
+export default function Testimonials({ items }: { items: readonly TestimonialItem[] }) {
   const [active, setActive] = useState<number | null>(null);
-  const [typed, setTyped] = useState("");
+  const [charCount, setCharCount] = useState(0);
 
   const reducedMotion = useReducedMotion();
 
-  // Duplikasi data untuk marquee agar animasi berjalan mulus.
-  const marquee = [...testimonials, ...testimonials];
+  const current = active === null ? null : items[active];
+  const full = current?.content ?? "";
 
   /**
-   * Membuka / menutup dialog.
+   * Efek mengetik pada isi ulasan di dialog.
+   *
+   * setState-nya ada di dalam callback setTimeout, BUKAN di badan efek.
+   * Versi sebelumnya memanggil setTyped langsung di badan efek dan itu memicu
+   * render berantai — react-hooks/set-state-in-effect menandainya, dan
+   * peringatan itu satu-satunya galat lint yang tersisa di repo ini.
+   *
+   * Efeknya sengaja bergantung pada charCount: tiap tick menjadwalkan tick
+   * berikutnya, dan berhenti sendiri begitu kalimatnya habis.
    */
   useEffect(() => {
-    const el = dialogRef.current;
+    if (active === null || reducedMotion) return;
+    if (charCount >= full.length) return;
 
-    if (!el) return;
+    const id = setTimeout(() => setCharCount((n) => n + 1), charCount === 0 ? 220 : 18);
+    return () => clearTimeout(id);
+  }, [active, reducedMotion, charCount, full.length]);
 
-    if (active !== null && !el.open) {
-      el.showModal();
-    } else if (active === null && el.open) {
-      el.close();
-    }
-  }, [active]);
+  // Hitungannya di-nol-kan oleh penangan klik, bukan oleh efek — itulah yang
+  // membuat efek di atas tidak perlu menulis state secara sinkron.
+  function open(index: number) {
+    setActive(index);
+    setCharCount(0);
+  }
 
-  /**
-   * Efek typing pada isi testimonial.
-   */
-  useEffect(() => {
-    if (active === null) return;
+  const typed = reducedMotion ? full : full.slice(0, charCount);
+  const selesaiMengetik = typed.length === full.length;
 
-    const full = testimonials[active].content;
+  // Belum ada ulasan sama sekali — bagian ini tidak usah ada.
+  if (items.length === 0) return null;
 
-    if (reducedMotion) {
-      setTyped(full);
-      return;
-    }
-
-    setTyped("");
-
-    let i = 0;
-    let timeoutId: ReturnType<typeof setTimeout>;
-
-    const type = () => {
-      i++;
-      setTyped(full.slice(0, i));
-
-      if (i < full.length) {
-        timeoutId = setTimeout(type, 18);
-      }
-    };
-
-    timeoutId = setTimeout(type, 220);
-
-    return () => clearTimeout(timeoutId);
-  }, [active, reducedMotion]);
-
-  const current = active === null ? null : testimonials[active];
+  const berjalan = items.length >= MARQUEE_MIN;
+  const kartu = berjalan ? [...items, ...items] : items;
 
   return (
-    <section
-      id="testimonials"
-      className="py-28 bg-paper overflow-hidden"
-    >
-      {/* =========================================================
-          HEADING
-      ========================================================== */}
+    <section id="testimonials" className="py-28 bg-paper overflow-hidden">
       <div className="container-page">
         <Reveal className="flex flex-col items-center text-center mb-14">
-          <h2
-            className="text-blue-600 max-w-4xl"
-            style={HEADING}
-          >
+          <h2 className="text-blue-600 max-w-4xl" style={HEADING}>
             Apa Kata Mereka
           </h2>
 
           <p className="t-body mt-6 max-w-2xl text-ink-muted">
-            Cerita dari pelajar, mahasiswa, dan tenaga pendidik
-            yang sudah belajar bersama SynapEd. Ketuk salah satu
-            kartu untuk membaca ceritanya secara utuh.
+            Ulasan dari peserta yang sudah menyelesaikan kursusnya di SynapEd.
+            Ketuk salah satu kartu untuk membaca selengkapnya.
           </p>
         </Reveal>
       </div>
 
-      {/* =========================================================
-          MARQUEE
-      ========================================================== */}
-      <div className="testimonial-track">
-        <div className="testimonial-marquee">
-          {marquee.map((t, i) => {
-            const index = i % testimonials.length;
-            const isClone = i >= testimonials.length;
+      <div className={cn(berjalan && "testimonial-track")}>
+        <div
+          className={cn(
+            berjalan
+              ? "testimonial-marquee"
+              : "container-page flex flex-wrap justify-center gap-5",
+          )}
+        >
+          {kartu.map((t, i) => {
+            const index = i % items.length;
+            const isClone = berjalan && i >= items.length;
 
             return (
               <button
-                key={i}
+                key={`${t.id}-${i}`}
                 type="button"
-                onClick={() => setActive(index)}
+                onClick={() => open(index)}
                 aria-hidden={isClone || undefined}
                 tabIndex={isClone ? -1 : undefined}
-                aria-label={`Baca testimoni lengkap dari ${t.name}`}
-                className="
-                  group
-                  w-64
-                  shrink-0
-                  flex
-                  flex-col
-                  overflow-hidden
-                  rounded-2xl
-                  bg-paper-card
-                  text-left
-                  transition-all
-                  duration-400
-                  ease-warm
-                  hover:shadow-lift
-                  hover:-translate-y-1.5
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-blue-500
-                  focus-visible:ring-offset-2
-                  focus-visible:ring-offset-paper
-                "
+                aria-label={`Baca ulasan lengkap dari ${t.name}`}
+                className="group w-64 shrink-0 flex flex-col overflow-hidden rounded-2xl bg-paper-card text-left transition-all duration-400 ease-warm hover:shadow-lift hover:-translate-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
               >
-                {/* =================================================
-                    FOTO
-                ================================================== */}
                 <div className="relative h-28 w-full overflow-hidden bg-black">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={t.work_image}
-                    className="
-                      absolute
-                      inset-0
-                      w-full
-                      h-full
-                      object-cover
-                      transition-transform
-                      duration-700
-                      ease-warm
-                      group-hover:scale-105
-                    "
-                    alt=""
-                  />
-
-                  <div className="absolute inset-0 bg-linear-to-t from-blue-900/60 via-blue-900/0 to-blue-900/0" />
+                  <CardImage src={t.courseImage} />
+                  <div className="absolute inset-0 bg-linear-to-t from-blue-900/70 via-blue-900/10 to-blue-900/0" />
+                  <span className="absolute bottom-2 left-3 right-3 text-[11px] font-medium text-white/90 truncate">
+                    {t.courseTitle}
+                  </span>
                 </div>
 
-                {/* =================================================
-                    CONTENT
-                ================================================== */}
                 <div className="flex flex-1 flex-col p-5">
-                  <p
-                    className="text-ink-body text-[13px] line-clamp-2 mb-4"
-                    style={QUOTE}
-                  >
+                  <p className="text-ink-body text-[13px] line-clamp-2 mb-4" style={QUOTE}>
                     &ldquo;{t.content}&rdquo;
                   </p>
 
-                  {/* =================================================
-                      USER
-                  ================================================== */}
                   <div className="mt-auto flex items-center gap-3">
-                    <div className="w-9 h-9 shrink-0 rounded-full overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={t.image}
-                        onError={(e) => {
-                          (
-                            e.target as HTMLImageElement
-                          ).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            t.name
-                          )}&background=1D4FD0&color=fff`;
-                        }}
-                        className="w-full h-full object-cover"
-                        alt=""
-                      />
-                    </div>
+                    <UserAvatar name={t.name} photoURL={t.avatar} size="sm" />
 
                     <div className="min-w-0">
-                      <p
-                        className="text-black text-sm truncate"
-                        style={NAME}
-                      >
+                      <p className="text-black text-sm truncate" style={NAME}>
                         {t.name}
                       </p>
-
-                      {/* Rating */}
-                      <div
-                        className="flex gap-0.5 mt-1"
-                        aria-hidden="true"
-                      >
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <svg
-                            key={s}
-                            className={cn(
-                              "w-2.5 h-2.5",
-                              s <= t.rating
-                                ? "text-amber-500"
-                                : "text-blue-100"
-                            )}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.98 9.101c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                          </svg>
-                        ))}
-                      </div>
+                      <Stars value={t.rating} size="xs" className="mt-1" />
                     </div>
                   </div>
                 </div>
@@ -248,182 +188,69 @@ export default function Testimonials() {
         </div>
       </div>
 
-      {/* =========================================================
-          DIALOG
-      ========================================================== */}
-      <dialog
-        ref={dialogRef}
-        onCancel={(e) => {
-          e.preventDefault();
-          setActive(null);
-        }}
-        onClick={(e) => {
-          if (e.target === dialogRef.current) {
-            setActive(null);
-          }
-        }}
-        aria-labelledby="testimoni-nama"
-        className="
-          dialog-panel
-          m-auto
-          w-[min(34rem,calc(100vw-2rem))]
-          p-0
-          bg-paper-card
-          rounded-2xl
-          shadow-lift
-        "
-      >
-        {current && (
-          <div>
-            {/* =====================================================
-                DIALOG IMAGE
-            ====================================================== */}
+      {/* Dialog dirender sebagai bagian biasa, bukan <dialog> + showModal():
+          showModal harus dipanggil dari efek, dan itulah sumber render
+          berantai yang dulu ditandai lint. */}
+      {current && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ulasan-nama"
+          className="fixed inset-0 z-100 flex items-center justify-center bg-ink/50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActive(null);
+          }}
+        >
+          <div className="w-[min(34rem,calc(100vw-2rem))] overflow-hidden rounded-2xl bg-paper-card shadow-lift">
             <div className="relative h-40 w-full overflow-hidden bg-blue-600">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={current.work_image}
-                className="
-                  absolute
-                  inset-0
-                  w-full
-                  h-full
-                  object-cover
-                "
-                alt=""
-              />
-
+              <CardImage src={current.courseImage} />
               <div className="absolute inset-0 bg-linear-to-t from-blue-900/70 via-blue-900/10 to-blue-900/0" />
 
-              {/* Close button */}
               <button
                 type="button"
                 onClick={() => setActive(null)}
                 aria-label="Tutup"
-                className="
-                  absolute
-                  top-3
-                  right-3
-                  w-9
-                  h-9
-                  rounded-full
-                  bg-paper-card/90
-                  text-ink
-                  flex
-                  items-center
-                  justify-center
-                  transition-colors
-                  duration-200
-                  ease-out-soft
-                  hover:bg-blue-600
-                  hover:text-white
-                "
+                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-paper-card/90 text-ink flex items-center justify-center transition-colors duration-200 ease-out-soft hover:bg-blue-600 hover:text-white"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* =====================================================
-                DIALOG CONTENT
-            ====================================================== */}
             <div className="p-7">
-              <p
-                className="text-ink-body text-base min-h-30"
-                style={QUOTE}
-                aria-live="polite"
-              >
+              <p className="text-ink-body text-base min-h-30 whitespace-pre-line" style={QUOTE} aria-live="polite">
                 &ldquo;{typed}
-                {!reducedMotion &&
-                  typed.length < current.content.length && (
-                    <span
-                      aria-hidden="true"
-                      className="
-                        inline-block
-                        w-0.5
-                        h-[0.95em]
-                        align-middle
-                        bg-blue-500
-                        ml-0.5
-                        animate-pulse
-                      "
-                    />
-                  )}
-
-                {typed.length === current.content.length && "”"}
+                {!selesaiMengetik && (
+                  <span
+                    aria-hidden="true"
+                    className="inline-block w-0.5 h-[0.95em] align-middle bg-blue-500 ml-0.5 animate-pulse"
+                  />
+                )}
+                {selesaiMengetik && "”"}
               </p>
 
-              {/* =================================================
-                  USER INFO
-              ================================================== */}
               <div className="mt-7 flex items-center gap-3 pt-5">
-                <div className="w-12 h-12 shrink-0 rounded-full overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={current.image}
-                    onError={(e) => {
-                      (
-                        e.target as HTMLImageElement
-                      ).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        current.name
-                      )}&background=1D4FD0&color=fff`;
-                    }}
-                    className="w-full h-full object-cover"
-                    alt=""
-                  />
-                </div>
+                <UserAvatar name={current.name} photoURL={current.avatar} size="lg" className="w-12 h-12 text-base" />
 
-                <div>
-                  <p
-                    id="testimoni-nama"
-                    className="text-black text-lg"
-                    style={NAME}
-                  >
+                <div className="min-w-0">
+                  <p id="ulasan-nama" className="text-black text-lg" style={NAME}>
                     {current.name}
                   </p>
-
-                  <p className="text-ink-muted text-xs mt-0.5">
-                    {current.position}
-                  </p>
+                  <Link
+                    href={`/courses/${current.courseSlug}`}
+                    className="text-ink-muted text-xs mt-0.5 block truncate transition-colors hover:text-blue-700"
+                  >
+                    Alumni · {current.courseTitle}
+                  </Link>
                 </div>
 
-                {/* Rating */}
-                <div
-                  className="ml-auto flex gap-0.5"
-                  aria-label={`Rating ${current.rating} dari 5`}
-                >
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <svg
-                      key={s}
-                      className={cn(
-                        "w-3.5 h-3.5",
-                        s <= current.rating
-                          ? "text-amber-500"
-                          : "text-blue-100"
-                      )}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      aria-hidden="true"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.98 9.101c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                  ))}
-                </div>
+                <Stars value={current.rating} size="sm" className="ml-auto" />
               </div>
             </div>
           </div>
-        )}
-      </dialog>
+        </div>
+      )}
     </section>
   );
 }

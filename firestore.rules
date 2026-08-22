@@ -129,6 +129,19 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Ulasan kursus ──────────────────────────────────────────────────
+    // Ditulis HANYA lewat Server Action, yang lebih dulu memastikan penulisnya
+    // punya enrollment berstatus "completed" untuk kursus itu. Kalau klien
+    // boleh menulis langsung, syarat itu lenyap: siapa pun bisa mengarang
+    // bintang lima untuk kursus yang tidak pernah ia buka, dan rata-rata
+    // bintang di katalog kehilangan artinya.
+    //
+    // Membacanya pun tidak perlu dari browser — beranda dan halaman detail
+    // kursus keduanya dirender di server.
+    match /reviews/{id} {
+      allow read, write: if false;
+    }
+
     // ── Kategori kursus ────────────────────────────────────────────────
     // Dikelola admin lewat Server Action yang memakai Admin SDK, dan dibaca
     // di server saat merender daftar filter maupun pilihan di form. Klien
