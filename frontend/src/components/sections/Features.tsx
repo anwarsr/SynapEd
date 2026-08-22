@@ -503,7 +503,17 @@ export default function Features() {
   return (
     <section
       id="features"
-      className="py-28"
+      /* Kartu di panggung sengaja ber-overflow visible supaya kedalaman 3D-nya
+         tidak terpotong. Di layar sempit sebaran kipasnya (radiusX sampai
+         300px dari pusat) melampaui viewport dan MELEBARKAN halaman — muncul
+         gulir horizontal dan section lain jadi tampak bergeser.
+
+         Diklip di section, bukan di panggung: batas section selebar layar,
+         jadi potongannya jatuh persis di tepi dan tidak terlihat.
+
+         clip, BUKAN hidden — hidden membentuk scroll container baru dan itu
+         mematikan position: sticky milik .features-stage. */
+      className="py-28 overflow-x-clip"
     >
       <div className="container-page">
 
