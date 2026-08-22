@@ -36,7 +36,18 @@ export async function POST(request: Request) {
       maxAge: SESSION_MAX_AGE_MS / 1000,
     });
     return res;
-  } catch {
+  } catch (err) {
+    // Alasannya dicatat di server, TIDAK dikirim ke browser.
+    //
+    // Yang sampai ke pengguna tetap kalimat umum: pesan Firebase bisa
+    // menyebutkan project id, umur token, atau kekurangan izin service
+    // account — keterangan yang berguna untuk menyerang, bukan untuk masuk.
+    //
+    // Sebelumnya blok ini `catch {}` tanpa nama, jadi kegagalan apa pun
+    // tampil di layar hanya sebagai "Sesi gagal dibuat" dan tidak
+    // meninggalkan jejak sama sekali di terminal.
+    console.error("[auth/session] createSessionCookie gagal:", err);
+
     return NextResponse.json(
       { message: "Sesi tidak dapat dibuat. Silakan masuk lagi." },
       { status: 401 },
