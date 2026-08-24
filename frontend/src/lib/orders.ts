@@ -21,7 +21,21 @@ export const ORDERS = "orders";
  * 3. Nominal yang datang di notifikasi TIDAK boleh dipercaya begitu saja —
  *    ia harus dibandingkan dengan yang tercatat di sini.
  */
-export type OrderStatus = "pending" | "paid" | "failed" | "expired";
+/**
+ * `awaiting_review` hanya dipakai jalur QRIS manual: pembeli sudah mengunggah
+ * bukti, tetapi belum ada yang memastikan uangnya benar-benar masuk. Ia
+ * SENGAJA berbeda dari `paid` — akses baru terbuka setelah admin memutuskan.
+ */
+export type OrderStatus = "pending" | "awaiting_review" | "paid" | "failed" | "expired";
+
+/**
+ * Lewat mana pesanan ini dibayar.
+ *
+ * - `midtrans` — otomatis, akses diberikan webhook bertanda tangan.
+ * - `manual`   — QRIS Pedagang Bima, akses diberikan admin setelah mencocokkan
+ *                dengan mutasi di aplikasi bank.
+ */
+export type OrderMethod = "midtrans" | "manual";
 
 export interface Order {
   /** Sama dengan document ID. */
@@ -39,6 +53,7 @@ export interface Order {
   currency: "IDR";
 
   status: OrderStatus;
+  method: OrderMethod;
   /** "qris", "bank_transfer", "gopay", … diisi webhook saat pembayaran masuk. */
   paymentType: string | null;
 
@@ -48,6 +63,17 @@ export interface Order {
    * dan meninggalkan tumpukan pesanan menggantung.
    */
   snapToken: string | null;
+
+  // ── Khusus jalur manual ───────────────────────────────────────────────
+  /** Path Storage bukti bayar. Tidak pernah URL publik — lihat storage.rules. */
+  proofPath: string | null;
+  /** Catatan opsional dari pembeli, mis. jam transfer. */
+  payerNote: string | null;
+  reviewedAt: string | null;
+  reviewedByUid: string | null;
+  reviewedByName: string | null;
+  /** Alasan penolakan, atau catatan admin saat menyetujui. */
+  reviewNote: string | null;
 
   /** ISO — string, supaya aman melintasi batas server->klien. */
   createdAt: string;
@@ -59,13 +85,52 @@ export interface Order {
   lastNotification: Record<string, unknown> | null;
 }
 
+/**
+ * Dokumen mentah -> Order dengan seluruh field terisi.
+ *
+ * Pesanan yang dibuat SEBELUM jalur manual ada tidak punya `method` maupun
+ * field tinjauan. Membacanya dengan `as Order` begitu saja membuat field-field
+ * itu `undefined` padahal tipenya bilang tidak boleh — dan yang pertama
+ * tersandung biasanya perbandingan `order.method === "manual"` yang diam-diam
+ * selalu salah.
+ */
+function toOrder(d: FirebaseFirestore.DocumentData): Order {
+  return {
+    orderId: (d.orderId as string | undefined) ?? "",
+    uid: (d.uid as string | undefined) ?? "",
+    userEmail: (d.userEmail as string | null | undefined) ?? null,
+    userName: (d.userName as string | null | undefined) ?? null,
+    courseSlug: (d.courseSlug as string | undefined) ?? "",
+    courseTitle: (d.courseTitle as string | undefined) ?? "",
+    amount: typeof d.amount === "number" ? d.amount : 0,
+    currency: "IDR",
+    status: (d.status as OrderStatus | undefined) ?? "pending",
+    // Tanpa `method` berarti pesanan lama, dan waktu itu hanya ada Midtrans.
+    method: d.method === "manual" ? "manual" : "midtrans",
+    paymentType: (d.paymentType as string | null | undefined) ?? null,
+    snapToken: (d.snapToken as string | null | undefined) ?? null,
+    proofPath: (d.proofPath as string | null | undefined) ?? null,
+    payerNote: (d.payerNote as string | null | undefined) ?? null,
+    reviewedAt: (d.reviewedAt as string | null | undefined) ?? null,
+    reviewedByUid: (d.reviewedByUid as string | null | undefined) ?? null,
+    reviewedByName: (d.reviewedByName as string | null | undefined) ?? null,
+    reviewNote: (d.reviewNote as string | null | undefined) ?? null,
+    createdAt: (d.createdAt as string | undefined) ?? "",
+    expiresAt: (d.expiresAt as string | undefined) ?? "",
+    paidAt: (d.paidAt as string | null | undefined) ?? null,
+    updatedAt: (d.updatedAt as string | undefined) ?? "",
+    lastNotification: (d.lastNotification as Record<string, unknown> | null | undefined) ?? null,
+  };
+}
+
 export function orderRef(orderId: string) {
   return adminDb().collection(ORDERS).doc(orderId);
 }
 
 export async function getOrder(orderId: string): Promise<Order | null> {
   const doc = await orderRef(orderId).get();
-  return doc.exists ? (doc.data() as Order) : null;
+  const data = doc.data();
+  return data ? toOrder(data) : null;
 }
 
 /**
@@ -114,7 +179,11 @@ export function isPayable(order: Order, now = new Date()): boolean {
  * membuat query ini butuh composite index — dan kegagalannya baru muncul saat
  * dijalankan, bukan saat dikompilasi.
  */
-export async function findPendingOrder(uid: string, courseSlug: string): Promise<Order | null> {
+export async function findPendingOrder(
+  uid: string,
+  courseSlug: string,
+  method: OrderMethod = "midtrans",
+): Promise<Order | null> {
   const snap = await adminDb()
     .collection(ORDERS)
     .where("uid", "==", uid)
@@ -124,8 +193,77 @@ export async function findPendingOrder(uid: string, courseSlug: string): Promise
 
   const now = new Date();
   for (const doc of snap.docs) {
-    const order = doc.data() as Order;
-    if (isPayable(order, now) && order.snapToken) return order;
+    const order = toOrder(doc.data());
+    if (order.method !== method) continue;
+    if (!isPayable(order, now)) continue;
+
+    // Pesanan Midtrans tanpa snapToken tidak bisa dibuka lagi — popup Snap
+    // butuh token itu. Jalur manual tidak punya token apa pun, jadi syarat ini
+    // hanya berlaku untuk Midtrans.
+    if (method === "midtrans" && !order.snapToken) continue;
+
+    return order;
   }
   return null;
+}
+
+/**
+ * Pesanan manual yang menunggu ditinjau admin, terbaru di atas.
+ *
+ * Disaring per-metode DI MEMORI, bukan dengan `where("method", "==", "manual")`.
+ * Kueri kesamaan Firestore mengabaikan dokumen yang tidak punya field-nya, dan
+ * pesanan lama memang tidak punya `method` — jebakan yang sudah dua kali
+ * menggigit di proyek ini (`orderBy("order")` dan `visibility`). Di sini
+ * dampaknya kebetulan tidak terasa karena yang dicari justru yang baru, tapi
+ * aturannya tetap: jangan menyaring field yang bisa hilang lewat kueri.
+ */
+export async function listOrdersAwaitingReview(): Promise<Order[]> {
+  const snap = await adminDb()
+    .collection(ORDERS)
+    .where("status", "==", "awaiting_review")
+    .get();
+
+  return snap.docs
+    .map((d) => toOrder(d.data()))
+    .filter((o) => o.method === "manual")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Jumlah pesanan manual yang menunggu tinjauan — untuk lencana panel admin. */
+export async function countOrdersAwaitingReview(): Promise<number> {
+  return (await listOrdersAwaitingReview()).length;
+}
+
+/**
+ * Pesanan manual seseorang yang masih hidup untuk satu kursus.
+ *
+ * "Hidup" berarti `pending` (belum kirim bukti) atau `awaiting_review` (sudah
+ * kirim, menunggu admin) — dua keadaan yang membuat halaman kursus menampilkan
+ * panel lanjutan alih-alih tombol beli.
+ *
+ * Sengaja pembacaan biasa, bukan Server Action: dipanggil dari Server
+ * Component halaman kursus, dan setiap ekspor di berkas "use server" menjadi
+ * endpoint yang bisa dipanggil siapa pun.
+ */
+export async function findLiveManualOrder(uid: string, courseSlug: string): Promise<Order | null> {
+  const snap = await adminDb()
+    .collection(ORDERS)
+    .where("uid", "==", uid)
+    .where("courseSlug", "==", courseSlug)
+    .get();
+
+  const hidup = snap.docs
+    .map((d) => toOrder(d.data()))
+    .filter((o) => o.method === "manual")
+    .filter((o) => o.status === "pending" || o.status === "awaiting_review")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const terbaru = hidup[0];
+  if (!terbaru) return null;
+
+  // Yang sudah lewat waktunya tidak ditawarkan lagi — pembeli harus memulai
+  // pesanan baru, dan panel tidak menyuruhnya membayar nominal basi.
+  if (terbaru.status === "pending" && !isPayable(terbaru)) return null;
+
+  return terbaru;
 }

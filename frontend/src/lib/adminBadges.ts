@@ -1,6 +1,7 @@
 import "server-only";
 import { pendingApplicationCount } from "@/lib/educator";
 import { pendingRequestCount } from "@/lib/courseRequests";
+import { countOrdersAwaitingReview } from "@/lib/orders";
 
 /**
  * Angka pada lencana navigasi admin.
@@ -19,13 +20,16 @@ export interface AdminBadges {
   applications: number;
   /** Pengajuan perubahan kursus yang masih menunggu. */
   requests: number;
+  /** Pembayaran QRIS manual yang menunggu diperiksa. */
+  payments: number;
 }
 
 export async function adminBadges(): Promise<AdminBadges> {
-  const [applications, requests] = await Promise.all([
+  const [applications, requests, payments] = await Promise.all([
     pendingApplicationCount(),
     pendingRequestCount(),
+    countOrdersAwaitingReview(),
   ]);
 
-  return { applications, requests };
+  return { applications, requests, payments };
 }

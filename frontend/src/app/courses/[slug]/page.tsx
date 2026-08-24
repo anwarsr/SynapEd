@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
 import EnrollButton from "@/components/courses/EnrollButton";
 import BuyButton from "@/components/courses/BuyButton";
+import ManualQrisPanel from "@/components/courses/ManualQrisPanel";
 import ReviewForm from "@/components/courses/ReviewForm";
 import ReviewList from "@/components/courses/ReviewList";
 import Stars from "@/components/ui/Stars";
@@ -13,6 +14,9 @@ import { getCourse } from "@/lib/courses";
 import { getCourseAccess } from "@/lib/courseAccess";
 import { getReview, listCourseReviews } from "@/lib/reviews";
 import { paymentsConfigured } from "@/lib/payments/midtrans";
+import { getPaymentSettings, manualQrisReady } from "@/lib/paymentSettings";
+import { findLiveManualOrder } from "@/lib/orders";
+import { courseImageUrl } from "@/lib/videoEmbed";
 import CourseThumb from "@/components/ui/CourseThumb";
 import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
@@ -59,6 +63,20 @@ export default async function CourseDetailPage({ params }: Props) {
   // tempat saja yang memutuskan apakah pembayaran sudah siap.
   const paymentsReady = paymentsConfigured();
   const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ?? "";
+
+  // Dua syarat untuk tiap metode, dan keduanya harus terpenuhi: kuncinya
+  // terpasang (urusan deploy) DAN saklarnya menyala (urusan admin).
+  const paymentSettings = await getPaymentSettings();
+  const midtransUsable = paymentsReady && paymentSettings.midtransEnabled;
+  const manualUsable = manualQrisReady(paymentSettings);
+  const qrisUrl = courseImageUrl(paymentSettings.qrisImagePath);
+
+  // Pesanan manual yang masih hidup — menentukan panel menampilkan tombol
+  // mulai, formulir bukti, atau keterangan menunggu.
+  const manualOrder =
+    manualUsable && access && !enrolled
+      ? await findLiveManualOrder(access.user.uid, slug)
+      : null;
 
   // Formulir ulasan hanya untuk yang enrollment-nya sudah selesai. Penjaga
   // sebenarnya tetap di submitReview() — ini cuma menentukan yang terlihat.
@@ -234,20 +252,44 @@ export default async function CourseDetailPage({ params }: Props) {
                       Masuk untuk Mendaftar
                     </Button>
                   ) : course.price > 0 ? (
-                    // Kunci Midtrans belum terpasang berarti tombolnya pasti
-                    // gagal. Lebih jujur mengatakannya daripada menyodorkan
-                    // tombol yang hanya menghasilkan pesan galat.
-                    paymentsReady ? (
-                      <BuyButton
-                        slug={slug}
-                        clientKey={midtransClientKey}
-                        production={process.env.MIDTRANS_IS_PRODUCTION === "true"}
-                      />
-                    ) : (
-                      <span className="w-full rounded-lg border border-rule bg-paper-alt px-6 py-3 text-center text-sm text-ink-muted">
-                        Pembayaran segera hadir
-                      </span>
-                    )
+                    <>
+                      {/* Kunci Midtrans belum terpasang, atau saklarnya dimatikan
+                          admin, berarti tombolnya pasti gagal — jadi tidak
+                          dirender sama sekali. */}
+                      {midtransUsable && (
+                        <BuyButton
+                          slug={slug}
+                          clientKey={midtransClientKey}
+                          production={process.env.MIDTRANS_IS_PRODUCTION === "true"}
+                        />
+                      )}
+
+                      {manualUsable && (
+                        <ManualQrisPanel
+                          slug={slug}
+                          price={course.price}
+                          qrisUrl={qrisUrl!}
+                          qrisNote={paymentSettings.qrisNote}
+                          order={
+                            manualOrder
+                              ? {
+                                  orderId: manualOrder.orderId,
+                                  amount: manualOrder.amount,
+                                  status: manualOrder.status as "pending" | "awaiting_review",
+                                }
+                              : null
+                          }
+                        />
+                      )}
+
+                      {/* Kedua metode mati. Dikatakan apa adanya, bukan
+                          disodori tombol yang tidak menuju ke mana-mana. */}
+                      {!midtransUsable && !manualUsable && (
+                        <span className="w-full rounded-lg border border-rule bg-paper-alt px-6 py-3 text-center text-sm text-ink-muted">
+                          Pembayaran sedang tidak tersedia
+                        </span>
+                      )}
+                    </>
                   ) : (
                     <EnrollButton slug={slug} />
                   )}

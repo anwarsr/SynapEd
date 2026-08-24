@@ -87,8 +87,18 @@ export async function createOrder(slug: string): Promise<OrderResult> {
     amount: course.price,
     currency: "IDR",
     status: "pending",
+    method: "midtrans",
     paymentType: null,
     snapToken: token,
+    // Field tinjauan hanya terpakai jalur QRIS manual. Tetap ditulis eksplisit
+    // sebagai null supaya bentuk dokumennya seragam apa pun metodenya —
+    // panel admin dan skrip verifikasi tidak perlu menebak.
+    proofPath: null,
+    payerNote: null,
+    reviewedAt: null,
+    reviewedByUid: null,
+    reviewedByName: null,
+    reviewNote: null,
     createdAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
     paidAt: null,

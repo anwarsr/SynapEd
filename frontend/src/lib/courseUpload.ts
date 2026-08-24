@@ -1,7 +1,12 @@
 "use client";
 import { ref, uploadBytes } from "firebase/storage";
 import { firebaseStorage } from "@/lib/firebase/client";
-import { COURSE_ASSETS, COURSE_THUMBNAILS } from "@/lib/storagePaths";
+import {
+  COURSE_ASSETS,
+  COURSE_THUMBNAILS,
+  PAYMENT_PROOFS,
+  QRIS_IMAGES,
+} from "@/lib/storagePaths";
 import type { UploadedDoc } from "@/lib/courseActions";
 
 export const MAX_DOC_BYTES = 20 * 1024 * 1024;
@@ -77,6 +82,36 @@ export async function uploadCourseImage(
   file: File,
 ): Promise<string> {
   const path = `${COURSE_THUMBNAILS}/${uid}/${prefix}-${Date.now()}-${safeName(file.name)}`;
+  await uploadBytes(ref(firebaseStorage(), path), file, { contentType: file.type });
+  return path;
+}
+
+/**
+ * Bukti bayar QRIS manual. Mengembalikan path, dengan alasan yang sama seperti
+ * uploadCourseImage: server memeriksa awalannya, bukan mengurai URL.
+ *
+ * `orderId` masuk ke nama berkas supaya satu berkas nyasar di bucket masih
+ * bisa ditelusuri ke pesanannya tanpa membuka Firestore.
+ */
+export async function uploadPaymentProof(
+  uid: string,
+  orderId: string,
+  file: File,
+): Promise<string> {
+  const path = `${PAYMENT_PROOFS}/${uid}/${orderId}-${Date.now()}-${safeName(file.name)}`;
+  await uploadBytes(ref(firebaseStorage(), path), file, { contentType: file.type });
+  return path;
+}
+
+/**
+ * Gambar QRIS merchant. Hanya admin yang lolos storage.rules di folder ini.
+ *
+ * Tanpa uid di path — QRIS-nya milik situs, bukan milik admin yang kebetulan
+ * mengunggahnya. Kalau dipisah per-uid, mengganti admin berarti gambar lama
+ * tertinggal di folder orang yang sudah tidak menjabat.
+ */
+export async function uploadQrisImage(file: File): Promise<string> {
+  const path = `${QRIS_IMAGES}/${Date.now()}-${safeName(file.name)}`;
   await uploadBytes(ref(firebaseStorage(), path), file, { contentType: file.type });
   return path;
 }

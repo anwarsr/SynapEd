@@ -16,3 +16,15 @@ export const COURSE_THUMBNAILS = "course-thumbnails";
 
 /** Foto profil — satu folder per pengguna. */
 export const AVATARS = "avatars";
+
+/** Gambar QRIS merchant — terbuka, karena harus bisa dipindai calon pembeli. */
+export const QRIS_IMAGES = "payment-qris";
+
+/**
+ * Bukti bayar — TERTUTUP, satu folder per pengguna.
+ *
+ * Isinya tangkapan layar mutasi rekening milik orang lain. Disajikan hanya
+ * lewat route API yang memeriksa peran, tidak pernah sebagai URL langsung —
+ * pola yang sama dengan COURSE_ASSETS.
+ */
+export const PAYMENT_PROOFS = "payment-proofs";

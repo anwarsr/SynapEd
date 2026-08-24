@@ -150,6 +150,18 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Setelan aplikasi ───────────────────────────────────────────────
+    // Saat ini hanya settings/payments — saklar metode pembayaran.
+    //
+    // Kalau klien boleh menulis, siapa pun bisa menyalakan jalur QRIS manual
+    // untuk dirinya sendiri, lalu mengajukan bukti bayar palsu. Persetujuan
+    // admin tetap menghadangnya, tapi tidak ada alasan membuka pintu itu.
+    // Membacanya pun tidak perlu: halaman kursus dan panel admin sama-sama
+    // dirender di server.
+    match /settings/{id} {
+      allow read, write: if false;
+    }
+
     // Tolak apa pun di luar yang tersebut di atas.
     match /{document=**} {
       allow read, write: if false;

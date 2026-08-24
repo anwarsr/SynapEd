@@ -73,6 +73,42 @@ service firebase.storage {
                    && request.resource.contentType.matches('image/.*');
     }
 
+    // Gambar QRIS merchant — TERBUKA untuk dibaca.
+    //
+    // Harus bisa dipindai calon pembeli yang bahkan belum punya akun, jadi
+    // sama terbukanya dengan sampul kursus. Tidak ada yang rahasia: QRIS
+    // statis memang dirancang untuk dipajang.
+    //
+    // Yang boleh menulis hanya admin. Kalau tidak, siapa pun bisa menimpanya
+    // dengan QRIS miliknya sendiri dan mengalihkan seluruh pembayaran.
+    match /payment-qris/{allPaths=**} {
+      allow read: if true;
+
+      allow write: if request.auth != null
+                   && request.auth.token.role == 'admin'
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Bukti bayar — TERTUTUP dari klien, baca maupun lewat URL langsung.
+    //
+    // Isinya tangkapan layar mutasi rekening: nama, nominal, kadang saldo.
+    // `allow read: if false` di sini berarti tidak ada URL yang bisa dibagikan
+    // atau ditebak — admin melihatnya lewat /api/payments/proof, yang
+    // memeriksa peran lebih dulu. Pola yang sama dengan course-assets.
+    //
+    // Menulis dibatasi ke folder milik sendiri supaya bukti tidak bisa
+    // dititipkan ke folder orang lain; Server Action memeriksa awalan path itu
+    // sekali lagi sebelum menautkannya ke pesanan.
+    match /payment-proofs/{uid}/{allPaths=**} {
+      allow read: if false;
+
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
     // Hanya PDF.
     //
     // Word sempat diizinkan, tetapi tampilannya di halaman tidak pernah setia

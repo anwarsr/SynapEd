@@ -28,6 +28,7 @@
     "verify:quiz": "tsx scripts/verify-quiz.ts",
     "verify:certificate": "tsx scripts/verify-certificate.ts",
     "verify:google": "tsx scripts/verify-google-account.ts",
+    "verify:manual-payment": "tsx scripts/verify-manual-payment.ts",
     "verify:material": "tsx scripts/verify-material.ts",
     "verify:pdf": "tsx scripts/verify-pdf-viewer.ts",
     "verify:review": "tsx scripts/verify-review.ts",
