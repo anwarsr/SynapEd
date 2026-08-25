@@ -98,3 +98,17 @@ env:
   # permintaan, tidak ada gunanya saat build.
   - variable: MIDTRANS_SERVER_KEY
     secret: MIDTRANS_SERVER_KEY
+
+  # ── Asisten chat (OpenRouter) ────────────────────────────────────────
+  #
+  # Kredensial penuh juga — siapa pun yang memegangnya bisa memakai jatah
+  # API-mu. Sama seperti MIDTRANS_SERVER_KEY, cuma NAMA secret-nya yang
+  # tertulis di sini; nilainya hidup di Secret Manager. Dibuat dengan:
+  #
+  #   firebase apphosting:secrets:set OPENROUTER_API_KEY --project synap-ed
+  #
+  # Tanpa `availability`, tersedia saat RUNTIME saja — sesuai, kunci ini
+  # cuma dipakai server saat melayani permintaan /api/chat, tidak ada
+  # gunanya saat build.
+  - variable: OPENROUTER_API_KEY
+    secret: OPENROUTER_API_KEY
