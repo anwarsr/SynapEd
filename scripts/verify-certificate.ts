@@ -258,9 +258,9 @@ async function run(owner: TestUser, student: TestUser, otherStudent: TestUser, a
 
     // ── Tautan di dashboard utama ──────────────────────────────────
     {
-      const dash = await probeText("/dashboard", student.cookie);
+      const dash = await probeText("/profil", student.cookie);
       check(
-        "dashboard menampilkan tautan Lihat Sertifikat",
+        "profil menampilkan tautan Lihat Sertifikat",
         dash.html.includes("Lihat Sertifikat") && dash.html.includes(`/dashboard/certificates/${certId}`),
         "tautan sertifikat",
       );

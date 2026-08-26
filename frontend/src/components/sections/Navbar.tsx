@@ -196,7 +196,7 @@ export default function Navbar() {
                   nama polos, dan tombol Keluar pindah ke halaman profil supaya
                   navbar tidak menaruh aksi merusak di sebelah tautan biasa. */}
               <Link
-                href="/dashboard"
+                href="/profil"
                 title={`${user.email} — buka profil`}
                 aria-label="Buka profil"
                 className={cn(
@@ -328,7 +328,7 @@ export default function Navbar() {
                   {/* Tidak ada tombol Keluar di sini — keluar dilakukan dari
                       halaman profil, sejalan dengan navbar desktop. */}
                   <Link
-                    href="/dashboard"
+                    href="/profil"
                     onClick={() => setMobileOpen(false)}
                     className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                   >

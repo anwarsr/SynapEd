@@ -39,7 +39,7 @@ export async function enrollFree(slug: string): Promise<EnrollResult> {
   const created = await writeEnrollment(newEnrollment(user.uid, course, "free", 0, null));
 
   revalidatePath(`/courses/${slug}`);
-  revalidatePath("/dashboard");
+  revalidatePath("/profil");
 
   return {
     ok: true,
@@ -66,7 +66,7 @@ export async function grantEnrollment(uid: string, slug: string): Promise<Enroll
   const created = await writeEnrollment(newEnrollment(uid, course, "granted", 0, null));
 
   revalidatePath(`/admin/users/${uid}`);
-  revalidatePath("/dashboard");
+  revalidatePath("/profil");
 
   return {
     ok: true,
@@ -126,7 +126,7 @@ export async function markLessonComplete(slug: string, lessonSlug: string): Prom
   await issueCertificateIfComplete(user, course, enrollment, finalCompletedLessons);
 
   revalidatePath(`/courses/${slug}/learn/${lessonSlug}`);
-  revalidatePath("/dashboard");
+  revalidatePath("/profil");
 
   return { ok: true, slug, message: "Pelajaran ditandai selesai." };
 }

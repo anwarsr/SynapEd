@@ -25,6 +25,7 @@
     "verify:curriculum": "tsx scripts/verify-curriculum.ts",
     "verify:educator": "tsx scripts/verify-educator.ts",
     "verify:enrollment": "tsx scripts/verify-enrollment.ts",
+    "verify:profile": "tsx scripts/verify-profile.ts",
     "verify:quiz": "tsx scripts/verify-quiz.ts",
     "verify:certificate": "tsx scripts/verify-certificate.ts",
     "verify:google": "tsx scripts/verify-google-account.ts",

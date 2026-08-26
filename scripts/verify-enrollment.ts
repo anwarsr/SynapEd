@@ -143,7 +143,7 @@ async function run(student: TestUser, other: TestUser) {
       String(detail.status),
     );
 
-    const dash = await probeText("/dashboard", student.cookie);
+    const dash = await probeText("/profil", student.cookie);
     check(
       "dashboard menyatakan belum mengikuti kursus",
       dash.html.includes("Belum mengikuti kursus"),
@@ -213,11 +213,11 @@ async function run(student: TestUser, other: TestUser) {
       "tombol menyesuaikan status pendaftaran",
     );
 
-    const dash = await probeText("/dashboard", student.cookie);
+    const dash = await probeText("/profil", student.cookie);
     check(
-      "kursus muncul di Kursus Saya",
-      dash.html.includes("Kursus Saya") && dash.html.includes("Kursus Uji Gratis"),
-      "dashboard",
+      "kursus muncul di bagian Kursus yang Diikuti",
+      dash.html.includes("Kursus yang Diikuti") && dash.html.includes("Kursus Uji Gratis"),
+      "halaman profil",
     );
     check("kemajuan dimulai dari 0%", dash.html.includes("0%"), "belum ada pelajaran diselesaikan");
   }
@@ -257,12 +257,12 @@ async function run(student: TestUser, other: TestUser) {
     );
     check("pelajaran pertama ditandai selesai", first.includes("ditandai selesai"), "pesan hasil");
 
-    const half = await probeText("/dashboard", student.cookie);
+    const half = await probeText("/profil", student.cookie);
     check("dashboard menunjukkan 50% setelah satu dari dua pelajaran", half.html.includes("50%"), "progressFromSnapshot");
 
     // arrayUnion idempoten — menandai ulang tidak menggandakan progres.
     await callAction(`/courses/${freeSlug}/learn/pratinjau`, markId, [freeSlug, "pratinjau"], student.cookie);
-    const stillHalf = await probeText("/dashboard", student.cookie);
+    const stillHalf = await probeText("/profil", student.cookie);
     check("menandai ulang pelajaran yang sama tidak mengubah progres", stillHalf.html.includes("50%"), "idempoten");
 
     const second = await callAction(
@@ -273,7 +273,7 @@ async function run(student: TestUser, other: TestUser) {
     );
     check("pelajaran kedua ditandai selesai", second.includes("ditandai selesai"), "pesan hasil");
 
-    const full = await probeText("/dashboard", student.cookie);
+    const full = await probeText("/profil", student.cookie);
     check("dashboard menunjukkan 100% setelah semua pelajaran", full.html.includes("100%"), "progressFromSnapshot");
   }
 
@@ -286,7 +286,7 @@ async function run(student: TestUser, other: TestUser) {
       `${locked.status} ${locked.location ?? ""}`,
     );
 
-    const dash = await probeText("/dashboard", other.cookie);
+    const dash = await probeText("/profil", other.cookie);
     check(
       "dashboard pengguna lain tetap kosong",
       dash.html.includes("Belum mengikuti kursus"),

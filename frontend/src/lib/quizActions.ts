@@ -231,7 +231,7 @@ export async function submitQuiz(
   }
 
   revalidatePath(`/courses/${courseSlug}/learn/${lessonSlug}`);
-  revalidatePath("/dashboard");
+  revalidatePath("/profil");
 
   return {
     ok: true,

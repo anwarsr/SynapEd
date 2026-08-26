@@ -49,7 +49,7 @@ async function run(admin: TestUser, educator: TestUser, biasa: TestUser) {
 
     const asEducator = await probe(PAGE, educator.cookie);
     check(
-      "halaman kategori, educator -> /dashboard",
+      "halaman kategori, educator -> /profil",
       asEducator.status >= 300 && asEducator.status < 400,
       `${asEducator.status} ${asEducator.location ?? ""}`,
     );
