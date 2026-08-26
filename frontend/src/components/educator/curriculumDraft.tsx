@@ -9,6 +9,8 @@ import type { LessonInput, SectionInput } from "@/lib/curriculum";
 import { FilePick, Label, inputClass } from "./fields";
 import DurationField from "./DurationField";
 import QuizEditor from "./QuizEditor";
+import QuizQuestionsFields from "./QuizQuestionsFields";
+import { emptyQuizDraft, type QuizDraftState } from "./quizDraft";
 import { cn } from "@/lib/cn";
 
 /**
@@ -50,6 +52,15 @@ export interface DraftLesson {
   attachment: DraftAttachment | null;
   uploading: boolean;
   uploadError: string | null;
+  /**
+   * Draft soal kuis untuk pelajaran ini SEBELUM tersimpan — hanya relevan
+   * kalau type === "quiz". Dipakai langsung di form BUAT kursus (courseSlug
+   * belum ada) supaya soalnya bisa diisi sekaligus, ikut tersimpan lewat
+   * saveQuiz() begitu kursus (dan slug pelajarannya) sudah ada — lihat
+   * CourseForm.tsx. Untuk pelajaran yang sudah tersimpan (konteks sunting),
+   * field ini tidak dipakai — kuisnya dikelola lewat QuizEditor sendiri.
+   */
+  quizDraft?: QuizDraftState;
 }
 
 export interface DraftSection {
@@ -92,6 +103,7 @@ export function newLesson(type: LessonType = "reading"): DraftLesson {
     attachment: null,
     uploading: false,
     uploadError: null,
+    quizDraft: type === "quiz" ? emptyQuizDraft() : undefined,
   };
 }
 
@@ -142,6 +154,25 @@ export function validateDraft(sections: DraftSection[]): string | null {
         return `Tautan video pelajaran "${l.title}" tidak dikenali.`;
       }
       if (l.uploading) return `Tunggu unggahan pelajaran "${l.title}" selesai dulu.`;
+
+      // Soal kuis tetap OPSIONAL saat membuat kursus — sama seperti sekarang,
+      // pelajaran kuis boleh diterbitkan tanpa soal dan diisi belakangan dari
+      // halaman sunting. Hanya divalidasi kalau educator sudah mulai mengisi.
+      // Mencerminkan validasi saveQuiz() di server (quizActions.ts) supaya
+      // kesalahan ketahuan di sini, bukan setelah kursus terlanjur dibuat.
+      if (l.type === "quiz" && l.quizDraft && l.quizDraft.questions.length > 0) {
+        for (const [qi, q] of l.quizDraft.questions.entries()) {
+          const prompt = q.prompt.trim();
+          if (!prompt) return `Soal ke-${qi + 1} pada kuis "${l.title}" belum punya pertanyaan.`;
+          if (q.options.length < 2) return `Soal "${prompt}" pada kuis "${l.title}" minimal punya dua pilihan.`;
+          if (q.options.some((o) => !o.text.trim())) {
+            return `Ada pilihan kosong pada soal "${prompt}" di kuis "${l.title}".`;
+          }
+          if (!q.options.some((o) => o.id === q.correctOptionId)) {
+            return `Jawaban benar belum dipilih untuk soal "${prompt}" di kuis "${l.title}".`;
+          }
+        }
+      }
 
       // Lampiran sengaja TIDAK diwajibkan. Empat kursus hasil migrasi belum
       // punya berkas sama sekali, dan mewajibkannya di sini akan membuat
@@ -348,7 +379,13 @@ export default function SectionList({
                     />
                     <select
                       value={l.type}
-                      onChange={(e) => updateLesson(si, li, { type: e.target.value as LessonType })}
+                      onChange={(e) => {
+                        const type = e.target.value as LessonType;
+                        updateLesson(si, li, {
+                          type,
+                          quizDraft: type === "quiz" ? (l.quizDraft ?? emptyQuizDraft()) : l.quizDraft,
+                        });
+                      }}
                       className={inputClass}
                       aria-label="Jenis pelajaran"
                     >
@@ -430,29 +467,53 @@ export default function SectionList({
 
                 {l.type === "quiz" && (
                   <div className="mt-3">
-                    {courseSlug && l.slug ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setExpandedQuiz((prev) => (prev === l.key ? null : l.key))}
-                          className="text-sm text-blue-700 hover:underline underline-offset-4"
-                        >
-                          {expandedQuiz === l.key ? "Tutup Soal Kuis" : "Kelola Soal Kuis"}
-                        </button>
-                        {expandedQuiz === l.key && (
-                          <div className="mt-3">
-                            <QuizEditor courseSlug={courseSlug} lessonSlug={l.slug} />
-                          </div>
-                        )}
-                      </>
+                    {courseSlug ? (
+                      l.slug ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedQuiz((prev) => (prev === l.key ? null : l.key))}
+                            className="text-sm text-blue-700 hover:underline underline-offset-4"
+                          >
+                            {expandedQuiz === l.key ? "Tutup Soal Kuis" : "Kelola Soal Kuis"}
+                          </button>
+                          {expandedQuiz === l.key && (
+                            <div className="mt-3">
+                              <QuizEditor courseSlug={courseSlug} lessonSlug={l.slug} />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        // Kuis hidup di dokumen terpisah berkunci lessonSlug —
+                        // butuh slug yang stabil. Ini pelajaran BARU yang
+                        // ditambahkan saat menyunting kursus yang sudah ada,
+                        // jadi belum punya slug sampai kurikulumnya disimpan.
+                        <p className="text-xs text-ink-muted">
+                          Simpan dulu supaya pelajaran ini punya alamat tetap, baru soal kuisnya bisa
+                          ditambahkan.
+                        </p>
+                      )
                     ) : (
-                      // Kuis hidup di dokumen terpisah berkunci lessonSlug —
-                      // butuh slug yang stabil, jadi pelajarannya harus
-                      // tersimpan dulu sebelum soalnya bisa ditambahkan.
-                      <p className="text-xs text-ink-muted">
-                        Simpan dulu supaya pelajaran ini punya alamat tetap, baru soal kuisnya bisa
-                        ditambahkan.
-                      </p>
+                      // Membuat kursus baru: belum ada courseSlug SAMA SEKALI,
+                      // jadi tidak ada gunanya menunggu "simpan dulu" — soalnya
+                      // cukup diisi di sini sebagai draft, lalu ikut tersimpan
+                      // otomatis begitu kursusnya diterbitkan (lihat
+                      // CourseForm.tsx).
+                      <QuizQuestionsFields
+                        passingScore={l.quizDraft?.passingScore ?? emptyQuizDraft().passingScore}
+                        onPassingScoreChange={(v) =>
+                          updateLesson(si, li, { quizDraft: { ...(l.quizDraft ?? emptyQuizDraft()), passingScore: v } })
+                        }
+                        maxAttempts={l.quizDraft?.maxAttempts ?? emptyQuizDraft().maxAttempts}
+                        onMaxAttemptsChange={(v) =>
+                          updateLesson(si, li, { quizDraft: { ...(l.quizDraft ?? emptyQuizDraft()), maxAttempts: v } })
+                        }
+                        questions={l.quizDraft?.questions ?? []}
+                        onQuestionsChange={(next) =>
+                          updateLesson(si, li, { quizDraft: { ...(l.quizDraft ?? emptyQuizDraft()), questions: next } })
+                        }
+                        idPrefix={l.key}
+                      />
                     )}
                   </div>
                 )}

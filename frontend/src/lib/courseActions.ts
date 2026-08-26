@@ -12,7 +12,20 @@ import { attachmentPaths, courseFilePaths, deleteObjects, pruneAttachmentFolders
 import type { Section } from "@/lib/courses";
 
 export type CourseResult =
-  | { ok: true; slug: string; message: string }
+  | {
+      ok: true;
+      slug: string;
+      message: string;
+      /**
+       * Slug tiap pelajaran hasil normalizeSections, paralel posisinya dengan
+       * `sections`/`lessons` yang dikirim di NewCourseInput (lessonSlugs[si][li]).
+       * Hanya diisi oleh createCourse — dipakai CourseForm.tsx untuk menyimpan
+       * draft soal kuis (saveQuiz) langsung setelah kursus dibuat, tanpa
+       * educator harus mampir ke halaman sunting dulu. Kosong/undefined di
+       * hasil fungsi lain di berkas ini (mis. deleteCourse) yang tidak relevan.
+       */
+      lessonSlugs?: string[][];
+    }
   | { ok: false; error: string };
 
 export interface UploadedDoc {
@@ -145,7 +158,8 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   revalidatePath("/courses");
   revalidatePath("/educator/courses");
 
-  return { ok: true, slug, message: "Kursus berhasil dibuat." };
+  const lessonSlugs = normalized.sections.map((s) => s.lessons.map((l) => l.slug));
+  return { ok: true, slug, message: "Kursus berhasil dibuat.", lessonSlugs };
 }
 
 /**

@@ -33,6 +33,15 @@ interface Props {
    * lampiran lama di bawah, tanpa migrasi data apa pun.
    */
   quiz: PublicQuiz | null;
+  /**
+   * Sertifikat yang sudah terbit untuk peserta ini, kalau ada — dibaca
+   * langsung dari enrollment.certificateId (BUKAN dari sinyal sekali-pakai
+   * markLessonComplete/submitQuiz), supaya kotak "Selesai" di bawah tetap
+   * benar walau peserta baru membuka pelajaran terakhir ini belakangan,
+   * bukan tepat saat menyelesaikannya. null berarti belum tersertifikasi
+   * ATAU pratinjau admin/educator yang memang tidak punya enrollment.
+   */
+  certificateId: string | null;
 }
 
 /**
@@ -60,6 +69,7 @@ export default function LearnShell({
   progress,
   canTrackProgress,
   quiz,
+  certificateId,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -479,6 +489,16 @@ export default function LearnShell({
                     Daftar untuk melanjutkan
                   </span>
                 </Link>
+              ) : certificateId ? (
+                <Link
+                  href={`/dashboard/certificates/${certificateId}`}
+                  className="group flex-1 rounded-2xl border border-rule bg-paper-card p-4 text-right transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
+                >
+                  <span className="t-label text-ink-faint block mb-1">Selesai</span>
+                  <span className="text-sm text-ink group-hover:text-blue-700 transition-colors">
+                    Sertifikat siap →
+                  </span>
+                </Link>
               ) : (
                 <span className="flex-1 rounded-2xl border border-rule bg-paper-alt p-4 text-right">
                   <span className="t-label text-ink-faint block mb-1">Selesai</span>
@@ -486,6 +506,17 @@ export default function LearnShell({
                 </span>
               )}
             </nav>
+
+            {certificateId && (
+              <p className="text-right text-sm">
+                <Link
+                  href={`/courses/${course.slug}#ulasan`}
+                  className="text-blue-700 hover:underline underline-offset-4"
+                >
+                  Sudah menyelesaikan kursus ini — tinggalkan ulasan →
+                </Link>
+              </p>
+            )}
           </div>
         </main>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { submitQuiz, type QuizSubmitResult } from "@/lib/quizActions";
 import type { PublicQuiz } from "@/lib/quiz";
 import { cn } from "@/lib/cn";
@@ -78,6 +79,17 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
             </p>
           </div>
 
+          {result.passed && result.certificateId && (
+            <div className="text-center">
+              <Link
+                href={`/courses/${courseSlug}/complete`}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
+              >
+                Lihat Halaman Kelulusan →
+              </Link>
+            </div>
+          )}
+
           <ul className="space-y-3">
             {quiz.questions.map((q) => {
               const graded = result.perQuestion.find((p) => p.id === q.id);
@@ -91,7 +103,7 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
                 >
                   <p className="font-medium text-ink mb-1">{q.prompt}</p>
                   <p className={graded?.correct ? "text-blue-700" : "text-rust-700"}>
-                    {graded?.correct ? "Jawaban benar" : "Jawaban kurang tepat"}
+                    {graded?.correct ? "Jawaban benar" : "Coba Lagi"}
                   </p>
                   {graded?.explanation && <p className="mt-2 text-ink-muted">{graded.explanation}</p>}
                 </li>

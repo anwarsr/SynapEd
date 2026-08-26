@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCourse } from "@/lib/courseActions";
+import { saveQuiz } from "@/lib/quizActions";
 import { Label, inputClass } from "./fields";
 import ThumbnailPicker from "./ThumbnailPicker";
 import DurationField from "./DurationField";
@@ -75,8 +76,33 @@ export default function CourseForm({
       return;
     }
 
+    // Draft soal kuis yang tadi diisi di form ini ikut disimpan sekarang —
+    // pelajarannya baru punya slug permanen setelah createCourse berhasil.
+    // Paralel (bukan berurutan): setiap saveQuiz menulis dokumen independen
+    // (courses/{slug}/quizzes/{lessonSlug}), tidak ada urutan yang perlu
+    // dijaga di antaranya. Kegagalan salah satu SENGAJA tidak digagalkan
+    // sebagai error pembuatan kursus — kursusnya sendiri sudah berhasil
+    // dibuat; "Kelola Soal Kuis" di halaman sunting tetap jadi jalur
+    // pemulihan manual kalau ada yang gagal tersimpan di sini.
+    const quizSaves = sections.flatMap((s, si) =>
+      s.lessons.flatMap((l, li) => {
+        const draft = l.quizDraft;
+        if (l.type !== "quiz" || !draft || draft.questions.length === 0) return [];
+        const lessonSlug = result.lessonSlugs?.[si]?.[li];
+        if (!lessonSlug) return [];
+        return [
+          saveQuiz(result.slug, lessonSlug, {
+            passingScore: draft.passingScore,
+            maxAttempts: draft.maxAttempts,
+            questions: draft.questions,
+          }),
+        ];
+      }),
+    );
+    if (quizSaves.length > 0) await Promise.allSettled(quizSaves);
+
     // Diantar ke halaman sunting, bukan ke halaman kursusnya: di sanalah soal
-    // kuis ditambahkan, dan itu langkah berikutnya yang paling mungkin.
+    // kuis yang belum sempat diisi bisa ditambahkan belakangan.
     router.replace(`/educator/courses/${result.slug}/edit`);
     router.refresh();
   }
@@ -214,8 +240,8 @@ export default function CourseForm({
       </div>
 
       <p className="text-xs text-ink-muted">
-        Kursus langsung tampil di katalog setelah diterbitkan. Soal kuis ditambahkan
-        setelah itu, dari halaman sunting.
+        Soal kuis yang Anda isi di atas ikut tersimpan otomatis. Belum sempat diisi? Bisa
+        ditambahkan belakangan dari halaman sunting.
       </p>
     </form>
   );

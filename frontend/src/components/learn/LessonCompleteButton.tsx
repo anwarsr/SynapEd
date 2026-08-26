@@ -37,7 +37,14 @@ export default function LessonCompleteButton({
   function submit() {
     startTransition(async () => {
       const res = await markLessonComplete(slug, lessonSlug);
-      if (res.ok) router.refresh();
+      if (!res.ok) return;
+      // Pelajaran terakhir baru saja menerbitkan sertifikat — arahkan ke
+      // halaman perayaan alih-alih sekadar menyegarkan halaman ini.
+      if (res.certificateId) {
+        router.push(`/courses/${slug}/complete`);
+        return;
+      }
+      router.refresh();
     });
   }
 
