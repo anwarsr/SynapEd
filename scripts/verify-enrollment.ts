@@ -293,6 +293,58 @@ async function run(student: TestUser, other: TestUser) {
       "enrollment tidak bocor antar akun",
     );
   }
+
+  // ── Kurikulum di halaman kursus bisa dinavigasi ───────────────────
+  //
+  // Sampai di titik ini `student` sudah menyelesaikan KEDUA pelajaran dan
+  // `other` belum mendaftar sama sekali — dua keadaan yang persis dibutuhkan.
+  {
+    const tautanPelajaran = (html: string, lesson: string) =>
+      html.includes(`href="/courses/${freeSlug}/learn/${lesson}"`);
+
+    // React SSR menyelipkan <!-- --> di antara nilai interpolasi dan teks
+    // di sebelahnya, jadi "2 dari 2 pelajaran" tersimpan terpotong-potong.
+    // Tanpa pembersihan ini, pemeriksaan teks di bawah lolos TANPA menguji
+    // apa pun — kalimatnya memang tidak akan pernah bersambung.
+    const teks = (html: string) => html.replace(/<!-- -->/g, "");
+
+    // Belum mendaftar: tidak boleh ada tautan ke pelajaran, karena servernya
+    // akan mengalihkan balik ke halaman ini juga — klik, mental, klik, mental.
+    const tamu = await probeText(`/courses/${freeSlug}`, other.cookie);
+    check(
+      "belum mendaftar: pelajaran TIDAK menautkan ke halaman belajar",
+      !tautanPelajaran(tamu.html, "pratinjau") && !tautanPelajaran(tamu.html, "terkunci"),
+      "cegah klik yang memental balik",
+    );
+    check(
+      "belum mendaftar: barisnya menautkan ke panel daftar",
+      tamu.html.includes('href="#daftar"'),
+      "anchor ke panel harga",
+    );
+    check(
+      "belum mendaftar: bilah kemajuan tidak dirender",
+      !teks(tamu.html).includes("dari 2 pelajaran"),
+      "tidak ada progres untuk dilaporkan",
+    );
+
+    // Sudah mendaftar: tiap pelajaran jadi pintu masuk langsung.
+    const peserta = await probeText(`/courses/${freeSlug}`, student.cookie);
+    check(
+      "sudah mendaftar: pelajaran menautkan langsung ke halaman belajar",
+      tautanPelajaran(peserta.html, "pratinjau") && tautanPelajaran(peserta.html, "terkunci"),
+      "daftar isi yang berfungsi",
+    );
+    check(
+      "sudah mendaftar: bilah kemajuan menampilkan 100%",
+      teks(peserta.html).includes("2 dari 2 pelajaran") && peserta.html.includes("100%"),
+      "progressOf",
+    );
+    check(
+      "sudah mendaftar: penanda Lanjut di sini muncul",
+      peserta.html.includes("Lanjut di sini"),
+      "menunjukkan posisi, bukan cuma isi",
+    );
+  }
 }
 
 async function main() {

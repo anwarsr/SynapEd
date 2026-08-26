@@ -38,6 +38,17 @@ export const lessonIcons: Record<string, string> = {
   quiz: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
 };
 
+/**
+ * Dipakai daftar kurikulum di halaman kursus DAN rail di halaman belajar.
+ *
+ * Dulu keduanya konstanta lokal di LearnShell. Begitu daftar kurikulum ikut
+ * merender pelajaran terkunci dan pelajaran selesai, dua definisi yang sama
+ * berarti dua gembok yang perlahan berbeda bentuk untuk hal yang sama.
+ */
+export const LOCK_ICON =
+  "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z";
+export const CHECK_ICON = "M5 13l4 4L19 7";
+
 export function formatPrice(value: number): string {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',

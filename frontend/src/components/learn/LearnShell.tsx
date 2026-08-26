@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { CourseDetail, Lesson } from "@/lib/courses";
 import type { Progress } from "@/lib/enrollments";
 import type { PublicQuiz } from "@/lib/quiz";
-import { lessonIcons } from "@/lib/courseUi";
+import { CHECK_ICON, LOCK_ICON, lessonIcons } from "@/lib/courseUi";
 import { formatBytes, lessonAssetUrl, previewKind, toEmbedUrl } from "@/lib/videoEmbed";
 import { cn } from "@/lib/cn";
 import LessonCompleteButton from "./LessonCompleteButton";
@@ -49,10 +49,6 @@ const typeLabel: Record<string, string> = {
   reading: "Bacaan",
   quiz: "Kuis",
 };
-
-const LOCK_ICON =
-  "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z";
-const CHECK_ICON = "M5 13l4 4L19 7";
 
 export default function LearnShell({
   course,
