@@ -68,6 +68,7 @@ export default async function LearnPage({ params }: Props) {
       progress={progressOf(course, enrollment)}
       canTrackProgress={canTrackProgress}
       quiz={quiz}
+      certificateId={enrollment?.certificateId ?? null}
     />
   );
 }

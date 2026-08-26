@@ -60,31 +60,39 @@ export async function getCertificate(id: string): Promise<Certificate | null> {
  * bisa basi) — alasannya sama dengan progressOf(): begitu educator menghapus
  * pelajaran lewat editor kurikulum, jumlah pelajaran yang tersimpan di
  * snapshot enrollment bisa melenceng dari kurikulum sebenarnya.
+ *
+ * Mengembalikan id sertifikat HANYA kalau panggilan inilah yang baru
+ * menerbitkannya — `null` di setiap kondisi lain (sudah tersertifikasi
+ * sebelumnya, belum lengkap, atau kalah race dengan tab/permintaan lain).
+ * Pemanggil memakai ini sebagai sinyal sekali-pakai ("tampilkan perayaan
+ * sekarang"), BUKAN sebagai cara memeriksa status sertifikat — untuk itu baca
+ * enrollment.certificateId langsung, supaya kunjungan ulang ke kursus yang
+ * sudah selesai tidak memicu ulang layar perayaan.
  */
 export async function issueCertificateIfComplete(
   user: SessionUser,
   course: CourseDetail,
   enrollment: Enrollment,
   finalCompletedLessons: string[],
-): Promise<void> {
-  if (enrollment.certificateId) return; // sudah terbit — tidak perlu diperiksa lagi
+): Promise<string | null> {
+  if (enrollment.certificateId) return null; // sudah terbit — tidak perlu diperiksa lagi
 
   const allSlugs = flattenLessons(course).map((l) => l.slug);
-  if (allSlugs.length === 0) return;
+  if (allSlugs.length === 0) return null;
 
   const done = new Set(finalCompletedLessons);
-  if (!allSlugs.every((s) => done.has(s))) return;
+  if (!allSlugs.every((s) => done.has(s))) return null;
 
   const id = randomCertificateId();
   const now = new Date().toISOString();
   const eRef = enrollmentRef(user.uid, course.slug);
 
-  await adminDb().runTransaction(async (tx) => {
+  return adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(eRef);
     const current = snap.data() as Enrollment | undefined;
     // Race dengan panggilan lain (mis. tab ganda) sudah menerbitkannya —
     // idempoten, bukan dianggap galat.
-    if (!current || current.certificateId) return;
+    if (!current || current.certificateId) return null;
 
     tx.set(certificateRef(id), {
       id,
@@ -98,5 +106,6 @@ export async function issueCertificateIfComplete(
       revokedAt: null,
     });
     tx.update(eRef, { certificateId: id, status: "completed", completedAt: now });
+    return id;
   });
 }

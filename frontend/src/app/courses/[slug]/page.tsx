@@ -193,7 +193,7 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
 
               {/* ── Ulasan peserta ──────────────────────────────── */}
-              <div className="space-y-5">
+              <div id="ulasan" className="space-y-5 scroll-mt-28">
                 <h2 className="t-h3">Ulasan Peserta</h2>
 
                 {selesai && (

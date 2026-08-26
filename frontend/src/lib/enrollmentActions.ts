@@ -14,7 +14,7 @@ import { getQuiz } from "@/lib/quiz";
 import { issueCertificateIfComplete } from "@/lib/certificates";
 
 export type EnrollResult =
-  | { ok: true; slug: string; message: string }
+  | { ok: true; slug: string; message: string; certificateId?: string }
   | { ok: false; error: string };
 
 /**
@@ -123,10 +123,10 @@ export async function markLessonComplete(slug: string, lessonSlug: string): Prom
     lastAccessedAt: now,
   });
 
-  await issueCertificateIfComplete(user, course, enrollment, finalCompletedLessons);
+  const newCertificateId = await issueCertificateIfComplete(user, course, enrollment, finalCompletedLessons);
 
   revalidatePath(`/courses/${slug}/learn/${lessonSlug}`);
   revalidatePath("/dashboard");
 
-  return { ok: true, slug, message: "Pelajaran ditandai selesai." };
+  return { ok: true, slug, message: "Pelajaran ditandai selesai.", certificateId: newCertificateId ?? undefined };
 }

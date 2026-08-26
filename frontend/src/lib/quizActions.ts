@@ -128,6 +128,7 @@ export type QuizSubmitResult =
       passed: boolean;
       score: number;
       attemptsLeft: number | null;
+      certificateId: string | null;
       perQuestion: { id: string; correct: boolean; explanation: string | null }[];
     }
   | { ok: false; error: string };
@@ -226,9 +227,9 @@ export async function submitQuiz(
   // berkali-kali sambil membaca penjelasan tiap kali gagal.
   const revealExplanation = passed || attemptsLeft === 0;
 
-  if (passed) {
-    await issueCertificateIfComplete(user, course, enrollment, finalCompletedLessons);
-  }
+  const newCertificateId = passed
+    ? await issueCertificateIfComplete(user, course, enrollment, finalCompletedLessons)
+    : null;
 
   revalidatePath(`/courses/${courseSlug}/learn/${lessonSlug}`);
   revalidatePath("/dashboard");
@@ -238,6 +239,7 @@ export async function submitQuiz(
     passed,
     score,
     attemptsLeft,
+    certificateId: newCertificateId,
     perQuestion: graded.map((g) => ({
       id: g.id,
       correct: g.correct,
