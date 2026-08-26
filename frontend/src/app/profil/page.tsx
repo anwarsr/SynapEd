@@ -76,7 +76,7 @@ export default async function ProfilePage() {
                   Kelola kursus →
                 </Link>
               </div>
-              <OwnedCourses courses={owned} />
+              <OwnedCourses courses={owned} own />
             </section>
           )}
 

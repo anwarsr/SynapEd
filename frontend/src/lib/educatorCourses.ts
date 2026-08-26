@@ -129,6 +129,10 @@ export async function listOwnedCourses(uid: string): Promise<EducatorCourseRow[]
         lessonsCount: sections.reduce((n, s) => n + s.lessons.length, 0),
         thumbnail: (data.thumbnail as string | null | undefined) ?? null,
         instructorName: (data.instructorName as string | undefined) ?? "",
+        ownerUid: (data.ownerUid as string | undefined) ?? null,
+        // Daftar ini selalu milik SATU educator yang fotonya sudah tampil di
+        // kepala halaman profilnya, jadi tidak perlu dibaca ulang per kursus.
+        instructorPhoto: null,
         price: (data.price as number | undefined) ?? 0,
         visibility: (data.visibility === "private" ? "private" : "public") as CourseVisibility,
         createdAt: (data.createdAt as string | undefined) ?? null,

@@ -113,13 +113,23 @@ export function EnrolledCourses({ enrollments }: { enrollments: readonly Enrollm
  * pemiliknya tahu draftnya masih ada. Saat profil dibuka orang lain nanti,
  * yang tersembunyi harus disaring lebih dulu oleh pemanggilnya.
  */
-export function OwnedCourses({ courses }: { courses: readonly EducatorCourseRow[] }) {
+export function OwnedCourses({
+  courses,
+  /** Profil sendiri? Menentukan ajakan saat kosong — pengunjung tidak bisa
+   *  membuatkan kursus untuk orang lain. */
+  own = false,
+}: {
+  courses: readonly EducatorCourseRow[];
+  own?: boolean;
+}) {
   if (courses.length === 0) {
-    return (
+    return own ? (
       <Kosong
         pesan="Belum membuat kursus."
         aksi={{ href: "/educator/courses/new", label: "Buat Kursus" }}
       />
+    ) : (
+      <Kosong pesan="Belum ada kursus yang tayang." />
     );
   }
 

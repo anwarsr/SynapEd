@@ -18,6 +18,7 @@ import { getPaymentSettings, manualQrisReady } from "@/lib/paymentSettings";
 import { findLiveManualOrder } from "@/lib/orders";
 import { courseImageUrl } from "@/lib/videoEmbed";
 import CourseThumb from "@/components/ui/CourseThumb";
+import CourseAuthor from "@/components/ui/CourseAuthor";
 import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
@@ -226,7 +227,14 @@ export default async function CourseDetailPage({ params }: Props) {
                 />
 
                 <h2 className="t-h3 text-lg mb-1.5">{course.title}</h2>
-                <p className="text-sm text-ink-muted mb-4">oleh {course.instructorName}</p>
+                <p className="text-xs text-ink-muted mb-1.5">Diajarkan oleh</p>
+                <CourseAuthor
+                  name={course.instructorName}
+                  uid={course.ownerUid}
+                  photoURL={course.instructorPhoto}
+                  size="md"
+                  className="mb-5"
+                />
 
                 <p className="t-numeral text-2xl mb-6">
                   {course.price > 0 ? formatPrice(course.price) : "Gratis"}

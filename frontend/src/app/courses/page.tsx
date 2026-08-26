@@ -70,7 +70,12 @@ export default async function CoursesPage() {
                 />
 
                 <div className="p-5 flex-1 flex flex-col">
-                  <CourseAuthor name={course.instructorName} className="mb-3" />
+                  <CourseAuthor
+                    name={course.instructorName}
+                    uid={course.ownerUid}
+                    photoURL={course.instructorPhoto}
+                    className="mb-3"
+                  />
                   <h2 className="t-h3 text-base mb-2">{course.title}</h2>
                   <p className="t-body text-sm line-clamp-2 mb-5">{course.shortDesc}</p>
 

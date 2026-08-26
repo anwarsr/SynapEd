@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { getInstructors } from "@/lib/instructors";
 import { listCategories } from "@/lib/categories";
 
 // ── Tipe ────────────────────────────────────────────────────────────────
@@ -53,6 +54,22 @@ export interface CourseSummary {
    * perlakukan sebagai boleh-kosong.
    */
   instructorName: string;
+  /**
+   * Pemilik kursus — dipakai menautkan namanya ke halaman profilnya.
+   *
+   * Kursus hasil migrasi TIDAK punya ini, jadi selalu boleh-kosong. Yang
+   * kosong tetap menampilkan nama penyedia, hanya tidak bisa diklik: lebih
+   * baik daripada tautan yang berakhir di 404.
+   */
+  ownerUid: string | null;
+  /**
+   * Foto penyedia kursus, dibaca dari Firebase Auth saat halaman dirender.
+   *
+   * TIDAK disalin ke dokumen kursus seperti `instructorName`: foto lebih
+   * sering berganti daripada nama, dan foto basi lebih terasa salah karena
+   * wajah yang tampil di katalog bukan lagi wajah yang dipilih orangnya.
+   */
+  instructorPhoto: string | null;
   /**
    * Harga dalam rupiah penuh; 0 berarti gratis.
    *
@@ -126,9 +143,33 @@ function toSummary(doc: CourseDoc): CourseSummary {
     lessonsCount: countLessons(doc.sections ?? []),
     thumbnail: doc.thumbnail ?? null,
     instructorName: doc.instructorName ?? "",
+    ownerUid: (doc as { ownerUid?: string }).ownerUid ?? null,
+    // Diisi belakangan oleh withInstructorPhotos — satu panggilan Auth untuk
+    // seluruh halaman, bukan satu per kartu.
+    instructorPhoto: null,
     price: doc.price ?? 0,
     visibility: doc.visibility === "private" ? "private" : "public",
   };
+}
+
+/**
+ * Melengkapi daftar kursus dengan foto penyedianya.
+ *
+ * Dipanggil di lapisan data, bukan di tiap halaman: katalog, beranda, dan
+ * halaman detail semuanya butuh foto yang sama, dan menyerahkannya ke masing-
+ * masing pemanggil berarti cepat atau lambat ada satu yang lupa — kartunya
+ * lalu tampil berinisial sementara yang lain berfoto.
+ */
+async function withInstructorPhotos<T extends CourseSummary>(rows: T[]): Promise<T[]> {
+  const uids = rows.map((r) => r.ownerUid).filter((u): u is string => Boolean(u));
+  if (uids.length === 0) return rows;
+
+  const instructors = await getInstructors(uids);
+
+  return rows.map((r) => {
+    const found = r.ownerUid ? instructors.get(r.ownerUid) : undefined;
+    return found ? { ...r, instructorPhoto: found.photoURL } : r;
+  });
 }
 
 // ── API publik ──────────────────────────────────────────────────────────
@@ -153,7 +194,7 @@ export async function listCourses(category?: string): Promise<CourseSummary[]> {
 
   const snapshot = await query.get();
 
-  return snapshot.docs
+  const rows = snapshot.docs
     .map((d) => d.data() as CourseDoc)
     // Dokumen "hantu" (hanya wadah subcollection) tidak punya slug/judul.
     .filter((doc) => doc && doc.slug && doc.title)
@@ -164,6 +205,8 @@ export async function listCourses(category?: string): Promise<CourseSummary[]> {
     .filter((doc) => doc.visibility !== "private")
     .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
     .map(toSummary);
+
+  return withInstructorPhotos(rows);
 }
 
 /** Satu pembacaan dokumen — section & lesson tertanam di dalamnya. */
@@ -174,10 +217,18 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
   const data = doc.data() as CourseDoc;
   const sections = sortSections(data.sections ?? []);
 
+  const ownerUid = (data as { ownerUid?: string }).ownerUid ?? null;
+
+  // Satu kursus, jadi satu uid — tapi lewat helper yang sama agar aturan
+  // "foto dibaca dari Auth, bukan dari dokumen" hanya ditulis di satu tempat.
+  const instructors = ownerUid ? await getInstructors([ownerUid]) : null;
+
   return {
     ...data,
     sections,
     lessonsCount: countLessons(sections),
+    ownerUid,
+    instructorPhoto: (ownerUid && instructors?.get(ownerUid)?.photoURL) || null,
 
     // WAJIB dinormalkan di sini, bukan hanya di toSummary.
     //

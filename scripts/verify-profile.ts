@@ -31,6 +31,50 @@ const EDIT_ROUTE = "profil/edit";
 
 const BIO = "Mahasiswa Teknik Biomedik yang mendalami pemrosesan sinyal EEG.";
 
+const JUDUL_TAYANG = "Kursus Uji Profil Tayang";
+const JUDUL_RAHASIA = "Kursus Uji Profil Masih Draft";
+
+function courseDoc(slug: string, judul: string, ownerUid: string, visibility: string) {
+  const now = new Date().toISOString();
+  return {
+    slug,
+    title: judul,
+    shortDesc: "Dibuat oleh verify-profile, akan dihapus.",
+    longDesc: "x",
+    level: "Pemula",
+    levelColor: "green",
+    category: "neuroscience",
+    icon: "reading",
+    tint: "bg-blue-50",
+    duration: "1 Jam",
+    rating: 0,
+    reviews: 0,
+    ratingSum: 0,
+    price: 0,
+    thumbnail: null,
+    enrolledStudents: 0,
+    lastUpdated: now,
+    instructorName: "Uji Educator",
+    instructorBio: "",
+    whatYouLearn: [],
+    requirements: [],
+    visibility,
+    sections: [
+      {
+        title: "Bagian Awal",
+        position: 0,
+        lessons: [
+          { slug: "satu", title: "Satu", type: "reading", duration: "5 Menit", position: 0 },
+        ],
+      },
+    ],
+    order: 9999,
+    ownerUid,
+    ownerName: "Uji Educator",
+    createdAt: now,
+  };
+}
+
 const PENDIDIKAN = [
   {
     id: "a",
@@ -54,7 +98,13 @@ async function profilDi(uid: string) {
   return (await db.collection("users").doc(uid).get()).data() ?? {};
 }
 
-async function run(pemilik: TestUser, lain: TestUser) {
+async function run(pemilik: TestUser, lain: TestUser, educator: TestUser) {
+  const slugTayang = `verify-profil-tayang-${educator.uid.slice(0, 6)}`;
+  const slugRahasia = `verify-profil-draft-${educator.uid.slice(0, 6)}`;
+
+  await db.collection("courses").doc(slugTayang).set(courseDoc(slugTayang, JUDUL_TAYANG, educator.uid, "public"));
+  await db.collection("courses").doc(slugRahasia).set(courseDoc(slugRahasia, JUDUL_RAHASIA, educator.uid, "private"));
+
   try {
     await probe("/profil/edit", pemilik.cookie);
     const simpanId = await actionId(EDIT_ROUTE, "updateMyProfile");
@@ -216,9 +266,92 @@ async function run(pemilik: TestUser, lain: TestUser) {
         `${lama.status} ${lama.location ?? ""}`,
       );
     }
+
+    // ── Profil publik ──────────────────────────────────────────────
+    {
+      // Terbuka tanpa masuk: ini kartu nama educator, dan calon peserta harus
+      // bisa memeriksanya sebelum membeli.
+      const anon = await probeText(`/profil/${pemilik.uid}`);
+      check("profil publik terbuka tanpa masuk", anon.status === 200, `HTTP ${anon.status}`);
+      check("bio tampil di profil publik", anon.html.includes("pemrosesan sinyal EEG"), "ProfileHeader");
+
+      // Yang pribadi TIDAK ikut. Kalau tiga ini bocor, halaman profil berubah
+      // jadi panen alamat untuk spam.
+      check(
+        "email TIDAK tampil di profil publik",
+        !anon.html.includes(pemilik.email),
+        "alamat kontak pribadi",
+      );
+      check(
+        "tombol Edit Profil tidak muncul untuk pengunjung",
+        !anon.html.includes("Edit Profil"),
+        "hanya pemiliknya yang menyunting",
+      );
+      check(
+        "kursus yang DIIKUTI tidak tampil ke publik",
+        !anon.html.includes("Kursus yang Diikuti"),
+        "apa yang dipelajari seseorang itu pribadi",
+      );
+
+      const hantu = await probe("/profil/uid-yang-tidak-pernah-ada");
+      check("uid tak dikenal -> 404", hantu.status === 404, `HTTP ${hantu.status}`);
+
+      // ── Kursus educator: yang tayang muncul, yang tersembunyi tidak ──
+      //
+      // Pemeriksaan ini yang sebenarnya menjaga draft. Tanpa menyebut judul
+      // kursus tersembunyinya, "tidak bocor" hanya bisa dibuktikan dengan
+      // ketiadaan judul bagian — dan itu tetap lolos walau seluruh draft
+      // ikut terpajang.
+      const publik = await probeText(`/profil/${educator.uid}`);
+      check(
+        "kursus yang tayang muncul di profil educator",
+        publik.html.includes(JUDUL_TAYANG),
+        "OwnedCourses",
+      );
+      check(
+        "kursus TERSEMBUNYI tidak bocor ke profil publik",
+        !publik.html.includes(JUDUL_RAHASIA),
+        publik.html.includes(JUDUL_RAHASIA) ? "draft terpajang" : "disaring di publicProfile",
+      );
+      check(
+        "penanda Tersembunyi tidak ikut terbawa",
+        !publik.html.includes("Tersembunyi"),
+        "penyaringan di lapisan data, bukan di JSX",
+      );
+
+      // Pemilik yang membuka alamat publiknya sendiri diantar ke versi penuh.
+      const sendiri = await probe(`/profil/${pemilik.uid}`, pemilik.cookie);
+      check(
+        "pemilik dialihkan ke /profil saat membuka alamat publiknya sendiri",
+        sendiri.status >= 300 && sendiri.status < 400 && (sendiri.location ?? "").endsWith("/profil"),
+        `${sendiri.status} ${sendiri.location ?? ""}`,
+      );
+    }
+    // ── Nama educator di katalog: terlihat dan bisa diklik ─────────
+    //
+    // Inilah permintaan yang memicu profil publik. Kalau tautannya hilang,
+    // halaman profil tetap ada tapi tidak ada yang bisa menemukannya.
+    {
+      const katalog = await probeText("/courses");
+      check(
+        "nama educator di katalog menautkan ke profilnya",
+        katalog.html.includes(`/profil/${educator.uid}`),
+        "CourseAuthor sebagai tautan",
+      );
+
+      const detail = await probeText(`/courses/${slugTayang}`);
+      check(
+        "nama educator di halaman detail juga menautkan ke profilnya",
+        detail.html.includes(`/profil/${educator.uid}`),
+        "panel harga",
+      );
+    }
   } finally {
-    for (const u of [pemilik, lain]) {
+    for (const u of [pemilik, lain, educator]) {
       await db.collection("users").doc(u.uid).delete().catch(() => undefined);
+    }
+    for (const s of [slugTayang, slugRahasia]) {
+      await db.collection("courses").doc(s).delete().catch(() => undefined);
     }
   }
 }
@@ -228,14 +361,16 @@ async function main() {
 
   const pemilik = await createTestUser("user", "profil-pemilik");
   const lain = await createTestUser("user", "profil-lain");
+  const educator = await createTestUser("educator", "profil-educator");
 
-  console.log(`pemilik : ${pemilik.email}`);
-  console.log(`lain    : ${lain.email}\n`);
+  console.log(`pemilik  : ${pemilik.email}`);
+  console.log(`lain     : ${lain.email}`);
+  console.log(`educator : ${educator.email}\n`);
 
   try {
-    await run(pemilik, lain);
+    await run(pemilik, lain, educator);
   } finally {
-    await auth.deleteUsers([pemilik.uid, lain.uid]);
+    await auth.deleteUsers([pemilik.uid, lain.uid, educator.uid]);
     console.log("\nakun uji dihapus.");
   }
 

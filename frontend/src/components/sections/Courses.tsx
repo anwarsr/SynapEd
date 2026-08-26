@@ -891,6 +891,8 @@ export default function Courses({ courses, categories }: Props) {
                   <div className="flex flex-1 flex-col p-6">
                     <CourseAuthor
                       name={course.instructorName}
+                      uid={course.ownerUid}
+                      photoURL={course.instructorPhoto}
                       className="mb-4"
                     />
 
