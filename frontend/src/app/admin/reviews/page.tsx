@@ -3,6 +3,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import DeleteReviewButton from "@/components/admin/ReviewActions";
 import Stars from "@/components/ui/Stars";
 import UserAvatar from "@/components/ui/UserAvatar";
+import ProfileLink from "@/components/ui/ProfileLink";
 import { adminBadges } from "@/lib/adminBadges";
 import { formatDate } from "@/lib/adminUsers";
 import { FEATURED_MIN_RATING, listAllReviews } from "@/lib/reviews";
@@ -42,11 +43,17 @@ export default async function AdminReviewsPage() {
             <ul className="divide-y divide-rule">
               {reviews.map((r) => (
                 <li key={r.id} className="flex items-start gap-3 px-6 py-5">
-                  <UserAvatar name={r.name} photoURL={r.photoURL} />
+                  {/* Berguna saat memoderasi: memeriksa siapa penulisnya
+                      sebelum memutuskan menghapus ulasannya. */}
+                  <ProfileLink uid={r.uid} name={r.name} secondary className="shrink-0">
+                    <UserAvatar name={r.name} photoURL={r.photoURL} />
+                  </ProfileLink>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="text-sm font-medium text-ink">{r.name}</span>
+                      <ProfileLink uid={r.uid} name={r.name} className="text-sm font-medium text-ink">
+                        {r.name}
+                      </ProfileLink>
                       <Stars value={r.rating} size="xs" />
                       <span className="text-xs text-ink-muted">{formatDate(r.createdAt)}</span>
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
 import Stars from "@/components/ui/Stars";
+import ProfileLink from "@/components/ui/ProfileLink";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { cn } from "@/lib/cn";
@@ -28,6 +29,8 @@ import { cn } from "@/lib/cn";
 
 export interface TestimonialItem {
   id: string;
+  /** Penulis ulasan — menautkan namanya ke halaman profilnya. */
+  uid: string;
   name: string;
   avatar: string | null;
   content: string;
@@ -231,12 +234,16 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
               </p>
 
               <div className="mt-7 flex items-center gap-3 pt-5">
-                <UserAvatar name={current.name} photoURL={current.avatar} size="lg" className="w-12 h-12 text-base" />
+                <ProfileLink uid={current.uid} name={current.name} secondary className="shrink-0">
+                  <UserAvatar name={current.name} photoURL={current.avatar} size="lg" className="w-12 h-12 text-base" />
+                </ProfileLink>
 
                 <div className="min-w-0">
-                  <p id="ulasan-nama" className="text-black text-lg" style={NAME}>
-                    {current.name}
-                  </p>
+                  <ProfileLink uid={current.uid} name={current.name}>
+                    <p id="ulasan-nama" className="text-black text-lg" style={NAME}>
+                      {current.name}
+                    </p>
+                  </ProfileLink>
                   <Link
                     href={`/courses/${current.courseSlug}`}
                     className="text-ink-muted text-xs mt-0.5 block truncate transition-colors hover:text-blue-700"

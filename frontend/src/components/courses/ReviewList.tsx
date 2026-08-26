@@ -1,5 +1,6 @@
 import Stars from "@/components/ui/Stars";
 import UserAvatar from "@/components/ui/UserAvatar";
+import ProfileLink from "@/components/ui/ProfileLink";
 import { formatDate } from "@/lib/adminUsers";
 import type { Review } from "@/lib/reviews";
 
@@ -46,11 +47,15 @@ export default function ReviewList({
         {reviews.map((r) => (
           <li key={r.id} className="px-7 py-5">
             <div className="flex items-start gap-3">
-              <UserAvatar name={r.name} photoURL={r.photoURL} />
+              <ProfileLink uid={r.uid} name={r.name} secondary className="shrink-0">
+                <UserAvatar name={r.name} photoURL={r.photoURL} />
+              </ProfileLink>
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="text-sm font-medium text-ink">{r.name}</span>
+                  <ProfileLink uid={r.uid} name={r.name} className="text-sm font-medium text-ink">
+                    {r.name}
+                  </ProfileLink>
                   {myUid && r.uid === myUid && (
                     <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
                       Ulasan Anda

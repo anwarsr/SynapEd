@@ -13,6 +13,8 @@
  *   npx tsx scripts/verify-review.ts [baseUrl]
  */
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import puppeteer from "puppeteer-core";
 import { getFirestore } from "firebase-admin/firestore";
 import {
   BASE,
@@ -30,6 +32,13 @@ import {
 import { targetLabel } from "./project";
 
 const db = getFirestore(app);
+
+/** Sama seperti verify-pdf-viewer: Chrome sistem, bukan unduhan sendiri. */
+const CHROME = [
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
+].find((p) => existsSync(p));
 const COURSE_ROUTE = "courses/[slug]";
 const LESSONS = ["satu", "dua"];
 
@@ -250,6 +259,57 @@ async function run(owner: TestUser, siswa: TestUser, lain: TestUser, admin: Test
         "ulasan bintang 5 muncul di beranda",
         beranda2.html.includes("Materinya runtut"),
         "etalase mengambil dari ulasan nyata",
+      );
+
+      // ── Penulis ulasan bisa dibuka profilnya ──────────────────
+      //
+      // Tautan yang sama harus ada di tiga tempat ulasan dirender: halaman
+      // detail kursus, dialog testimoni di beranda, dan panel admin.
+      const tautanProfil = `href="/profil/${siswa.uid}"`;
+
+      const detailUlasan = await probeText(`/courses/${slug}`);
+      check(
+        "penulis ulasan di halaman kursus menautkan ke profilnya",
+        detailUlasan.html.includes(tautanProfil),
+        "ReviewList",
+      );
+
+      // Beranda: kartunya sebuah <button> (tautan di dalam <button> bukan HTML
+      // yang sah), jadi tautan profilnya ada di DIALOG — dan dialog itu baru
+      // dirender setelah kartunya diklik. HTTP probe tidak akan pernah
+      // melihatnya, jadi bagian ini diuji lewat browser sungguhan.
+      if (!CHROME) {
+        console.log("  LEWAT  dialog beranda — Chrome tidak ditemukan");
+      } else {
+        const browser = await puppeteer.launch({ executablePath: CHROME, headless: true });
+        try {
+          const p = await browser.newPage();
+          await p.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 90000 });
+
+          const kartu = await p.$('button[aria-label^="Baca ulasan"]');
+          check("kartu ulasan ada di beranda", Boolean(kartu), "etalase terisi");
+
+          if (kartu) {
+            await kartu.click();
+            await p.waitForSelector(`a[href="/profil/${siswa.uid}"]`, { timeout: 10000 });
+            check(
+              "dialog beranda menautkan penulis ulasannya",
+              true,
+              "tautan muncul setelah kartu diketuk",
+            );
+          }
+        } catch {
+          check("dialog beranda menautkan penulis ulasannya", false, "tautan tidak ditemukan");
+        } finally {
+          await browser.close();
+        }
+      }
+
+      const panel = await probeText("/admin/reviews", admin.cookie);
+      check(
+        "panel admin menautkan penulis ulasan",
+        panel.html.includes(tautanProfil),
+        "berguna saat memoderasi",
       );
     }
 

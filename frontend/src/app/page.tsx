@@ -28,6 +28,7 @@ export default async function Home() {
   // ke browser berarti menyeret nilai itu ikut serta tanpa alasan.
   const testimonials: TestimonialItem[] = reviews.map((r) => ({
     id: r.id,
+    uid: r.uid,
     name: r.name,
     avatar: r.photoURL,
     content: r.comment,
