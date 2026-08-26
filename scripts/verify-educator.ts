@@ -99,8 +99,8 @@ async function run(admin: TestUser, applicant: TestUser, rejected: TestUser) {
     const page = await probeText("/educator", applicant.cookie);
     check("/educator menampilkan status menunggu", page.html.includes("sedang ditinjau"), "pelamar");
 
-    const dash = await probeText("/dashboard", applicant.cookie);
-    check("/dashboard menampilkan status menunggu", dash.html.includes("Menunggu"), "pelamar");
+    const dash = await probeText("/profil", applicant.cookie);
+    check("/profil menampilkan status menunggu", dash.html.includes("Menunggu"), "pelamar");
 
     const list = await probeText("/admin", admin.cookie);
     check(
@@ -140,8 +140,8 @@ async function run(admin: TestUser, applicant: TestUser, rejected: TestUser) {
   {
     const asUser = await probe("/admin/notifications", applicant.cookie);
     check(
-      "/admin/notifications sebagai user -> /dashboard",
-      asUser.status >= 300 && asUser.status < 400 && (asUser.location ?? "").includes("/dashboard"),
+      "/admin/notifications sebagai user -> /profil",
+      asUser.status >= 300 && asUser.status < 400 && (asUser.location ?? "").includes("/profil"),
       `${asUser.status} ${asUser.location ?? ""}`,
     );
 
@@ -189,7 +189,7 @@ async function run(admin: TestUser, applicant: TestUser, rejected: TestUser) {
   {
     // Menerima mencabut refresh token, jadi cookie lama memang harus mati —
     // itu bagian dari desainnya, bukan efek samping.
-    const stale = await probe("/dashboard", applicant.cookie);
+    const stale = await probe("/profil", applicant.cookie);
     check(
       "sesi lama pelamar dicabut setelah role berubah",
       stale.status >= 300 && stale.status < 400 && (stale.location ?? "").includes("/login"),
@@ -205,8 +205,8 @@ async function run(admin: TestUser, applicant: TestUser, rejected: TestUser) {
       "setelah masuk ulang",
     );
 
-    const dash = await probeText("/dashboard", cookie);
-    check("/dashboard menampilkan Akun Educator", dash.html.includes("Akun Educator"), "profil");
+    const dash = await probeText("/profil", cookie);
+    check("/profil menampilkan Akun Educator", dash.html.includes("Akun Educator"), "profil");
     check(
       "navbar tidak lagi menawarkan Jadi Educator",
       !dash.html.includes("Jadi Educator"),

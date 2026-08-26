@@ -97,7 +97,7 @@ export async function POST(request: Request) {
 
   if (created) {
     revalidatePath(`/courses/${order.courseSlug}`);
-    revalidatePath("/dashboard");
+    revalidatePath("/profil");
   }
 
   return NextResponse.json({ ok: true, status, created });

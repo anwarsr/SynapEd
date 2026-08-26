@@ -244,7 +244,7 @@ export async function decideManualOrder(
   });
 
   revalidatePath(`/courses/${order.courseSlug}`);
-  revalidatePath("/dashboard");
+  revalidatePath("/profil");
   revalidatePath("/admin");
   revalidatePath("/admin/payments");
 

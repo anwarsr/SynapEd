@@ -9,16 +9,19 @@ import BuyButton from "@/components/courses/BuyButton";
 import ManualQrisPanel from "@/components/courses/ManualQrisPanel";
 import ReviewForm from "@/components/courses/ReviewForm";
 import ReviewList from "@/components/courses/ReviewList";
+import CurriculumList, { ENROLL_ANCHOR } from "@/components/courses/CurriculumList";
 import Stars from "@/components/ui/Stars";
 import { getCourse } from "@/lib/courses";
 import { getCourseAccess } from "@/lib/courseAccess";
+import { progressOf } from "@/lib/enrollments";
 import { getReview, listCourseReviews } from "@/lib/reviews";
 import { paymentsConfigured } from "@/lib/payments/midtrans";
 import { getPaymentSettings, manualQrisReady } from "@/lib/paymentSettings";
 import { findLiveManualOrder } from "@/lib/orders";
 import { courseImageUrl } from "@/lib/videoEmbed";
 import CourseThumb from "@/components/ui/CourseThumb";
-import { formatPrice, iconPaths, lessonIcons, levelTone } from "@/lib/courseUi";
+import CourseAuthor from "@/components/ui/CourseAuthor";
+import { formatPrice, iconPaths, levelTone } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 import type { Metadata } from "next";
 
@@ -77,6 +80,9 @@ export default async function CourseDetailPage({ params }: Props) {
     manualUsable && access && !enrolled
       ? await findLiveManualOrder(access.user.uid, slug)
       : null;
+
+  const enrollment = access?.enrollment ?? null;
+  const progress = enrollment ? progressOf(course, enrollment) : null;
 
   // Formulir ulasan hanya untuk yang enrollment-nya sudah selesai. Penjaga
   // sebenarnya tetap di submitReview() — ini cuma menentukan yang terlihat.
@@ -161,35 +167,13 @@ export default async function CourseDetailPage({ params }: Props) {
 
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <h2 className="t-h3 mb-6">Kurikulum</h2>
-                <div className="space-y-4">
-                  {course.sections.map((section, si) => (
-                    <div key={section.position} className="border border-rule rounded-2xl overflow-hidden">
-                      <div className="px-5 py-4 bg-paper-alt flex items-center gap-3">
-                        <span className="t-numeral-ghost text-xl text-ink-faint" aria-hidden="true">
-                          {String(si + 1).padStart(2, "0")}
-                        </span>
-                        <span className="text-sm font-medium text-ink">{section.title}</span>
-                        <span className="text-xs text-ink-muted ml-auto">
-                          {section.lessons.length} pelajaran
-                        </span>
-                      </div>
-
-                      <ul className="divide-y divide-rule">
-                        {section.lessons.map((lesson) => (
-                          <li key={lesson.slug} className="px-5 py-3 flex items-center justify-between gap-4 text-sm">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[lesson.type] ?? lessonIcons.reading} />
-                              </svg>
-                              <span className="text-ink-body truncate">{lesson.title}</span>
-                            </div>
-                            <span className="text-xs text-ink-muted flex-shrink-0">{lesson.duration}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                <CurriculumList
+                  slug={slug}
+                  sections={course.sections}
+                  bisaBuka={enrolled}
+                  completed={enrollment?.completedLessons ?? []}
+                  resumeSlug={resumeSlug}
+                />
               </div>
 
               {/* ── Ulasan peserta ──────────────────────────────── */}
@@ -211,7 +195,7 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
             </div>
 
-            <aside>
+            <aside id={ENROLL_ANCHOR}>
               <div className="bg-paper-card border border-rule rounded-2xl p-6 sticky top-28">
                 <CourseThumb
                   thumbnail={course.thumbnail}
@@ -226,11 +210,43 @@ export default async function CourseDetailPage({ params }: Props) {
                 />
 
                 <h2 className="t-h3 text-lg mb-1.5">{course.title}</h2>
-                <p className="text-sm text-ink-muted mb-4">oleh {course.instructorName}</p>
+                <p className="text-xs text-ink-muted mb-1.5">Diajarkan oleh</p>
+                <CourseAuthor
+                  name={course.instructorName}
+                  uid={course.ownerUid}
+                  photoURL={course.instructorPhoto}
+                  size="md"
+                  className="mb-5"
+                />
 
                 <p className="t-numeral text-2xl mb-6">
                   {course.price > 0 ? formatPrice(course.price) : "Gratis"}
                 </p>
+
+                {/* Kemajuan hanya untuk yang PUNYA enrollment. Pemilik kursus
+                    dan admin berakses penuh tanpa pernah mendaftar; "0%" pada
+                    kursus buatan sendiri hanya menyesatkan. */}
+                {progress && (
+                  <div className="mb-6">
+                    <div className="flex items-baseline justify-between gap-3 mb-2">
+                      <span className="text-xs text-ink-muted">
+                        {progress.done} dari {progress.total} pelajaran
+                      </span>
+                      <span className="t-numeral text-xs text-ink tabular-nums">
+                        {progress.percent}%
+                      </span>
+                    </div>
+                    <span
+                      className="block h-1.5 rounded-full bg-paper-alt overflow-hidden"
+                      role="presentation"
+                    >
+                      <span
+                        className="block h-full rounded-full bg-blue-600 transition-all duration-500 ease-warm"
+                        style={{ width: `${progress.percent}%` }}
+                      />
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-2.5">
                   {enrolled ? (

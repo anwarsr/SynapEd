@@ -24,7 +24,7 @@ async function main() {
   try {
     // ── Akun biasa: perilaku lama tidak boleh berubah ──────────────
     {
-      const page = await probeText("/dashboard", berkatasandi.cookie);
+      const page = await probeText("/pengaturan", berkatasandi.cookie);
       check("akun berkata sandi -> 200", page.status === 200, String(page.status));
       check(
         "menawarkan Ganti Kata Sandi",
@@ -55,7 +55,7 @@ async function main() {
     );
 
     {
-      const page = await probeText("/dashboard", tanpaSandi.cookie);
+      const page = await probeText("/pengaturan", tanpaSandi.cookie);
       check("akun tanpa kata sandi -> 200", page.status === 200, String(page.status));
 
       check(
@@ -86,7 +86,7 @@ async function main() {
       // kata sandi terlepas saat masuk lewat Google.
       const belum = await createTestUser("user", "belumverif");
 
-      const page = await probeText("/dashboard", belum.cookie);
+      const page = await probeText("/pengaturan", belum.cookie);
       check(
         "email belum diverifikasi -> ada peringatan",
         page.html.includes("Email belum diverifikasi") &&
@@ -106,7 +106,7 @@ async function main() {
 
       // Setelah diverifikasi, peringatannya harus hilang.
       await auth.updateUser(belum.uid, { emailVerified: true });
-      const sudah = await probeText("/dashboard", await freshCookie(belum.email, belum.password));
+      const sudah = await probeText("/pengaturan", await freshCookie(belum.email, belum.password));
       check(
         "email terverifikasi -> peringatan hilang",
         !sudah.html.includes("Email belum diverifikasi"),
@@ -121,7 +121,7 @@ async function main() {
           email: belum.email,
         },
       });
-      const tertaut = await probeText("/dashboard", await freshCookie(belum.email, belum.password));
+      const tertaut = await probeText("/pengaturan", await freshCookie(belum.email, belum.password));
       check(
         "Google tertaut -> tombol tautkan hilang",
         !tertaut.html.includes("Tautkan Akun Google"),

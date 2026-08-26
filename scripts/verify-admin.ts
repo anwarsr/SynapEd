@@ -103,29 +103,41 @@ async function run(admin: TestUser, plain: TestUser) {
   {
     const list = await probe("/admin", plain.cookie);
     check(
-      "/admin sebagai user biasa -> /dashboard",
-      list.status >= 300 && list.status < 400 && (list.location ?? "").includes("/dashboard"),
+      "/admin sebagai user biasa -> /profil",
+      list.status >= 300 && list.status < 400 && (list.location ?? "").includes("/profil"),
       `${list.status} ${list.location ?? "(tanpa Location)"}`,
     );
 
     const detail = await probe(`/admin/users/${admin.uid}`, plain.cookie);
     check(
-      "/admin/users/[uid] sebagai user biasa -> /dashboard",
-      detail.status >= 300 && detail.status < 400 && (detail.location ?? "").includes("/dashboard"),
+      "/admin/users/[uid] sebagai user biasa -> /profil",
+      detail.status >= 300 && detail.status < 400 && (detail.location ?? "").includes("/profil"),
       `${detail.status} ${detail.location ?? "(tanpa Location)"}`,
     );
 
     // Halaman biasa tetap boleh dibuka — penjaga admin tidak boleh
     // ikut mengunci sisa aplikasi.
-    const dash = await probe("/dashboard", plain.cookie);
+    const dash = await probe("/profil", plain.cookie);
     const dashHtml = await dash.res.text();
-    check("/dashboard sebagai user biasa -> 200", dash.status === 200, String(dash.status));
+    check("/profil sebagai user biasa -> 200", dash.status === 200, String(dash.status));
+
+    // Formnya kini terbelah dua halaman: yang dilihat orang lain ada di
+    // profil, yang hanya urusan pemilik akun ada di pengaturan. Keduanya
+    // diperiksa supaya pemindahan itu tidak diam-diam menghilangkan salah satu.
+    const edit = await probe("/profil/edit", plain.cookie);
+    const editHtml = await edit.res.text();
     check(
-      "form profil lengkap terpasang",
-      ["Foto Profil", "Nomor HP", "Nama", "Email", "Kata Sandi"].every((h) =>
-        dashHtml.includes(h),
-      ),
-      "foto, nomor HP, nama, email, kata sandi",
+      "form profil (foto & nama) ada di /profil/edit",
+      ["Foto Profil", "Nama"].every((h) => editHtml.includes(h)),
+      "foto, nama",
+    );
+
+    const setelan = await probe("/pengaturan", plain.cookie);
+    const setelanHtml = await setelan.res.text();
+    check(
+      "form akun (nomor HP, email, kata sandi) ada di /pengaturan",
+      ["Nomor HP", "Email", "Kata Sandi"].every((h) => setelanHtml.includes(h)),
+      "nomor HP, email, kata sandi",
     );
   }
 

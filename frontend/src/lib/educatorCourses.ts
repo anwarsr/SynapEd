@@ -47,6 +47,13 @@ const TINTS: Record<string, string> = {
 
 export interface EducatorCourseRow extends CourseSummary {
   createdAt: string | null;
+  /**
+   * Jumlah peserta. Ada di sini, meski bukan bagian dari CourseSummary, karena
+   * inilah angka pertama yang dicari educator tentang kursusnya sendiri — dan
+   * membacanya terpisah berarti satu kueri per kursus hanya untuk satu angka
+   * yang sudah ada di dokumen yang sama.
+   */
+  enrolledStudents: number;
 }
 
 /** Judul -> slug yang aman dipakai sebagai document ID. */
@@ -122,9 +129,14 @@ export async function listOwnedCourses(uid: string): Promise<EducatorCourseRow[]
         lessonsCount: sections.reduce((n, s) => n + s.lessons.length, 0),
         thumbnail: (data.thumbnail as string | null | undefined) ?? null,
         instructorName: (data.instructorName as string | undefined) ?? "",
+        ownerUid: (data.ownerUid as string | undefined) ?? null,
+        // Daftar ini selalu milik SATU educator yang fotonya sudah tampil di
+        // kepala halaman profilnya, jadi tidak perlu dibaca ulang per kursus.
+        instructorPhoto: null,
         price: (data.price as number | undefined) ?? 0,
         visibility: (data.visibility === "private" ? "private" : "public") as CourseVisibility,
         createdAt: (data.createdAt as string | undefined) ?? null,
+        enrolledStudents: (data.enrolledStudents as number | undefined) ?? 0,
       };
     })
     .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));

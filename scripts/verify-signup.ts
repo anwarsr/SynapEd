@@ -88,7 +88,7 @@ async function main() {
 
     // ── Token basi: keadaan sebelum diperbaiki ──────────────────────
     {
-      const page = await probeText("/dashboard", await cookieFor(signUp.idToken));
+      const page = await probeText("/profil", await cookieFor(signUp.idToken));
       check(
         "token dari sebelum nama disetel memang tidak membawa nama",
         page.status === 200 && page.html.includes(local) && !page.html.includes(nama),
@@ -99,7 +99,7 @@ async function main() {
     // ── Token segar: yang sekarang dipakai aplikasi ─────────────────
     {
       const fresh = await refreshIdToken(signUp.refreshToken);
-      const page = await probeText("/dashboard", await cookieFor(fresh));
+      const page = await probeText("/profil", await cookieFor(fresh));
 
       check(
         "token yang diambil ulang membawa nama yang benar",
