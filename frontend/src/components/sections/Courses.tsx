@@ -765,26 +765,10 @@ export default function Courses({ courses, categories }: Props) {
                     hover:shadow-[0_24px_60px_rgba(37,99,235,0.12)]
                   "
                 >
-                  {/* Card glow */}
-                  <div
-                    className="
-                      pointer-events-none
-                      absolute
-                      -inset-px
-                      z-20
-                      rounded-[1.5rem]
-                      opacity-0
-                      transition-opacity
-                      duration-500
-                      group-hover:opacity-100
-                    "
-                    style={{
-                      background:
-                        "linear-gradient(120deg, transparent 20%, rgba(37,99,235,0.10), transparent 80%)",
-                    }}
-                  />
+                  {/* =================================================
+                      THUMBNAIL
+                  ================================================= */}
 
-                  {/* Thumbnail */}
                   <div
                     className={cn(
                       "relative h-48 overflow-hidden",
@@ -887,7 +871,10 @@ export default function Courses({ courses, categories }: Props) {
                     </span>
                   </div>
 
-                  {/* Body */}
+                  {/* =================================================
+                      BODY
+                  ================================================= */}
+
                   <div className="flex flex-1 flex-col p-6">
                     <CourseAuthor
                       name={course.instructorName}
@@ -896,12 +883,13 @@ export default function Courses({ courses, categories }: Props) {
                       className="mb-4"
                     />
 
+                    {/* Title */}
                     <h3
                       className="
                         mb-2
                         text-xl
                         leading-tight
-                        text-blue-600
+                        text-black
                         transition-colors
                         duration-300
                         group-hover:text-blue-700
@@ -911,11 +899,15 @@ export default function Courses({ courses, categories }: Props) {
                       {course.title}
                     </h3>
 
+                    {/* Description */}
                     <p className="t-body mb-7 line-clamp-2 text-sm text-ink/80">
                       {course.shortDesc}
                     </p>
 
-                    {/* Meta */}
+                    {/* =================================================
+                        META
+                    ================================================= */}
+
                     <div className="mb-5 flex items-center gap-4 text-[13px] text-ink-muted">
                       <span>
                         <span className="font-semibold text-ink">
@@ -936,7 +928,10 @@ export default function Courses({ courses, categories }: Props) {
                       </span>
                     </div>
 
-                    {/* Rating */}
+                    {/* =================================================
+                        RATING
+                    ================================================= */}
+
                     <div className="mb-5 flex items-center gap-1.5 pb-5">
                       <span className="text-sm font-semibold text-ink">
                         {course.rating}
@@ -965,25 +960,24 @@ export default function Courses({ courses, categories }: Props) {
                       </span>
                     </div>
 
-                    {/* Harga + satu-satunya aksi
-                        Dulu ada dua tombol: "Detail" ke halaman kursus dan
-                        "Beli" yang dipatok ke /register — jadi menekan "Beli"
-                        justru melempar orang ke formulir pendaftaran akun,
-                        bukan ke kursus yang dia klik. Pembelian sendiri hanya
-                        mungkin dari halaman detail, karena di sanalah harga
-                        dibaca ulang dari server dan pesanan dibuat.
-                        Satu tujuan, dengan harga tampil lebih dulu. */}
+                    {/* =================================================
+                        PRICE + ACTION
+                    ================================================= */}
+
                     <div className="mt-auto flex items-center justify-between gap-3">
-                      <span className="t-numeral text-lg text-ink">
-                        {course.price > 0 ? formatPrice(course.price) : "Gratis"}
+                      <span
+                        className="text-lg text-ink"
+                        style={{
+                          fontFamily: "var(--font-inter)",
+                          fontWeight: 700,
+                          letterSpacing: "-0.025em",
+                        }}
+                      >
+                        {course.price > 0
+                          ? formatPrice(course.price)
+                          : "Gratis"}
                       </span>
 
-                      {/* after:inset-0 membentang tautan ini ke seluruh kartu
-                          (article-nya `relative`), sehingga mengklik di mana
-                          pun pada kartu membuka kursusnya — sementara di DOM
-                          tetap hanya ADA SATU tautan. Membungkus kartunya
-                          dengan <a> akan menghasilkan anchor bersarang, yang
-                          tidak sah dan membingungkan pembaca layar. */}
                       <Button
                         href={`/courses/${course.slug}`}
                         variant="primary"

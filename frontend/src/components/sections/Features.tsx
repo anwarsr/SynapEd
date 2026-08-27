@@ -95,13 +95,17 @@ export default function Features() {
       const vw = window.innerWidth;
       const mobile = vw < 640;
 
+      // ========================================
+      // CARD WIDTH / STAGE SPREAD
+      // ========================================
+
       const radiusX = mobile
-        ? Math.min(vw * 0.78, 300)
-        : Math.min(vw * 0.34, 480);
+        ? Math.min(vw * 0.58, 230)
+        : Math.min(vw * 0.26, 370);
 
       const radiusZ = mobile
-        ? Math.min(vw * 0.3, 160)
-        : Math.min(vw * 0.18, 240);
+        ? Math.min(vw * 0.24, 130)
+        : Math.min(vw * 0.15, 200);
 
       const step = (Math.PI * 2) / count;
 
@@ -157,9 +161,12 @@ export default function Features() {
           0.74 +
           Math.pow(depth, 1.6) * 0.26;
 
-        const opacity =
-          0.1 +
-          Math.pow(depth, 1.6) * 0.9;
+        // ========================================
+        // IMPORTANT:
+        // CARD SELALU OPAQUE
+        // ========================================
+
+        const opacity = 1;
 
         const blur =
           depth < 0.3
@@ -197,6 +204,7 @@ export default function Features() {
           scale(${scale.toFixed(3)})
         `;
 
+        // Card tidak pernah transparan
         card.style.opacity =
           opacity.toFixed(3);
 
@@ -211,6 +219,10 @@ export default function Features() {
           depth > 0.72
             ? "auto"
             : "none";
+
+        // ========================================
+        // HOLOGRAM VARIABLES
+        // ========================================
 
         card.style.setProperty(
           "--holo-strength",
@@ -503,17 +515,10 @@ export default function Features() {
   return (
     <section
       id="features"
-      /* Kartu di panggung sengaja ber-overflow visible supaya kedalaman 3D-nya
-         tidak terpotong. Di layar sempit sebaran kipasnya (radiusX sampai
-         300px dari pusat) melampaui viewport dan MELEBARKAN halaman — muncul
-         gulir horizontal dan section lain jadi tampak bergeser.
-
-         Diklip di section, bukan di panggung: batas section selebar layar,
-         jadi potongannya jatuh persis di tepi dan tidak terlihat.
-
-         clip, BUKAN hidden — hidden membentuk scroll container baru dan itu
-         mematikan position: sticky milik .features-stage. */
-      className="py-28 overflow-x-clip"
+      className="
+        overflow-x-clip
+        py-28
+      "
     >
       <div className="container-page">
 
@@ -524,7 +529,10 @@ export default function Features() {
         <div className="flex flex-col items-start text-left">
 
           <h1
-            className="rise-in text-blue-600"
+            className="
+              rise-in
+              text-blue-600
+            "
             style={{
               fontFamily:
                 "var(--font-inter)",
@@ -612,11 +620,41 @@ export default function Features() {
                     }}
                     className="
                       feature-card
+                      group
+                      relative
+                      overflow-hidden
                       border-none
                       outline-none
                       ring-0
+
+                      !bg-[#FFFFF5]
+
+                      transition-colors
+                      duration-500
+                      ease-out
+
+                      hover:!bg-blue-600
                     "
                     style={{
+                      /*
+                       * Ukuran dibuat lebih sempit
+                       * supaya card tidak terlalu lebar.
+                       */
+                      width:
+                        "clamp(280px, 68vw, 410px)",
+
+                      maxWidth:
+                        "410px",
+
+                      /*
+                       * Ivory solid.
+                       * Tidak menggunakan transparansi.
+                       */
+                      backgroundColor:
+                        "#FFFFF5",
+
+                      opacity: 1,
+
                       border:
                         "none",
 
@@ -624,6 +662,12 @@ export default function Features() {
                         "none",
 
                       boxShadow:
+                        "none",
+
+                      backdropFilter:
+                        "none",
+
+                      WebkitBackdropFilter:
                         "none",
                     }}
                   >
@@ -635,6 +679,7 @@ export default function Features() {
                     <span
                       className="
                         feature-card__foil
+                        pointer-events-none
                       "
                       aria-hidden="true"
                     />
@@ -646,6 +691,7 @@ export default function Features() {
                     <span
                       className="
                         feature-card__rainbow
+                        pointer-events-none
                       "
                       aria-hidden="true"
                     />
@@ -657,6 +703,7 @@ export default function Features() {
                     <span
                       className="
                         feature-card__gloss
+                        pointer-events-none
                       "
                       aria-hidden="true"
                     />
@@ -668,9 +715,49 @@ export default function Features() {
                     <span
                       className="
                         feature-card__grain
+                        pointer-events-none
                       "
                       aria-hidden="true"
                     />
+
+                    {/* =================================
+                        LARGE NUMBER
+                    ================================= */}
+
+                    <span
+                      aria-hidden="true"
+                      className="
+                        pointer-events-none
+                        absolute
+                        right-6
+                        top-5
+                        z-20
+                        select-none
+                        text-blue-600
+                        transition-colors
+                        duration-500
+                        group-hover:text-[#FFFFF5]
+                      "
+                      style={{
+                        fontFamily:
+                          "var(--font-inter)",
+
+                        fontSize:
+                          "clamp(4.5rem, 10vw, 7rem)",
+
+                        fontWeight: 900,
+
+                        lineHeight: 0.8,
+
+                        letterSpacing:
+                          "-0.08em",
+                      }}
+                    >
+                      {String(index + 1).padStart(
+                        2,
+                        "0"
+                      )}
+                    </span>
 
                     {/* =================================
                         CONTENT
@@ -692,7 +779,11 @@ export default function Features() {
 
                       <h2
                         className="
-                          text-black
+                          max-w-[75%]
+                          text-blue-600
+                          transition-colors
+                          duration-500
+                          group-hover:text-[#FFFFF5]
                         "
                         style={{
                           fontFamily:
@@ -719,7 +810,10 @@ export default function Features() {
                           max-w-[30ch]
                           text-[0.9375rem]
                           leading-relaxed
-                          text-ink-muted
+                          text-blue-600
+                          transition-colors
+                          duration-500
+                          group-hover:text-[#FFFFF5]
                         "
                         style={{
                           fontFamily:
