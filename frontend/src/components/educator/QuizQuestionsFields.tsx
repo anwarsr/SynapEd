@@ -95,29 +95,31 @@ export default function QuizQuestionsFields({
       <div className="space-y-4">
         {questions.map((q, qi) => (
           <div key={q.id} className="rounded-xl border border-rule bg-paper-card p-4">
-            <div className="flex items-start gap-3 mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-3">
               <input
                 value={q.prompt}
                 onChange={(e) => updateQuestion(qi, { prompt: e.target.value })}
                 placeholder={`Soal ${qi + 1}`}
-                className={cn(inputClass, "flex-1")}
+                className={cn(inputClass, "flex-1 min-w-0")}
               />
-              <input
-                type="number"
-                min={1}
-                max={100}
-                value={q.points}
-                onChange={(e) => updateQuestion(qi, { points: Number(e.target.value) })}
-                title="Poin"
-                className={cn(inputClass, "w-20 shrink-0")}
-              />
-              <button
-                type="button"
-                onClick={() => removeQuestion(qi)}
-                className="p-2 rounded-lg text-rust-700 hover:bg-rust-100 shrink-0"
-              >
-                Hapus
-              </button>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={q.points}
+                  onChange={(e) => updateQuestion(qi, { points: Number(e.target.value) })}
+                  title="Poin"
+                  className={cn(inputClass, "w-20 shrink-0")}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeQuestion(qi)}
+                  className="p-2 rounded-lg text-rust-700 hover:bg-rust-100 shrink-0"
+                >
+                  Hapus
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2 mb-3">

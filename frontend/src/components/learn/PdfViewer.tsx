@@ -39,7 +39,28 @@ export default function PdfViewer({ src, title }: { src: string; title: string }
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [fullscreen, setFullscreen] = useState(false);
 
-  const zoom = ZOOMS[zoomIndex];
+  // Lebar asli halaman (scale 1) dan lebar area baca yang tersedia — dipakai
+  // untuk menghitung skala "muat lebar" supaya PDF Letter/A4 tidak butuh
+  // gulir mendatar begitu dibuka di layar ponsel (375–414px).
+  const [nativeWidth, setNativeWidth] = useState<number | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+
+  const fitScale = nativeWidth && containerWidth ? Math.min(1, containerWidth / nativeWidth) : 1;
+  const zoom = ZOOMS[zoomIndex] * fitScale;
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    // contentRect tidak menyertakan padding elemen, jadi ini sudah lebar
+    // area yang benar-benar tersedia untuk halaman.
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setContainerWidth(entry.contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // ── Memuat dokumen ────────────────────────────────────────────────
   useEffect(() => {
@@ -65,6 +86,10 @@ export default function PdfViewer({ src, title }: { src: string; title: string }
       docRef.current = doc;
       setPages(doc.numPages);
       setStatus("ready");
+
+      const firstPage = await doc.getPage(1);
+      if (!alive) return;
+      setNativeWidth(firstPage.getViewport({ scale: 1 }).width);
     })().catch(() => {
       if (alive) setStatus("error");
     });

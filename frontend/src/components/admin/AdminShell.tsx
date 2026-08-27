@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -50,6 +51,7 @@ export default function AdminShell({
   const router = useRouter();
   const pathname = usePathname();
   const { logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   async function handleLogout() {
     await logout();
@@ -79,7 +81,7 @@ export default function AdminShell({
               </span>
             </Link>
 
-            <nav className="flex items-center gap-1" aria-label="Navigasi admin">
+            <nav className="hidden lg:flex items-center gap-1" aria-label="Navigasi admin">
               {NAV.map((item) => {
                 // Padanan persis: /admin tidak boleh ikut aktif saat berada
                 // di /admin/notifications.
@@ -118,7 +120,7 @@ export default function AdminShell({
             </nav>
           </div>
 
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="hidden lg:flex items-center gap-3 min-w-0">
             <span className="hidden sm:block text-sm text-ink-muted truncate max-w-[12rem]" title={user.email}>
               {user.name}
             </span>
@@ -129,7 +131,76 @@ export default function AdminShell({
               Keluar
             </button>
           </div>
+
+          <button
+            className="lg:hidden p-1.5 rounded-full text-ink hover:bg-blue-50 transition-colors shrink-0"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
+            aria-expanded={mobileOpen}
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              {mobileOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
+
+        {/* Menu mobile — panel lipat di bawah bilah utama */}
+        {mobileOpen && (
+          <div className="lg:hidden border-t border-rule bg-paper-card">
+            <nav className="container-page py-3 flex flex-col gap-0.5" aria-label="Navigasi admin (mobile)">
+              {NAV.map((item) => {
+                const active =
+                  item.href === "/admin"
+                    ? pathname === "/admin" || pathname.startsWith("/admin/users")
+                    : pathname.startsWith(item.href);
+
+                const menunggu = "badge" in item ? badges[item.badge] : 0;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm",
+                      "transition-colors duration-200 ease-out-soft",
+                      active
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-ink-body hover:bg-blue-50/60 hover:text-blue-700",
+                    )}
+                  >
+                    {item.label}
+                    {menunggu > 0 && (
+                      <span
+                        className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-amber-700 text-white text-[10px] font-semibold"
+                        aria-label={`${menunggu} pengajuan menunggu`}
+                      >
+                        {menunggu}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+
+              <hr className="rule-line my-2" />
+
+              <span className="px-3 pb-1 text-sm text-ink-muted truncate" title={user.email}>
+                {user.name}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="mx-3 px-4 py-2.5 text-sm font-semibold rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
+              >
+                Keluar
+              </button>
+            </nav>
+          </div>
+        )}
       </header>
 
       <main className="flex-1 py-12">{children}</main>

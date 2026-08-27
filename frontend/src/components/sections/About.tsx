@@ -220,28 +220,26 @@ function AboutCard({
       />
 
       {/* =====================================================
-          NUMBER
+          LARGE NUMBER
       ====================================================== */}
 
       <div
         className="
-          relative
-          z-50
-          flex
-          h-10
-          w-10
-          items-center
-          justify-center
-          rounded-full
-          bg-blue-600
-          text-xs
-          font-extrabold
-          text-white
-          shadow-[0_8px_25px_rgba(0,0,0,.12)]
-          transition-transform
-          duration-500
-          group-hover:scale-105
+          pointer-events-none
+          absolute
+          left-5
+          top-3
+          z-0
+          select-none
+          text-blue-600
+          text-[clamp(5rem,8vw,7rem)]
+          font-black
+          leading-[0.8]
+          tracking-[-0.09em]
         "
+        style={{
+          fontFamily: "var(--font-inter)",
+        }}
       >
         {point.num}
       </div>
@@ -319,7 +317,6 @@ function AboutCard({
 type FileItem = {
   id: number;
   title: string;
-  type: string;
 };
 
 type FilePosition = {
@@ -332,52 +329,143 @@ const FILES: FileItem[] = [
   {
     id: 1,
     title: "Materi Dasar",
-    type: "DOC",
   },
   {
     id: 2,
     title: "Konsep Utama",
-    type: "PDF",
   },
   {
     id: 3,
     title: "Latihan",
-    type: "TASK",
   },
   {
     id: 4,
     title: "Evaluasi",
-    type: "QUIZ",
   },
   {
     id: 5,
     title: "Referensi",
-    type: "REF",
   },
   {
     id: 6,
     title: "Ringkasan",
-    type: "NOTE",
   },
 ];
 
 const ORIGINAL_POSITIONS: FilePosition[] = [
-  { x: 50, y: 53, rotate: -3 },
-  { x: 50, y: 51, rotate: 2 },
-  { x: 50, y: 49, rotate: -2 },
-  { x: 50, y: 47, rotate: 3 },
-  { x: 50, y: 45, rotate: -4 },
-  { x: 50, y: 43, rotate: 2 },
+  {
+    x: 50,
+    y: 53,
+    rotate: -3,
+  },
+  {
+    x: 50,
+    y: 51,
+    rotate: 2,
+  },
+  {
+    x: 50,
+    y: 49,
+    rotate: -2,
+  },
+  {
+    x: 50,
+    y: 47,
+    rotate: 3,
+  },
+  {
+    x: 50,
+    y: 45,
+    rotate: -4,
+  },
+  {
+    x: 50,
+    y: 43,
+    rotate: 2,
+  },
 ];
 
 const RANDOM_POSITIONS: FilePosition[] = [
-  { x: 35, y: 42, rotate: -12 },
-  { x: 67, y: 45, rotate: 9 },
-  { x: 41, y: 65, rotate: 6 },
-  { x: 65, y: 67, rotate: -8 },
-  { x: 31, y: 55, rotate: 15 },
-  { x: 61, y: 55, rotate: -16 },
+  {
+    x: 35,
+    y: 42,
+    rotate: -12,
+  },
+  {
+    x: 67,
+    y: 45,
+    rotate: 9,
+  },
+  {
+    x: 41,
+    y: 65,
+    rotate: 6,
+  },
+  {
+    x: 65,
+    y: 67,
+    rotate: -8,
+  },
+  {
+    x: 31,
+    y: 55,
+    rotate: 15,
+  },
+  {
+    x: 61,
+    y: 55,
+    rotate: -16,
+  },
 ];
+
+/* =============================================================
+   DOCUMENT ICON
+============================================================= */
+
+function DocumentIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-[19px] w-[19px]"
+      aria-hidden="true"
+    >
+      <path
+        d="M6.5 3.5H14L18.5 8V20.5H6.5V3.5Z"
+        fill="white"
+        stroke="white"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+
+      <path
+        d="M14 3.5V8H18.5"
+        stroke="#2563EB"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+
+      <path
+        d="M9.5 12H15.5"
+        stroke="#2563EB"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+
+      <path
+        d="M9.5 15.5H15.5"
+        stroke="#2563EB"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/* =============================================================
+   01 — STRUCTURED GAME
+============================================================= */
 
 function StructuredGame({ hover }: { hover: boolean }) {
   const [positions, setPositions] =
@@ -385,59 +473,50 @@ function StructuredGame({ hover }: { hover: boolean }) {
 
   const [dragging, setDragging] = useState<number | null>(null);
 
-  const [undoStack, setUndoStack] = useState<number[]>([]);
+  const [isMessy, setIsMessy] = useState(false);
 
-  const isMessy = undoStack.length > 0;
+  /* =========================================================
+     ACAK KERTAS
+  ========================================================= */
 
-  const handleAction = () => {
-    if (undoStack.length === 0) {
-      const shuffled: FilePosition[] = [];
-      const used: number[] = [];
+  const handleShuffle = () => {
+    const shuffled: FilePosition[] = [];
+    const used: number[] = [];
 
-      for (let i = 0; i < FILES.length; i++) {
-        let randomIndex = Math.floor(Math.random() * RANDOM_POSITIONS.length);
+    for (let i = 0; i < FILES.length; i++) {
+      let randomIndex = Math.floor(
+        Math.random() * RANDOM_POSITIONS.length,
+      );
 
-        while (used.includes(randomIndex)) {
-          randomIndex = Math.floor(Math.random() * RANDOM_POSITIONS.length);
-        }
-
-        used.push(randomIndex);
-
-        shuffled.push({
-          ...RANDOM_POSITIONS[randomIndex],
-        });
+      while (used.includes(randomIndex)) {
+        randomIndex = Math.floor(
+          Math.random() * RANDOM_POSITIONS.length,
+        );
       }
 
-      setPositions(shuffled);
+      used.push(randomIndex);
 
-      setUndoStack([5, 4, 3, 2, 1, 0]);
-
-      return;
+      shuffled.push({
+        ...RANDOM_POSITIONS[randomIndex],
+      });
     }
 
-    setUndoStack((current) => {
-      if (current.length === 0) {
-        return current;
-      }
+    setPositions(shuffled);
+    setIsMessy(true);
+  };
 
-      const next = [...current];
+  /* =========================================================
+     RESET SEMUA
+  ========================================================= */
 
-      const fileIndex = next.shift();
+  const handleReset = () => {
+    setPositions(
+      ORIGINAL_POSITIONS.map((position) => ({
+        ...position,
+      })),
+    );
 
-      if (fileIndex !== undefined) {
-        setPositions((currentPositions) => {
-          const updated = [...currentPositions];
-
-          updated[fileIndex] = {
-            ...ORIGINAL_POSITIONS[fileIndex],
-          };
-
-          return updated;
-        });
-      }
-
-      return next;
-    });
+    setIsMessy(false);
   };
 
   const handlePointerMove = (
@@ -466,6 +545,8 @@ function StructuredGame({ hover }: { hover: boolean }) {
 
       return updated;
     });
+
+    setIsMessy(true);
   };
 
   return (
@@ -473,13 +554,18 @@ function StructuredGame({ hover }: { hover: boolean }) {
       className="
         relative
         h-[300px]
-        w-[270px]
+        w-62.5
+        sm:w-67.5
         [transform-style:preserve-3d]
         [transform:rotateX(var(--rotate-x))_rotateY(var(--rotate-y))]
         transition-transform
         duration-200
       "
     >
+      {/* =====================================================
+          SHADOW
+      ====================================================== */}
+
       <div
         className="
           absolute
@@ -493,6 +579,10 @@ function StructuredGame({ hover }: { hover: boolean }) {
           blur-xl
         "
       />
+
+      {/* =====================================================
+          FILES
+      ====================================================== */}
 
       {FILES.map((file, index) => {
         const position = positions[index];
@@ -544,22 +634,29 @@ function StructuredGame({ hover }: { hover: boolean }) {
             }}
           >
             <div className="flex items-center gap-3">
+              {/* =================================================
+                  ICON DOKUMEN
+                  Putih di dalam lingkaran biru yang lebih jelas
+              ================================================== */}
+
               <div
                 className="
                   flex
-                  h-9
-                  w-9
+                  h-10
+                  w-10
                   shrink-0
                   items-center
                   justify-center
-                  rounded-xl
-                  bg-blue-50
-                  text-[8px]
-                  font-black
-                  text-blue-600
+                  rounded-full
+                  bg-blue-600
+                  text-white
+                  shadow-[0_6px_14px_rgba(37,99,235,.22)]
+                  transition-all
+                  duration-300
+                  group-hover:scale-105
                 "
               >
-                {file.type}
+                <DocumentIcon />
               </div>
 
               <div className="min-w-0">
@@ -582,41 +679,122 @@ function StructuredGame({ hover }: { hover: boolean }) {
         );
       })}
 
-      <button
-        type="button"
-        onClick={handleAction}
-        className="
-          absolute
-          right-0
-          top-3
-          z-[150]
-          flex
-          h-14
-          w-14
-          items-center
-          justify-center
-          rounded-2xl
-          bg-blue-600
-          text-white
-          shadow-[0_15px_35px_rgba(0,0,0,.14)]
-          transition-all
-          duration-300
-          hover:scale-110
-          hover:-rotate-6
-          active:scale-95
-        "
-        style={{
-          transform: hover ? "translateZ(150px)" : "translateZ(120px)",
-        }}
-        aria-label={isMessy ? "Rapikan satu kertas" : "Acak kertas"}
-      >
-        {isMessy ? (
+      {/* =====================================================
+          SHUFFLE BUTTON
+      ====================================================== */}
+
+      {!isMessy && (
+        <button
+          type="button"
+          onClick={handleShuffle}
+          className="
+            absolute
+            right-0
+            top-3
+            z-[150]
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-2xl
+            bg-blue-600
+            text-white
+            shadow-[0_15px_35px_rgba(0,0,0,.14)]
+            transition-all
+            duration-300
+            hover:scale-110
+            hover:-rotate-6
+            active:scale-95
+          "
+          style={{
+            transform: hover
+              ? "translateZ(150px)"
+              : "translateZ(120px)",
+          }}
+          aria-label="Acak kertas"
+        >
           <svg
             className="h-6 w-6"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2.3"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16 3h5v5"
+            />
+
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 20L21 3"
+            />
+
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16 16l5 5"
+            />
+
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 16v5h-5"
+            />
+
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 4l5 5"
+            />
+          </svg>
+        </button>
+      )}
+
+      {/* =====================================================
+          RESET BUTTON
+      ====================================================== */}
+
+      {isMessy && (
+        <button
+          type="button"
+          onClick={handleReset}
+          className="
+            absolute
+            right-0
+            top-3
+            z-[150]
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-2xl
+            bg-blue-600
+            text-white
+            shadow-[0_15px_35px_rgba(0,0,0,.14)]
+            transition-all
+            duration-300
+            hover:scale-110
+            hover:-rotate-6
+            active:scale-95
+          "
+          style={{
+            transform: hover
+              ? "translateZ(150px)"
+              : "translateZ(120px)",
+          }}
+          aria-label="Kembalikan semua kertas"
+        >
+          <svg
+            className="h-7 w-7"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
           >
             <path
               strokeLinecap="round"
@@ -630,30 +808,8 @@ function StructuredGame({ hover }: { hover: boolean }) {
               d="M4 9h10a6 6 0 016 6v1"
             />
           </svg>
-        ) : (
-          <svg
-            className="h-6 w-6"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5" />
-
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 20L21 3" />
-
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 16l5 5" />
-
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 16v5h-5"
-            />
-
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l5 5" />
-          </svg>
-        )}
-      </button>
+        </button>
+      )}
     </div>
   );
 }
@@ -681,7 +837,11 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
   },
   {
     question: "Apa tujuan latihan dalam pembelajaran?",
-    answers: ["Menerapkan konsep", "Menghapus materi", "Mengurangi waktu"],
+    answers: [
+      "Menerapkan konsep",
+      "Menghapus materi",
+      "Mengurangi waktu",
+    ],
     correct: 0,
   },
 ];
@@ -696,7 +856,8 @@ function InteractiveGame({ hover }: { hover: boolean }) {
 
   const progress = finished
     ? 100
-    : ((questionIndex + (selected !== null ? 1 : 0)) / QUIZ_QUESTIONS.length) *
+    : ((questionIndex + (selected !== null ? 1 : 0)) /
+        QUIZ_QUESTIONS.length) *
       100;
 
   const chooseAnswer = (index: number) => {
@@ -733,7 +894,8 @@ function InteractiveGame({ hover }: { hover: boolean }) {
       className="
         relative
         h-[300px]
-        w-[270px]
+        w-62.5
+        sm:w-67.5
         [perspective:1000px]
         [transform-style:preserve-3d]
         [transform:rotateX(var(--rotate-x))_rotateY(var(--rotate-y))]
@@ -741,6 +903,10 @@ function InteractiveGame({ hover }: { hover: boolean }) {
         duration-200
       "
     >
+      {/* =====================================================
+          QUIZ
+      ====================================================== */}
+
       <div
         className="
           absolute
@@ -752,7 +918,7 @@ function InteractiveGame({ hover }: { hover: boolean }) {
           -translate-y-1/2
           rounded-[24px]
           border
-          border-blue-100
+          border-neutral-200
           bg-white
           p-4
           shadow-[0_20px_45px_rgba(0,0,0,.11)]
@@ -809,9 +975,14 @@ function InteractiveGame({ hover }: { hover: boolean }) {
             <div className="mt-3 space-y-1.5">
               {question.answers.map((answer, index) => {
                 const isSelected = selected === index;
+
                 const isCorrect = index === question.correct;
-                const showCorrect = selected !== null && isCorrect;
-                const showWrong = isSelected && !isCorrect;
+
+                const showCorrect =
+                  selected !== null && isCorrect;
+
+                const showWrong =
+                  isSelected && !isCorrect;
 
                 return (
                   <button
@@ -950,37 +1121,29 @@ function InteractiveGame({ hover }: { hover: boolean }) {
         )}
       </div>
 
+      {/* =====================================================
+          SHADOW
+      ====================================================== */}
+
       <div
         className="
+          pointer-events-none
           absolute
-          -right-1
-          top-5
-          z-50
-          flex
-          h-14
-          w-14
-          items-center
-          justify-center
-          rounded-2xl
-          bg-blue-600
-          text-white
-          shadow-[0_18px_40px_rgba(0,0,0,.14)]
-          transition-all
-          duration-500
+          bottom-4
+          left-1/2
+          h-3
+          w-36
+          -translate-x-1/2
+          rounded-full
+          bg-black/10
+          blur-xl
         "
         style={{
-          transform:
-            finished && score === QUIZ_QUESTIONS.length
-              ? "translateZ(170px) scale(1.1) rotate(8deg)"
-              : hover
-                ? "translateZ(150px)"
-                : "translateZ(120px)",
+          transform: hover
+            ? "translateX(-50%) translateZ(20px) scale(1.08)"
+            : "translateX(-50%)",
         }}
-      >
-        <span className="text-lg font-black">
-          {finished ? `${score}/${QUIZ_QUESTIONS.length}` : `${score}`}
-        </span>
-      </div>
+      />
     </div>
   );
 }
@@ -989,7 +1152,7 @@ function InteractiveGame({ hover }: { hover: boolean }) {
    03 — BERBASIS RISET
 ============================================================= */
 
-function ResearchGame({ hover }: { hover: boolean }) {
+function ResearchGame({ hover: _hover }: { hover: boolean }) {
   const paperRef = useRef<HTMLDivElement>(null);
 
   const [pointer, setPointer] = useState({
@@ -998,7 +1161,9 @@ function ResearchGame({ hover }: { hover: boolean }) {
     visible: false,
   });
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = (
+    e: React.PointerEvent<HTMLDivElement>,
+  ) => {
     const paper = paperRef.current;
 
     if (!paper) return;
@@ -1006,6 +1171,7 @@ function ResearchGame({ hover }: { hover: boolean }) {
     const rect = paper.getBoundingClientRect();
 
     const x = ((e.clientX - rect.left) / rect.width) * 100;
+
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
     setPointer({
@@ -1027,7 +1193,8 @@ function ResearchGame({ hover }: { hover: boolean }) {
       className="
         relative
         h-[300px]
-        w-[270px]
+        w-62.5
+        sm:w-67.5
         [perspective:1000px]
         [transform-style:preserve-3d]
         [transform:rotateX(var(--rotate-x))_rotateY(var(--rotate-y))]
@@ -1035,6 +1202,10 @@ function ResearchGame({ hover }: { hover: boolean }) {
         duration-200
       "
     >
+      {/* =====================================================
+          PAPER
+      ====================================================== */}
+
       <div
         ref={paperRef}
         onPointerMove={handlePointerMove}
@@ -1058,6 +1229,10 @@ function ResearchGame({ hover }: { hover: boolean }) {
         "
       >
         <ResearchDocument />
+
+        {/* =================================================
+            ZOOM LENS
+        ================================================== */}
 
         {pointer.visible && (
           <div
@@ -1099,6 +1274,8 @@ function ResearchGame({ hover }: { hover: boolean }) {
               <ResearchDocument />
             </div>
 
+            {/* Highlight kecil */}
+
             <div
               className="
                 pointer-events-none
@@ -1116,6 +1293,10 @@ function ResearchGame({ hover }: { hover: boolean }) {
           </div>
         )}
 
+        {/* =================================================
+            HINT
+        ================================================== */}
+
         <div
           className="
             pointer-events-none
@@ -1123,72 +1304,20 @@ function ResearchGame({ hover }: { hover: boolean }) {
             bottom-3
             left-5
             right-5
+            z-40
             text-center
             text-[7px]
             font-bold
             text-neutral-400
+            transition-opacity
+            duration-200
           "
+          style={{
+            opacity: pointer.visible ? 0 : 1,
+          }}
         >
           Gerakkan kursor untuk membaca
         </div>
-      </div>
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          right-0
-          top-3
-          z-50
-          transition-transform
-          duration-200
-        "
-        style={{
-          transform: hover
-            ? "translateZ(160px) rotate(8deg) scale(1.08)"
-            : "translateZ(120px) rotate(8deg)",
-        }}
-      >
-        <div
-          className="
-            relative
-            h-16
-            w-16
-            rounded-full
-            border-[6px]
-            border-blue-600
-            bg-white/20
-            shadow-[0_18px_40px_rgba(0,0,0,.14)]
-            backdrop-blur-[1px]
-          "
-        >
-          <div
-            className="
-              absolute
-              left-2
-              top-2
-              h-4
-              w-6
-              rotate-[-25deg]
-              rounded-full
-              bg-white/70
-              blur-[1px]
-            "
-          />
-        </div>
-
-        <div
-          className="
-            absolute
-            -bottom-9
-            -right-5
-            h-11
-            w-3
-            rotate-[-42deg]
-            rounded-full
-            bg-blue-600
-          "
-        />
       </div>
     </div>
   );
@@ -1201,31 +1330,41 @@ function ResearchGame({ hover }: { hover: boolean }) {
 function ResearchDocument() {
   return (
     <div className="select-none">
-      <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-black text-white">
-          R
-        </div>
+      {/* =====================================================
+          HEADER TANPA ICON / HURUF R
+      ====================================================== */}
 
-        <div>
-          <h3 className="text-[10px] font-black text-neutral-800">
-            Learning Research
-          </h3>
+      <div>
+        <h3 className="text-[11px] font-black leading-none text-neutral-800">
+          Learning Research
+        </h3>
 
-          <p className="mt-1 text-[6px] text-neutral-400">
-            Evidence-based learning
-          </p>
-        </div>
+        <p className="mt-1.5 text-[6px] text-neutral-400">
+          Evidence-based learning
+        </p>
       </div>
+
+      {/* =====================================================
+          PARAGRAPH 1
+      ====================================================== */}
 
       <p className="mt-5 text-[7px] leading-[1.7] text-neutral-600">
         Interactive learning can support student engagement by encouraging
         learners to actively participate in the learning process.
       </p>
 
+      {/* =====================================================
+          PARAGRAPH 2
+      ====================================================== */}
+
       <p className="mt-3 text-[7px] leading-[1.7] text-neutral-600">
         Research-based learning materials can also help students connect
         theoretical concepts with practical activities.
       </p>
+
+      {/* =====================================================
+          RESEARCH FINDING
+      ====================================================== */}
 
       <div className="mt-4 rounded-xl bg-blue-50 p-3">
         <p className="text-[6px] font-black uppercase tracking-[0.12em] text-blue-600">
@@ -1237,6 +1376,10 @@ function ResearchDocument() {
           learners interact directly with the material.
         </p>
       </div>
+
+      {/* =====================================================
+          SOURCE
+      ====================================================== */}
 
       <p className="mt-4 text-[6px] leading-[1.6] text-neutral-400">
         Source: Educational Research Review · 2025
