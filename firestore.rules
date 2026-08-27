@@ -150,6 +150,18 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Pengumpulan tugas ──────────────────────────────────────────────
+    // Ditulis HANYA lewat Server Action. Kalau klien boleh menulis, peserta
+    // bisa memberi nilai 100 pada dirinya sendiri lalu menarik sertifikat
+    // tanpa pernah dikoreksi siapa pun — dan seluruh gunanya penilaian
+    // lenyap dalam satu panggilan.
+    //
+    // Membacanya pun tidak perlu dari browser: halaman belajar dan panel
+    // educator sama-sama dirender di server.
+    match /submissions/{id} {
+      allow read, write: if false;
+    }
+
     // ── Setelan aplikasi ───────────────────────────────────────────────
     // Saat ini hanya settings/payments — saklar metode pembayaran.
     //

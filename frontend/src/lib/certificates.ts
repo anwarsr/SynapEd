@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { adminDb } from "@/lib/firebase/admin";
 import { flattenLessons, type CourseDetail } from "@/lib/courses";
 import { enrollmentRef, type Enrollment } from "@/lib/enrollments";
+import { gradingStateOf, listStudentSubmissions } from "@/lib/submissions";
 import type { SessionUser } from "@/lib/firebase/session";
 
 export interface Certificate {
@@ -70,7 +71,14 @@ export async function getCertificate(id: string): Promise<Certificate | null> {
  * sudah selesai tidak memicu ulang layar perayaan.
  */
 export async function issueCertificateIfComplete(
-  user: SessionUser,
+  /**
+   * Pemegang sertifikat — BUKAN selalu pemanggilnya.
+   *
+   * Saat educator memberi nilai terakhir, dialah yang memanggil tetapi
+   * sertifikatnya milik peserta. Karena itu tipenya dilonggarkan dari
+   * SessionUser menjadi bagian yang benar-benar dipakai.
+   */
+  user: Pick<SessionUser, "uid" | "name">,
   course: CourseDetail,
   enrollment: Enrollment,
   finalCompletedLessons: string[],
@@ -82,6 +90,16 @@ export async function issueCertificateIfComplete(
 
   const done = new Set(finalCompletedLessons);
   if (!allSlugs.every((s) => done.has(s))) return null;
+
+  // Menyelesaikan seluruh pelajaran TIDAK lagi cukup.
+  //
+  // Setiap penugasan dan kuis harus sudah dikumpulkan, dinilai educator,
+  // dan mencapai nilai minimum kursusnya. Diperiksa di sini — di satu-
+  // satunya tempat yang menerbitkan sertifikat — bukan di tombolnya:
+  // markLessonComplete dan submitQuiz sama-sama bermuara ke fungsi ini,
+  // dan keduanya bisa dipanggil lewat POST langsung.
+  const submissions = await listStudentSubmissions(user.uid, course.slug);
+  if (!gradingStateOf(course, submissions, enrollment.quizScores).clear) return null;
 
   const id = randomCertificateId();
   const now = new Date().toISOString();

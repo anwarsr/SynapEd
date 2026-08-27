@@ -36,6 +36,7 @@ export default function CourseForm({
   const [category, setCategory] = useState(categories[0]?.value ?? "");
   const [duration, setDuration] = useState("");
   const [price, setPrice] = useState("0");
+  const [passingGrade, setPassingGrade] = useState("70");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
 
   const [sections, setSections] = useState<DraftSection[]>(() => firstSection("Materi Kursus"));
@@ -66,6 +67,7 @@ export default function CourseForm({
       category,
       duration,
       price: Number(price) || 0,
+      passingGrade: Number(passingGrade),
       thumbnail,
       sections: toSectionInput(sections),
     });
@@ -213,6 +215,24 @@ export default function CourseForm({
             />
             <p className="mt-2 text-xs text-ink-muted">0 berarti gratis.</p>
           </div>
+
+            <div className="max-w-xs">
+              <Label htmlFor="passingGrade">Nilai minimum kelulusan</Label>
+              <input
+                id="passingGrade"
+                type="number"
+                min={0}
+                max={100}
+                inputMode="numeric"
+                value={passingGrade}
+                onChange={(e) => setPassingGrade(e.target.value)}
+                className={inputClass}
+              />
+              <p className="mt-2 text-xs text-ink-muted">
+                Sertifikat baru terbit setelah seluruh penugasan dan kuis peserta dinilai
+                dan mencapai angka ini.
+              </p>
+            </div>
 
           <ThumbnailPicker prefix={draftId} onChange={(v) => setThumbnail(v ?? null)} />
         </div>

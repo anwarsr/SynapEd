@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/firebase/session";
 import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
+import { DEFAULT_PASSING_GRADE } from "@/lib/courses";
 import { canonicalDuration } from "@/lib/duration";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 import { attachmentPaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
@@ -80,6 +81,7 @@ export interface CourseMetaInput {
   category: string;
   duration: string;
   price: number;
+  passingGrade: number;
   /**
    * Diisi HANYA kalau gambar latarnya diubah:
    *   undefined -> biarkan seperti apa adanya
@@ -92,6 +94,19 @@ export interface CourseMetaInput {
 }
 
 /** Menyunting judul, deskripsi, harga, dan metadata lain — bukan kurikulum. */
+/**
+ * Nilai minimum kelulusan, dijepit 0..100.
+ *
+ * Diperiksa di server karena Server Action bisa dipanggil lewat POST
+ * langsung: batas 200 membuat sertifikat mustahil terbit, batas negatif
+ * membuatnya selalu terbit — dan keduanya tanpa satu pun pesan galat.
+ */
+function clampGrade(raw: unknown): number {
+  const n = Math.round(Number(raw));
+  if (!Number.isFinite(n)) return DEFAULT_PASSING_GRADE;
+  return Math.min(100, Math.max(0, n));
+}
+
 export async function updateCourseMeta(slug: string, input: CourseMetaInput): Promise<CurriculumResult> {
   // KHUSUS ADMIN — alasan yang sama seperti saveCurriculum di atas.
   const user = await getCurrentUser();
@@ -133,6 +148,7 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
     category,
     duration: canonicalDuration(input.duration, "course") || "—",
     price,
+    passingGrade: clampGrade(input.passingGrade),
     whatYouLearn,
     requirements,
   };

@@ -26,6 +26,7 @@ export interface CourseSnapshot {
   category: string;
   duration: string;
   price: number;
+  passingGrade: number;
   thumbnail: string | null;
   whatYouLearn: string[];
   requirements: string[];

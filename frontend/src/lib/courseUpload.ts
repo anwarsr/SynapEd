@@ -6,6 +6,7 @@ import {
   COURSE_THUMBNAILS,
   PAYMENT_PROOFS,
   QRIS_IMAGES,
+  SUBMISSION_FILES,
 } from "@/lib/storagePaths";
 import type { UploadedDoc } from "@/lib/courseActions";
 
@@ -54,6 +55,36 @@ export async function uploadCourseDoc(
   await uploadBytes(ref(firebaseStorage(), path), file, { contentType: "application/pdf" });
 
   return { name: file.name, path, size: file.size, mime: "application/pdf" };
+}
+
+// ── Berkas tugas peserta ────────────────────────────────────────────────
+
+/** Sejalan dengan storage.rules — jangan ubah salah satunya saja. */
+export const MAX_SUBMISSION_BYTES = 50 * 1024 * 1024;
+
+/**
+ * Berkas tugas boleh JENIS APA PUN — peserta mengumpulkan dokumen, gambar,
+ * arsip, apa pun yang diminta educator. Yang dibatasi hanya ukurannya.
+ *
+ * Aman karena berkasnya tidak pernah dirender browser: route penyajinya
+ * selalu memaksa unduhan, tidak pernah inline.
+ */
+export function validateSubmission(file: File): string | null {
+  if (file.size === 0) return "Berkas kosong.";
+  if (file.size > MAX_SUBMISSION_BYTES) return "Ukuran berkas maksimal 50 MB.";
+  return null;
+}
+
+/** Berkas tugas peserta. Mengembalikan path, bukan URL — lihat uploadCourseImage. */
+export async function uploadSubmission(
+  uid: string,
+  courseSlug: string,
+  lessonSlug: string,
+  file: File,
+): Promise<string> {
+  const path = `${SUBMISSION_FILES}/${uid}/${courseSlug}/${lessonSlug}-${Date.now()}-${safeName(file.name)}`;
+  await uploadBytes(ref(firebaseStorage(), path), file, { contentType: file.type || "application/octet-stream" });
+  return path;
 }
 
 // ── Gambar latar kursus ─────────────────────────────────────────────────

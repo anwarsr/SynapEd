@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import LearnShell from "@/components/learn/LearnShell";
 import { flattenLessons, getCourse } from "@/lib/courses";
 import { canViewLesson, requireCourseAccess } from "@/lib/courseAccess";
+import { getSubmission, passingGradeOf, submissionId } from "@/lib/submissions";
 import { progressOf } from "@/lib/enrollments";
 import { getPublicQuizForViewer } from "@/lib/quiz";
 import type { Metadata } from "next";
@@ -48,6 +49,15 @@ export default async function LearnPage({ params }: Props) {
   // kursus tidak punya dokumen enrollment untuk dilacak.
   const canTrackProgress = access.reason === "enrolled";
 
+  // Pengumpulan hanya relevan pada penugasan & kuis, dan hanya untuk peserta
+  // sungguhan — pemilik kursus tidak mengumpulkan tugas ke kursusnya sendiri.
+  const butuhPengumpulan =
+    flat[index].type === "assignment" || flat[index].type === "quiz";
+  const submission =
+    canTrackProgress && butuhPengumpulan
+      ? await getSubmission(submissionId(access.user.uid, slug, flat[index].slug))
+      : null;
+
   const current = flat[index];
   // Pembacaan ekstra HANYA terjadi saat merender pelajaran kuis — bukan di
   // katalog, bukan di daftar kurikulum, bukan di pelajaran video/bacaan.
@@ -67,6 +77,20 @@ export default async function LearnPage({ params }: Props) {
       completed={enrollment?.completedLessons ?? []}
       progress={progressOf(course, enrollment)}
       canTrackProgress={canTrackProgress}
+      submission={
+        submission
+          ? {
+              id: submission.id,
+              fileName: submission.fileName,
+              fileSize: submission.fileSize,
+              status: submission.status,
+              grade: submission.grade,
+              feedback: submission.feedback,
+              submittedAt: submission.submittedAt,
+            }
+          : null
+      }
+      passingGrade={passingGradeOf(course)}
       quiz={quiz}
       certificateId={enrollment?.certificateId ?? null}
     />

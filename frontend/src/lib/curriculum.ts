@@ -14,6 +14,17 @@ import type { Attachment, Lesson, Section } from "@/lib/courses";
  * saat kompilasi.
  */
 
+/**
+ * Tipe pelajaran yang sah.
+ *
+ * Sebelumnya `type` diteruskan apa adanya dari klien — TypeScript memang
+ * menyempitkannya, tetapi Server Action bisa dipanggil lewat POST langsung
+ * dan tipe TypeScript tidak ada lagi saat itu. Akibatnya `"podcast"` pun
+ * tersimpan ke Firestore, lalu jatuh ke ikon bawaan di setiap tampilan —
+ * pelajaran yang bertipe entah apa, tanpa satu pun pesan galat.
+ */
+const LESSON_TYPES = ["video", "reading", "assignment", "quiz"] as const;
+
 const MAX_SECTIONS = 30;
 const MAX_LESSONS = 200;
 
@@ -29,7 +40,7 @@ export interface LessonInput {
    *  progres peserta (completedLessons) dan dokumen kuis tidak jadi yatim. */
   slug?: string;
   title: string;
-  type: "video" | "reading" | "quiz";
+  type: "video" | "reading" | "assignment" | "quiz";
   duration: string;
   videoUrl?: string;
   attachments?: AttachmentInput[];
@@ -98,7 +109,10 @@ export function normalizeSections(
       const lesson: Lesson = {
         slug,
         title: lessonTitle,
-        type: l.type,
+        // Tipe asing dibaca sebagai "reading", bukan ditolak: kursus hasil
+        // migrasi bisa menyimpan apa saja, dan menolak simpan akan membuat
+        // kursus-kursus itu mustahil disunting.
+        type: LESSON_TYPES.includes(l.type) ? l.type : "reading",
         // Satu-satunya jalan masuk kurikulum, jadi pembakuan satuan pelajaran
         // cukup di sini — createCourse, saveCurriculum, dan pengajuan sunting
         // semuanya lewat sini.

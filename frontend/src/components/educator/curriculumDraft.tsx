@@ -25,13 +25,36 @@ import { cn } from "@/lib/cn";
  * sama dengan normalizeSections di sisi server.
  */
 
-export type LessonType = "video" | "reading" | "quiz";
+export type LessonType = "video" | "reading" | "assignment" | "quiz";
 
+/**
+ * Dulu penugasan dan kuis satu tipe bernama "quiz", berlabel
+ * "Penugasan / Kuis". Keduanya dipisah atas permintaan pemilik proyek supaya
+ * educator bisa menyatakan mana yang mana, dan peserta melihat bedanya.
+ *
+ * Untuk SEKARANG perilakunya sama: keduanya melampirkan PDF. Penyusun soal
+ * kuis tidak dibuang — hanya tidak ditawarkan di form — karena pemisahan ini
+ * disebut "untuk sekarang", dan membuang fitur yang mungkin kembali itu
+ * merusak tanpa perlu.
+ */
 export const TYPE_LABEL: Record<LessonType, string> = {
   reading: "Modul / Bacaan",
   video: "Video",
-  quiz: "Penugasan / Kuis",
+  assignment: "Penugasan",
+  quiz: "Kuis",
 };
+
+/**
+ * Penyusun soal kuis ditawarkan atau tidak.
+ *
+ * Dimatikan atas permintaan pemilik proyek: untuk sekarang kuis berperilaku
+ * sama dengan penugasan — cukup melampirkan PDF. Kodenya SENGAJA tidak
+ * dibuang (QuizEditor, QuizQuestionsFields, quizActions, QuizRunner semuanya
+ * masih utuh dan teruji), karena permintaannya berbunyi "untuk sekarang".
+ *
+ * Menyalakannya kembali cukup mengubah baris ini menjadi true.
+ */
+const KUIS_BERSOAL = false;
 
 export interface DraftAttachment {
   name: string;
@@ -130,7 +153,9 @@ export function draftFromCourse(course: CourseDetail): DraftSection[] {
       key: seedKey(si, li),
       slug: l.slug,
       title: l.title,
-      type: (l.type === "video" || l.type === "quiz" ? l.type : "reading") as LessonType,
+      // Tipe yang tidak dikenal jatuh ke "reading" — kursus hasil migrasi
+      // bisa menyimpan apa saja di field ini.
+      type: (["video", "assignment", "quiz"].includes(l.type) ? l.type : "reading") as LessonType,
       duration: l.duration,
       videoUrl: l.videoUrl ?? "",
       attachment: l.attachments?.[0] ?? null,
@@ -465,7 +490,7 @@ export default function SectionList({
                 )}
                 {l.uploading && <p className="mt-2 text-sm text-ink-muted">Mengunggah…</p>}
 
-                {l.type === "quiz" && (
+                {KUIS_BERSOAL && l.type === "quiz" && (
                   <div className="mt-3">
                     {courseSlug ? (
                       l.slug ? (

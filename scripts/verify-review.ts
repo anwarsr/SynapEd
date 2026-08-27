@@ -286,16 +286,54 @@ async function run(owner: TestUser, siswa: TestUser, lain: TestUser, admin: Test
           const p = await browser.newPage();
           await p.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 90000 });
 
-          const kartu = await p.$('button[aria-label^="Baca ulasan"]');
-          check("kartu ulasan ada di beranda", Boolean(kartu), "etalase terisi");
+          // Kartunya dicari ULANG di dalam halaman setiap kali, bukan
+          // dipegang lewat ElementHandle.
+          //
+          // Etalase menggandakan kartunya sendiri begitu isinya empat atau
+          // lebih, jadi node yang dipegang sebelum hidrasi ikut terlepas —
+          // dan klik pada node yang sudah lepas gagal tanpa suara.
+          //
+          // Dicari lewat nama penulisnya, bukan kartu pertama: beranda kini
+          // memuat ulasan sungguhan milik orang lain, dan menebak posisi
+          // membuat pemeriksaan ini gagal hanya karena yang terklik orang
+          // lain — persis yang sempat terjadi.
+          const namaPenulis = String(
+            (await db.collection("reviews").doc(`${siswa.uid}_${slug}`).get()).data()?.name ?? "",
+          );
+          const label = `Baca ulasan lengkap dari ${namaPenulis}`;
 
-          if (kartu) {
-            await kartu.click();
-            await p.waitForSelector(`a[href="/profil/${siswa.uid}"]`, { timeout: 10000 });
+          const adaKartu = await p
+            .waitForFunction(
+              (l: string) => Boolean(document.querySelector(`button[aria-label="${l}"]`)),
+              { timeout: 20000 },
+              label,
+            )
+            .then(() => true)
+            .catch(() => false);
+
+          check("kartu ulasan ada di beranda", adaKartu, `etalase memuat ${namaPenulis}`);
+
+          if (adaKartu) {
+            let terlihat = false;
+
+            // Diklik berulang: networkidle0 hanya menjamin jaringan sunyi,
+            // bukan React sudah hydrate — dan sebelum hydrate onClick-nya
+            // belum terpasang, sehingga kliknya tidak melakukan apa pun.
+            for (let i = 0; i < 10 && !terlihat; i++) {
+              await p.evaluate((l: string) => {
+                (document.querySelector(`button[aria-label="${l}"]`) as HTMLButtonElement | null)?.click();
+              }, label);
+
+              terlihat = await p
+                .waitForSelector(`a[href="/profil/${siswa.uid}"]`, { timeout: 2000 })
+                .then(() => true)
+                .catch(() => false);
+            }
+
             check(
               "dialog beranda menautkan penulis ulasannya",
-              true,
-              "tautan muncul setelah kartu diketuk",
+              terlihat,
+              terlihat ? "tautan muncul setelah kartu diketuk" : "tautan tidak ditemukan",
             );
           }
         } catch {

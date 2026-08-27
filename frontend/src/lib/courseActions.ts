@@ -9,6 +9,7 @@ import { categoryExists } from "@/lib/categories";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
 import { attachmentPaths, courseFilePaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
+import { DEFAULT_PASSING_GRADE } from "@/lib/courses";
 import type { Section } from "@/lib/courses";
 
 export type CourseResult =
@@ -43,6 +44,7 @@ export interface NewCourseInput {
   category: string;
   duration: string;
   price: number;
+  passingGrade: number;
   /** Path gambar latar di Storage. Kosong berarti memakai latar bawaan. */
   thumbnail: string | null;
   /** Kurikulum bebas: berapa pun bagian & pelajarannya, dalam urutan mana pun. */
@@ -61,6 +63,19 @@ async function requireEducator() {
 
 function clean(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+/**
+ * Nilai minimum kelulusan, dijepit 0..100.
+ *
+ * Diperiksa di server karena Server Action bisa dipanggil lewat POST
+ * langsung: batas 200 membuat sertifikat mustahil terbit, batas negatif
+ * membuatnya selalu terbit — dan keduanya tanpa satu pun pesan galat.
+ */
+function clampGrade(raw: unknown): number {
+  const n = Math.round(Number(raw));
+  if (!Number.isFinite(n)) return DEFAULT_PASSING_GRADE;
+  return Math.min(100, Math.max(0, n));
 }
 
 export async function createCourse(input: NewCourseInput): Promise<CourseResult> {
@@ -125,6 +140,7 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       rating: 0,
       reviews: 0,
       price,
+      passingGrade: clampGrade(input.passingGrade),
       thumbnail: thumbnail.value,
       enrolledStudents: 0,
 

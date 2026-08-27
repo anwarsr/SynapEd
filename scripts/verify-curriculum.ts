@@ -239,6 +239,64 @@ async function run(owner: TestUser, other: TestUser, admin: TestUser) {
       );
     }
 
+
+    // ── Penugasan dan Kuis adalah dua tipe terpisah ────────────────
+    //
+    // Dulu keduanya satu tipe "quiz" berlabel "Penugasan / Kuis". Yang diuji
+    // di sini: keduanya benar-benar tersimpan apa adanya, bukan salah satunya
+    // diam-diam jatuh ke "reading" oleh normalizeSections.
+    {
+      const path = `/educator/courses/${slug}/edit`;
+
+      await callAction(
+        path,
+        curriculumId,
+        [
+          slug,
+          [
+            {
+              title: "Bagian Tipe",
+              lessons: [
+                { title: "Tugas Akhir", type: "assignment", duration: "30 Menit" },
+                { title: "Kuis Akhir", type: "quiz", duration: "15 Menit" },
+                { title: "Tipe Karangan", type: "podcast", duration: "5 Menit" },
+              ],
+            },
+          ],
+        ],
+        admin.cookie,
+      );
+
+      const after = (await db.collection("courses").doc(slug).get()).data();
+      const tipe = ((after?.sections?.[0]?.lessons ?? []) as { type: string }[]).map((l) => l.type);
+
+      check("tipe penugasan tersimpan apa adanya", tipe[0] === "assignment", `dapat "${tipe[0]}"`);
+      check("tipe kuis tersimpan apa adanya", tipe[1] === "quiz", `dapat "${tipe[1]}"`);
+      check(
+        "tipe karangan ditolak dan jatuh ke reading",
+        tipe[2] === "reading",
+        `dapat "${tipe[2]}"`,
+      );
+
+      // Halaman kursus membedakan keduanya untuk pembaca.
+      const detail = await probeText(`/courses/${slug}`, admin.cookie);
+      check(
+        "halaman kursus memuat kedua pelajaran itu",
+        detail.html.includes("Tugas Akhir") && detail.html.includes("Kuis Akhir"),
+        "daftar kurikulum",
+      );
+
+      // Form educator menawarkan keempat tipe, bukan lagi "Penugasan / Kuis".
+      const editor = await probeText(path, admin.cookie);
+      check(
+        "form menawarkan Penugasan dan Kuis terpisah",
+        editor.html.includes("Penugasan") &&
+          editor.html.includes("Kuis") &&
+          !editor.html.includes("Penugasan / Kuis"),
+        "TYPE_LABEL",
+      );
+    }
+
     // ── id form tidak boleh acak ────────────────────────────────────
     //
     // Kunci baris kurikulum dipakai sebagai id elemen (`section-…`,

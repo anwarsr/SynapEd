@@ -1,7 +1,7 @@
 import "server-only";
 import { adminAuth } from "@/lib/firebase/admin";
 
-export interface Instructor {
+export interface UserCard {
   uid: string;
   name: string;
   photoURL: string | null;
@@ -19,9 +19,9 @@ export interface Instructor {
  * lewat getUsers() — bukan satu panggilan per kartu. Katalog dengan 30 kursus
  * tetap menghasilkan satu permintaan, bukan tiga puluh.
  */
-export async function getInstructors(uids: readonly string[]): Promise<Map<string, Instructor>> {
+export async function getUserCards(uids: readonly string[]): Promise<Map<string, UserCard>> {
   const unik = Array.from(new Set(uids.filter(Boolean)));
-  const hasil = new Map<string, Instructor>();
+  const hasil = new Map<string, UserCard>();
   if (unik.length === 0) return hasil;
 
   // Batas getUsers: 100 identifier per panggilan. Kursus belum sebanyak itu,

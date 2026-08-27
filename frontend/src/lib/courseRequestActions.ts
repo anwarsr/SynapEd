@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { getCourse } from "@/lib/courses";
+import { DEFAULT_PASSING_GRADE, getCourse } from "@/lib/courses";
 import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
@@ -67,6 +67,7 @@ export async function snapshotOf(course: CourseDetail): Promise<CourseSnapshot> 
     category: course.category,
     duration: course.duration,
     price: course.price,
+    passingGrade: course.passingGrade,
     thumbnail: course.thumbnail,
     whatYouLearn: course.whatYouLearn ?? [],
     requirements: course.requirements ?? [],
@@ -201,11 +202,25 @@ export interface CourseEditInput {
   category: string;
   duration: string;
   price: number;
+  passingGrade: number;
   /** undefined = tidak diubah; null = dihapus; string = path baru. */
   thumbnail?: string | null;
   whatYouLearn: string[];
   requirements: string[];
   sections: SectionInput[];
+}
+
+/**
+ * Nilai minimum kelulusan, dijepit 0..100.
+ *
+ * Diperiksa di server karena Server Action bisa dipanggil lewat POST
+ * langsung: batas 200 membuat sertifikat mustahil terbit, batas negatif
+ * membuatnya selalu terbit — dan keduanya tanpa satu pun pesan galat.
+ */
+function clampGrade(raw: unknown): number {
+  const n = Math.round(Number(raw));
+  if (!Number.isFinite(n)) return DEFAULT_PASSING_GRADE;
+  return Math.min(100, Math.max(0, n));
 }
 
 /**
@@ -265,6 +280,7 @@ export async function requestCourseEdit(
     category,
     duration: canonicalDuration(input.duration, "course") || "—",
     price,
+    passingGrade: clampGrade(input.passingGrade),
     thumbnail,
     whatYouLearn: input.whatYouLearn.map((s) => s.trim()).filter(Boolean).slice(0, 20),
     requirements: input.requirements.map((s) => s.trim()).filter(Boolean).slice(0, 20),
@@ -424,6 +440,7 @@ export async function decideCourseRequest(
         category: req.after.category,
         duration: req.after.duration,
         price: req.after.price,
+        passingGrade: req.after.passingGrade,
         thumbnail: req.after.thumbnail,
         whatYouLearn: req.after.whatYouLearn,
         requirements: req.after.requirements,

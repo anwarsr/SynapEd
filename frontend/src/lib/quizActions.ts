@@ -183,6 +183,13 @@ export async function submitQuiz(
   let attemptsUsedBefore = 0;
   let finalCompletedLessons: string[] = enrollment.completedLessons;
 
+  // Disimulasikan dengan alasan yang sama seperti finalCompletedLessons:
+  // `enrollment` dibaca SEBELUM transaksi, jadi nilainya belum memuat skor
+  // yang baru saja ditulis. Gerbang sertifikat mengecualikan pelajaran kuis
+  // yang sudah punya skor — tanpa simulasi ini, kuis yang baru saja lulus
+  // terbaca seolah belum dinilai dan sertifikatnya tertahan selamanya.
+  let finalQuizScores: Record<string, number> = enrollment.quizScores ?? {};
+
   try {
     await adminDb().runTransaction(async (tx) => {
       const attemptsQuery = attemptsCollection.where("lessonSlug", "==", lessonSlug);
@@ -202,6 +209,7 @@ export async function submitQuiz(
       finalCompletedLessons = passed
         ? Array.from(new Set([...current.completedLessons, lessonSlug]))
         : current.completedLessons;
+      finalQuizScores = { ...(current.quizScores ?? {}), [lessonSlug]: bestScore };
 
       tx.set(attemptsCollection.doc(), { lessonSlug, score, passed, answeredAt: now });
 
@@ -228,7 +236,12 @@ export async function submitQuiz(
   const revealExplanation = passed || attemptsLeft === 0;
 
   const newCertificateId = passed
-    ? await issueCertificateIfComplete(user, course, enrollment, finalCompletedLessons)
+    ? await issueCertificateIfComplete(
+        user,
+        course,
+        { ...enrollment, quizScores: finalQuizScores },
+        finalCompletedLessons,
+      )
     : null;
 
   revalidatePath(`/courses/${courseSlug}/learn/${lessonSlug}`);

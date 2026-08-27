@@ -1,7 +1,11 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
-import { getInstructors } from "@/lib/instructors";
+import { getUserCards } from "@/lib/userCards";
 import { listCategories } from "@/lib/categories";
+
+/** Sengaja di sini, bukan diimpor dari submissions.ts: modul itu mengimpor
+ *  courses.ts, dan saling-impor membuat salah satunya undefined saat dimuat. */
+export const DEFAULT_PASSING_GRADE = 70;
 
 // ── Tipe ────────────────────────────────────────────────────────────────
 
@@ -16,7 +20,7 @@ export interface Attachment {
 export interface Lesson {
   slug: string;
   title: string;
-  type: "video" | "reading" | "quiz" | string;
+  type: "video" | "reading" | "assignment" | "quiz" | string;
   duration: string;
   position: number;
   /** Tautan YouTube/Vimeo. Kosong berarti materi belum diunggah. */
@@ -93,6 +97,14 @@ export type CourseVisibility = "public" | "private";
 
 export interface CourseDetail extends CourseSummary {
   longDesc: string;
+  /**
+   * Nilai minimum kelulusan penugasan & kuis, 0..100.
+   *
+   * Kursus yang dibuat sebelum penilaian ada tidak punya field ini.
+   * Ketiadaannya dibaca sebagai 70 oleh passingGradeOf(), bukan 0 — nol
+   * berarti apa pun lulus, dan itu diam-diam mencabut syaratnya.
+   */
+  passingGrade: number;
   enrolledStudents: number;
   lastUpdated: string | null;
   instructorBio: string;
@@ -164,7 +176,7 @@ async function withInstructorPhotos<T extends CourseSummary>(rows: T[]): Promise
   const uids = rows.map((r) => r.ownerUid).filter((u): u is string => Boolean(u));
   if (uids.length === 0) return rows;
 
-  const instructors = await getInstructors(uids);
+  const instructors = await getUserCards(uids);
 
   return rows.map((r) => {
     const found = r.ownerUid ? instructors.get(r.ownerUid) : undefined;
@@ -221,13 +233,15 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
 
   // Satu kursus, jadi satu uid — tapi lewat helper yang sama agar aturan
   // "foto dibaca dari Auth, bukan dari dokumen" hanya ditulis di satu tempat.
-  const instructors = ownerUid ? await getInstructors([ownerUid]) : null;
+  const instructors = ownerUid ? await getUserCards([ownerUid]) : null;
 
   return {
     ...data,
     sections,
     lessonsCount: countLessons(sections),
     ownerUid,
+    passingGrade:
+      typeof data.passingGrade === "number" ? data.passingGrade : DEFAULT_PASSING_GRADE,
     instructorPhoto: (ownerUid && instructors?.get(ownerUid)?.photoURL) || null,
 
     // WAJIB dinormalkan di sini, bukan hanya di toSummary.

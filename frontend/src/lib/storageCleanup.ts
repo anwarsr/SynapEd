@@ -1,6 +1,11 @@
 import "server-only";
 import { adminStorage } from "@/lib/firebase/admin";
-import { AVATARS, COURSE_ASSETS, COURSE_THUMBNAILS } from "@/lib/storagePaths";
+import {
+  AVATARS,
+  COURSE_ASSETS,
+  COURSE_THUMBNAILS,
+  SUBMISSION_FILES,
+} from "@/lib/storagePaths";
 import type { Section } from "@/lib/courses";
 
 /**
@@ -31,8 +36,23 @@ import type { Section } from "@/lib/courses";
  *    menyimpan" padahal kursusnya sudah tersimpan dengan benar.
  */
 
-/** Awalan yang boleh dihapus otomatis. Di luar ini, modul menolak. */
-const MANAGED_PREFIXES = [`${COURSE_ASSETS}/`, `${COURSE_THUMBNAILS}/`, `${AVATARS}/`];
+/**
+ * Awalan yang boleh dihapus otomatis. Di luar ini, modul menolak.
+ *
+ * `submissions/` ikut karena mengumpulkan ulang mengganti berkasnya — yang
+ * lama harus terbuang, kalau tidak Storage menumpuk berkas yang sudah tidak
+ * dirujuk apa pun. Penambahannya ketahuan lewat pemeriksaan yang gagal:
+ * penghapusannya diam-diam tidak terjadi karena awalan ini belum terdaftar.
+ *
+ * `payment-proofs/` SENGAJA tidak masuk: bukti bayar adalah catatan
+ * transaksi yang harus bisa ditelusuri kembali, bukan berkas sementara.
+ */
+const MANAGED_PREFIXES = [
+  `${COURSE_ASSETS}/`,
+  `${COURSE_THUMBNAILS}/`,
+  `${AVATARS}/`,
+  `${SUBMISSION_FILES}/`,
+];
 
 export function isManagedPath(path: unknown): path is string {
   return typeof path === "string" && MANAGED_PREFIXES.some((p) => path.startsWith(p));

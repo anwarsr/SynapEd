@@ -28,3 +28,13 @@ export const QRIS_IMAGES = "payment-qris";
  * pola yang sama dengan COURSE_ASSETS.
  */
 export const PAYMENT_PROOFS = "payment-proofs";
+
+/**
+ * Berkas tugas yang dikumpulkan peserta — TERTUTUP, satu folder per orang.
+ *
+ * Jenisnya bebas (dokumen, gambar, arsip), jadi folder ini TIDAK boleh
+ * terbaca publik: satu berkas yang bisa dieksekusi ditambah URL terbuka
+ * sama dengan menyediakan tempat menitipkan berkas berbahaya di domain ini.
+ * Disajikan hanya lewat route API yang memeriksa peran.
+ */
+export const SUBMISSION_FILES = "submissions";

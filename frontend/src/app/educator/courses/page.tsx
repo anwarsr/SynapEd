@@ -104,6 +104,12 @@ export default async function MyCoursesPage() {
 
                 <span className="flex items-center gap-4">
                   <Link
+                    href={`/educator/courses/${c.slug}/students`}
+                    className="text-sm text-blue-700 hover:underline underline-offset-4"
+                  >
+                    Peserta
+                  </Link>
+                  <Link
                     href={`/educator/courses/${c.slug}/edit`}
                     className="text-sm text-blue-700 hover:underline underline-offset-4"
                   >

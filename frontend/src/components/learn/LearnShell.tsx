@@ -8,6 +8,7 @@ import { CHECK_ICON, LOCK_ICON, lessonIcons } from "@/lib/courseUi";
 import { formatBytes, lessonAssetUrl, previewKind, toEmbedUrl } from "@/lib/videoEmbed";
 import { cn } from "@/lib/cn";
 import LessonCompleteButton from "./LessonCompleteButton";
+import AssignmentPanel, { type SubmissionView } from "./AssignmentPanel";
 import MaterialViewer from "./MaterialViewer";
 import QuizRunner from "./QuizRunner";
 
@@ -27,6 +28,13 @@ interface Props {
    * dan tombol tandai-selesai tidak ditampilkan sama sekali.
    */
   canTrackProgress: boolean;
+  /**
+   * Pengumpulan peserta untuk pelajaran yang sedang dibuka, kalau ada.
+   * Hanya diisi untuk pelajaran penugasan & kuis.
+   */
+  submission: SubmissionView | null;
+  /** Nilai minimum kelulusan kursus ini. */
+  passingGrade: number;
   /**
    * null berarti pelajaran ini bukan kuis, ATAU kuisnya belum punya soal
    * tersimpan (kursus hasil migrasi) — kedua kasus jatuh ke tampilan
@@ -56,6 +64,7 @@ let railHiddenMemory = false;
 const typeLabel: Record<string, string> = {
   video: "Video",
   reading: "Bacaan",
+  assignment: "Penugasan",
   quiz: "Kuis",
 };
 
@@ -68,6 +77,8 @@ export default function LearnShell({
   completed,
   progress,
   canTrackProgress,
+  submission,
+  passingGrade,
   quiz,
   certificateId,
 }: Props) {
@@ -97,6 +108,9 @@ export default function LearnShell({
       return !v;
     });
   }
+
+  // Pelajaran yang penyelesaiannya lewat pengumpulan berkas, bukan tombol.
+  const butuhPengumpulan = current.type === "assignment" || current.type === "quiz";
 
   const lockedSet = new Set(locked);
   const doneSet = new Set(completed);
@@ -439,15 +453,28 @@ export default function LearnShell({
                   </section>
                 )}
 
-                {canTrackProgress && (
-                  <div className="mb-8 flex justify-end">
-                    <LessonCompleteButton
-                      slug={course.slug}
-                      lessonSlug={current.slug}
-                      done={doneSet.has(current.slug)}
-                    />
-                  </div>
-                )}
+                {canTrackProgress &&
+                  (butuhPengumpulan ? (
+                    // Penugasan & kuis TIDAK punya tombol tandai-selesai:
+                    // mengumpulkan berkaslah yang menandainya selesai, jadi dua
+                    // tombol berdampingan hanya akan saling membingungkan.
+                    <div className="mb-8">
+                      <AssignmentPanel
+                        courseSlug={course.slug}
+                        lessonSlug={current.slug}
+                        passingGrade={passingGrade}
+                        submission={submission}
+                      />
+                    </div>
+                  ) : (
+                    <div className="mb-8 flex justify-end">
+                      <LessonCompleteButton
+                        slug={course.slug}
+                        lessonSlug={current.slug}
+                        done={doneSet.has(current.slug)}
+                      />
+                    </div>
+                  ))}
               </>
             )}
 

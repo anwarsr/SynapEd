@@ -58,6 +58,7 @@ export default function CourseChangePanel({
   const [category, setCategory] = useState(course.category);
   const [duration, setDuration] = useState(course.duration);
   const [price, setPrice] = useState(String(course.price));
+  const [passingGrade, setPassingGrade] = useState(String(course.passingGrade));
 
   // `undefined` berarti gambarnya tidak disentuh — nilainya dibiarkan apa
   // adanya di server. Penting untuk kursus lama yang gambarnya berupa URL.
@@ -96,6 +97,7 @@ export default function CourseChangePanel({
       category,
       duration,
       price: Number(price) || 0,
+      passingGrade: Number(passingGrade),
       thumbnail,
       whatYouLearn: lines(whatYouLearn),
       requirements: lines(requirements),
@@ -190,6 +192,24 @@ export default function CourseChangePanel({
               <Label htmlFor="price">Harga (Rp)</Label>
               <input id="price" type="number" min={0} step={1000} inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} className={inputClass} />
               <p className="mt-2 text-xs text-ink-muted">0 berarti gratis.</p>
+            </div>
+
+            <div className="max-w-xs">
+              <Label htmlFor="passingGradeEdit">Nilai minimum kelulusan</Label>
+              <input
+                id="passingGradeEdit"
+                type="number"
+                min={0}
+                max={100}
+                inputMode="numeric"
+                value={passingGrade}
+                onChange={(e) => setPassingGrade(e.target.value)}
+                className={inputClass}
+              />
+              <p className="mt-2 text-xs text-ink-muted">
+                Sertifikat baru terbit setelah seluruh penugasan dan kuis peserta dinilai
+                dan mencapai angka ini.
+              </p>
             </div>
 
             <ThumbnailPicker initial={course.thumbnail} prefix={slug} onChange={setThumbnail} />
