@@ -90,6 +90,8 @@ function input(modul: Doc, tugas: Doc, overrides: Record<string, unknown> = {}) 
     duration: "1 jam",
     price: 0,
     thumbnail: null as string | null,
+    whatYouLearn: ["  Menyusun kurikulum  ", "", "Menilai tugas peserta"],
+    requirements: ["Laptop dengan peramban modern", "   "],
     sections: curriculum(modul, tugas),
     ...overrides,
   };
@@ -137,6 +139,23 @@ async function run(educator: TestUser, biasa: TestUser, adminUser: TestUser) {
       "educator bisa membuka form",
       form.status === 200 && form.html.includes("Terbitkan Kursus"),
       String(form.status),
+    );
+
+    // Diperiksa lewat atribut id, bukan teks labelnya.
+    //
+    // Kedua kolom ini dulu hanya ada di panel pengajuan perubahan, jadi
+    // kursus baru selalu lahir dengan keduanya kosong. Memeriksa action-nya
+    // saja tidak cukup: kalau kolomnya hilang dari form, educator tetap tidak
+    // punya cara mengisinya meski server sudah menerima.
+    check(
+      "form punya kolom yang akan dipelajari",
+      form.html.includes('id="whatYouLearn"'),
+      "textarea ada di halaman buat kursus",
+    );
+    check(
+      "form punya kolom persyaratan",
+      form.html.includes('id="requirements"'),
+      "textarea ada di halaman buat kursus",
     );
   }
 
@@ -332,6 +351,27 @@ async function run(educator: TestUser, biasa: TestUser, adminUser: TestUser) {
     created.push(slug);
 
     check("slug dibuat dari judul", slug === "kursus-uji-otomatis", slug);
+
+    // Dulu kedua daftar ini dipaksa kosong saat kursus dibuat, apa pun yang
+    // dikirim educator — kolomnya cuma ada di panel pengajuan perubahan.
+    const pelajari = (data?.whatYouLearn ?? []) as string[];
+    const syarat = (data?.requirements ?? []) as string[];
+
+    check(
+      "poin yang akan dipelajari ikut tersimpan saat kursus dibuat",
+      pelajari.length === 2,
+      `${pelajari.length} poin: ${JSON.stringify(pelajari)}`,
+    );
+    check(
+      "spasi dipangkas dan baris kosong dibuang",
+      pelajari[0] === "Menyusun kurikulum" && pelajari[1] === "Menilai tugas peserta",
+      JSON.stringify(pelajari),
+    );
+    check(
+      "persyaratan ikut tersimpan saat kursus dibuat",
+      syarat.length === 1 && syarat[0] === "Laptop dengan peramban modern",
+      JSON.stringify(syarat),
+    );
     check(
       "punya nomor urut",
       typeof data?.order === "number" && data.order > 0,
@@ -406,6 +446,41 @@ async function run(educator: TestUser, biasa: TestUser, adminUser: TestUser) {
 
     const detail = await probeText(`/courses/${slug}`);
     check("halaman detail terbuka", detail.status === 200, String(detail.status));
+
+    check(
+      "poin yang dipelajari tampil di halaman detail",
+      detail.html.includes("Yang Akan Anda Pelajari") &&
+        detail.html.includes("Menilai tugas peserta"),
+      "judul bagian beserta isinya",
+    );
+    check(
+      "persyaratan tampil di halaman detail",
+      detail.html.includes("Laptop dengan peramban modern"),
+      "isi persyaratan",
+    );
+
+    // Kursus lama bisa saja kedua daftarnya kosong. Dulu judul bagiannya
+    // tetap dirender, jadi pengunjung melihat kotak kosong tanpa satu pun
+    // isi — terbaca seperti halaman rusak, bukan bagian yang belum diisi.
+    await db.collection("courses").doc(slug).update({ whatYouLearn: [], requirements: [] });
+
+    const kosong = await probeText(`/courses/${slug}`);
+    check(
+      "bagian yang dipelajari DISEMBUNYIKAN saat daftarnya kosong",
+      !kosong.html.includes("Yang Akan Anda Pelajari"),
+      "judul tanpa isi tidak dirender",
+    );
+    check(
+      "bagian persyaratan DISEMBUNYIKAN saat daftarnya kosong",
+      !kosong.html.includes("Persyaratan"),
+      "judul tanpa isi tidak dirender",
+    );
+
+    // Dikembalikan supaya pemeriksaan setelah ini melihat kursus yang utuh.
+    await db.collection("courses").doc(slug).update({
+      whatYouLearn: ["Menyusun kurikulum", "Menilai tugas peserta"],
+      requirements: ["Laptop dengan peramban modern"],
+    });
 
     const belajar = await probeText(`/courses/${slug}/learn`, educator.cookie);
     check(

@@ -47,6 +47,10 @@ export interface NewCourseInput {
   passingGrade: number;
   /** Path gambar latar di Storage. Kosong berarti memakai latar bawaan. */
   thumbnail: string | null;
+  /** Poin "Yang Akan Anda Pelajari", satu baris satu poin. */
+  whatYouLearn: string[];
+  /** Poin "Persyaratan", satu baris satu poin. */
+  requirements: string[];
   /** Kurikulum bebas: berapa pun bagian & pelajarannya, dalam urutan mana pun. */
   sections: SectionInput[];
 }
@@ -76,6 +80,21 @@ function clampGrade(raw: unknown): number {
   const n = Math.round(Number(raw));
   if (!Number.isFinite(n)) return DEFAULT_PASSING_GRADE;
   return Math.min(100, Math.max(0, n));
+}
+
+/**
+ * Membersihkan daftar poin bebas (whatYouLearn / requirements).
+ *
+ * Batas 20 dan pemangkasan spasinya disamakan dengan jalur pengajuan
+ * perubahan. Kalau kedua jalur berbeda, kursus yang sama bisa lolos saat
+ * dibuat lalu ditolak saat disunting — atau sebaliknya.
+ */
+function cleanPoints(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((s) => String(s).trim())
+    .filter(Boolean)
+    .slice(0, 20);
 }
 
 export async function createCourse(input: NewCourseInput): Promise<CourseResult> {
@@ -151,8 +170,8 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       lastUpdated: now,
       instructorName: user.name,
       instructorBio: "",
-      whatYouLearn: [],
-      requirements: [],
+      whatYouLearn: cleanPoints(input.whatYouLearn),
+      requirements: cleanPoints(input.requirements),
       sections: normalized.sections,
       order,
 

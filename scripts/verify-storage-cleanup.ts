@@ -37,7 +37,10 @@ const LIST_ROUTE = "educator/courses";
 // deleteCourse pindah ke halaman sunting dan kini KHUSUS ADMIN sejak alur
 // persetujuan berlaku — educator mengajukan, admin menerapkan.
 const DELETE_ROUTE = "educator/courses/[slug]/edit";
-const DASH_ROUTE = "dashboard";
+// Aksi berkas foto profil pindah dari /dashboard ke /pengaturan saat halaman
+// profil dipisah; /dashboard sekarang hanya mengalihkan ke /profil dan tidak
+// punya server action apa pun lagi.
+const AKUN_ROUTE = "pengaturan";
 
 async function put(path: string, body = "berkas uji"): Promise<string> {
   await bucket.file(path).save(Buffer.from(body), { contentType: "application/pdf" });
@@ -210,14 +213,14 @@ async function main() {
     const fotoBaru = await put(`avatars/${educator.uid}/avatar.png`, "baru");
     created.push(fotoLama, fotoBaru);
 
-    const avatarId = await actionId(DASH_ROUTE, "syncAvatarFiles");
-    await callAction(`/${DASH_ROUTE}`, avatarId, [fotoBaru], educator.cookie);
+    const avatarId = await actionId(AKUN_ROUTE, "syncAvatarFiles");
+    await callAction(`/${AKUN_ROUTE}`, avatarId, [fotoBaru], educator.cookie);
 
     await expectFiles("Foto profil diganti", [fotoLama], [fotoBaru]);
 
     // ── 7. Menghapus akun mengosongkan folder fotonya ────────────────────
-    const purgeId = await actionId(DASH_ROUTE, "purgeAvatarFiles");
-    await callAction(`/${DASH_ROUTE}`, purgeId, [], educator.cookie);
+    const purgeId = await actionId(AKUN_ROUTE, "purgeAvatarFiles");
+    await callAction(`/${AKUN_ROUTE}`, purgeId, [], educator.cookie);
 
     await expectFiles("Akun dihapus", [fotoBaru], []);
   } finally {

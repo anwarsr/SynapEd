@@ -151,6 +151,12 @@ export default async function CourseDetailPage({ params }: Props) {
                 </div>
               </div>
 
+              {/* Disembunyikan saat kosong.
+
+                  Kursus yang baru dibuat bisa belum punya poin ini, dan judul
+                  bagian tanpa satu pun isi di bawahnya terbaca seperti halaman
+                  yang rusak, bukan seperti bagian yang memang belum diisi. */}
+              {course.whatYouLearn.length > 0 && (
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <h2 className="t-h3 mb-6">Yang Akan Anda Pelajari</h2>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3.5">
@@ -164,6 +170,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   ))}
                 </div>
               </div>
+              )}
 
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <h2 className="t-h3 mb-6">Kurikulum</h2>
@@ -339,6 +346,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   )}
                 </div>
 
+                {course.requirements.length > 0 && (
                 <div className="mt-7 pt-6 border-t border-rule">
                   <h3 className="t-label text-ink-muted mb-4">Persyaratan</h3>
                   <ul className="space-y-2.5">
@@ -350,6 +358,7 @@ export default async function CourseDetailPage({ params }: Props) {
                     ))}
                   </ul>
                 </div>
+                )}
 
                 {course.lastUpdated && (
                   <p className="mt-6 pt-5 border-t border-rule text-xs text-ink-muted">

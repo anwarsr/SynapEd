@@ -37,6 +37,8 @@ export default function CourseForm({
   const [duration, setDuration] = useState("");
   const [price, setPrice] = useState("0");
   const [passingGrade, setPassingGrade] = useState("70");
+  const [whatYouLearn, setWhatYouLearn] = useState("");
+  const [requirements, setRequirements] = useState("");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
 
   const [sections, setSections] = useState<DraftSection[]>(() => firstSection("Materi Kursus"));
@@ -47,6 +49,8 @@ export default function CourseForm({
 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const lines = (v: string) => v.split("\n").map((s) => s.trim()).filter(Boolean);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +72,8 @@ export default function CourseForm({
       duration,
       price: Number(price) || 0,
       passingGrade: Number(passingGrade),
+      whatYouLearn: lines(whatYouLearn),
+      requirements: lines(requirements),
       thumbnail,
       sections: toSectionInput(sections),
     });
@@ -158,6 +164,34 @@ export default function CourseForm({
               onChange={(e) => setLongDesc(e.target.value)}
               rows={4}
               placeholder="Opsional. Dikosongkan berarti memakai deskripsi singkat."
+              className={cn(inputClass, "resize-y")}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="whatYouLearn">Yang akan dipelajari</Label>
+            <textarea
+              id="whatYouLearn"
+              value={whatYouLearn}
+              onChange={(e) => setWhatYouLearn(e.target.value)}
+              rows={4}
+              placeholder="Satu baris satu poin."
+              className={cn(inputClass, "resize-y")}
+            />
+            <p className="mt-2 text-xs text-ink-muted">
+              Tampil sebagai daftar di halaman kursus. Dikosongkan berarti bagian itu
+              tidak ditampilkan sama sekali.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="requirements">Persyaratan</Label>
+            <textarea
+              id="requirements"
+              value={requirements}
+              onChange={(e) => setRequirements(e.target.value)}
+              rows={3}
+              placeholder="Satu baris satu poin."
               className={cn(inputClass, "resize-y")}
             />
           </div>
