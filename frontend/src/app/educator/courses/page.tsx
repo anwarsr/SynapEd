@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function MyCoursesPage() {
   const user = await requireEducator("/educator/courses");
-  const courses = await listOwnedCourses(user.uid);
+  const courses = await listOwnedCourses(user.uid, user.name);
 
   return (
     <EducatorShell user={user}>

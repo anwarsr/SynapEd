@@ -133,7 +133,17 @@ async function run(owner: TestUser, student: TestUser, otherStudent: TestUser, a
   const slug = `verify-sertifikat-${randomUUID().slice(0, 8)}`;
   const enrollId = `${student.uid}_${slug}`;
 
-  await db.collection("courses").doc(slug).set(courseDoc(slug, owner.uid, "Uji Pemilik Sertifikat"));
+  // Nama di dokumen kursus sengaja dibuat BERBEDA dari nama akun pemiliknya.
+  //
+  // Salinan itu dibuat sekali saat kursus dibuat dan tidak pernah ikut
+  // berubah saat pemiliknya berganti nama. Sertifikat harus mencatat nama
+  // yang BERLAKU saat ia diterbitkan — kalau ia ikut memakai salinan basi,
+  // sertifikat yang terbit hari ini bisa menyebut nama yang sudah lama
+  // ditinggalkan pemiliknya.
+  const NAMA_BASI = "Nama Lama Yang Sudah Diganti";
+  const NAMA_AKUN = "Uji sertifikat-pemilik";
+
+  await db.collection("courses").doc(slug).set(courseDoc(slug, owner.uid, NAMA_BASI));
   await db.collection("courses").doc(slug).collection("quizzes").doc("kuis-akhir").set(quizDoc(slug));
   await db.collection("enrollments").doc(enrollId).set(enrollmentDoc(student.uid, slug));
 
@@ -189,7 +199,11 @@ async function run(owner: TestUser, student: TestUser, otherStudent: TestUser, a
       check("holderName cocok nama akun peserta", cert?.holderName === "Uji sertifikat-peserta", String(cert?.holderName));
       check("courseSlug cocok", cert?.courseSlug === slug, String(cert?.courseSlug));
       check("courseTitle cocok judul kursus", cert?.courseTitle === "Kursus Uji Sertifikat", String(cert?.courseTitle));
-      check("instructorName cocok pemilik kursus", cert?.instructorName === "Uji Pemilik Sertifikat", String(cert?.instructorName));
+      check(
+        "instructorName memakai nama akun pemilik saat sertifikat terbit",
+        cert?.instructorName === NAMA_AKUN,
+        `${cert?.instructorName} — bukan salinan basi ${JSON.stringify(NAMA_BASI)}`,
+      );
       check("lessonsTotal sesuai jumlah pelajaran", cert?.lessonsTotal === 2, String(cert?.lessonsTotal));
       check("revokedAt null saat terbit", cert?.revokedAt === null, String(cert?.revokedAt));
       check("issuedAt terisi tanggal ISO", typeof cert?.issuedAt === "string" && !Number.isNaN(Date.parse(cert.issuedAt)), String(cert?.issuedAt));
@@ -227,7 +241,11 @@ async function run(owner: TestUser, student: TestUser, otherStudent: TestUser, a
       check("menampilkan status sah", page.html.includes("sah dan diterbitkan"), "banner status");
       check("menampilkan nama peserta", page.html.includes("Uji sertifikat-peserta"), "holderName tampil");
       check("menampilkan judul kursus", page.html.includes("Kursus Uji Sertifikat"), "courseTitle tampil");
-      check("menampilkan nama instruktur", page.html.includes("Uji Pemilik Sertifikat"), "instructorName tampil");
+      check(
+        "menampilkan nama instruktur",
+        page.html.includes(NAMA_AKUN) && !page.html.includes(NAMA_BASI),
+        "yang tampil nama akunnya, bukan salinan basi di dokumen",
+      );
       check("menampilkan nomor sertifikat", page.html.includes(certId), "certificate id tampil");
 
       const bogus = await probeText(`/verify/SYN-0000000000`);

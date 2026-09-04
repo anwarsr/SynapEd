@@ -46,7 +46,7 @@ export async function getPublicProfile(uid: string): Promise<PublicProfile | nul
   const [content, stats, owned] = await Promise.all([
     getUserProfile(uid),
     getProfileStats(uid, isEducator),
-    isEducator ? listOwnedCourses(uid) : Promise.resolve([]),
+    isEducator ? listOwnedCourses(uid, akun.displayName ?? undefined) : Promise.resolve([]),
   ]);
 
   return {

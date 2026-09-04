@@ -481,6 +481,49 @@ async function run(educator: TestUser, biasa: TestUser, adminUser: TestUser) {
       whatYouLearn: ["Menyusun kurikulum", "Menilai tugas peserta"],
       requirements: ["Laptop dengan peramban modern"],
     });
+    // ── Nama pengajar mengikuti akunnya, bukan salinan lama ──────────
+    //
+    // Nama penyedia disalin ke dokumen kursus saat kursus dibuat. Salinan
+    // itu tidak pernah ikut berubah saat educator mengganti nama akunnya,
+    // jadi seluruh kartu kursus tetap menampilkan nama lama — sementara
+    // fotonya, yang memang dibaca dari Auth, sudah berganti. Kartunya lalu
+    // memajang foto baru bersama nama lama sekaligus.
+    {
+      const namaLama = (await db.collection("courses").doc(slug).get()).data()?.instructorName;
+      const namaBaru = "Nama Educator Sesudah Diganti";
+
+      await auth.updateUser(educator.uid, { displayName: namaBaru });
+
+      const katalogBaru = await probeText("/courses");
+      check(
+        "katalog memakai nama akun terbaru",
+        katalogBaru.html.includes(namaBaru),
+        `dulu tersimpan sebagai ${JSON.stringify(namaLama)}`,
+      );
+
+      const detailBaru = await probeText(`/courses/${slug}`);
+      check(
+        "halaman detail memakai nama akun terbaru",
+        detailBaru.html.includes(namaBaru),
+        "dibaca dari Auth, bukan dari dokumen",
+      );
+
+      // Halaman /educator/courses TIDAK diuji di sini: ia tidak merender
+      // nama penyedia sama sekali (educator sudah melihat namanya di kepala
+      // halaman, dari sesinya). Pemeriksaan atas halaman itu akan selalu
+      // merah tanpa ada yang salah — dan itu sempat terjadi.
+
+      // Salinan di dokumen memang DIBIARKAN basi — itu cadangan untuk akun
+      // yang sudah dihapus, bukan sumber yang ditampilkan.
+      const masihTersimpan = (await db.collection("courses").doc(slug).get()).data()?.instructorName;
+      check(
+        "dokumen kursus tidak perlu ikut ditulis ulang",
+        masihTersimpan === namaLama,
+        `tetap ${JSON.stringify(masihTersimpan)} — hanya cadangan`,
+      );
+
+      await auth.updateUser(educator.uid, { displayName: String(namaLama) });
+    }
 
     const belajar = await probeText(`/courses/${slug}/learn`, educator.cookie);
     check(

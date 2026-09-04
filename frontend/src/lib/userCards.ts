@@ -10,12 +10,14 @@ export interface UserCard {
 /**
  * Nama dan foto penyedia kursus, dibaca sekaligus untuk banyak uid.
  *
- * Fotonya TIDAK disalin ke dokumen kursus seperti `instructorName`. Nama
- * jarang berubah, foto sering — dan foto basi lebih terasa salah daripada
- * nama basi, karena wajah orang yang tampil di katalog bukan lagi wajah yang
- * ia pilih.
+ * Keduanya dibaca dari Auth, bukan dari salinan di dokumen kursus. Salinan
+ * itu dibuat sekali saat kursus dibuat dan tidak pernah ikut berubah saat
+ * pemiliknya mengganti nama atau fotonya — katalog lalu menampilkan identitas
+ * lama tanpa satu pun pesan galat. Nama basi sempat dianggap dapat diterima
+ * di sini; ternyata tidak: educator yang berganti nama melihat kartunya
+ * tampil dengan foto baru bersama nama lama sekaligus.
  *
- * Karena itu dibaca dari Firebase Auth, tapi SEKALI untuk seluruh halaman
+ * Dibaca dari Firebase Auth, tapi SEKALI untuk seluruh halaman
  * lewat getUsers() — bukan satu panggilan per kartu. Katalog dengan 30 kursus
  * tetap menghasilkan satu permintaan, bukan tiga puluh.
  */
@@ -40,7 +42,7 @@ export async function getUserCards(uids: readonly string[]): Promise<Map<string,
       }
     } catch {
       // Akun yang sudah dihapus tidak muncul di hasil, dan itu memang benar —
-      // pemanggilnya jatuh ke `instructorName` yang tersimpan di kursus.
+      // pemanggilnya jatuh ke nama & foto yang tersimpan di dokumen kursus.
       // Kegagalan seluruh panggilan pun tidak boleh mematikan katalog: lebih
       // baik kartu tanpa foto daripada halaman yang tidak terbuka.
     }
