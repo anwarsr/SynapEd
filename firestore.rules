@@ -175,6 +175,40 @@ service cloud.firestore {
     }
 
     // Tolak apa pun di luar yang tersebut di atas.
+    // ── Kelas ──────────────────────────────────────────────────────────
+    // Tertutup rapat dari klien, baca maupun tulis. Kelas bersifat privat:
+    // isinya hanya boleh terbaca anggota, dan keanggotaan itu tersimpan di
+    // koleksi LAIN — aturan Firestore tidak bisa memeriksanya tanpa pembacaan
+    // tambahan per dokumen. Seluruh akses lewat Server Action yang memakai
+    // Admin SDK dan memeriksa keanggotaan di sana.
+    //
+    // `joinCode` ada DI DALAM dokumen ini. Satu izin baca saja di sini sudah
+    // cukup untuk membocorkan kunci masuk setiap kelas sekaligus.
+    match /classes/{classId} {
+      allow read, write: if false;
+
+      // Aturan Firestore TIDAK hierarkis: penolakan di dokumen induk di atas
+      // tidak menjangkau subcollection ini — persis alasan
+      // courses/{slug}/quizzes ditulis terpisah. Keduanya sudah tertutup oleh
+      // penolakan menyeluruh di bawah; blok ini penegasan sekaligus jaga-jaga
+      // terhadap wildcard yang mungkin ditambahkan seseorang kelak.
+      match /posts/{postId} {
+        allow read, write: if false;
+
+        match /replies/{replyId} {
+          allow read, write: if false;
+        }
+      }
+    }
+
+    // ── Keanggotaan kelas ──────────────────────────────────────────────
+    // ID dokumen = "{uid}_{classId}". Kalau klien boleh menulis, siapa pun
+    // cukup membuat dokumen ini untuk dirinya sendiri lalu masuk ke kelas mana
+    // pun tanpa pernah memegang kode undangannya.
+    match /classMembers/{id} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

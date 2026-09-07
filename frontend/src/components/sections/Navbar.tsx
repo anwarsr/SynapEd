@@ -177,20 +177,40 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {user.role === "educator" && (
-                <Link
-                  href="/educator/courses"
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-full border",
-                    "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-                    light
-                      ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
-                      : "border-white/25 text-white hover:bg-white/10",
-                  )}
-                >
-                  Kursus Saya
-                </Link>
-              )}
+              {/* Dua pintu ke panel educator, ditulis sekali lewat map.
+
+                  Sebelumnya hanya "Kursus Saya" dan ia ditulis tangan. Menambah
+                  tujuan kedua dengan cara yang sama berarti gaya tombolnya harus
+                  dijaga sama di dua tempat — dan yang tertinggal baru terlihat
+                  saat keduanya kebetulan tampil bersebelahan. */}
+              {user.role === "educator" &&
+                [
+                  { href: "/educator/courses", label: "Kursus Saya", sempit: true },
+                  { href: "/educator/classes", label: "Kelas Saya", sempit: false },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-full border whitespace-nowrap",
+                      "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                      // Di lebar tablet kapsul navbar sudah penuh oleh lima
+                      // tautan bagian; tombol kedua mendorong foto profil ke
+                      // luar layar. Diukur, bukan ditebak: pada 820px dengan
+                      // dua tombol, avatarnya benar-benar terpotong.
+                      //
+                      // Yang disembunyikan tetap terjangkau — panel educator
+                      // punya kedua tab, dan menu lipat di bawah md memuat
+                      // keduanya.
+                      item.sempit ? "" : "hidden lg:block",
+                      light
+                        ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
+                        : "border-white/25 text-white hover:bg-white/10",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
 
               {/* Foto profil sebagai tombol. Lebih jelas bisa diklik daripada
                   nama polos, dan tombol Keluar pindah ke halaman profil supaya
@@ -315,15 +335,20 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {user.role === "educator" && (
-                    <Link
-                      href="/educator/courses"
-                      onClick={() => setMobileOpen(false)}
-                      className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
-                    >
-                      Kursus Saya
-                    </Link>
-                  )}
+                  {user.role === "educator" &&
+                    [
+                      { href: "/educator/courses", label: "Kursus Saya" },
+                      { href: "/educator/classes", label: "Kelas Saya" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
 
                   {/* Tidak ada tombol Keluar di sini — keluar dilakukan dari
                       halaman profil, sejalan dengan navbar desktop. */}

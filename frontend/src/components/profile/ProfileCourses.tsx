@@ -4,8 +4,9 @@ import { iconPaths, levelTone } from "@/lib/courseUi";
 import { progressFromSnapshot, type Enrollment } from "@/lib/enrollments";
 import type { EducatorCourseRow } from "@/lib/educatorCourses";
 import { cn } from "@/lib/cn";
+import type { KelasPublik } from "@/lib/classTypes";
 
-function Kosong({ pesan, aksi }: { pesan: string; aksi?: { href: string; label: string } }) {
+export function Kosong({ pesan, aksi }: { pesan: string; aksi?: { href: string; label: string } }) {
   return (
     <div className="rounded-2xl border border-rule bg-paper-alt px-6 py-10 text-center">
       <p className="text-sm text-ink-muted">{pesan}</p>
@@ -159,5 +160,44 @@ export function OwnedCourses({
         </Link>
       ))}
     </div>
+  );
+}
+
+/**
+ * Kelas yang diikuti.
+ *
+ * Ditaruh di berkas ini, bukan berkas sendiri, supaya ia memakai `Kosong`
+ * yang sama dengan dua bagian di atasnya — keadaan kosong yang berbeda-beda
+ * di satu halaman terbaca seperti tiga halaman yang ditempel jadi satu.
+ */
+export function JoinedClasses({ kelas }: { kelas: readonly KelasPublik[] }) {
+  if (kelas.length === 0) {
+    return (
+      <Kosong
+        pesan="Belum mengikuti kelas. Masukkan kode undangan dari pengajar Anda."
+        aksi={{ href: "/kelas", label: "Gabung Kelas" }}
+      />
+    );
+  }
+
+  return (
+    <ul className="space-y-3">
+      {kelas.map((k) => (
+        <li
+          key={k.id}
+          className="bg-paper-card border border-rule rounded-2xl p-5"
+        >
+          <Link
+            href={`/kelas/${k.id}`}
+            className="text-sm font-medium text-ink transition-colors duration-200 hover:text-blue-700"
+          >
+            {k.name}
+          </Link>
+          <p className="mt-1 text-xs text-ink-muted">
+            {k.memberCount} anggota · {k.postCount} postingan
+          </p>
+        </li>
+      ))}
+    </ul>
   );
 }

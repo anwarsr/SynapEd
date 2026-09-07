@@ -5,6 +5,7 @@ import { flattenLessons, type CourseDetail } from "@/lib/courses";
 import { enrollmentRef, type Enrollment } from "@/lib/enrollments";
 import { gradingStateOf, listStudentSubmissions } from "@/lib/submissions";
 import type { SessionUser } from "@/lib/firebase/session";
+import { CROCKFORD } from "@/lib/inviteCode";
 
 export interface Certificate {
   id: string;
@@ -18,9 +19,6 @@ export interface Certificate {
   revokedAt: string | null;
 }
 
-// Alfabet Crockford base32 — tanpa I, L, O, U supaya tidak tertukar saat
-// dibaca manusia (mis. diketik ulang dari sertifikat cetak).
-const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 /**
  * ID sertifikat: acak, TIDAK diturunkan dari uid+slug.

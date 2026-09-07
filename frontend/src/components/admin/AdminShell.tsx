@@ -23,6 +23,7 @@ const NAV = [
   // Tanpa lencana: ulasan tidak menunggu keputusan siapa pun, jadi tidak ada
   // angka yang berarti "belum dikerjakan".
   { href: "/admin/reviews", label: "Ulasan" },
+  { href: "/admin/classes", label: "Kelas" },
 ] as const satisfies readonly {
   href: string;
   label: string;

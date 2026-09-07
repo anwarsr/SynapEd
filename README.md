@@ -744,6 +744,7 @@ npm run verify:curriculum  # sunting info & kurikulum       (butuh dev server)
 npm run verify:enrollment  # pendaftaran & gerbang akses    (butuh dev server)
 npm run verify:quiz        # soal, penilaian, anti-bocor    (butuh dev server)
 npm run verify:certificate # penerbitan & verifikasi        (butuh dev server)
+npm run verify:classroom   # kelas: kode undangan, post, balasan (butuh dev server)
 npm run verify:material    # penyajian & unduhan berkas     (butuh dev server)
 npm run verify:pdf         # penampil PDF & tata letak di Chrome
 npm run verify:google      # cara masuk & halaman profil    (butuh dev server)

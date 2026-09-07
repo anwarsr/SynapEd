@@ -4,10 +4,15 @@ import Footer from "@/components/sections/Footer";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileStatsRow from "@/components/profile/ProfileStats";
 import EducationList from "@/components/profile/EducationList";
-import { EnrolledCourses, OwnedCourses } from "@/components/profile/ProfileCourses";
+import {
+  EnrolledCourses,
+  JoinedClasses,
+  OwnedCourses,
+} from "@/components/profile/ProfileCourses";
 import EducatorStatus from "@/components/dashboard/EducatorStatus";
 import { listMyEnrollments } from "@/lib/enrollments";
 import { listOwnedCourses } from "@/lib/educatorCourses";
+import { listMyClasses } from "@/lib/classes";
 import { getApplication } from "@/lib/educator";
 import { getProfileStats, getUserProfile } from "@/lib/userProfile";
 import { requireUser } from "@/lib/firebase/session";
@@ -30,11 +35,12 @@ export default async function ProfilePage() {
   const user = await requireUser("/profil");
   const isEducator = user.role === "educator" || user.role === "admin";
 
-  const [profile, stats, enrollments, owned, application] = await Promise.all([
+  const [profile, stats, enrollments, owned, kelas, application] = await Promise.all([
     getUserProfile(user.uid),
     getProfileStats(user.uid, isEducator),
     listMyEnrollments(user.uid),
     isEducator ? listOwnedCourses(user.uid) : Promise.resolve([]),
+    listMyClasses(user.uid),
     getApplication(user.uid),
   ]);
 
@@ -91,6 +97,19 @@ export default async function ProfilePage() {
               </Link>
             </div>
             <EnrolledCourses enrollments={enrollments} />
+          </section>
+
+          <section>
+            <div className="flex flex-wrap items-baseline justify-between gap-4 mb-5">
+              <h2 className="t-h3">Kelas yang Diikuti</h2>
+              <Link
+                href="/kelas"
+                className="text-sm text-blue-700 hover:underline underline-offset-4"
+              >
+                Gabung kelas →
+              </Link>
+            </div>
+            <JoinedClasses kelas={kelas} />
           </section>
 
           {/* Tombol sunting ditaruh di bawah sesuai permintaan pemilik proyek —
