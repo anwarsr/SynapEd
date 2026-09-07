@@ -247,6 +247,72 @@ async function main() {
       "tombol berubah setelah lunas",
     );
 
+    // ── Harga berubah saat pesanan lama masih hidup ─────────────────────
+    //
+    // Pesanan tertunda dipakai ulang supaya klik berulang tidak menumpuk
+    // transaksi. Tapi harga kursus bisa berubah dalam 30 menit itu, dan
+    // pesanan lama membawa nominal lamanya. Kalau ia tetap dipakai ulang,
+    // pembeli melihat harga baru di halaman lalu membayar harga lama di
+    // popup Midtrans — dan webhook meloloskannya, karena yang ia bandingkan
+    // adalah nominal pesanan itu sendiri, bukan harga kursusnya.
+    {
+      const gantiHarga = await createTestUser("user", "ganti-harga");
+      const lamaId = `SYN-harga-${randomUUID().slice(0, 8)}`;
+      orders.push(lamaId);
+
+      await seedOrder(lamaId, gantiHarga, paidSlug, PRICE);
+
+      // Harga belum berubah: pesanan lama MEMANG harus dipakai ulang.
+      const sama = await callAction(
+        `/courses/${paidSlug}`, createId, [paidSlug], gantiHarga.cookie,
+      );
+      check(
+        "pesanan tertunda dipakai ulang selama harganya sama",
+        sama.includes("token-uji"),
+        "klik berulang tidak menumpuk transaksi",
+      );
+
+      // Educator menaikkan harganya.
+      const HARGA_BARU = PRICE + 50_000;
+      await db.collection("courses").doc(paidSlug).update({ price: HARGA_BARU });
+
+      const beda = await callAction(
+        `/courses/${paidSlug}`, createId, [paidSlug], gantiHarga.cookie,
+      );
+      check(
+        "token lama TIDAK dibagikan lagi setelah harganya berubah",
+        !beda.includes("token-uji"),
+        `harga ${PRICE} -> ${HARGA_BARU}`,
+      );
+
+      const lama = (await db.collection("orders").doc(lamaId).get()).data();
+      check(
+        "pesanan berharga lama ditandai kedaluwarsa",
+        lama?.status === "expired",
+        `status=${lama?.status}`,
+      );
+
+      if (LIVE_KEY) {
+        const baru = await db
+          .collection("orders")
+          .where("uid", "==", gantiHarga.uid)
+          .get();
+        const pending = baru.docs
+          .map((d) => d.data())
+          .filter((o) => o.status === "pending");
+
+        baru.docs.forEach((d) => orders.includes(d.id) || orders.push(d.id));
+        check(
+          "pesanan pengganti memakai harga yang baru",
+          pending.length === 1 && pending[0]?.amount === HARGA_BARU,
+          `${pending.length} pending, nominal ${pending[0]?.amount}`,
+        );
+      }
+
+      await db.collection("courses").doc(paidSlug).update({ price: PRICE });
+      await auth.deleteUser(gantiHarga.uid).catch(() => undefined);
+    }
+
     // ── Notifikasi gagal & kedaluwarsa ──────────────────────────────────
     const orderGagal = `SYN-gagal-${randomUUID().slice(0, 8)}`;
     orders.push(orderGagal);

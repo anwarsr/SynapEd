@@ -18,9 +18,16 @@ import type { OrderStatus } from "@/lib/orders";
 const SANDBOX = "https://app.sandbox.midtrans.com";
 const PRODUCTION = "https://app.midtrans.com";
 
+// Snap dan Core API tinggal di HOST YANG BERBEDA. Menembak /v2/... ke host
+// Snap menghasilkan 404 yang terlihat seperti "transaksinya tidak ada",
+// padahal yang salah cuma alamatnya.
+const SANDBOX_API = "https://api.sandbox.midtrans.com";
+const PRODUCTION_API = "https://api.midtrans.com";
+
 interface Config {
   serverKey: string;
   baseUrl: string;
+  apiUrl: string;
 }
 
 /**
@@ -36,9 +43,12 @@ function config(): Config | null {
   const serverKey = process.env.MIDTRANS_SERVER_KEY?.trim();
   if (!serverKey) return null;
 
+  const produksi = process.env.MIDTRANS_IS_PRODUCTION === "true";
+
   return {
     serverKey,
-    baseUrl: process.env.MIDTRANS_IS_PRODUCTION === "true" ? PRODUCTION : SANDBOX,
+    baseUrl: produksi ? PRODUCTION : SANDBOX,
+    apiUrl: produksi ? PRODUCTION_API : SANDBOX_API,
   };
 }
 
@@ -119,6 +129,63 @@ export async function createSnapTransaction(input: NewTransaction): Promise<stri
     throw new Error(json.error_messages?.join("; ") ?? `Midtrans menjawab ${res.status}`);
   }
   return json.token;
+}
+
+/**
+ * Menghanguskan transaksi yang belum dibayar.
+ *
+ * Dipakai saat harga kursusnya berubah sementara pesanan lama masih hidup:
+ * token lama tetap bisa dibayar sampai kedaluwarsa, dan siapa pun yang
+ * masih membuka popup lamanya akan membayar harga yang sudah tidak berlaku.
+ *
+ * TIDAK melempar galat. Kegagalan di sini tidak boleh menghalangi pesanan
+ * baru dibuat — penjaga yang sesungguhnya ada di sisi kita, yang berhenti
+ * membagikan token lamanya. Ini lapis kedua, bukan satu-satunya.
+ *
+ * Mengembalikan true kalau Midtrans benar-benar menghanguskannya.
+ */
+export async function expireTransaction(orderId: string): Promise<boolean> {
+  const cfg = config();
+  if (!cfg) return false;
+
+  try {
+    const res = await fetch(`${cfg.apiUrl}/v2/${encodeURIComponent(orderId)}/expire`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Basic ${Buffer.from(`${cfg.serverKey}:`).toString("base64")}`,
+      },
+    });
+
+    // Kodenya dibaca dari BADAN jawaban, bukan dari status HTTP.
+    //
+    // Midtrans menjawab HTTP 200 bahkan saat transaksinya tidak ada —
+    // kegagalannya diletakkan di dalam badan sebagai {"status_code":"404"}.
+    // Mengandalkan res.ok membuat fungsi ini selalu melapor berhasil.
+    const json = (await res.json().catch(() => null)) as {
+      status_code?: unknown;
+      status_message?: unknown;
+    } | null;
+
+    const kode = String(json?.status_code ?? res.status);
+
+    // 200 = baru dihanguskan, 407 = memang sudah kedaluwarsa. Keduanya
+    // berarti token itu tidak bisa dibayar lagi, dan itulah yang kita mau.
+    if (kode === "200" || kode === "407") return true;
+
+    // 404 itu WAJAR, bukan kegagalan: pembeli yang menutup popup tanpa
+    // memilih metode pembayaran tidak pernah membuat transaksi apa pun di
+    // Midtrans — yang ada baru tokennya.
+    if (kode === "404") return false;
+
+    console.warn(
+      `[payment] gagal menghanguskan ${orderId}: ${kode} ${String(json?.status_message ?? "")}`,
+    );
+    return false;
+  } catch (e) {
+    console.warn(`[payment] gagal menghanguskan ${orderId}:`, e);
+    return false;
+  }
 }
 
 // ── Memeriksa notifikasi ────────────────────────────────────────────────

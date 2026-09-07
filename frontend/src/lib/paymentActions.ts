@@ -3,7 +3,11 @@ import { getCourse } from "@/lib/courses";
 import { getEnrollment } from "@/lib/enrollments";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { findPendingOrder, makeOrderId, orderRef, type Order } from "@/lib/orders";
-import { createSnapTransaction, paymentsConfigured } from "@/lib/payments/midtrans";
+import {
+  createSnapTransaction,
+  expireTransaction,
+  paymentsConfigured,
+} from "@/lib/payments/midtrans";
 
 export type OrderResult =
   | { ok: true; token: string; orderId: string }
@@ -47,9 +51,39 @@ export async function createOrder(slug: string): Promise<OrderResult> {
   // Pesanan yang masih hidup dipakai ulang. Tanpa ini, setiap klik "Beli"
   // menerbitkan transaksi baru di Midtrans dan meninggalkan tumpukan pesanan
   // menggantung yang tidak pernah bisa dibedakan dari percobaan yang sah.
+  //
+  // TAPI hanya kalau nominalnya masih sama dengan harga kursus sekarang.
+  //
+  // Harga kursus bisa berubah kapan saja, sementara pesanan tertunda hidup
+  // 30 menit. Tanpa syarat ini, pembeli melihat harga baru di halaman lalu
+  // membayar harga lama di popup Midtrans — dan webhook meloloskannya, sebab
+  // nominal yang dibandingkannya adalah nominal pesanan lama itu sendiri,
+  // bukan harga kursusnya. Dua-duanya merugikan: harga naik berarti educator
+  // dibayar kurang, harga turun berarti pembeli membayar lebih.
   const pending = await findPendingOrder(user.uid, slug);
   if (pending?.snapToken) {
-    return { ok: true, token: pending.snapToken, orderId: pending.orderId };
+    if (pending.amount === course.price) {
+      return { ok: true, token: pending.snapToken, orderId: pending.orderId };
+    }
+
+    // Token lama masih bisa dibayar sampai kedaluwarsa, jadi ia dihanguskan
+    // di Midtrans juga — berhenti membagikannya saja tidak cukup untuk
+    // pembeli yang popup lamanya masih terbuka.
+    const dihanguskan = await expireTransaction(pending.orderId);
+
+    await orderRef(pending.orderId).update({
+      status: "expired",
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Hasil penghangusan ikut dicatat, bukan dibuang. Kalau ia selalu gagal,
+    // itu hanya terlihat di sini — pesanan tetap ditandai kedaluwarsa dan
+    // alurnya tetap mulus, sehingga tidak ada gejala lain yang muncul.
+    console.info(
+      `[payment] pesanan ${pending.orderId} dihanguskan: harga ${slug} berubah ` +
+        `${pending.amount} -> ${course.price}` +
+        ` (di Midtrans: ${dihanguskan ? "ya" : "tidak / belum ada transaksi"})`,
+    );
   }
 
   const orderId = makeOrderId(slug, user.uid);

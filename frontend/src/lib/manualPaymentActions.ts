@@ -73,9 +73,26 @@ export async function createManualOrder(slug: string): Promise<ManualResult> {
 
   // Pesanan yang masih hidup dipakai ulang. Tanpa ini, setiap kali halaman
   // dibuka lahir satu pesanan baru dan antrean admin dipenuhi duplikat.
+  //
+  // Syarat nominalnya sama seperti di jalur Midtrans, dan di sini akibatnya
+  // justru lebih sulit dibereskan: pembeli sudah terlanjur mentransfer
+  // sejumlah uang lewat QRIS, dan uang yang sudah pindah tidak bisa ditarik
+  // kembali semudah membatalkan transaksi.
   const reuse = await findPendingOrder(user.uid, slug, "manual");
   if (reuse) {
-    return { ok: true, message: "Melanjutkan pesanan yang belum selesai.", order: reuse };
+    if (reuse.amount === course.price) {
+      return { ok: true, message: "Melanjutkan pesanan yang belum selesai.", order: reuse };
+    }
+
+    await orderRef(reuse.orderId).update({
+      status: "expired",
+      updatedAt: new Date().toISOString(),
+    });
+
+    console.info(
+      `[payment] pesanan manual ${reuse.orderId} dihanguskan: harga ${slug} berubah ` +
+        `${reuse.amount} -> ${course.price}`,
+    );
   }
 
   const now = new Date();
