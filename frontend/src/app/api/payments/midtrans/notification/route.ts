@@ -41,6 +41,26 @@ export async function POST(request: Request) {
   }
 
   const orderId = orderIdOf(payload);
+
+  // ── 1b. Uji coba dari dashboard Midtrans ─────────────────────────────
+  //
+  // Tombol "Test notification URL" mengirim notifikasi bertanda tangan SAH
+  // untuk pesanan tiruan yang memang tidak ada di sini. Pemeriksaan pesanan
+  // di bawah menjawabnya 404, dan dashboard melaporkannya sebagai gagal —
+  // padahal notifikasi sungguhan berjalan baik.
+  //
+  // Akibatnya bukan sekadar tampilan: itu satu-satunya alat yang dipunya
+  // pemilik toko untuk memastikan URL-nya benar. Kalau ia selalu merah, tidak
+  // ada lagi cara membedakan "URL salah ketik" dari "endpoint sedang mati".
+  //
+  // Dijawab 200 tanpa mengubah apa pun. Aman karena awalan ini ditentukan
+  // Midtrans, bukan penyerang: menebaknya tidak memberi apa-apa, sebab tidak
+  // ada pesanan yang disentuh dan tidak ada akses yang diberikan.
+  if (orderId.startsWith("payment_notif_test")) {
+    console.info("[payment] uji notifikasi dari dashboard Midtrans:", orderId);
+    return NextResponse.json({ ok: true, message: "Uji notifikasi diterima." });
+  }
+
   const order = await getOrder(orderId);
 
   if (!order) {

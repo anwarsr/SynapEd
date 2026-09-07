@@ -194,6 +194,38 @@ async function main() {
     const kunciLain = await postWebhook(notification(orderId, PRICE, "settlement", "kunci-orang-lain"));
     check("tanda tangan dari kunci lain ditolak", kunciLain === 403, `HTTP ${kunciLain}`);
 
+    // ── Uji notifikasi dari dashboard Midtrans ──────────────────────────
+    //
+    // Tombol "Test notification URL" mengirim pesanan tiruan yang tidak ada
+    // di sini. Ia harus dijawab 200, kalau tidak dashboard melaporkan URL-nya
+    // gagal — dan pemilik toko kehilangan satu-satunya alat untuk memastikan
+    // URL-nya benar.
+    {
+      const ujiId = `payment_notif_test_G${randomUUID().slice(0, 8)}`;
+
+      const sah = await postWebhook(notification(ujiId, PRICE, "capture"));
+      check("uji notifikasi dashboard dijawab 200", sah === 200, `HTTP ${sah}`);
+
+      check(
+        "uji notifikasi tidak menulis pesanan apa pun",
+        !(await db.collection("orders").doc(ujiId).get()).exists,
+        "tidak ada dokumen baru",
+      );
+
+      // Yang terpenting: cabang ini ada DI BELAKANG pemeriksaan tanda tangan.
+      // Kalau ia mendahului, siapa pun cukup menamai pesanannya
+      // "payment_notif_test..." untuk melewati seluruh penjagaan.
+      const tanpaTandaTangan = await postWebhook(
+        notification(ujiId, PRICE, "capture", "kunci-orang-lain"),
+      );
+      check(
+        "awalan uji BUKAN pintu belakang — tanda tangan tetap wajib",
+        tanpaTandaTangan === 403,
+        `HTTP ${tanpaTandaTangan}`,
+      );
+    }
+
+
     // Ditandatangani dengan benar TAPI nominalnya bukan harga kursus.
     const nominal = await postWebhook(notification(orderId, 1000, "settlement"));
     check("nominal dipalsukan ditolak", nominal === 400, `HTTP ${nominal}`);
@@ -205,6 +237,8 @@ async function main() {
 
     const asing = await postWebhook(notification("SYN-tidak-ada", PRICE, "settlement"));
     check("pesanan tak dikenal ditolak", asing === 404, `HTTP ${asing}`);
+    // Sekaligus menjaga cabang uji dashboard tetap sempit: hanya nomor
+    // berawalan payment_notif_test yang boleh lolos tanpa pesanan.
 
     // ── Webhook: pembayaran sah ─────────────────────────────────────────
     const sebelum = (await db.collection("courses").doc(paidSlug).get()).data()?.enrolledStudents;
