@@ -197,6 +197,21 @@ section[id] {
         color: var(--color-ink);
     }
 
+    /* Nama di halaman profil — satu tingkat di atas .t-h2.
+       Terpisah karena hanya satu tempat yang memakainya, dan menaikkan .t-h2
+       demi halaman ini akan ikut membesarkan setiap judul section di seluruh
+       situs. */
+    .t-h1-profile {
+        font-family: var(--font-fraunces);
+        font-size: clamp(2.2rem, 4.4vw, 3.4rem);
+        font-weight: 400;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        font-variation-settings: "opsz" 96, "SOFT" 40, "WONK" 1;
+        color: var(--color-ink);
+        text-wrap: pretty;
+    }
+
     .t-h3 {
         font-family: var(--font-fraunces);
         font-size: 1.375rem;

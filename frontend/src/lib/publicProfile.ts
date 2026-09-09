@@ -1,7 +1,12 @@
 import "server-only";
 import { adminAuth } from "@/lib/firebase/admin";
 import { listOwnedCourses } from "@/lib/educatorCourses";
-import { getProfileStats, getUserProfile, type ProfileStats } from "@/lib/userProfile";
+import {
+  getProfileStats,
+  getUserProfile,
+  joinedAtOf,
+  type ProfileStats,
+} from "@/lib/userProfile";
 import { toRole, type Role } from "@/lib/roles";
 import type { EducatorCourseRow } from "@/lib/educatorCourses";
 import type { ProfileContent } from "@/lib/profileTypes";
@@ -13,6 +18,8 @@ export interface PublicProfile {
   role: Role;
   content: ProfileContent;
   stats: ProfileStats;
+  /** Bulan & tahun bergabung, mis. "Februari 2026". Kosong bila tak diketahui. */
+  joinedAt: string;
   /** Hanya kursus yang tayang — lihat catatan di bawah. */
   courses: EducatorCourseRow[];
 }
@@ -56,6 +63,7 @@ export async function getPublicProfile(uid: string): Promise<PublicProfile | nul
     role,
     content,
     stats,
+    joinedAt: joinedAtOf(akun.metadata?.creationTime),
     // Kursus tersembunyi disaring DI SINI, bukan di komponen tampilan. Kalau
     // penyaringannya ada di JSX, satu tata letak baru yang lupa menyalinnya
     // langsung membocorkan draft yang belum disetujui admin.
