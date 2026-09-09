@@ -8,6 +8,9 @@ import { cn } from "@/lib/cn";
 /**
  * Panel kode undangan — HANYA dirender untuk pemilik kelas.
  *
+ * Bingkainya `border-rule-strong`, satu langkah lebih tegas dari kartu lain di
+ * kolom yang sama: ini satu-satunya kartu di halaman yang isinya rahasia.
+ *
  * Peringatannya bukan hiasan. Kode ini kunci pembawa tanpa masa berlaku:
  * siapa pun yang memegangnya menjadi anggota dan bisa membaca seluruh isi
  * kelas, tanpa persetujuan pemiliknya. Orang yang tidak diberi tahu hal itu
@@ -39,7 +42,8 @@ export default function JoinCodePanel({
 
   async function salin() {
     // Clipboard API butuh konteks aman dan izin; kegagalannya wajar terjadi
-    // dan tidak boleh membuat panel ini tampak rusak — kodenya tetap terbaca.
+    // dan tidak boleh membuat panel ini tampak rusak — kodenya tetap terbaca
+    // di layar dan masih bisa disalin manual.
     try {
       await navigator.clipboard.writeText(joinCode);
       setTersalin(true);
@@ -49,41 +53,40 @@ export default function JoinCodePanel({
     }
   }
 
+  const tombol = cn(
+    "rounded-lg border border-rule px-4 py-2.5 text-sm font-medium text-ink-body",
+    "transition-colors duration-200 hover:border-blue-500 hover:text-blue-700",
+    "disabled:opacity-60 disabled:cursor-not-allowed",
+  );
+
   return (
-    <div className="bg-paper-card border border-rule rounded-2xl p-6">
-      <p className="t-label text-ink-muted mb-2">Kode undangan</p>
+    <div className="rounded-2xl border border-rule-strong bg-paper-card p-6">
+      <p className="t-label text-ink-muted mb-3">Kode undangan</p>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <code className="rounded-lg bg-paper-alt border border-rule px-4 py-2.5 font-mono text-lg tracking-[0.2em] text-ink">
-          {joinCode}
-        </code>
+      <p className="rounded-xl bg-paper-alt py-4 text-center font-mono text-2xl tracking-[0.22em] text-ink">
+        {joinCode}
+      </p>
 
-        <button
-          type="button"
-          onClick={salin}
-          className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700"
-        >
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button type="button" onClick={salin} className={tombol}>
           {tersalin ? "Tersalin" : "Salin"}
         </button>
 
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          disabled={pending}
-          className={cn(
-            "rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body",
-            "transition-colors duration-200 hover:border-blue-500 hover:text-blue-700",
-            "disabled:opacity-60 disabled:cursor-not-allowed",
-          )}
-        >
+        <button type="button" onClick={() => setOpen(true)} disabled={pending} className={tombol}>
           {pending ? "Mengganti…" : "Ganti kode"}
         </button>
       </div>
 
-      <p className="mt-3 text-xs text-ink-muted">
-        Siapa pun yang memegang kode ini bisa bergabung dan membaca seluruh isi kelas.
-        Bagikan hanya kepada peserta Anda. Ganti kodenya untuk menutup pendaftaran —
-        anggota yang sudah masuk tidak terpengaruh.
+      <p className="mt-4 flex gap-2.5 text-xs leading-[1.6] text-ink-muted">
+        <span
+          aria-hidden="true"
+          className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full bg-amber-500"
+        />
+        <span>
+          Siapa pun yang memegang kode ini bisa bergabung dan membaca seluruh isi kelas.
+          Bagikan hanya kepada peserta Anda. Ganti kodenya untuk menutup pendaftaran —
+          anggota yang sudah masuk tidak terpengaruh.
+        </span>
       </p>
 
       <ConfirmDialog

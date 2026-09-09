@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
+import ClassRoom, { toTab } from "@/components/classes/ClassRoom";
 import ClassForm from "@/components/classes/ClassForm";
-import JoinCodePanel from "@/components/classes/JoinCodePanel";
-import PostComposer from "@/components/classes/PostComposer";
-import PostFeed from "@/components/classes/PostFeed";
 import DeleteButton from "@/components/classes/DeleteButton";
-import { loadClassFeed } from "@/lib/classes";
+import { listClassMembers, loadClassFeed } from "@/lib/classes";
 import { requireOwnedClass } from "@/lib/classGuards";
+import { getUserCards } from "@/lib/userCards";
 import { requireUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
 export const metadata: Metadata = { title: "Kelas – SynapEd" };
@@ -27,68 +27,54 @@ export const dynamic = "force-dynamic";
  * ADMIN juga — padahal admin harus bisa membuka kelas siapa pun untuk
  * memoderasinya. Halaman sunting kursus sudah menempuh jalan yang sama.
  */
-export default async function EducatorClassPage({ params }: Props) {
-  const { id } = await params;
+export default async function EducatorClassPage({ params, searchParams }: Props) {
+  const [{ id }, { tab }] = await Promise.all([params, searchParams]);
   const user = await requireUser(`/educator/classes/${id}`);
 
   const kelas = await requireOwnedClass(user, id);
   if (!kelas) notFound();
 
-  const { posts, repliesByPost, cards } = await loadClassFeed(id);
+  const [umpan, members] = await Promise.all([loadClassFeed(id), listClassMembers(id)]);
+  const orang = await getUserCards([kelas.ownerUid, ...members.map((m) => m.uid)]);
 
   return (
     <EducatorShell user={user}>
-      <div className="container-reading">
-        <p className="chapter-mark mb-5">
-          <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-          <span>Educator</span>
-        </p>
+      <ClassRoom
+        kelas={kelas}
+        posts={umpan.posts}
+        repliesByPost={umpan.repliesByPost}
+        cards={umpan.cards}
+        members={members}
+        memberCards={orang}
+        ownerCard={orang.get(kelas.ownerUid)}
+        currentUid={user.uid}
+        meName={user.name}
+        mePhoto={user.photoURL}
+        isOwner
+        isMember={false}
+        tab={toTab(tab)}
+        basePath={`/educator/classes/${id}`}
+        joinCode={kelas.joinCode}
+        kembali={{ href: "/educator/classes", label: "Kelas Saya" }}
+        pengaturan={
+          <div>
+            <h3 className="t-label text-ink-muted mb-4">Pengaturan kelas</h3>
 
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
-          <h1 className="t-h2">{kelas.name}</h1>
-          <Link
-            href="/educator/classes"
-            className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700"
-          >
-            ← Kelas Saya
-          </Link>
-        </div>
+            <ClassForm kelas={{ id, name: kelas.name, description: kelas.description }} />
 
-        <p className="t-body text-ink-muted mb-10">
-          {kelas.memberCount} anggota · {kelas.postCount} postingan ·{" "}
-          <Link
-            href={`/educator/classes/${id}/members`}
-            className="text-blue-700 hover:underline underline-offset-4"
-          >
-            lihat daftar anggota
-          </Link>
-        </p>
+            <div className="mt-5 flex flex-wrap items-center gap-5">
+              <Link
+                href={`/educator/classes/${id}/members`}
+                className="text-[13px] text-blue-700 hover:underline underline-offset-4"
+              >
+                Kelola anggota →
+              </Link>
 
-        <div className="space-y-6 mb-10">
-          <JoinCodePanel classId={id} joinCode={kelas.joinCode} />
-          <PostComposer classId={id} />
-        </div>
-
-        <PostFeed
-          classId={id}
-          posts={posts}
-          repliesByPost={repliesByPost}
-          cards={cards}
-          currentUid={user.uid}
-          canModerate
-          canReply
-        />
-
-        <div className="mt-12 pt-8 border-t border-rule">
-          <h2 className="t-h3 mb-5">Pengaturan kelas</h2>
-
-          <ClassForm kelas={{ id, name: kelas.name, description: kelas.description }} />
-
-          <div className="mt-6">
-            <DeleteButton target={{ kind: "class", classId: id }} after="/educator/classes" />
+              <DeleteButton target={{ kind: "class", classId: id }} after="/educator/classes" />
+            </div>
           </div>
-        </div>
-      </div>
+        }
+      />
     </EducatorShell>
   );
 }

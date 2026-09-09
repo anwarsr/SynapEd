@@ -114,3 +114,15 @@ export function formatDate(iso: string | null): string {
     timeStyle: "short",
   }).format(new Date(iso));
 }
+
+/**
+ * Tanggal saja, tanpa jam.
+ *
+ * Dipakai figur di kartu: "8 September 2026 pukul 19.13" membuat baris
+ * angka yang seharusnya terbaca sekilas jadi kalimat panjang, dan jamnya
+ * tidak pernah menjadi informasi yang dicari di sana.
+ */
+export function formatDateOnly(iso: string | null): string {
+  if (!iso) return "—";
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date(iso));
+}

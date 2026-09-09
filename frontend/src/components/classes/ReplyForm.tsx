@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { createReply } from "@/lib/classActions";
 import { MAX_REPLY_BODY } from "@/lib/classTypes";
 import { cn } from "@/lib/cn";
@@ -12,7 +13,17 @@ import { cn } from "@/lib/cn";
  * mengetik cukup untuk membuat sebagian besar orang urung membalas, dan kelas
  * yang sunyi adalah kegagalan fitur ini.
  */
-export default function ReplyForm({ classId, postId }: { classId: string; postId: string }) {
+export default function ReplyForm({
+  classId,
+  postId,
+  meName,
+  mePhoto,
+}: {
+  classId: string;
+  postId: string;
+  meName: string;
+  mePhoto: string | null;
+}) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [pending, startTransition] = useTransition();
@@ -32,38 +43,44 @@ export default function ReplyForm({ classId, postId }: { classId: string; postId
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-4 flex flex-wrap items-start gap-2">
-      <label htmlFor={`reply-${postId}`} className="sr-only">
-        Tulis balasan
-      </label>
+    <form onSubmit={onSubmit}>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="shrink-0">
+          <UserAvatar name={meName} photoURL={mePhoto} size="sm" />
+        </span>
 
-      <input
-        id={`reply-${postId}`}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        maxLength={MAX_REPLY_BODY}
-        placeholder="Tulis balasan…"
-        className={cn(
-          "min-w-0 flex-1 rounded-lg border border-rule bg-paper px-4 py-2 text-sm text-ink",
-          "transition-colors duration-200 placeholder:text-ink-faint",
-          "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25",
-        )}
-      />
+        <label htmlFor={`reply-${postId}`} className="sr-only">
+          Tulis balasan
+        </label>
 
-      <button
-        type="submit"
-        disabled={pending || body.trim().length === 0}
-        className={cn(
-          "rounded-lg border border-rule px-5 py-2 text-sm font-medium text-ink-body shrink-0",
-          "transition-colors duration-200 hover:border-blue-500 hover:text-blue-700",
-          "disabled:opacity-60 disabled:cursor-not-allowed",
-        )}
-      >
-        {pending ? "Mengirim…" : "Balas"}
-      </button>
+        <input
+          id={`reply-${postId}`}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          maxLength={MAX_REPLY_BODY}
+          placeholder="Tulis balasan…"
+          className={cn(
+            "min-w-0 flex-1 rounded-full border border-rule bg-paper px-[18px] py-2.5 text-sm text-ink",
+            "transition-colors duration-200 placeholder:text-ink-faint",
+            "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25",
+          )}
+        />
+
+        <button
+          type="submit"
+          disabled={pending || body.trim().length === 0}
+          className={cn(
+            "shrink-0 rounded-full border border-rule px-5 py-2.5 text-sm font-medium text-ink-body",
+            "transition-colors duration-200 hover:border-blue-500 hover:text-blue-700",
+            "disabled:opacity-60 disabled:cursor-not-allowed",
+          )}
+        >
+          {pending ? "Mengirim…" : "Balas"}
+        </button>
+      </div>
 
       {error && (
-        <p role="alert" className="w-full text-sm text-rust-700">
+        <p role="alert" className="mt-2 text-sm text-rust-700">
           {error}
         </p>
       )}

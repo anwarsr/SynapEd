@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=Inter:wght@100..900&display=swap">
+<style>
+body{margin:0;background:#ddd8cf;font-family:Inter,system-ui,sans-serif}
+a{color:#1A3F9E}a:hover{color:#2563EB}
+code{font:400 13px ui-monospace,Menlo,monospace;background:#fff;border:1px solid #E7DED0;border-radius:4px;padding:1px 5px}
+</style>
+</helmet>
+
+<div style="padding:56px 60px 80px;display:flex;flex-direction:column;gap:56px">
+
+<div style="max-width:900px;display:flex;flex-direction:column;gap:10px">
+<p style="margin:0;font:500 11.52px/1.4 Inter;text-transform:uppercase;letter-spacing:.14em;color:#8a8279">Rekonstruksi dari kode · anwarsr/SynapEd @dev</p>
+<h1 style="margin:0;font-family:Fraunces,serif;font-size:40px;font-weight:400;line-height:1.15;letter-spacing:-.015em;font-variation-settings:'opsz' 48,'SOFT' 30,'WONK' 1;color:#23201C">Fitur Kelas — tampilan saat ini</h1>
+<p style="margin:0;font:400 15px/1.65 Inter;color:#57504A;max-width:70ch">Empat layar yang membentuk fitur kelas hari ini, disalin dari <code>app/kelas</code>, <code>app/educator/classes</code>, dan <code>components/classes</code>. Warna, tipografi, radius, dan jarak diambil dari token "Tinta &amp; Kertas" di <code>globals.css</code>. Footer situs dipotong; sisanya apa adanya.</p>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="margin:0;font:500 12px/1.4 Inter;letter-spacing:.06em;color:#57504A"><span style="background:#23201C;color:#fff;border-radius:4px;padding:3px 7px;font:600 10.5px ui-monospace,monospace;margin-right:8px">A</span>/kelas — Kelas Saya (peserta)</p>
+<div style="position:relative;width:1440px;background:#FCF9F4;border:1px solid #cfc8bd;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(35,32,28,.08)">
+<div style="position:absolute;top:0;left:0;right:0;z-index:5;padding:16px 24px 0">
+<div style="max-width:1280px;margin:0 auto;border-radius:24px;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+<img src="frontend/public/images/logotext.png" alt="SynapEd" style="width:112px;height:auto;margin-block:-32px;display:block">
+<div style="display:flex;align-items:center;gap:4px">
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Beranda</span>
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Tentang</span>
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Kurikulum</span>
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Kursus</span>
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">FAQ</span>
+</div>
+<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:208px">
+<span style="padding:8px 16px;border:1px solid #E7DED0;border-radius:999px;font:500 14px Inter;color:#57504A">Jadi Educator</span>
+<span style="width:36px;height:36px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:12px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E">RA</span>
+</div>
+</div>
+</div>
+<div style="padding:128px 0 96px">
+<div style="max-width:1152px;margin:0 auto;padding-inline:24px">
+<p style="margin:0 0 20px;display:inline-flex;align-items:center;gap:9.6px;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#A99F95"><span style="width:24px;height:1px;background:#D8CBB6"></span><span>Kelas</span></p>
+<h1 style="margin:0 0 12px;font-family:Fraunces,serif;font-size:44px;font-weight:400;line-height:1.15;letter-spacing:-.015em;font-variation-settings:'opsz' 48,'SOFT' 30,'WONK' 1;color:#23201C">Kelas <span style="background-image:linear-gradient(104deg,transparent .4%,#FBEBCB 2.4%,#FBEBCB 96.8%,transparent 99.2%);background-repeat:no-repeat;background-size:100% 100%;border-radius:.55em .25em .5em .2em;padding:.06em .24em;margin:0 -.12em">saya</span></h1>
+<p style="margin:0 0 40px;font:400 16px/1.7 Inter;color:#6E655C">2 kelas yang Anda ikuti.</p>
+<div style="margin-bottom:40px;background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<label style="display:block;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#6E655C;margin-bottom:8px">Kode undangan</label>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<div style="width:256px;border:1px solid #E7DED0;border-radius:8px;background:#FCF9F4;padding:10px 16px;font:400 14px ui-monospace,monospace;letter-spacing:.2em;color:#A99F95">7KQ2M4XB</div>
+<span style="border-radius:8px;background:#1D4FD0;padding:10px 24px;font:600 14px Inter;color:#fff">Gabung</span>
+</div>
+<p style="margin:8px 0 0;font:400 12px Inter;color:#6E655C">Kode berisi 8 karakter, diberikan oleh pengajar kelasnya.</p>
+</div>
+<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px">
+<li style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<span style="font:500 14px Inter;color:#23201C">Neurosains Terapan 2026</span>
+<p style="margin:4px 0 0;font:400 14px/1.5 Inter;color:#6E655C">Kelas pendamping untuk peserta kursus Dasar Neuroscience. Diskusi mingguan dan pengumuman tugas.</p>
+<p style="margin:8px 0 0;font:400 12px Inter;color:#6E655C">24 anggota · 8 postingan · dibuat 12 Feb 2026</p>
+</li>
+<li style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<span style="font:500 14px Inter;color:#23201C">Analisis Data EEG — Angkatan 3</span>
+<p style="margin:4px 0 0;font:400 14px/1.5 Inter;color:#6E655C">Pendampingan praktikum pengolahan sinyal EEG dengan MNE-Python.</p>
+<p style="margin:8px 0 0;font:400 12px Inter;color:#6E655C">17 anggota · 3 postingan · dibuat 4 Mar 2026</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="margin:0;font:500 12px/1.4 Inter;letter-spacing:.06em;color:#57504A"><span style="background:#23201C;color:#fff;border-radius:4px;padding:3px 7px;font:600 10.5px ui-monospace,monospace;margin-right:8px">B</span>/kelas/[id] — Ruang kelas (peserta)</p>
+<div style="position:relative;width:1440px;background:#FCF9F4;border:1px solid #cfc8bd;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(35,32,28,.08)">
+<div style="position:absolute;top:0;left:0;right:0;z-index:5;padding:16px 24px 0">
+<div style="max-width:1280px;margin:0 auto;border-radius:24px;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+<img src="frontend/public/images/logotext.png" alt="SynapEd" style="width:112px;height:auto;margin-block:-32px;display:block">
+<div style="display:flex;align-items:center;gap:4px">
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Beranda</span>
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Tentang</span>
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Kurikulum</span>
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Kursus</span>
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">FAQ</span>
+</div>
+<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:208px">
+<span style="padding:8px 16px;border:1px solid #E7DED0;border-radius:999px;font:500 14px Inter;color:#57504A">Jadi Educator</span>
+<span style="width:36px;height:36px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:12px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E">RA</span>
+</div>
+</div>
+</div>
+<div style="padding:128px 0 96px">
+<div style="max-width:1152px;margin:0 auto;padding-inline:24px">
+<p style="margin:0 0 20px;display:inline-flex;align-items:center;gap:9.6px;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#A99F95"><span style="width:24px;height:1px;background:#D8CBB6"></span><span>Kelas</span></p>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px">
+<h1 style="margin:0;font-family:Fraunces,serif;font-size:44px;font-weight:400;line-height:1.15;letter-spacing:-.015em;font-variation-settings:'opsz' 48,'SOFT' 30,'WONK' 1;color:#23201C">Neurosains Terapan 2026</h1>
+<span style="border:1px solid #E7DED0;border-radius:8px;padding:10px 20px;font:500 14px Inter;color:#57504A">← Kelas Saya</span>
+</div>
+<p style="margin:0 0 24px;font:400 16px/1.7 Inter;color:#57504A">Kelas pendamping untuk peserta kursus Dasar Neuroscience. Diskusi mingguan dan pengumuman tugas.</p>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:40px">
+<span style="width:36px;height:36px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:12px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E">BS</span>
+<p style="margin:0;font:400 14px Inter;color:#6E655C">Pengajar <span style="font-weight:500;color:#23201C">Bagas Setiawan</span> · 24 anggota</p>
+</div>
+<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px">
+<li style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+<span style="width:40px;height:40px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:14px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E;flex-shrink:0">BS</span>
+<div style="min-width:0;flex:1">
+<span style="font:500 14px Inter;color:#23201C">Bagas Setiawan</span>
+<p style="margin:2px 0 0;font:400 12px Inter;color:#6E655C">14 Mei 2026</p>
+</div>
+<span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;background:#EDF2FE;color:#1A3F9E;font:600 10px Inter;text-transform:uppercase;letter-spacing:.05em">Pengajar</span>
+</div>
+<p style="margin:16px 0 0;font:400 14px/1.625 Inter;color:#57504A">Pertemuan minggu ini membahas potensial aksi dan propagasi sinyal di akson. Silakan baca modul 3 sebelum sesi Kamis, dan bawa pertanyaan Anda ke kolom balasan.</p>
+<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E7DED0">
+<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px">
+<li style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+<span style="width:36px;height:36px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:12px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E;flex-shrink:0">RA</span>
+<div style="min-width:0;flex:1">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font:500 14px Inter;color:#23201C">Rani Aprilia</span>
+<span style="font:400 12px Inter;color:#6E655C">14 Mei 2026</span>
+</div>
+<p style="margin:4px 0 0;font:400 14px/1.625 Inter;color:#57504A">Modul 3 yang dimaksud yang di kursus Dasar Neuroscience ya, Pak?</p>
+<div style="margin-top:6px"><span style="font:500 12px Inter;color:#6E655C">Hapus</span></div>
+</div>
+</li>
+</ul>
+<div style="margin-top:16px;display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px">
+<div style="min-width:0;flex:1;border:1px solid #E7DED0;border-radius:8px;background:#FCF9F4;padding:8px 16px;font:400 14px Inter;color:#A99F95">Tulis balasan…</div>
+<span style="border:1px solid #E7DED0;border-radius:8px;padding:8px 20px;font:500 14px Inter;color:#57504A;flex-shrink:0">Balas</span>
+</div>
+</div>
+</li>
+<li style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+<span style="width:40px;height:40px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:14px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E;flex-shrink:0">BS</span>
+<div style="min-width:0;flex:1">
+<span style="font:500 14px Inter;color:#23201C">Bagas Setiawan</span>
+<p style="margin:2px 0 0;font:400 12px Inter;color:#6E655C">7 Mei 2026</p>
+</div>
+<span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;background:#EDF2FE;color:#1A3F9E;font:600 10px Inter;text-transform:uppercase;letter-spacing:.05em">Pengajar</span>
+</div>
+<p style="margin:16px 0 0;font:400 14px/1.625 Inter;color:#57504A">Selamat datang di kelas. Perkenalkan diri Anda singkat di balasan: nama, asal kampus, dan alasan mengambil kelas ini.</p>
+<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E7DED0">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px">
+<div style="min-width:0;flex:1;border:1px solid #E7DED0;border-radius:8px;background:#FCF9F4;padding:8px 16px;font:400 14px Inter;color:#A99F95">Tulis balasan…</div>
+<span style="border:1px solid #E7DED0;border-radius:8px;padding:8px 20px;font:500 14px Inter;color:#57504A;flex-shrink:0">Balas</span>
+</div>
+</div>
+</li>
+</ul>
+<div style="margin-top:48px;padding-top:32px;border-top:1px solid #E7DED0">
+<span style="font:500 12px Inter;color:#6E655C">Keluar dari kelas</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="margin:0;font:500 12px/1.4 Inter;letter-spacing:.06em;color:#57504A"><span style="background:#23201C;color:#fff;border-radius:4px;padding:3px 7px;font:600 10.5px ui-monospace,monospace;margin-right:8px">C</span>/educator/classes/[id] — Ruang kelas (pengelola)</p>
+<div style="width:1440px;background:#FCF9F4;border:1px solid #cfc8bd;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(35,32,28,.08)">
+<div style="background:rgba(255,255,255,.95);border-bottom:1px solid #E7DED0">
+<div style="max-width:1280px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+<div style="display:flex;align-items:center;gap:20px;min-width:0">
+<div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+<img src="frontend/public/images/logotext.png" alt="SynapEd" style="width:96px;height:auto;margin-block:-32px;display:block">
+<span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;background:#EDF2FE;color:#1A3F9E;font:600 10px Inter;text-transform:uppercase;letter-spacing:.05em">Panel Educator</span>
+</div>
+<div style="display:flex;align-items:center;gap:4px">
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Kursus Saya</span>
+<span style="padding:8px 14px;border-radius:999px;background:#EDF2FE;font:500 14px Inter;color:#1A3F9E">Kelas Saya</span>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:12px">
+<span style="font:400 14px Inter;color:#6E655C">Profil Educator</span>
+<span style="font:400 14px Inter;color:#6E655C">Bagas Setiawan</span>
+<span style="padding:8px 16px;border-radius:999px;background:#1D4FD0;font:600 14px Inter;color:#fff">Keluar</span>
+</div>
+</div>
+</div>
+<div style="padding:48px 0">
+<div style="max-width:1152px;margin:0 auto;padding-inline:24px">
+<p style="margin:0 0 20px;display:inline-flex;align-items:center;gap:9.6px;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#A99F95"><span style="width:24px;height:1px;background:#D8CBB6"></span><span>Educator</span></p>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px">
+<h1 style="margin:0;font-family:Fraunces,serif;font-size:44px;font-weight:400;line-height:1.15;letter-spacing:-.015em;font-variation-settings:'opsz' 48,'SOFT' 30,'WONK' 1;color:#23201C">Neurosains Terapan 2026</h1>
+<span style="border:1px solid #E7DED0;border-radius:8px;padding:10px 20px;font:500 14px Inter;color:#57504A">← Kelas Saya</span>
+</div>
+<p style="margin:0 0 40px;font:400 16px/1.7 Inter;color:#6E655C">24 anggota · 8 postingan · <span style="color:#1A3F9E;text-decoration:underline;text-underline-offset:4px">lihat daftar anggota</span></p>
+<div style="display:flex;flex-direction:column;gap:24px;margin-bottom:40px">
+<div style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<p style="margin:0 0 8px;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#6E655C">Kode undangan</p>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+<code style="border-radius:8px;background:#F5F0E7;border:1px solid #E7DED0;padding:10px 16px;font:400 18px ui-monospace,monospace;letter-spacing:.2em;color:#23201C">7KQ2M4XB</code>
+<span style="border:1px solid #E7DED0;border-radius:8px;padding:10px 20px;font:500 14px Inter;color:#57504A">Salin</span>
+<span style="border:1px solid #E7DED0;border-radius:8px;padding:10px 20px;font:500 14px Inter;color:#57504A">Ganti kode</span>
+</div>
+<p style="margin:12px 0 0;font:400 12px/1.5 Inter;color:#6E655C">Siapa pun yang memegang kode ini bisa bergabung dan membaca seluruh isi kelas. Bagikan hanya kepada peserta Anda. Ganti kodenya untuk menutup pendaftaran — anggota yang sudah masuk tidak terpengaruh.</p>
+</div>
+<div style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<label style="display:block;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#6E655C;margin-bottom:8px">Tulis untuk kelas ini</label>
+<div style="border:1px solid #E7DED0;border-radius:8px;background:#FCF9F4;padding:10px 16px;font:400 14px/1.6 Inter;color:#A99F95;height:92px">Pengumuman, materi singkat, atau pengantar diskusi.</div>
+<div style="margin-top:16px"><span style="border-radius:8px;background:#1D4FD0;padding:10px 24px;font:600 14px Inter;color:#fff">Kirim</span></div>
+</div>
+</div>
+<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px">
+<li style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+<span style="width:40px;height:40px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:14px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E;flex-shrink:0">BS</span>
+<div style="min-width:0;flex:1">
+<span style="font:500 14px Inter;color:#23201C">Bagas Setiawan</span>
+<p style="margin:2px 0 0;font:400 12px Inter;color:#6E655C">14 Mei 2026</p>
+</div>
+<span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;background:#EDF2FE;color:#1A3F9E;font:600 10px Inter;text-transform:uppercase;letter-spacing:.05em">Pengajar</span>
+</div>
+<p style="margin:16px 0 0;font:400 14px/1.625 Inter;color:#57504A">Pertemuan minggu ini membahas potensial aksi dan propagasi sinyal di akson. Silakan baca modul 3 sebelum sesi Kamis, dan bawa pertanyaan Anda ke kolom balasan.</p>
+<div style="margin-top:16px"><span style="font:500 12px Inter;color:#6E655C">Hapus</span></div>
+<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E7DED0">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px">
+<div style="min-width:0;flex:1;border:1px solid #E7DED0;border-radius:8px;background:#FCF9F4;padding:8px 16px;font:400 14px Inter;color:#A99F95">Tulis balasan…</div>
+<span style="border:1px solid #E7DED0;border-radius:8px;padding:8px 20px;font:500 14px Inter;color:#57504A;flex-shrink:0">Balas</span>
+</div>
+</div>
+</li>
+</ul>
+<div style="margin-top:48px;padding-top:32px;border-top:1px solid #E7DED0">
+<h2 style="margin:0 0 20px;font-family:Fraunces,serif;font-size:22px;font-weight:500;line-height:1.25;font-variation-settings:'opsz' 24,'SOFT' 25,'WONK' 0;color:#23201C">Pengaturan kelas</h2>
+<div style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px">
+<label style="display:block;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#6E655C;margin-bottom:8px">Nama kelas</label>
+<div style="border:1px solid #E7DED0;border-radius:8px;background:#FCF9F4;padding:10px 16px;font:400 14px Inter;color:#23201C;margin-bottom:16px">Neurosains Terapan 2026</div>
+<label style="display:block;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#6E655C;margin-bottom:8px">Deskripsi</label>
+<div style="border:1px solid #E7DED0;border-radius:8px;background:#FCF9F4;padding:10px 16px;font:400 14px/1.6 Inter;color:#23201C;height:72px">Kelas pendamping untuk peserta kursus Dasar Neuroscience. Diskusi mingguan dan pengumuman tugas.</div>
+<div style="margin-top:20px"><span style="border-radius:8px;background:#1D4FD0;padding:10px 24px;font:600 14px Inter;color:#fff">Simpan Perubahan</span></div>
+</div>
+<div style="margin-top:24px"><span style="font:500 12px Inter;color:#6E655C">Hapus kelas</span></div>
+</div>
+</div>
+</div>
+<div style="border-top:1px solid #E7DED0;padding:24px 0">
+<div style="max-width:1280px;margin:0 auto;padding-inline:24px;font:400 12px Inter;color:#6E655C">SynapEd · Panel Educator</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="margin:0;font:500 12px/1.4 Inter;letter-spacing:.06em;color:#57504A"><span style="background:#23201C;color:#fff;border-radius:4px;padding:3px 7px;font:600 10.5px ui-monospace,monospace;margin-right:8px">D</span>/educator/classes/[id]/members — Anggota</p>
+<div style="width:1440px;background:#FCF9F4;border:1px solid #cfc8bd;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(35,32,28,.08)">
+<div style="background:rgba(255,255,255,.95);border-bottom:1px solid #E7DED0">
+<div style="max-width:1280px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+<div style="display:flex;align-items:center;gap:20px;min-width:0">
+<div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+<img src="frontend/public/images/logotext.png" alt="SynapEd" style="width:96px;height:auto;margin-block:-32px;display:block">
+<span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;background:#EDF2FE;color:#1A3F9E;font:600 10px Inter;text-transform:uppercase;letter-spacing:.05em">Panel Educator</span>
+</div>
+<div style="display:flex;align-items:center;gap:4px">
+<span style="padding:8px 14px;border-radius:999px;font:400 14px Inter;color:#57504A">Kursus Saya</span>
+<span style="padding:8px 14px;border-radius:999px;background:#EDF2FE;font:500 14px Inter;color:#1A3F9E">Kelas Saya</span>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:12px">
+<span style="font:400 14px Inter;color:#6E655C">Profil Educator</span>
+<span style="font:400 14px Inter;color:#6E655C">Bagas Setiawan</span>
+<span style="padding:8px 16px;border-radius:999px;background:#1D4FD0;font:600 14px Inter;color:#fff">Keluar</span>
+</div>
+</div>
+</div>
+<div style="padding:48px 0">
+<div style="max-width:1152px;margin:0 auto;padding-inline:24px">
+<p style="margin:0 0 20px;display:inline-flex;align-items:center;gap:9.6px;font:500 11.52px Inter;text-transform:uppercase;letter-spacing:.14em;color:#A99F95"><span style="width:24px;height:1px;background:#D8CBB6"></span><span>Educator</span></p>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px">
+<h1 style="margin:0;font-family:Fraunces,serif;font-size:44px;font-weight:400;line-height:1.15;letter-spacing:-.015em;font-variation-settings:'opsz' 48,'SOFT' 30,'WONK' 1;color:#23201C">Anggota <span style="background-image:linear-gradient(104deg,transparent .4%,#FBEBCB 2.4%,#FBEBCB 96.8%,transparent 99.2%);background-repeat:no-repeat;background-size:100% 100%;border-radius:.55em .25em .5em .2em;padding:.06em .24em;margin:0 -.12em">Neurosains Terapan 2026</span></h1>
+<span style="border:1px solid #E7DED0;border-radius:8px;padding:10px 20px;font:500 14px Inter;color:#57504A">← Kembali ke kelas</span>
+</div>
+<p style="margin:0 0 40px;font:400 16px/1.7 Inter;color:#6E655C">24 anggota.</p>
+<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px">
+<li style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+<span style="width:40px;height:40px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:14px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E;flex-shrink:0">RA</span>
+<div style="min-width:0;flex:1">
+<span style="font:500 14px Inter;color:#23201C">Rani Aprilia</span>
+<p style="margin:2px 0 0;font:400 12px Inter;color:#6E655C">Bergabung 12 Feb 2026</p>
+</div>
+</li>
+<li style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+<span style="width:40px;height:40px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:14px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E;flex-shrink:0">DP</span>
+<div style="min-width:0;flex:1">
+<span style="font:500 14px Inter;color:#23201C">Dimas Prakoso</span>
+<p style="margin:2px 0 0;font:400 12px Inter;color:#6E655C">Bergabung 13 Feb 2026</p>
+</div>
+</li>
+<li style="background:#FFFFFF;border:1px solid #E7DED0;border-radius:16px;padding:24px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+<span style="width:40px;height:40px;border-radius:999px;background:#EDF2FE;border:1px solid #E7DED0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:14px;font-variation-settings:'opsz' 72,'SOFT' 30,'WONK' 0;color:#1A3F9E;flex-shrink:0">SN</span>
+<div style="min-width:0;flex:1">
+<span style="font:500 14px Inter;color:#23201C">Salma Nabila</span>
+<p style="margin:2px 0 0;font:400 12px Inter;color:#6E655C">Bergabung 15 Feb 2026</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div style="border-top:1px solid #E7DED0;padding:24px 0">
+<div style="max-width:1280px;margin:0 auto;padding-inline:24px;font:400 12px Inter;color:#6E655C">SynapEd · Panel Educator</div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+</body>
+</html>
