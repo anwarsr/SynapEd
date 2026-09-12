@@ -107,7 +107,19 @@ export default async function CourseDetailPage({ params }: Props) {
           </nav>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
+            {/* min-w-0 WAJIB di sini.
+
+                Grid item bawaannya `min-width: auto`, jadi ia menolak
+                menyusut di bawah lebar min-content anaknya. Judul modul di
+                kurikulum memakai `truncate` — yang berarti `white-space:
+                nowrap` — sehingga lebar min-content-nya sama dengan panjang
+                penuh judulnya. Tanpa min-w-0, judul terpanjang memaksa
+                seluruh halaman melebar melewati layar ponsel, dan isinya
+                terpotong tanpa satu pun galat.
+
+                Bagian dalamnya sudah diberi min-w-0; yang terlewat justru
+                item grid paling luar ini. */}
+            <div className="lg:col-span-2 min-w-0 space-y-6">
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <div className="flex items-center gap-3 mb-5">
                   <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
@@ -202,7 +214,7 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
             </div>
 
-            <aside id={ENROLL_ANCHOR}>
+            <aside id={ENROLL_ANCHOR} className="min-w-0">
               <div className="bg-paper-card border border-rule rounded-2xl p-6 sticky top-28">
                 <CourseThumb
                   thumbnail={course.thumbnail}
