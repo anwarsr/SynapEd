@@ -94,3 +94,27 @@ export function splitSale(
 
   return { feeAmount, unallocatedAmount: 0, lines };
 }
+
+/**
+ * Bagian perujuk dari satu penjualan — DIAMBIL DARI potongan platform, bukan
+ * dari bagian kontributor.
+ *
+ * Dihitung dari harga kotor lalu dibulatkan ke bawah. Karena persentase
+ * referral tidak pernah melebihi persentase potongan, `floor(g×r/100)` tidak
+ * pernah melebihi `floor(g×f/100)`; pemeriksaan di bawah tetap ada supaya
+ * data rusak ditolak, bukan membuat bagian platform menjadi negatif.
+ */
+export function referralAmountOf(gross: number, feeAmount: number, referralPercent: number): number {
+  if (!Number.isSafeInteger(gross) || gross < 0) {
+    throw new Error(`referralAmountOf: gross tidak sah (${gross}).`);
+  }
+  if (!Number.isInteger(referralPercent) || referralPercent < 0 || referralPercent > 100) {
+    throw new Error(`referralAmountOf: persentase tidak sah (${referralPercent}).`);
+  }
+
+  const amount = Math.floor((gross * referralPercent) / 100);
+  if (amount > feeAmount) {
+    throw new Error(`referralAmountOf: bagian referral ${amount} melebihi potongan platform ${feeAmount}.`);
+  }
+  return amount;
+}

@@ -15,8 +15,8 @@
  * sebuah pesanan lunas; di sini hanya dicatat apa yang dijual dan dibagi.
  */
 import type { Firestore } from "firebase-admin/firestore";
-import { splitSale, type SplitLine } from "./royaltySplit";
-import { parseRoyaltyTerms } from "./royaltyTerms";
+import { referralAmountOf, splitSale, type SplitLine } from "./royaltySplit";
+import { parseRoyaltyTerms, type ReferralTerms } from "./royaltyTerms";
 import type { Contributor } from "./contributors";
 
 export const ROYALTY_SALES = "royaltySales";
@@ -52,7 +52,14 @@ export interface RoyaltySaleDoc {
   ownerUid: string | null;
   gross: number;
   feePercent: number;
+  /** Seluruh potongan platform, TERMASUK bagian referral. */
   feeAmount: number;
+  /** Bagian perujuk, diambil dari `feeAmount`. 0 bila tanpa referral. */
+  referralPercent: number;
+  referralAmount: number;
+  referrerUid: string | null;
+  /** Yang benar-benar tersisa untuk platform: `feeAmount − referralAmount`. */
+  platformAmount: number;
   unallocatedAmount: number;
   lines: SplitLine[];
   termsOrigin: TermsOrigin;
@@ -61,11 +68,13 @@ export interface RoyaltySaleDoc {
   recordedAt: string;
 }
 
+export type EarningRole = SplitLine["role"] | "referral";
+
 export interface RoyaltyEarningDoc {
   uid: string;
   courseSlug: string;
   courseTitle: string;
-  role: SplitLine["role"];
+  role: EarningRole;
   sharePercent: number;
   feePercent: number;
   gross: number;
@@ -80,6 +89,7 @@ export function planSale(input: SaleInput, recordedAt: string) {
   let feePercent: number;
   let ownerUid: string | null;
   let contributors: Contributor[] | null;
+  let referral: ReferralTerms | null = null;
 
   if (input.royalty === undefined || input.royalty === null) {
     origin = "legacy";
@@ -93,6 +103,7 @@ export function planSale(input: SaleInput, recordedAt: string) {
       feePercent = terms.feePercent;
       ownerUid = terms.ownerUid;
       contributors = terms.contributors;
+      referral = terms.referral;
     } else {
       origin = "invalid";
       feePercent = 0;
@@ -102,6 +113,7 @@ export function planSale(input: SaleInput, recordedAt: string) {
   }
 
   const split = splitSale(input.gross, feePercent, contributors);
+  const referralAmount = referral ? referralAmountOf(input.gross, split.feeAmount, referral.percent) : 0;
 
   const sale: RoyaltySaleDoc = {
     courseSlug: input.courseSlug,
@@ -110,6 +122,10 @@ export function planSale(input: SaleInput, recordedAt: string) {
     gross: input.gross,
     feePercent,
     feeAmount: split.feeAmount,
+    referralPercent: referral?.percent ?? 0,
+    referralAmount,
+    referrerUid: referral?.uid ?? null,
+    platformAmount: split.feeAmount - referralAmount,
     unallocatedAmount: split.unallocatedAmount,
     lines: split.lines,
     termsOrigin: origin,
@@ -118,7 +134,7 @@ export function planSale(input: SaleInput, recordedAt: string) {
     recordedAt,
   };
 
-  const earnings = split.lines.map((l) => ({
+  const earnings: { id: string; doc: RoyaltyEarningDoc }[] = split.lines.map((l) => ({
     id: `${input.orderId}_${l.uid}`,
     doc: {
       uid: l.uid,
@@ -133,6 +149,27 @@ export function planSale(input: SaleInput, recordedAt: string) {
       source: input.source,
     } satisfies RoyaltyEarningDoc,
   }));
+
+  // ID terpisah dari baris kontributor: perujuk BOLEH juga kontributor kursus
+  // yang sama (mempromosikan kursus sendiri), dan dua pendapatan itu tidak
+  // boleh saling menimpa di dokumen `${orderId}_${uid}` yang sama.
+  if (referral && referralAmount > 0) {
+    earnings.push({
+      id: `${input.orderId}_referral`,
+      doc: {
+        uid: referral.uid,
+        courseSlug: input.courseSlug,
+        courseTitle: input.courseTitle,
+        role: "referral",
+        sharePercent: referral.percent,
+        feePercent,
+        gross: input.gross,
+        amount: referralAmount,
+        saleAt: input.paidAt,
+        source: input.source,
+      },
+    });
+  }
 
   return { sale, earnings };
 }

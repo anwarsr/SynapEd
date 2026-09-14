@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
@@ -7,6 +8,11 @@ import Tag from "@/components/ui/Tag";
 import EnrollButton from "@/components/courses/EnrollButton";
 import BuyButton from "@/components/courses/BuyButton";
 import ManualQrisPanel from "@/components/courses/ManualQrisPanel";
+import ReferralField, { ReferralProvider } from "@/components/courses/ReferralField";
+import ShareCourseButton from "@/components/courses/ShareCourseButton";
+import { getMyReferralCode, resolveReferral } from "@/lib/referrals";
+import { REFERRAL_COOKIE, REFERRAL_PARAM } from "@/lib/referralRules";
+import { adminAuth } from "@/lib/firebase/admin";
 import ReviewForm from "@/components/courses/ReviewForm";
 import ReviewList from "@/components/courses/ReviewList";
 import CurriculumList, { ENROLL_ANCHOR } from "@/components/courses/CurriculumList";
@@ -28,6 +34,7 @@ import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /**
@@ -49,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CourseDetailPage({ params }: Props) {
+export default async function CourseDetailPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const course = await getCourse(slug);
   if (!course) notFound();
@@ -81,6 +88,28 @@ export default async function CourseDetailPage({ params }: Props) {
     manualUsable && access && !enrolled
       ? await findLiveManualOrder(access.user.uid, slug)
       : null;
+
+  // ── Referral ────────────────────────────────────────────────────────
+  // Kode dari tautan yang sedang dibuka didahulukan; kalau tidak ada, kode
+  // yang diingat cookie dari tautan sebelumnya. Cookie yang baru dipasang
+  // proxy belum terbaca di permintaan yang sama, karena itu parameter URL
+  // juga dibaca langsung di sini.
+  //
+  // Kode yang tidak sah, sudah mati, atau MILIK PEMBELI SENDIRI tidak diisikan
+  // — pembeli tetap bisa memasukkan kode lain secara manual.
+  const dariTautan = (await searchParams)[REFERRAL_PARAM];
+  const kodeMasuk =
+    (typeof dariTautan === "string" ? dariTautan : "") || (await cookies()).get(REFERRAL_COOKIE)?.value || "";
+
+  let referralAwal: { code: string; referrerName: string | null } | null = null;
+  if (access && !enrolled && course.price > 0 && kodeMasuk) {
+    const ref = await resolveReferral(kodeMasuk, access.user.uid);
+    if (ref.ok && ref.referral) {
+      const perujuk = await adminAuth().getUser(ref.referral.uid).catch(() => null);
+      referralAwal = { code: ref.referral.code, referrerName: perujuk?.displayName?.trim() || null };
+    }
+  }
+  const kodeSaya = access ? await getMyReferralCode(access.user.uid) : null;
 
   const enrollment = access?.enrollment ?? null;
   const progress = enrollment ? progressOf(course, enrollment) : null;
@@ -313,7 +342,11 @@ export default async function CourseDetailPage({ params }: Props) {
                       Masuk untuk Mendaftar
                     </Button>
                   ) : course.price > 0 ? (
-                    <>
+                    <ReferralProvider initial={referralAwal}>
+                      {(midtransUsable || manualUsable) && (
+                        <ReferralField referralPercent={paymentSettings.referralPercent} />
+                      )}
+
                       {/* Kunci Midtrans belum terpasang, atau saklarnya dimatikan
                           admin, berarti tombolnya pasti gagal — jadi tidak
                           dirender sama sekali. */}
@@ -350,7 +383,7 @@ export default async function CourseDetailPage({ params }: Props) {
                           Pembayaran sedang tidak tersedia
                         </span>
                       )}
-                    </>
+                    </ReferralProvider>
                   ) : (
                     <EnrollButton slug={slug} />
                   )}
@@ -358,6 +391,18 @@ export default async function CourseDetailPage({ params }: Props) {
                   <Button href="/courses" variant="outline" className="w-full">
                     Lihat Kursus Lain
                   </Button>
+
+                  {/* Kursus gratis tidak menghasilkan komisi, jadi tidak ada
+                      kode yang perlu ikut di tautannya. */}
+                  <div className="pt-2">
+                    <ShareCourseButton
+                      slug={slug}
+                      title={course.title}
+                      code={course.price > 0 ? kodeSaya : null}
+                      loggedIn={Boolean(access) && course.price > 0}
+                      referralPercent={paymentSettings.referralPercent}
+                    />
+                  </div>
 
                   {/* Ketentuan pembelian harus terbaca SEBELUM membayar, bukan
                       hanya tersembunyi di footer. Khusus kursus berbayar:

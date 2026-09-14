@@ -51,7 +51,7 @@ export default async function AdminPaymentsPage() {
           midtransConfigured={paymentsConfigured()}
         />
 
-        <PlatformFeeForm initial={settings.platformFeePercent} />
+        <PlatformFeeForm initialFee={settings.platformFeePercent} initialReferral={settings.referralPercent} />
 
         {/* ── Perlu tindak lanjut ─────────────────────────────────── */}
         {(unallocated.length > 0 || postPaid.length > 0) && (

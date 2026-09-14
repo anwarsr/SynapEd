@@ -1,35 +1,76 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updatePlatformFee } from "@/lib/paymentSettingsActions";
-import { splitSale } from "@/lib/royaltySplit";
+import { updateRevenueSettings } from "@/lib/paymentSettingsActions";
+import { referralAmountOf, splitSale } from "@/lib/royaltySplit";
+import { validateRevenueSplit } from "@/lib/royaltyTerms";
 import { formatPrice } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 
 const CONTOH = 100_000;
 
-export default function PlatformFeeForm({ initial }: { initial: number }) {
+function PercentInput({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block t-label text-ink-muted mb-2">
+        {label}
+      </label>
+      <div className="flex items-center rounded-lg border border-rule bg-paper focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/25">
+        <input
+          id={id}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={100}
+          step={1}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-24 bg-transparent px-4 py-2.5 text-sm text-ink tabular-nums focus:outline-none"
+        />
+        <span className="pr-4 text-sm text-ink-muted">%</span>
+      </div>
+    </div>
+  );
+}
+
+/** Potongan platform & bagian referral — disimpan sebagai satu pasangan. */
+export default function PlatformFeeForm({ initialFee, initialReferral }: { initialFee: number; initialReferral: number }) {
   const router = useRouter();
-  const [value, setValue] = useState(String(initial));
-  const [saved, setSaved] = useState(initial);
+  const [fee, setFee] = useState(String(initialFee));
+  const [referral, setReferral] = useState(String(initialReferral));
+  const [saved, setSaved] = useState({ fee: initialFee, referral: initialReferral });
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  const angka = Number(value);
-  const sah = value.trim() !== "" && Number.isInteger(angka) && angka >= 0 && angka <= 100;
-  const contoh = sah ? splitSale(CONTOH, angka, null) : null;
+  const f = fee.trim() === "" ? NaN : Number(fee);
+  const r = referral.trim() === "" ? NaN : Number(referral);
+  const salah = validateRevenueSplit(f, r);
+  const berubah = f !== saved.fee || r !== saved.referral;
+
+  const contoh = salah === null ? splitSale(CONTOH, f, null) : null;
+  const bagianReferral = contoh ? referralAmountOf(CONTOH, contoh.feeAmount, r) : 0;
 
   function simpan(e: React.FormEvent) {
     e.preventDefault();
-    if (!sah) {
-      setStatus({ ok: false, msg: "Potongan harus bilangan bulat antara 0 dan 100." });
+    if (salah) {
+      setStatus({ ok: false, msg: salah });
       return;
     }
     setStatus(null);
     startTransition(async () => {
-      const res = await updatePlatformFee(angka);
+      const res = await updateRevenueSettings({ platformFeePercent: f, referralPercent: r });
       if (res.ok) {
-        setSaved(angka);
+        setSaved({ fee: f, referral: r });
         router.refresh();
       }
       setStatus(res.ok ? { ok: true, msg: res.message } : { ok: false, msg: res.error });
@@ -38,47 +79,41 @@ export default function PlatformFeeForm({ initial }: { initial: number }) {
 
   return (
     <form onSubmit={simpan} className="bg-paper-card border border-rule rounded-2xl p-7">
-      <h2 className="t-h3 mb-1.5">Potongan platform</h2>
+      <h2 className="t-h3 mb-1.5">Potongan platform &amp; referral</h2>
       <p className="t-body text-sm text-ink-muted mb-6">
-        Persentase dari setiap penjualan kursus yang menjadi bagian SynapEd. Sisanya dibagi ke
-        kontributor. Perubahan hanya berlaku untuk pesanan yang dibuat setelah disimpan.
+        Potongan platform diambil dari setiap penjualan; sisanya dibagi ke kontributor. Bila pembeli
+        memakai kode referral, bagian perujuk dibayar DARI potongan itu — jadi tidak boleh lebih
+        besar. Perubahan hanya berlaku untuk pesanan yang dibuat setelah disimpan.
       </p>
 
       <div className="flex flex-wrap items-end gap-4">
-        <div>
-          <label htmlFor="platform-fee" className="block t-label text-ink-muted mb-2">
-            Potongan
-          </label>
-          <div className="flex items-center rounded-lg border border-rule bg-paper focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/25">
-            <input
-              id="platform-fee"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={100}
-              step={1}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="w-24 bg-transparent px-4 py-2.5 text-sm text-ink tabular-nums focus:outline-none"
-            />
-            <span className="pr-4 text-sm text-ink-muted">%</span>
-          </div>
-        </div>
+        <PercentInput id="platform-fee" label="Potongan platform" value={fee} onChange={setFee} />
+        <PercentInput id="referral-percent" label="Bagian referral" value={referral} onChange={setReferral} />
 
         <button
           type="submit"
-          disabled={pending || !sah || angka === saved}
+          disabled={pending || salah !== null || !berubah}
           className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
         >
-          {pending ? "Menyimpan…" : "Simpan Potongan"}
+          {pending ? "Menyimpan…" : "Simpan"}
         </button>
       </div>
 
+      {salah && fee.trim() !== "" && referral.trim() !== "" && (
+        <p className="mt-4 text-sm text-rust-700">{salah}</p>
+      )}
+
       {contoh && (
-        <p className="mt-4 text-xs text-ink-muted">
-          Dari penjualan {formatPrice(CONTOH)}: SynapEd {formatPrice(contoh.feeAmount)} · kontributor{" "}
-          {formatPrice(contoh.unallocatedAmount)}
-        </p>
+        <div className="mt-4 space-y-1 text-xs text-ink-muted">
+          <p>
+            Dari penjualan {formatPrice(CONTOH)} tanpa referral: SynapEd {formatPrice(contoh.feeAmount)} ·
+            kontributor {formatPrice(contoh.unallocatedAmount)}
+          </p>
+          <p>
+            Dengan referral: perujuk {formatPrice(bagianReferral)} · SynapEd{" "}
+            {formatPrice(contoh.feeAmount - bagianReferral)} · kontributor {formatPrice(contoh.unallocatedAmount)}
+          </p>
+        </div>
       )}
 
       {status && (

@@ -13,7 +13,8 @@ import {
 } from "@/lib/orders";
 import { getPaymentSettings, manualQrisReady } from "@/lib/paymentSettings";
 import { PAYMENT_PROOFS } from "@/lib/storagePaths";
-import { realiseOrderSale, termsForNewOrder } from "@/lib/royalty";
+import { realiseOrderSale, referralCodeOf, termsForNewOrder } from "@/lib/royalty";
+import { resolveReferral } from "@/lib/referrals";
 
 export type ManualResult =
   | { ok: true; message: string; order?: Order }
@@ -51,7 +52,7 @@ function clean(raw: unknown, max: number): string {
  * sama dengan enrollFree dan createOrder. Server Action bisa dipanggil lewat
  * POST langsung, jadi apa pun yang dikirim browser bukan bukti.
  */
-export async function createManualOrder(slug: string): Promise<ManualResult> {
+export async function createManualOrder(slug: string, referralCode?: unknown): Promise<ManualResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
 
@@ -72,6 +73,10 @@ export async function createManualOrder(slug: string): Promise<ManualResult> {
   const existing = await getEnrollment(user.uid, slug);
   if (existing) return { ok: false, error: "Anda sudah terdaftar di kursus ini." };
 
+  const ref = await resolveReferral(referralCode, user.uid);
+  if (!ref.ok) return { ok: false, error: ref.error };
+  const kode = ref.referral?.code ?? null;
+
   // Pesanan yang masih hidup dipakai ulang. Tanpa ini, setiap kali halaman
   // dibuka lahir satu pesanan baru dan antrean admin dipenuhi duplikat.
   //
@@ -81,7 +86,7 @@ export async function createManualOrder(slug: string): Promise<ManualResult> {
   // kembali semudah membatalkan transaksi.
   const reuse = await findPendingOrder(user.uid, slug, "manual");
   if (reuse) {
-    if (reuse.amount === course.price) {
+    if (reuse.amount === course.price && referralCodeOf(reuse) === kode) {
       return { ok: true, message: "Melanjutkan pesanan yang belum selesai.", order: reuse };
     }
 
@@ -91,8 +96,8 @@ export async function createManualOrder(slug: string): Promise<ManualResult> {
     });
 
     console.info(
-      `[payment] pesanan manual ${reuse.orderId} dihanguskan: harga ${slug} berubah ` +
-        `${reuse.amount} -> ${course.price}`,
+      `[payment] pesanan manual ${reuse.orderId} dihanguskan: harga/referral ${slug} berubah ` +
+        `${reuse.amount} -> ${course.price}, ${referralCodeOf(reuse) ?? "-"} -> ${kode ?? "-"}`,
     );
   }
 
@@ -128,7 +133,7 @@ export async function createManualOrder(slug: string): Promise<ManualResult> {
     postPaidAt: null,
     // Dibekukan sekarang: tinjauan admin bisa memakan waktu sampai sehari,
     // dan pembagian yang berubah di tengahnya tidak boleh menjangkau pesanan ini.
-    royalty: termsForNewOrder(course, settings.platformFeePercent, now.toISOString()),
+    royalty: termsForNewOrder(course, settings, ref.referral, now.toISOString()),
   };
 
   await orderRef(orderId).set(order);

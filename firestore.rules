@@ -218,6 +218,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Kode referral ──────────────────────────────────────────────────
+    // ID dokumen = kodenya. Tertutup rapat: kalau klien bisa menulis, siapa
+    // pun bisa mengklaim kode yang sedang dipromosikan orang lain dan
+    // mengalihkan komisinya; kalau bisa membaca, daftar kode bisa dipanen.
+    match /referralCodes/{code} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

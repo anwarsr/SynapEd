@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { uploadPaymentProof, validateImage, IMAGE_ACCEPT } from "@/lib/courseUpload";
 import { createManualOrder, submitPaymentProof } from "@/lib/manualPaymentActions";
+import { useReferralCode } from "./ReferralField";
 import { formatPrice } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 
@@ -37,6 +38,7 @@ export default function ManualQrisPanel({
   } | null;
 }) {
   const router = useRouter();
+  const referralCode = useReferralCode();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [pending, startTransition] = useTransition();
@@ -49,7 +51,7 @@ export default function ManualQrisPanel({
   function mulai() {
     setError(null);
     startTransition(async () => {
-      const res = await createManualOrder(slug);
+      const res = await createManualOrder(slug, referralCode);
       if (!res.ok) return setError(res.error);
       router.refresh();
     });

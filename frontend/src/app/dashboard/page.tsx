@@ -5,6 +5,11 @@ import Tag from "@/components/ui/Tag";
 import { formatDateOnly } from "@/lib/adminUsers";
 import { formatPrice } from "@/lib/courseUi";
 import { requireUser } from "@/lib/firebase/session";
+import ReferralCodeForm from "@/components/dashboard/ReferralCodeForm";
+import { getMyReferralCode } from "@/lib/referrals";
+import { getPaymentSettings } from "@/lib/paymentSettings";
+import { getUsernameInfo } from "@/lib/usernames";
+import { suggestReferralCode } from "@/lib/referralRules";
 import {
   getMyContributions,
   getMyEarnings,
@@ -32,10 +37,13 @@ export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
   const isEducator = user.role === "educator" || user.role === "admin";
 
-  const [earnings, contributions, sales] = await Promise.all([
+  const [earnings, contributions, sales, kodeSaya, settings, handle] = await Promise.all([
     getMyEarnings(user.uid),
     getMyContributions(user.uid),
     isEducator ? getMySales(user.uid) : Promise.resolve(null),
+    getMyReferralCode(user.uid),
+    getPaymentSettings(),
+    getUsernameInfo(user.uid),
   ]);
 
   return (
@@ -52,7 +60,8 @@ export default async function DashboardPage() {
             Dashboard <span className="mark">pendapatan</span>
           </h1>
           <p className="t-body text-ink-muted mb-12 max-w-[62ch]">
-            Bagian Anda dari setiap penjualan kursus yang Anda susun atau ikut susun. Penarikan dana
+            Bagian Anda dari setiap penjualan kursus yang Anda susun, ikut susun, atau promosikan lewat
+            kode referral. Penarikan dana
             belum tersedia — untuk sekarang, di sinilah pendapatan Anda tercatat.
           </p>
 
@@ -94,7 +103,7 @@ export default async function DashboardPage() {
                   rows={earnings.rows.map((r) => [
                     formatDateOnly(r.saleAt),
                     r.courseTitle,
-                    r.role === "owner" ? "Pemilik" : "Kontributor",
+                    r.role === "owner" ? "Pemilik" : r.role === "referral" ? "Referral" : "Kontributor",
                     `${r.sharePercent}%`,
                     formatPrice(r.gross),
                     `${r.feePercent}%`,
@@ -103,6 +112,38 @@ export default async function DashboardPage() {
                 />
               </>
             )}
+          </section>
+
+          {/* ── Kode referral ─────────────────────────────────── */}
+          <section id="referral" className="mb-16 scroll-mt-32">
+            <SectionHead judul="Kode Referral" />
+            <div className="rounded-2xl border border-rule bg-paper-card p-7">
+              <p className="t-body text-sm mb-6 max-w-[62ch]">
+                Bagikan kursus mana pun — milik Anda atau orang lain — dengan kode Anda. Setiap kali
+                seseorang membeli lewat kode itu, Anda mendapat{" "}
+                <strong className="font-semibold text-ink">{settings.referralPercent}% dari harga kursus</strong>.
+                Harga untuk pembeli tidak berubah.
+              </p>
+
+              {kodeSaya ? (
+                <div className="flex flex-wrap items-end justify-between gap-6">
+                  <div>
+                    <p className="t-label text-ink-muted mb-2">Kode Anda</p>
+                    <p className="t-numeral text-3xl tracking-wide text-ink">{kodeSaya}</p>
+                    <p className="mt-3 text-xs text-ink-muted">
+                      Buka halaman kursus mana pun lalu tekan <em>Bagikan dengan kode referral</em> —
+                      kode Anda otomatis ikut di tautannya. Pembeli juga bisa mengetik kode ini saat membayar.
+                    </p>
+                  </div>
+                  <dl className="text-right">
+                    <dd className="t-numeral text-2xl text-ink">{formatPrice(earnings.referralTotal)}</dd>
+                    <dt className="text-xs text-ink-muted">dari {earnings.referralSales} pembelian lewat kode Anda</dt>
+                  </dl>
+                </div>
+              ) : (
+                <ReferralCodeForm suggestion={suggestReferralCode(handle.username)} />
+              )}
+            </div>
           </section>
 
           {/* ── Kontribusi ─────────────────────────────────────── */}

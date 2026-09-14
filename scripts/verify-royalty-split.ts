@@ -9,7 +9,9 @@
  *   npx tsx scripts/verify-royalty-split.ts
  */
 import { check, finish } from "./testSupport";
-import { splitSale } from "../frontend/src/lib/royaltySplit";
+import { referralAmountOf, splitSale } from "../frontend/src/lib/royaltySplit";
+import { parseRoyaltyTerms, validateRevenueSplit } from "../frontend/src/lib/royaltyTerms";
+import { normalizeReferralCode, suggestReferralCode, validateReferralCode } from "../frontend/src/lib/referralRules";
 import {
   MAX_CONTRIBUTORS,
   OWNER_MIN_SHARE,
@@ -154,6 +156,66 @@ function randomContributors(rng: () => number): Contributor[] {
     }
   }
   check("masukan tidak sah ditolak, bukan dihitung diam-diam", dilempar === 5, `${dilempar}/5 dilempar`);
+}
+
+// ── Referral ─────────────────────────────────────────────────────────────
+{
+  const rng = mulberry32(777);
+  let kasus = 0;
+  let salah = 0;
+  for (let i = 0; i < 20000; i++) {
+    const gross = Math.floor(rng() * 5_000_000);
+    const fee = Math.floor(rng() * 101);
+    const ref = Math.floor(rng() * (fee + 1)); // referral <= potongan
+    const s = splitSale(gross, fee, [{ uid: "a", share: 100 }]);
+    const r = referralAmountOf(gross, s.feeAmount, ref);
+    kasus++;
+    const platform = s.feeAmount - r;
+    if (platform < 0 || r < 0 || platform + r + s.lines[0].amount !== gross) salah++;
+  }
+  check(
+    "referral <= potongan: bagian platform tidak pernah negatif, jumlah tetap pas",
+    salah === 0,
+    `${kasus.toLocaleString("id-ID")} kasus, ${salah} meleset`,
+  );
+
+  const s = splitSale(100_000, 30, [{ uid: "a", share: 100 }]);
+  check(
+    "Rp100.000, potongan 30%, referral 10%: perujuk 10.000, platform 20.000, kontributor 70.000",
+    referralAmountOf(100_000, s.feeAmount, 10) === 10_000 && s.feeAmount === 30_000 && s.lines[0].amount === 70_000,
+    `fee ${s.feeAmount}, kontributor ${s.lines[0].amount}`,
+  );
+
+  let dilempar = false;
+  try {
+    referralAmountOf(100_000, 20_000, 30);
+  } catch {
+    dilempar = true;
+  }
+  check("bagian referral melebihi potongan ditolak", dilempar, "melempar");
+
+  check("admin: referral > potongan ditolak", validateRevenueSplit(20, 25) !== null, String(validateRevenueSplit(20, 25)));
+  check("admin: referral = potongan diterima", validateRevenueSplit(20, 20) === null, "sama besar sah");
+  check("admin: angka pecahan ditolak", validateRevenueSplit(30.5, 10) !== null, "bilangan bulat");
+
+  const dasar = { feePercent: 30, ownerUid: "p", contributors: [{ uid: "p", share: 100 }], capturedAt: "" };
+  check("syarat lama tanpa field referral tetap terbaca", parseRoyaltyTerms(dasar)?.referral === null, "pesanan sebelum fitur ini");
+  check(
+    "syarat dengan referral sah terbaca",
+    parseRoyaltyTerms({ ...dasar, referral: { uid: "r", code: "BUDI2026", percent: 10 } })?.referral?.code === "BUDI2026",
+    "kode dibekukan",
+  );
+  check(
+    "syarat dengan referral melebihi potongan dianggap rusak",
+    parseRoyaltyTerms({ ...dasar, referral: { uid: "r", code: "BUDI2026", percent: 40 } }) === null,
+    "tidak dipercaya",
+  );
+
+  for (const k of ["abc", "BUDI-26", "12345", "SYNAPED", "A".repeat(21)]) {
+    check(`kode referral tidak sah ditolak: "${k.slice(0, 10)}"`, validateReferralCode(normalizeReferralCode(k)) !== null, String(validateReferralCode(normalizeReferralCode(k))));
+  }
+  check("kode dinormalkan huruf besar", normalizeReferralCode(" budi2026 ") === "BUDI2026", "BUDI2026");
+  check("usulan kode dari username", suggestReferralCode("budi.santoso") === "BUDISANTOSO", suggestReferralCode("budi.santoso"));
 }
 
 // ── Kontributor ──────────────────────────────────────────────────────────

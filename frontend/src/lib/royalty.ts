@@ -1,13 +1,35 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
 import { realiseSale, type SaleSource } from "@/lib/royaltyLedgerCore";
-import { makeTerms, type RoyaltyTerms } from "@/lib/royaltyTerms";
+import { makeTerms, parseRoyaltyTerms, type RoyaltyTerms } from "@/lib/royaltyTerms";
 import type { CourseDetail } from "@/lib/courses";
 import type { Order } from "@/lib/orders";
 
-/** Syarat yang dibekukan ke pesanan baru — dari kursus dan setelan saat ini. */
-export function termsForNewOrder(course: CourseDetail, feePercent: number, now: string): RoyaltyTerms {
-  return makeTerms(feePercent, course.ownerUid, course.contributors, now);
+/** Syarat yang dibekukan ke pesanan baru — dari kursus, setelan, dan kode yang dipakai pembeli. */
+export function termsForNewOrder(
+  course: CourseDetail,
+  settings: { platformFeePercent: number; referralPercent: number },
+  referral: { uid: string; code: string } | null,
+  now: string,
+): RoyaltyTerms {
+  return makeTerms(
+    settings.platformFeePercent,
+    course.ownerUid,
+    course.contributors,
+    referral ? { ...referral, percent: settings.referralPercent } : null,
+    now,
+  );
+}
+
+/**
+ * Kode referral yang terbekukan di pesanan, atau null.
+ *
+ * Dipakai untuk memutuskan apakah pesanan tertunda boleh dipakai ulang: kalau
+ * pembeli kini memasukkan kode lain (atau menghapusnya), pesanan lama membawa
+ * perujuk yang salah dan harus diganti.
+ */
+export function referralCodeOf(order: Pick<Order, "royalty">): string | null {
+  return parseRoyaltyTerms(order.royalty)?.referral?.code ?? null;
 }
 
 /**

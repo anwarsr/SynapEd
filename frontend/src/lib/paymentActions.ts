@@ -4,7 +4,8 @@ import { getEnrollment } from "@/lib/enrollments";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { findPendingOrder, makeOrderId, orderRef, type Order } from "@/lib/orders";
 import { getPaymentSettings } from "@/lib/paymentSettings";
-import { termsForNewOrder } from "@/lib/royalty";
+import { referralCodeOf, termsForNewOrder } from "@/lib/royalty";
+import { resolveReferral } from "@/lib/referrals";
 import {
   createSnapTransaction,
   expireTransaction,
@@ -30,7 +31,7 @@ const EXPIRY_MINUTES = 30;
  * hanya membuka popup pembayaran. Akses baru ditulis oleh webhook, setelah
  * Midtrans mengonfirmasi uangnya benar-benar masuk.
  */
-export async function createOrder(slug: string): Promise<OrderResult> {
+export async function createOrder(slug: string, referralCode?: unknown): Promise<OrderResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
 
@@ -50,6 +51,12 @@ export async function createOrder(slug: string): Promise<OrderResult> {
   const existing = await getEnrollment(user.uid, slug);
   if (existing) return { ok: false, error: "Anda sudah terdaftar di kursus ini." };
 
+  // Divalidasi SEBELUM menyentuh Midtrans: kode yang salah ketik lebih baik
+  // dikatakan sekarang daripada diam-diam diabaikan dan perujuknya tidak dibayar.
+  const ref = await resolveReferral(referralCode, user.uid);
+  if (!ref.ok) return { ok: false, error: ref.error };
+  const kode = ref.referral?.code ?? null;
+
   // Pesanan yang masih hidup dipakai ulang. Tanpa ini, setiap klik "Beli"
   // menerbitkan transaksi baru di Midtrans dan meninggalkan tumpukan pesanan
   // menggantung yang tidak pernah bisa dibedakan dari percobaan yang sah.
@@ -64,7 +71,9 @@ export async function createOrder(slug: string): Promise<OrderResult> {
   // dibayar kurang, harga turun berarti pembeli membayar lebih.
   const pending = await findPendingOrder(user.uid, slug);
   if (pending?.snapToken) {
-    if (pending.amount === course.price) {
+    // Kode referral juga harus sama: pesanan lama membawa perujuknya sendiri,
+    // dan membayar lewat token lama berarti komisi jatuh ke orang yang salah.
+    if (pending.amount === course.price && referralCodeOf(pending) === kode) {
       return { ok: true, token: pending.snapToken, orderId: pending.orderId };
     }
 
@@ -82,8 +91,8 @@ export async function createOrder(slug: string): Promise<OrderResult> {
     // itu hanya terlihat di sini — pesanan tetap ditandai kedaluwarsa dan
     // alurnya tetap mulus, sehingga tidak ada gejala lain yang muncul.
     console.info(
-      `[payment] pesanan ${pending.orderId} dihanguskan: harga ${slug} berubah ` +
-        `${pending.amount} -> ${course.price}` +
+      `[payment] pesanan ${pending.orderId} dihanguskan: harga/referral ${slug} berubah ` +
+        `${pending.amount} -> ${course.price}, ${referralCodeOf(pending) ?? "-"} -> ${kode ?? "-"}` +
         ` (di Midtrans: ${dihanguskan ? "ya" : "tidak / belum ada transaksi"})`,
     );
   }
@@ -91,7 +100,7 @@ export async function createOrder(slug: string): Promise<OrderResult> {
   const orderId = makeOrderId(slug, user.uid);
   const now = new Date();
   const expiresAt = new Date(now.getTime() + EXPIRY_MINUTES * 60_000);
-  const { platformFeePercent } = await getPaymentSettings();
+  const settings = await getPaymentSettings();
 
   let token: string;
   try {
@@ -145,7 +154,7 @@ export async function createOrder(slug: string): Promise<OrderResult> {
     postPaidTransactionStatus: null,
     postPaidAt: null,
     // Dibekukan pada detik yang sama dengan `amount`.
-    royalty: termsForNewOrder(course, platformFeePercent, now.toISOString()),
+    royalty: termsForNewOrder(course, settings, ref.referral, now.toISOString()),
   };
 
   await orderRef(orderId).set(order);

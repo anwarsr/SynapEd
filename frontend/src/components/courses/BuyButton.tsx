@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createOrder } from "@/lib/paymentActions";
+import { useReferralCode } from "./ReferralField";
 import { cn } from "@/lib/cn";
 
 /**
@@ -51,6 +52,7 @@ export default function BuyButton({
   production: boolean;
 }) {
   const router = useRouter();
+  const referralCode = useReferralCode();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   // Menahan pemuatan skrip supaya klik kedua tidak memuatnya dua kali.
@@ -87,7 +89,7 @@ export default function BuyButton({
   async function buy() {
     setStatus({ kind: "working" });
 
-    const res = await createOrder(slug);
+    const res = await createOrder(slug, referralCode);
     if (!res.ok) {
       setStatus({ kind: "error", message: res.error });
       return;

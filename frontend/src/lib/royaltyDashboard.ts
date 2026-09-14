@@ -25,7 +25,7 @@ export interface EarningRow {
   saleAt: string;
   courseSlug: string;
   courseTitle: string;
-  role: "owner" | "contributor";
+  role: "owner" | "contributor" | "referral";
   sharePercent: number;
   feePercent: number;
   gross: number;
@@ -42,6 +42,9 @@ export interface EarningCourse {
 export interface MyEarnings {
   total: number;
   sales: number;
+  /** Bagian dari `total` yang berasal dari kode referral. */
+  referralTotal: number;
+  referralSales: number;
   courses: EarningCourse[];
   rows: EarningRow[];
 }
@@ -56,7 +59,7 @@ export async function getMyEarnings(uid: string): Promise<MyEarnings> {
         saleAt: str(e.saleAt),
         courseSlug: str(e.courseSlug),
         courseTitle: str(e.courseTitle),
-        role: e.role === "owner" ? ("owner" as const) : ("contributor" as const),
+        role: e.role === "owner" ? ("owner" as const) : e.role === "referral" ? ("referral" as const) : ("contributor" as const),
         sharePercent: num(e.sharePercent),
         feePercent: num(e.feePercent),
         gross: num(e.gross),
@@ -76,6 +79,8 @@ export async function getMyEarnings(uid: string): Promise<MyEarnings> {
   return {
     total: rows.reduce((n, r) => n + r.amount, 0),
     sales: rows.length,
+    referralTotal: rows.filter((r) => r.role === "referral").reduce((n, r) => n + r.amount, 0),
+    referralSales: rows.filter((r) => r.role === "referral").length,
     courses: [...perKursus.values()].sort((a, b) => b.total - a.total),
     rows,
   };
