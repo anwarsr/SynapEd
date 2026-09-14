@@ -58,6 +58,7 @@ export default async function PublicProfilePage({ params }: Props) {
       <main className="bg-paper">
         <ProfileHeader
           name={profile.name}
+          username={profile.username}
           email=""
           photoURL={profile.photoURL}
           role={profile.role}

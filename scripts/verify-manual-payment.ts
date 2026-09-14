@@ -441,7 +441,7 @@ async function run(owner: TestUser, pembeli: TestUser, lain: TestUser, admin: Te
     await setSaklar(true, false, null);
     for (const s of [slug, gratis]) {
       await db.collection("courses").doc(s).delete().catch(() => undefined);
-      for (const c of ["orders", "enrollments"]) {
+      for (const c of ["orders", "enrollments", "royaltySales", "royaltyEarnings"]) {
         const snap = await db.collection(c).where("courseSlug", "==", s).get();
         for (const d of snap.docs) await d.ref.delete().catch(() => undefined);
       }

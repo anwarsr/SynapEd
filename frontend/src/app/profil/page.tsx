@@ -15,6 +15,7 @@ import {
 import EducatorStatus from "@/components/dashboard/EducatorStatus";
 import LogoutButton from "@/components/dashboard/LogoutButton";
 import { listMyEnrollments } from "@/lib/enrollments";
+import { getUsernameInfo } from "@/lib/usernames";
 import { listOwnedCourses } from "@/lib/educatorCourses";
 import { listMyClasses } from "@/lib/classes";
 import { listMyCertificates } from "@/lib/certificates";
@@ -68,7 +69,7 @@ export default async function ProfilePage() {
   const user = await requireUser("/profil");
   const isEducator = user.role === "educator" || user.role === "admin";
 
-  const [profile, stats, enrollments, owned, kelas, sertifikat, application, akun] =
+  const [profile, stats, enrollments, owned, kelas, sertifikat, application, akun, handle] =
     await Promise.all([
       getUserProfile(user.uid),
       getProfileStats(user.uid, isEducator),
@@ -80,6 +81,7 @@ export default async function ProfilePage() {
       adminAuth()
         .getUser(user.uid)
         .catch(() => null),
+      getUsernameInfo(user.uid),
     ]);
 
   // listMyEnrollments sudah terurut lastAccessedAt menurun, jadi yang pertama
@@ -95,6 +97,7 @@ export default async function ProfilePage() {
       <main className="bg-paper">
         <ProfileHeader
           name={user.name}
+          username={handle.username}
           email={user.email}
           photoURL={user.photoURL}
           role={user.role}
@@ -179,6 +182,12 @@ export default async function ProfilePage() {
                   supaya aksi merusak tidak berdampingan dengan tautan biasa. */}
               <section className="border-t border-rule pt-6">
                 <div className="flex flex-wrap items-center gap-4">
+                  <Link
+                    href="/dashboard"
+                    className="rounded-lg border border-rule bg-paper-card px-5 py-[11px] text-[13.5px] font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+                  >
+                    Dashboard Pendapatan
+                  </Link>
                   <Link
                     href="/pengaturan"
                     className="rounded-lg border border-rule bg-paper-card px-5 py-[11px] text-[13.5px] font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"

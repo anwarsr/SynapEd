@@ -139,13 +139,16 @@ async function main() {
     const token = await signIn(email, password);
 
     // ── Firestore users/{uid} ──────────────────────────────────
+    // Nomor HP kini lewat Server Action (lihat verify-profile). Klien yang
+    // masih bisa menulis ke sini berarti rules lama masih ter-deploy.
+    const phoneWrite = await writeDoc(me.uid, token, {
+      phone: { stringValue: "081234567890" },
+      updatedAt: { stringValue: new Date().toISOString() },
+    });
     check(
-      "tulis phone ke dokumen sendiri -> boleh",
-      (await writeDoc(me.uid, token, {
-        phone: { stringValue: "081234567890" },
-        updatedAt: { stringValue: new Date().toISOString() },
-      })) === 200,
-      "PATCH users/{uid} {phone, updatedAt}",
+      "tulis phone ke dokumen sendiri dari klien -> DITOLAK",
+      phoneWrite === 403,
+      `HTTP ${phoneWrite} (penulisan lewat Server Action)`,
     );
 
     const selfPromote = await writeDoc(me.uid, token, { role: { stringValue: "admin" } });

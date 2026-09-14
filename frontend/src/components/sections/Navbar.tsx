@@ -234,6 +234,23 @@ export default function Navbar() {
                   </Link>
                 ))}
 
+              {/* Dashboard untuk SEMUA akun — kontributor kursus tidak harus
+                  educator. Baru tampil di xl: di bawahnya kapsul navbar sudah
+                  penuh, dan dashboard tetap terjangkau dari halaman profil
+                  serta menu lipat. */}
+              <Link
+                href="/dashboard"
+                className={cn(
+                  "hidden xl:block px-4 py-2 text-sm font-medium rounded-full border whitespace-nowrap",
+                  "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                  light
+                    ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
+                    : "border-white/25 text-white hover:bg-white/10",
+                )}
+              >
+                Dashboard
+              </Link>
+
               {/* Foto profil sebagai tombol. Lebih jelas bisa diklik daripada
                   nama polos, dan tombol Keluar pindah ke halaman profil supaya
                   navbar tidak menaruh aksi merusak di sebelah tautan biasa. */}
@@ -376,6 +393,14 @@ export default function Navbar() {
                         {item.label}
                       </Link>
                     ))}
+
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
 
                   {/* Tidak ada tombol Keluar di sini — keluar dilakukan dari
                       halaman profil, sejalan dengan navbar desktop. */}

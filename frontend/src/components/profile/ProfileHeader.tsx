@@ -24,6 +24,7 @@ export interface AksiProfil {
  */
 export default function ProfileHeader({
   name,
+  username = null,
   email,
   photoURL,
   role,
@@ -35,6 +36,8 @@ export default function ProfileHeader({
   showEmail = false,
 }: {
   name: string;
+  /** Tanpa "@". Null bila akun belum punya username. */
+  username?: string | null;
   email: string;
   photoURL: string | null;
   role: Role;
@@ -56,7 +59,7 @@ export default function ProfileHeader({
   showEmail?: boolean;
 }) {
   const emailTampil = showEmail && email ? email : "";
-  const barisMeta = [emailTampil, meta].filter(Boolean).join(" · ");
+  const barisMeta = [username ? `@${username}` : "", emailTampil, meta].filter(Boolean).join(" · ");
 
   return (
     <header>

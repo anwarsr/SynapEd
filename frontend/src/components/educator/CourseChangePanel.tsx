@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Label, inputClass } from "./fields";
 import ThumbnailPicker from "./ThumbnailPicker";
 import DurationField from "./DurationField";
+import ContributorEditor, { type EditorPerson, type EditorRow } from "./ContributorEditor";
 import SectionList, {
   draftFromCourse,
   toSectionInput,
@@ -40,6 +41,10 @@ export default function CourseChangePanel({
   categories,
   mode,
   locked,
+  owner,
+  ownerIsViewer,
+  initialContributors,
+  feePercent,
 }: {
   slug: string;
   course: CourseDetail;
@@ -48,6 +53,12 @@ export default function CourseChangePanel({
   mode: "request" | "direct";
   /** Ada pengajuan yang menunggu — form dikunci agar tidak bertumpuk. */
   locked: boolean;
+  /** null = kursus bawaan tanpa pemilik; editor kontributor tidak ditampilkan. */
+  owner: EditorPerson | null;
+  ownerIsViewer: boolean;
+  /** Kontributor selain pemilik, sebagaimana tersimpan sekarang. */
+  initialContributors: EditorRow[];
+  feePercent: number;
 }) {
   const router = useRouter();
 
@@ -68,6 +79,9 @@ export default function CourseChangePanel({
   const [requirements, setRequirements] = useState((course.requirements ?? []).join("\n"));
 
   const [sections, setSections] = useState<DraftSection[]>(() => draftFromCourse(course));
+  const [contributors, setContributors] = useState(() =>
+    initialContributors.map((c) => ({ uid: c.uid, share: c.share })),
+  );
 
   const [reason, setReason] = useState("");
   const [pending, setPending] = useState(false);
@@ -101,6 +115,8 @@ export default function CourseChangePanel({
       thumbnail,
       whatYouLearn: lines(whatYouLearn),
       requirements: lines(requirements),
+      // Kursus tanpa pemilik tidak punya pembagian untuk diubah.
+      contributors: owner ? contributors : undefined,
     };
 
     if (mode === "request") {
@@ -225,6 +241,17 @@ export default function CourseChangePanel({
             </div>
           </div>
         </section>
+
+        {owner && (
+          <ContributorEditor
+            owner={owner}
+            ownerIsViewer={ownerIsViewer}
+            initial={initialContributors}
+            feePercent={feePercent}
+            price={Number(price) || 0}
+            onChange={setContributors}
+          />
+        )}
 
         <div>
           <h2 className="t-h3 mb-1.5">Kurikulum</h2>

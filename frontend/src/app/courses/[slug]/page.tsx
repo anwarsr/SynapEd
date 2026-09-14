@@ -12,6 +12,7 @@ import ReviewList from "@/components/courses/ReviewList";
 import CurriculumList, { ENROLL_ANCHOR } from "@/components/courses/CurriculumList";
 import Stars from "@/components/ui/Stars";
 import { getCourse } from "@/lib/courses";
+import { contributorPeople } from "@/lib/courseContributors";
 import { getCourseAccess } from "@/lib/courseAccess";
 import { progressOf } from "@/lib/enrollments";
 import { getReview, listCourseReviews } from "@/lib/reviews";
@@ -87,9 +88,14 @@ export default async function CourseDetailPage({ params }: Props) {
   // Formulir ulasan hanya untuk yang enrollment-nya sudah selesai. Penjaga
   // sebenarnya tetap di submitReview() — ini cuma menentukan yang terlihat.
   const selesai = access?.enrollment?.status === "completed";
-  const [reviews, myReview] = await Promise.all([
+  const [reviews, myReview, penyusun] = await Promise.all([
     listCourseReviews(slug),
     selesai && access ? getReview(access.user.uid, slug) : Promise.resolve(null),
+    // Kredit hanya tampil kalau penyusunnya lebih dari satu orang; kursus
+    // satu penyusun sudah menyebut namanya di "Diajarkan oleh".
+    course.contributors.length > 1
+      ? contributorPeople(course.contributors).then((ps) => ps.filter((p) => p.exists))
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -128,6 +134,26 @@ export default async function CourseDetailPage({ params }: Props) {
 
                 <h1 className="t-h2 mb-5">{course.title}</h1>
                 <p className="t-body">{course.longDesc}</p>
+
+                {/* Nama tampilan, bukan username, dan TANPA persentase:
+                    berapa bagian tiap orang adalah urusan mereka dengan
+                    pemilik kursus, bukan informasi untuk calon pembeli. */}
+                {penyusun.length > 1 && (
+                  <p className="mt-5 text-sm text-ink-muted">
+                    Disusun oleh{" "}
+                    {penyusun.map((p, i) => (
+                      <span key={p.uid}>
+                        {i > 0 && (i === penyusun.length - 1 ? " dan " : ", ")}
+                        <Link
+                          href={`/profil/${p.uid}`}
+                          className="text-ink hover:text-blue-700 hover:underline underline-offset-4"
+                        >
+                          {p.name}
+                        </Link>
+                      </span>
+                    ))}
+                  </p>
+                )}
 
                 <div className="flex flex-wrap gap-x-8 gap-y-3 mt-8 pt-6 border-t border-rule text-sm text-ink-muted">
                   <div className="flex items-center gap-2">

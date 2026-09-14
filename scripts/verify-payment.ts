@@ -269,6 +269,43 @@ async function main() {
       `${sebelum} -> ${sesudah}`,
     );
 
+    // ── Webhook: notifikasi terlambat SETELAH lunas ─────────────────────
+    // Midtrans bisa mengirim expire/cancel/deny sesudah settlement — datang
+    // tidak berurutan, atau karena refund/chargeback. Status `paid` tidak
+    // boleh turun: buku royalti dan akses peserta bersandar padanya.
+    {
+      const lunasSebelum = (await db.collection("orders").doc(orderId).get()).data();
+
+      const kodeTerlambat: number[] = [];
+      for (const s of ["expire", "cancel", "deny", "pending"]) {
+        kodeTerlambat.push(await postWebhook(notification(orderId, PRICE, s)));
+      }
+      check(
+        "notifikasi terlambat tetap dijawab 200 (supaya Midtrans berhenti mengulang)",
+        kodeTerlambat.every((c) => c === 200),
+        kodeTerlambat.join(","),
+      );
+
+      const o = (await db.collection("orders").doc(orderId).get()).data();
+      check("status lunas TIDAK turun oleh notifikasi terlambat", o?.status === "paid", `status=${o?.status}`);
+      check("paidAt tidak berubah", o?.paidAt === lunasSebelum?.paidAt, `${o?.paidAt}`);
+      check(
+        "notifikasi gagal sesudah lunas dicatat untuk ditinjau admin",
+        o?.postPaidStatus === "failed" && typeof o?.postPaidAt === "string",
+        `postPaidStatus=${o?.postPaidStatus}`,
+      );
+      check(
+        "pending yang datang terlambat tidak menimpa catatan itu",
+        o?.postPaidTransactionStatus === "deny",
+        `postPaidTransactionStatus=${o?.postPaidTransactionStatus}`,
+      );
+      check(
+        "akses peserta tetap ada",
+        await enrollmentExists(buyer.uid, paidSlug),
+        "enrollment utuh",
+      );
+    }
+
     // ── createOrder setelah terdaftar ───────────────────────────────────
     const lagi = await callAction(`/courses/${paidSlug}`, createId, [paidSlug], buyer.cookie);
     check("sudah terdaftar tidak bisa memesan lagi", lagi.includes("sudah terdaftar"), "ditolak");
@@ -392,6 +429,11 @@ async function main() {
       ...orders.map((id) => db.collection("orders").doc(id).delete()),
       auth.deleteUser(buyer.uid),
     ]);
+    // Webhook yang lunas kini juga mencatat penjualan di buku royalti.
+    for (const c of ["royaltySales", "royaltyEarnings"]) {
+      const snap = await db.collection(c).where("courseSlug", "==", paidSlug).get();
+      await Promise.allSettled(snap.docs.map((d) => d.ref.delete()));
+    }
     console.log("\nakun, kursus, & pesanan uji dihapus.");
   }
 

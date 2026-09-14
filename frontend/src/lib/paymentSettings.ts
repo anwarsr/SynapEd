@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { DEFAULT_PLATFORM_FEE_PERCENT, parseFeePercent } from "@/lib/royaltyTerms";
 
 export const SETTINGS = "settings";
 export const PAYMENTS_DOC = "payments";
@@ -22,6 +23,12 @@ export interface PaymentSettings {
   qrisImagePath: string | null;
   /** Keterangan tambahan yang dibaca pembeli, mis. nama merchant. */
   qrisNote: string;
+  /**
+   * Potongan platform dari setiap penjualan, bilangan bulat 0..100.
+   * Dibekukan ke setiap pesanan saat dibuat, jadi mengubahnya hanya berlaku
+   * untuk pesanan berikutnya.
+   */
+  platformFeePercent: number;
   updatedAt: string | null;
   updatedByUid: string | null;
 }
@@ -39,6 +46,7 @@ const DEFAULTS: PaymentSettings = {
   manualQrisEnabled: false,
   qrisImagePath: null,
   qrisNote: "",
+  platformFeePercent: DEFAULT_PLATFORM_FEE_PERCENT,
   updatedAt: null,
   updatedByUid: null,
 };
@@ -59,6 +67,9 @@ export async function getPaymentSettings(): Promise<PaymentSettings> {
     manualQrisEnabled: d.manualQrisEnabled === true,
     qrisImagePath: (d.qrisImagePath as string | null | undefined) ?? null,
     qrisNote: (d.qrisNote as string | undefined) ?? "",
+    // Nilai rusak jatuh ke bawaan, bukan ke 0 — potongan nol yang tak sengaja
+    // tidak akan terlihat sampai laporan bulanan.
+    platformFeePercent: parseFeePercent(d.platformFeePercent) ?? DEFAULT_PLATFORM_FEE_PERCENT,
     updatedAt: (d.updatedAt as string | null | undefined) ?? null,
     updatedByUid: (d.updatedByUid as string | null | undefined) ?? null,
   };

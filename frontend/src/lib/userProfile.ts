@@ -27,6 +27,18 @@ export async function getUserProfile(uid: string): Promise<ProfileContent> {
   return cleanProfile(data);
 }
 
+/**
+ * Nomor HP pemilik akun — hanya untuk halaman pengaturannya sendiri.
+ *
+ * Sengaja terpisah dari `getUserProfile`, yang juga dipakai profil publik:
+ * nomor telepon adalah kontak pribadi dan tidak boleh ikut terbawa ke sana.
+ */
+export async function getMyPhone(uid: string): Promise<string> {
+  const snap = await adminDb().collection("users").doc(uid).get();
+  const phone = snap.get("phone");
+  return typeof phone === "string" ? phone : "";
+}
+
 export interface ProfileStats {
   /** Peserta: kursus yang diikuti dan yang sudah selesai. */
   enrolled: number;

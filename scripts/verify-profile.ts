@@ -147,6 +147,56 @@ async function run(pemilik: TestUser, lain: TestUser, educator: TestUser) {
       );
     }
 
+    // ── Nomor HP untuk akun yang SUDAH punya bio ───────────────────
+    // Dulu nomor ditulis dari browser dan rules menolaknya begitu dokumen
+    // memuat field lain. Pemeriksaan ini memerah di kode lama: action-nya
+    // belum ada, dan jalur klien ditolak dengan 403.
+    {
+      await probe("/pengaturan", pemilik.cookie);
+      const telId = await actionId("pengaturan", "updateMyPhone");
+      const NOMOR = "0812-3456-7890";
+
+      const anon = await callAction("/pengaturan", telId, [NOMOR]);
+      check("anonim tidak bisa menyimpan nomor HP", anon.includes("masuk terlebih dahulu"), "penjaga sesi");
+
+      const out = await callAction("/pengaturan", telId, [NOMOR, lain.uid], pemilik.cookie);
+      const d = await profilDi(pemilik.uid);
+      check(
+        "nomor HP tersimpan untuk akun yang sudah punya bio",
+        out.includes("Nomor HP disimpan") && d.phone === NOMOR,
+        `phone=${String(d.phone)}`,
+      );
+      check("menyimpan nomor tidak menghapus bio", d.bio === BIO, "merge");
+      check(
+        "uid titipan diabaikan saat menyimpan nomor",
+        (await profilDi(lain.uid)).phone === undefined,
+        "dokumen akun lain tidak tersentuh",
+      );
+
+      const halaman = await probeText("/pengaturan", pemilik.cookie);
+      check(
+        "halaman pengaturan menampilkan nomor tersimpan (dibaca server)",
+        halaman.html.includes(`value="${NOMOR}"`),
+        "initialPhone",
+      );
+
+      for (const salah of ["bukan nomor", "1".repeat(21), 12345678]) {
+        const r = await callAction("/pengaturan", telId, [salah], pemilik.cookie);
+        check(
+          `POST mentah dengan nomor tidak sah ditolak: ${JSON.stringify(salah).slice(0, 14)}`,
+          r.includes("tidak valid") && (await profilDi(pemilik.uid)).phone === NOMOR,
+          "nomor lama tetap",
+        );
+      }
+
+      const hapus = await callAction("/pengaturan", telId, ["  "], pemilik.cookie);
+      check(
+        "mengosongkan nomor menghapusnya",
+        hapus.includes("Nomor HP dihapus") && (await profilDi(pemilik.uid)).phone === null,
+        "phone=null",
+      );
+    }
+
     // ── uid TIDAK bisa dititipkan dari browser ─────────────────────
     {
       // Argumen kedua sengaja diisi uid orang lain. Kalau action-nya
@@ -257,13 +307,19 @@ async function run(pemilik: TestUser, lain: TestUser, educator: TestUser) {
       );
     }
 
-    // ── Alamat lama tetap hidup ────────────────────────────────────
+    // ── /dashboard kini halaman pendapatan, bukan pengalihan ───────
     {
-      const lama = await probe("/dashboard", pemilik.cookie);
+      const dash = await probeText("/dashboard", pemilik.cookie);
       check(
-        "/dashboard dialihkan ke /profil, bukan 404",
-        lama.status >= 300 && lama.status < 400 && (lama.location ?? "").includes("/profil"),
-        `${lama.status} ${lama.location ?? ""}`,
+        "/dashboard terbuka sebagai dashboard pendapatan",
+        dash.status === 200 && dash.html.includes("Pendapatan Royalti"),
+        `HTTP ${dash.status}`,
+      );
+      const anon = await probe("/dashboard");
+      check(
+        "anonim dialihkan dari dashboard",
+        anon.status >= 300 && anon.status < 400 && (anon.location ?? "").includes("/login"),
+        `${anon.status} ${anon.location ?? ""}`,
       );
     }
 

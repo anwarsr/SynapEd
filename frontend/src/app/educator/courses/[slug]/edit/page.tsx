@@ -8,6 +8,8 @@ import { LEVELS, requireOwnedCourse } from "@/lib/educatorCourses";
 import { listCategories } from "@/lib/categories";
 import { pendingRequestFor } from "@/lib/courseRequests";
 import { requireUser } from "@/lib/firebase/session";
+import { getPaymentSettings } from "@/lib/paymentSettings";
+import { contributorPeople } from "@/lib/courseContributors";
 import type { Metadata } from "next";
 
 interface Props {
@@ -31,10 +33,15 @@ export default async function EditCoursePage({ params }: Props) {
   const course = await requireOwnedCourse(user, slug);
   if (!course) notFound();
 
-  const [categories, pendingRequest] = await Promise.all([
+  const [categories, pendingRequest, settings, people] = await Promise.all([
     listCategories(),
     pendingRequestFor(slug),
+    getPaymentSettings(),
+    contributorPeople(course.contributors),
   ]);
+
+  const [pemilik, ...lain] = people;
+  const owner = course.ownerUid && pemilik ? pemilik : null;
 
   /**
    * Admin menulis langsung; educator mengajukan.
@@ -90,6 +97,16 @@ export default async function EditCoursePage({ params }: Props) {
           categories={categories.map((c) => ({ value: c.slug, label: c.label }))}
           mode={mode}
           locked={locked}
+          owner={owner && { uid: owner.uid, name: owner.name, username: owner.username, photoURL: owner.photoURL }}
+          ownerIsViewer={course.ownerUid === user.uid}
+          initialContributors={lain.map((p) => ({
+            uid: p.uid,
+            name: p.name,
+            username: p.username,
+            photoURL: p.photoURL,
+            share: p.share,
+          }))}
+          feePercent={settings.platformFeePercent}
         />
       </div>
     </EducatorShell>

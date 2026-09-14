@@ -2,6 +2,7 @@ import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
 import { getUserCards } from "@/lib/userCards";
 import { listCategories } from "@/lib/categories";
+import { parseStoredContributors, type Contributor } from "@/lib/contributors";
 
 /** Sengaja di sini, bukan diimpor dari submissions.ts: modul itu mengimpor
  *  courses.ts, dan saling-impor membuat salah satunya undefined saat dimuat. */
@@ -116,6 +117,14 @@ export interface CourseDetail extends CourseSummary {
   whatYouLearn: string[];
   requirements: string[];
   sections: Section[];
+  /**
+   * Penerima bagi hasil, pemilik selalu pertama; total share tepat 100.
+   *
+   * Kursus yang dibuat sebelum fitur ini — atau yang datanya rusak — dibaca
+   * sebagai "pemilik 100%". Kursus tanpa pemilik (hasil migrasi) mendapat
+   * daftar kosong: penjualannya tercatat belum teralokasi.
+   */
+  contributors: Contributor[];
 }
 
 export interface Category {
@@ -277,6 +286,10 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
     // sebelum visibility ada, dan membacanya terbalik akan menyembunyikan
     // seluruh katalog.
     visibility: data.visibility === "private" ? "private" : "public",
+
+    contributors:
+      parseStoredContributors((data as { contributors?: unknown }).contributors, ownerUid) ??
+      (ownerUid ? [{ uid: ownerUid, share: 100 }] : []),
   };
 }
 

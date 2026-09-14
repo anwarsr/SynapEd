@@ -6,6 +6,7 @@ import { canonicalDuration } from "@/lib/duration";
 import { purgeCourseReviews } from "@/lib/reviewActions";
 import { LEVELS, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
+import { contributorFields, resolveContributors } from "@/lib/courseContributors";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
 import { attachmentPaths, courseFilePaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
@@ -53,6 +54,8 @@ export interface NewCourseInput {
   requirements: string[];
   /** Kurikulum bebas: berapa pun bagian & pelajarannya, dalam urutan mana pun. */
   sections: SectionInput[];
+  /** Kontributor SELAIN pembuat; jatah pembuat dihitung server sebagai sisa. */
+  contributors?: { uid: string; share: number }[];
 }
 
 
@@ -133,6 +136,11 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   const normalized = normalizeSections(input.sections ?? [], [user.uid]);
   if (!normalized.ok) return { ok: false, error: normalized.error };
 
+  // Kursus baru lahir tersembunyi, jadi pembagian ini belum bisa menghasilkan
+  // uang sampai admin menyetujui penayangannya — dan di sanalah ia ditinjau.
+  const contributors = await resolveContributors(user.uid, input.contributors ?? []);
+  if (!contributors.ok) return { ok: false, error: contributors.error };
+
   const slug = await uniqueSlug(toSlug(title) || "kursus");
   const order = await nextOrder();
   const now = new Date().toISOString();
@@ -179,6 +187,7 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       // untuk memastikan educator hanya bisa menghapus buatannya sendiri.
       ownerUid: user.uid,
       ownerName: user.name,
+      ...contributorFields(contributors.contributors),
       createdAt: now,
     });
 

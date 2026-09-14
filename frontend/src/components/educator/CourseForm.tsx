@@ -6,6 +6,7 @@ import { saveQuiz } from "@/lib/quizActions";
 import { Label, inputClass } from "./fields";
 import ThumbnailPicker from "./ThumbnailPicker";
 import DurationField from "./DurationField";
+import ContributorEditor, { type EditorPerson } from "./ContributorEditor";
 import SectionList, {
   newKey,
   firstSection,
@@ -23,9 +24,14 @@ interface Option {
 export default function CourseForm({
   levels,
   categories,
+  owner,
+  feePercent,
 }: {
   levels: readonly Option[];
   categories: readonly Option[];
+  /** Pembuat kursus — otomatis pemilik dan kontributor pertama. */
+  owner: EditorPerson;
+  feePercent: number;
 }) {
   const router = useRouter();
 
@@ -40,6 +46,7 @@ export default function CourseForm({
   const [whatYouLearn, setWhatYouLearn] = useState("");
   const [requirements, setRequirements] = useState("");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [contributors, setContributors] = useState<{ uid: string; share: number }[]>([]);
 
   const [sections, setSections] = useState<DraftSection[]>(() => firstSection("Materi Kursus"));
 
@@ -76,6 +83,7 @@ export default function CourseForm({
       requirements: lines(requirements),
       thumbnail,
       sections: toSectionInput(sections),
+      contributors,
     });
 
     if (!result.ok) {
@@ -271,6 +279,15 @@ export default function CourseForm({
           <ThumbnailPicker prefix={draftId} onChange={(v) => setThumbnail(v ?? null)} />
         </div>
       </section>
+
+      <ContributorEditor
+        owner={owner}
+        ownerIsViewer
+        initial={[]}
+        feePercent={feePercent}
+        price={Number(price) || 0}
+        onChange={setContributors}
+      />
 
       {/* ── Kurikulum ───────────────────────────────────────── */}
       <div>

@@ -28,31 +28,20 @@ service cloud.firestore {
     }
 
     // ── Profil pengguna ────────────────────────────────────────────────
-    // Hanya pemilik yang boleh membaca & menulis profilnya sendiri.
+    // Pemilik boleh membaca dokumennya sendiri; TIDAK ADA yang menulis dari
+    // klien. Bio, pendidikan, keahlian, nomor HP, dan username seluruhnya
+    // ditulis Server Action lewat Admin SDK, yang melewati rules.
     //
-    // Halaman admin TIDAK bergantung pada aturan ini: ia dirender di server
-    // dengan Admin SDK, yang memang melewati rules. Jadi aturan di sini bisa
-    // tetap seketat mungkin tanpa mengorbankan fitur admin.
+    // Dulu nomor HP ditulis dari browser dengan aturan
+    // `keys().hasOnly(['phone','updatedAt'])`. Pada penulisan merge,
+    // `request.resource.data` adalah dokumen HASIL AKHIR — jadi begitu server
+    // menaruh `bio` di dokumen yang sama, nomor HP tidak bisa lagi disimpan.
+    //
+    // `role` tetap tidak pernah hidup di sini — ia custom claim. Menutup tulis
+    // sepenuhnya juga menutup celah "angkat diri sendiri jadi admin".
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
-
-      allow create, update: if request.auth != null
-                            && request.auth.uid == uid
-                            && isValidProfile();
-
-      allow delete: if false;   // penghapusan akun lewat Admin SDK
-    }
-
-    // Field yang boleh ditulis klien sengaja dikunci.
-    // `role` TIDAK termasuk — role hidup sebagai custom claim. Kalau role
-    // ditaruh di dokumen ini, pengguna bisa mengangkat dirinya sendiri
-    // jadi admin hanya dengan menulis ke profilnya.
-    function isValidProfile() {
-      return request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
-             && (!('phone' in request.resource.data)
-                 || request.resource.data.phone == null
-                 || (request.resource.data.phone is string
-                     && request.resource.data.phone.size() <= 20));
+      allow write: if false;
     }
 
     // ── Lamaran menjadi educator ───────────────────────────────────────
@@ -206,6 +195,26 @@ service cloud.firestore {
     // cukup membuat dokumen ini untuk dirinya sendiri lalu masuk ke kelas mana
     // pun tanpa pernah memegang kode undangannya.
     match /classMembers/{id} {
+      allow read, write: if false;
+    }
+
+    // ── Username ───────────────────────────────────────────────────────
+    // ID dokumen = username. Tertutup rapat: klaim, penggantian, dan
+    // pencarian seluruhnya lewat server. Kalau klien boleh menulis, siapa pun
+    // bisa mengklaim nama orang lain dengan membuat dokumen ini lebih dulu.
+    match /usernames/{username} {
+      allow read, write: if false;
+    }
+
+    // ── Buku royalti ───────────────────────────────────────────────────
+    // Tertutup rapat. Ditulis hanya oleh webhook & persetujuan admin lewat
+    // Admin SDK; dibaca dashboard di server. Klien yang bisa menulis di sini
+    // bisa mengarang pendapatannya sendiri.
+    match /royaltySales/{orderId} {
+      allow read, write: if false;
+    }
+
+    match /royaltyEarnings/{id} {
       allow read, write: if false;
     }
 

@@ -1,4 +1,5 @@
 import type { Section } from "@/lib/courses";
+import type { Contributor } from "@/lib/contributors";
 
 /**
  * Tipe dan label pengajuan perubahan kursus.
@@ -31,6 +32,15 @@ export interface CourseSnapshot {
   whatYouLearn: string[];
   requirements: string[];
   sections: Section[];
+  /**
+   * Daftar lengkap penerima bagi hasil, pemilik pertama.
+   *
+   * OPSIONAL, dan ketiadaannya bermakna: pengajuan yang dibuat sebelum fitur
+   * kontributor tidak punya field ini. Menyetujuinya harus MEMBIARKAN
+   * pembagian kursus apa adanya — membacanya sebagai `[]` akan menghapus
+   * seluruh pembagian hanya karena pengajuannya dibuat lebih dulu.
+   */
+  contributors?: Contributor[];
 }
 
 export interface CourseChangeRequest {

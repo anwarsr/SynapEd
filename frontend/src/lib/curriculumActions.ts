@@ -4,6 +4,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
+import { contributorFields, resolveContributors } from "@/lib/courseContributors";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
 import { DEFAULT_PASSING_GRADE } from "@/lib/courses";
 import { canonicalDuration } from "@/lib/duration";
@@ -89,6 +90,8 @@ export interface CourseMetaInput {
    *   string    -> path baru di Storage
    */
   thumbnail?: string | null;
+  /** Kontributor SELAIN pemilik. undefined = pembagian tidak diubah. */
+  contributors?: { uid: string; share: number }[];
   whatYouLearn: string[];
   requirements: string[];
 }
@@ -152,6 +155,12 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
     whatYouLearn,
     requirements,
   };
+
+  if (input.contributors !== undefined) {
+    const resolved = await resolveContributors(ownerUidOf(course), input.contributors);
+    if (!resolved.ok) return { ok: false, error: resolved.error };
+    Object.assign(patch, contributorFields(resolved.contributors));
+  }
 
   // `thumbnail` hanya ikut ditulis kalau memang diubah.
   //

@@ -13,6 +13,7 @@ import {
 } from "@/lib/orders";
 import { getPaymentSettings, manualQrisReady } from "@/lib/paymentSettings";
 import { PAYMENT_PROOFS } from "@/lib/storagePaths";
+import { realiseOrderSale, termsForNewOrder } from "@/lib/royalty";
 
 export type ManualResult =
   | { ok: true; message: string; order?: Order }
@@ -122,6 +123,12 @@ export async function createManualOrder(slug: string): Promise<ManualResult> {
     paidAt: null,
     updatedAt: now.toISOString(),
     lastNotification: null,
+    postPaidStatus: null,
+    postPaidTransactionStatus: null,
+    postPaidAt: null,
+    // Dibekukan sekarang: tinjauan admin bisa memakan waktu sampai sehari,
+    // dan pembagian yang berubah di tengahnya tidak boleh menjangkau pesanan ini.
+    royalty: termsForNewOrder(course, settings.platformFeePercent, now.toISOString()),
   };
 
   await orderRef(orderId).set(order);
@@ -249,6 +256,17 @@ export async function decideManualOrder(
   // yang benar-benar dibayar pembeli. Harga kursus bisa saja berubah setelah
   // pesanannya dibuat.
   await writeEnrollment(newEnrollment(order.uid, course, "paid", order.amount, order.orderId));
+
+  // Dicatat SEBELUM status berubah. Kalau pencatatan gagal, pesanan tetap
+  // menunggu tinjauan dan admin cukup menekan setujui lagi — keduanya aman
+  // diulang. Urutan terbalik akan meninggalkan pesanan lunas tanpa catatan
+  // penjualan, dan tombol setujui sudah tidak muncul lagi.
+  try {
+    await realiseOrderSale(order, { paidAt: now, source: "manual", courseOwnerUid: course.ownerUid });
+  } catch (err) {
+    console.error(`[royalty] gagal mencatat penjualan ${order.orderId}:`, err);
+    return { ok: false, error: "Pencatatan penjualan gagal. Pesanan belum disetujui — coba lagi." };
+  }
 
   await orderRef(orderId).update({
     status: "paid",

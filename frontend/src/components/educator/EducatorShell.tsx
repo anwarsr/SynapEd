@@ -29,6 +29,9 @@ import { cn } from "@/lib/cn";
 const NAV = [
   { href: "/educator/courses", label: "Kursus Saya" },
   { href: "/educator/classes", label: "Kelas Saya" },
+  // Keluar dari panel educator — dashboard melayani semua akun, bukan hanya
+  // educator — tapi penjualan kursus educator tinggal di sana.
+  { href: "/dashboard", label: "Penjualan" },
 ] as const;
 
 export default function EducatorShell({

@@ -3,6 +3,8 @@ import { getCourse } from "@/lib/courses";
 import { getEnrollment } from "@/lib/enrollments";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { findPendingOrder, makeOrderId, orderRef, type Order } from "@/lib/orders";
+import { getPaymentSettings } from "@/lib/paymentSettings";
+import { termsForNewOrder } from "@/lib/royalty";
 import {
   createSnapTransaction,
   expireTransaction,
@@ -89,6 +91,7 @@ export async function createOrder(slug: string): Promise<OrderResult> {
   const orderId = makeOrderId(slug, user.uid);
   const now = new Date();
   const expiresAt = new Date(now.getTime() + EXPIRY_MINUTES * 60_000);
+  const { platformFeePercent } = await getPaymentSettings();
 
   let token: string;
   try {
@@ -138,6 +141,11 @@ export async function createOrder(slug: string): Promise<OrderResult> {
     paidAt: null,
     updatedAt: now.toISOString(),
     lastNotification: null,
+    postPaidStatus: null,
+    postPaidTransactionStatus: null,
+    postPaidAt: null,
+    // Dibekukan pada detik yang sama dengan `amount`.
+    royalty: termsForNewOrder(course, platformFeePercent, now.toISOString()),
   };
 
   await orderRef(orderId).set(order);

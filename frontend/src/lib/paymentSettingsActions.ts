@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { paymentSettingsRef } from "@/lib/paymentSettings";
 import { QRIS_IMAGES } from "@/lib/storagePaths";
+import { parseFeePercent } from "@/lib/royaltyTerms";
 
 export type SettingsResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -63,4 +64,35 @@ export async function updatePaymentSettings(input: {
   revalidatePath("/courses", "layout");
 
   return { ok: true, message: "Setelan pembayaran tersimpan." };
+}
+
+/**
+ * Mengubah potongan platform.
+ *
+ * Action terpisah dari saklar metode pembayaran, supaya menyimpan saklar
+ * tidak pernah ikut mengirim ulang angka potongan dari form yang mungkin
+ * sudah basi di tab lain.
+ */
+export async function updatePlatformFee(raw: unknown): Promise<SettingsResult> {
+  const admin = await getCurrentUser();
+  if (admin?.role !== "admin") {
+    return { ok: false, error: "Hanya admin yang dapat mengubah potongan platform." };
+  }
+
+  const feePercent = parseFeePercent(raw);
+  if (feePercent === null) {
+    return { ok: false, error: "Potongan harus bilangan bulat antara 0 dan 100." };
+  }
+
+  await paymentSettingsRef().set(
+    {
+      platformFeePercent: feePercent,
+      updatedAt: new Date().toISOString(),
+      updatedByUid: admin.uid,
+    },
+    { merge: true },
+  );
+
+  revalidatePath("/admin/payments");
+  return { ok: true, message: `Potongan platform ${feePercent}% berlaku untuk pesanan berikutnya.` };
 }
