@@ -200,6 +200,10 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 - `cn()` hanya penggabung string (bukan tailwind-merge); kelas yang bertabrakan tidak tertimpa.
 - Grid item bawaannya `min-width: auto` → anak `truncate` meluberkan halaman di HP; beri `min-w-0`.
 - Lint `react-hooks/set-state-in-effect` aktif: setState dari event handler, bukan dari efek.
+- **`snap.pay` melempar galat** (bukan memanggil `onError`) bila Snap masih menganggap popup
+  sebelumnya terbuka ("Invalid state transition from PopupInView"). `BuyButton.openSnap`
+  menangkapnya, memanggil `snap.hide()`, lalu mencoba sekali lagi. Jangan panggil `snap.pay`
+  tanpa try/catch — dulu tombol beli diam tanpa pesan padahal pesanan sudah dibuat.
 - `CountUp` membaca "4,7" sebagai 47; angka desimal dirender statis.
 - `.rise-in` animasi `transform` menimpa transform lain di elemen yang sama; bungkus dengan lapisan terpisah.
 - **`lib/chatPrompt.ts` masih menyatakan kursus berbayar belum bisa dibeli** — basi, perlu diperbarui.

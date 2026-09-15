@@ -31,7 +31,7 @@ export function useReferralCode(): string {
   return useContext(ReferralContext).applied?.code ?? "";
 }
 
-export default function ReferralField({ referralPercent }: { referralPercent: number }) {
+export default function ReferralField() {
   const { applied, setApplied } = useContext(ReferralContext);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
@@ -63,7 +63,6 @@ export default function ReferralField({ referralPercent }: { referralPercent: nu
           {applied.referrerName ? ` — dari ${applied.referrerName}` : ""}.
         </p>
         <p className="mt-1 text-xs">
-          Harga tidak berubah; {referralPercent}% dari pembelian ini menjadi komisi perujuk.{" "}
           <button type="button" onClick={() => setApplied(null)} className="underline underline-offset-2 hover:text-blue-800">
             Hapus kode
           </button>

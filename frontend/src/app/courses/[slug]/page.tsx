@@ -344,7 +344,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                   ) : course.price > 0 ? (
                     <ReferralProvider initial={referralAwal}>
                       {(midtransUsable || manualUsable) && (
-                        <ReferralField referralPercent={paymentSettings.referralPercent} />
+                        <ReferralField />
                       )}
 
                       {/* Kunci Midtrans belum terpasang, atau saklarnya dimatikan
