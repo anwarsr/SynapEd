@@ -73,7 +73,10 @@ menyetujui.
   menghapus) **diajukan ke admin**. Kursus yang sedang tayang tetap seperti
   semula sampai perubahannya disetujui. Admin melihat perbandingan
   sebelum-sesudah dalam kalimat yang mudah dibaca.
-- **Daftar peserta & penilaian** per kursus (`/educator/courses/…/students`).
+- **Daftar peserta & penilaian** per kursus (`/educator/courses/…/students`),
+  dengan tombol **Minta Saran AI** yang mengisi draf nilai + catatan (PDF
+  ketikan maupun gambar JPEG/PNG) — educator tetap wajib meninjau dan
+  menyimpan sendiri, bukan penilaian otomatis.
 
 ### Kontributor & bagi hasil (royalti)
 
@@ -143,7 +146,10 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 ### Asisten chat
 
 Widget "Asisten SynapEd" di setiap halaman publik menjawab pertanyaan umum
-seputar SynapEd (OpenRouter, model gratis).
+seputar SynapEd (OpenRouter, model gratis). Dibuka dari dalam halaman
+belajar suatu pelajaran, ia beralih ke **mode tutor**: bisa mendiskusikan
+materi pelajaran itu, tapi menolak memberi jawaban akhir untuk kuis/tugas
+yang sedang dikerjakan.
 
 ### Panel admin (`/admin`)
 

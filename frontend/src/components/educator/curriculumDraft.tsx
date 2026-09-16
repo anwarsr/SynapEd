@@ -84,6 +84,8 @@ export interface DraftLesson {
    * field ini tidak dipakai — kuisnya dikelola lewat QuizEditor sendiri.
    */
   quizDraft?: QuizDraftState;
+  /** Instruksi/rubrik — hanya relevan kalau type === "assignment". */
+  instructions?: string;
 }
 
 export interface DraftSection {
@@ -127,6 +129,7 @@ export function newLesson(type: LessonType = "reading"): DraftLesson {
     uploading: false,
     uploadError: null,
     quizDraft: type === "quiz" ? emptyQuizDraft() : undefined,
+    instructions: type === "assignment" ? "" : undefined,
   };
 }
 
@@ -161,6 +164,7 @@ export function draftFromCourse(course: CourseDetail): DraftSection[] {
       attachment: l.attachments?.[0] ?? null,
       uploading: false,
       uploadError: null,
+      instructions: l.instructions ?? "",
     })),
   }));
 }
@@ -219,6 +223,7 @@ export function toSectionInput(sections: DraftSection[]): SectionInput[] {
         duration: l.duration,
         videoUrl: l.type === "video" ? l.videoUrl : undefined,
         attachments: l.attachment ? [l.attachment] : undefined,
+        instructions: l.type === "assignment" ? l.instructions : undefined,
       }),
     ),
   }));
@@ -409,6 +414,7 @@ export default function SectionList({
                         updateLesson(si, li, {
                           type,
                           quizDraft: type === "quiz" ? (l.quizDraft ?? emptyQuizDraft()) : l.quizDraft,
+                          instructions: type === "assignment" ? (l.instructions ?? "") : l.instructions,
                         });
                       }}
                       className={inputClass}
@@ -489,6 +495,21 @@ export default function SectionList({
                   />
                 )}
                 {l.uploading && <p className="mt-2 text-sm text-ink-muted">Mengunggah…</p>}
+
+                {l.type === "assignment" && (
+                  <div className="mt-3">
+                    <Label htmlFor={`instruksi-${l.key}`}>Instruksi / rubrik untuk peserta (opsional)</Label>
+                    <textarea
+                      id={`instruksi-${l.key}`}
+                      value={l.instructions ?? ""}
+                      onChange={(e) => updateLesson(si, li, { instructions: e.target.value })}
+                      rows={4}
+                      maxLength={4000}
+                      placeholder="Jelaskan apa yang harus dikerjakan peserta, format yang diharapkan, dan kriteria penilaian."
+                      className={cn(inputClass, "resize-y")}
+                    />
+                  </div>
+                )}
 
                 {KUIS_BERSOAL && l.type === "quiz" && (
                   <div className="mt-3">

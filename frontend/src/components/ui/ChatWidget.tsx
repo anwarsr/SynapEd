@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { extractChatOptions, renderChatText } from "@/lib/chatMarkdown";
+import { useChatLessonContext } from "./ChatContext";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -29,6 +30,7 @@ const SUGGESTIONS = [
  */
 export default function ChatWidget() {
   const pathname = usePathname();
+  const { lessonContext } = useChatLessonContext();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -61,7 +63,7 @@ export default function ChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
+        body: JSON.stringify({ messages: nextMessages, context: lessonContext ?? undefined }),
         signal: abortRef.current.signal,
       });
 
@@ -140,6 +142,12 @@ export default function ChatWidget() {
             ✕
           </button>
         </div>
+
+        {lessonContext && (
+          <p className="border-b border-rule bg-blue-50 px-5 py-2 text-xs text-blue-700">
+            Mode materi kursus aktif — tanya apa saja soal pelajaran yang sedang dibuka.
+          </p>
+        )}
 
         <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
           {messages.length === 0 && (

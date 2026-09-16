@@ -10,14 +10,13 @@ import { deleteObjects } from "@/lib/storageCleanup";
 import { SUBMISSION_FILES } from "@/lib/storagePaths";
 import {
   getSubmission,
+  MAX_FEEDBACK,
   submissionId,
   submissionRef,
   type Submission,
 } from "@/lib/submissions";
 
 export type SubmissionResult = { ok: true; message: string } | { ok: false; error: string };
-
-const MAX_FEEDBACK = 1000;
 
 /**
  * Pengumpulan tugas peserta dan penilaiannya oleh educator.

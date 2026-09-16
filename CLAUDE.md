@@ -109,11 +109,11 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 
 | Koleksi | Isi & catatan |
 |---|---|
-| `courses/{slug}` | Kursus; `sections[].lessons[]` **ditanam** di dokumen. `visibility` (`public`/`private`; hilang = public), `ownerUid` (null untuk kursus migrasi), `price`, `passingGrade` (bawaan 70), `order` (wajib ada), `contributors[{uid,share}]` + `contributorUids[]`. Jenis pelajaran: `reading`, `video`, `assignment`, `quiz`. |
+| `courses/{slug}` | Kursus; `sections[].lessons[]` **ditanam** di dokumen. `visibility` (`public`/`private`; hilang = public), `ownerUid` (null untuk kursus migrasi), `price`, `passingGrade` (bawaan 70), `order` (wajib ada), `contributors[{uid,share}]` + `contributorUids[]`. Jenis pelajaran: `reading`, `video`, `assignment`, `quiz`; pelajaran `assignment` boleh punya `instructions` (rubrik teks bebas, tampil ke peserta & dipakai penilaian AI). |
 | `courses/{slug}/quizzes/{lessonSlug}` | Soal + `correctOptionId`. Tidak boleh bocor ke klien: pakai `toPublicQuiz()`. |
 | `courseChangeRequests/{id}` | Pengajuan `publish`/`unpublish`/`edit`/`delete`; `before`/`after` snapshot. Satu pending per kursus. Hanya `decideCourseRequest` yang menerapkan. |
 | `enrollments/{uid}_{slug}` (+ `quizAttempts`) | Akses & progres. `source`: free/paid/granted. |
-| `submissions/{id}` | Jawaban penugasan + nilai educator. Berkas di Storage `submissions/{uid}/`. |
+| `submissions/{id}` | Jawaban penugasan + nilai educator. Berkas di Storage `submissions/{uid}/` (PDF atau gambar). AI cuma menyarankan (`gradingActions.ts`); nilai final selalu tulisan tangan educator lewat `gradeSubmission`. |
 | `certificates/{id}` | ID acak `SYN-…`; terbit saat semua pelajaran selesai & nilai ≥ passingGrade. |
 | `reviews/{id}` | Hanya pemilik enrollment `completed`. |
 | `educatorApplications/{uid}` | Pengajuan jadi educator. |
@@ -177,6 +177,44 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
   `^[a-z0-9._]{3,30}$` + ≥1 huruf, dibuat dari email, ganti sekali/14 hari (transaksi),
   `searchUsernames` hanya educator/admin, 30/menit, maks 8 hasil, tanpa email.
   Reservasi akun terhapus sengaja dibiarkan (mencegah penyamaran).
+
+## Asisten AI (chat & penilaian tugas)
+
+- Klien OpenRouter (`lib/openrouter.ts`): `fetch()` polos, **bukan** `@openrouter/sdk`
+  (SDK resmi provider sebelumnya, `@google/genai`, pernah gagal di metode yang
+  direkomendasikan dokumentasinya sendiri — lihat komentar di berkas itu).
+  `openRouterStream(messages, opts?)` dipakai bersama oleh chat FAQ/tutor DAN
+  penilaian AI; `opts.models`/`opts.maxTokens` opsional (bawaan `CHAT_MODELS`/1500).
+- **Setiap model yang ditambah ke `CHAT_MODELS`/`VISION_MODELS` WAJIB diverifikasi
+  langsung dulu** (panggilan API nyata, bukan percaya dokumentasi): sejumlah model
+  gratis diam-diam menghabiskan seluruh `max_tokens` untuk "bernalar" sebelum
+  menjawab kalau `reasoning: {enabled:false}` tidak dikirim — `content` balasannya
+  jadi kosong (`finish_reason: "length"`). Ini juga berlaku untuk model **vision**
+  (diverifikasi 16 Sept 2026 pada `inclusionai/ling-3.0-flash-vl:free`, dkk).
+  Model lain bahkan menolak permintaan sama sekali kalau reasoning dimatikan
+  (`openai/gpt-oss-20b:free` → "Reasoning is mandatory").
+- Model `:free` dilayani dari **kolam bersama** seluruh pengguna OpenRouter — 429
+  `upstream_provider_shared_pool` itu antrean sesaat (retry), BUKAN jatah kita habis
+  (jangan retry, tunggu besok). `readRateLimit()` membedakan keduanya.
+- **Tutor dalam course**: `ChatWidget.tsx` dipasang sekali secara global di
+  `layout.tsx`, tanpa props. Konteks "sedang di pelajaran mana" mengalir lewat
+  `ChatContext.tsx` (satu-satunya React Context di proyek ini) yang dipublikasikan
+  `LearnShell.tsx` — **hanya slug**, bukan konten. `/api/chat` mengambil &
+  mengotorisasi ulang isi sesungguhnya lewat `chatLessonContext.ts` (`getCourseAccess`)
+  dari sesi asli; konteks yang tidak valid/tidak berhak diam-diam jatuh ke mode FAQ,
+  tidak pernah jadi galat 400.
+- **Penilaian AI** (`gradingActions.ts`, tombol "Minta Saran AI" di `GradeForm.tsx`):
+  hanya **saran**, tidak pernah memanggil `gradeSubmission` sendiri — educator wajib
+  menyimpan manual. Mendukung dua jenis berkas pengumpulan: PDF (ekstrak teks via
+  `pdfText.ts`, pakai `pdfjs-dist` yang sudah ada — BUKAN `pdf-parse`, paket itu
+  pernah dilaporkan luas menyebabkan galat ENOENT saat di-bundle Next.js production)
+  dan gambar JPEG/PNG/WebP/GIF (dikirim langsung sebagai `image_url` base64 ke
+  `VISION_MODELS`). PDF hasil **pindai/scan** (bukan ketikan) tetap gagal — ekstraksi
+  tesknya kosong, dan itu bukan gambar biasa jadi tidak lewat jalur vision juga.
+- Format balasan penilaian sengaja `GRADE: <n>` / `FEEDBACK: <teks>` — dua baris
+  polos, bukan JSON — karena model gratis OpenRouter terbukti tidak selalu patuh
+  ke instruksi format kompleks. `parseGradingResponse` mengambil kecocokan
+  **terakhir**, jaga-jaga model menulis contoh/mikir keras dulu sebelum jawaban asli.
 
 ## Pengujian (`scripts/`)
 

@@ -27,6 +27,8 @@ export interface Lesson {
   /** Tautan YouTube/Vimeo. Kosong berarti materi belum diunggah. */
   videoUrl?: string;
   attachments?: Attachment[];
+  /** Instruksi/rubrik penugasan, teks bebas — hanya relevan untuk type "assignment". */
+  instructions?: string;
 }
 
 export interface Section {
