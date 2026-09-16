@@ -44,6 +44,26 @@ export const CHAT_MODELS = [
 /** Model utama — dipakai di pesan galat & dokumentasi. */
 export const CHAT_MODEL = CHAT_MODELS[0];
 
+/**
+ * Model vision gratis — dipakai gradingActions.ts saat berkas pengumpulan
+ * tugas berupa gambar (JPEG/PNG/dst), bukan PDF.
+ *
+ * DIVERIFIKASI LANGSUNG (16 September 2026), bukan cuma dari dokumentasi
+ * OpenRouter: dikirimi JPEG nyata lewat rantai ini, hasilnya deskripsi
+ * rinci & akurat dalam Bahasa Indonesia. Ketiganya juga butuh
+ * `reasoning:{enabled:false}` — tanpa itu, model menghabiskan seluruh
+ * `max_tokens` untuk "berpikir" dan `content` balasannya kosong
+ * (`finish_reason: "length"`), persis masalah GLM 5.2 di CHAT_MODELS.
+ *
+ * gemma-4-26b-a4b-it dipakai lagi di sini (sudah ada di CHAT_MODELS) karena
+ * ia juga menerima input gambar — dua lainnya murni cadangan vision.
+ */
+export const VISION_MODELS = [
+  "google/gemma-4-26b-a4b-it:free",
+  "nex-agi/nex-n2.5-mini:free",
+  "inclusionai/ling-3.0-flash-vl:free",
+] as const;
+
 /** Tanpa penalaran, 1500 sudah longgar untuk jawaban FAQ terpanjang. */
 const MAX_TOKENS = 1500;
 
@@ -79,9 +99,22 @@ const MAX_ATTEMPTS = 2;
 const DEFAULT_RETRY_DELAY_MS = 5000;
 const MAX_RETRY_DELAY_MS = 8000;
 
+/** Bagian pesan bergambar — format OpenAI-compatible yang dipakai OpenRouter. */
+export type OpenRouterContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
 export interface OpenRouterMessage {
   role: "system" | "user" | "assistant";
-  content: string;
+  /** String untuk pesan teks biasa; array untuk pesan bergambar (lihat VISION_MODELS). */
+  content: string | OpenRouterContentPart[];
+}
+
+export interface OpenRouterStreamOptions {
+  /** Bawaan: CHAT_MODELS. Diisi VISION_MODELS untuk pesan bergambar. */
+  models?: readonly string[];
+  /** Bawaan: MAX_TOKENS (1500). */
+  maxTokens?: number;
 }
 
 /** Membawa status HTTP supaya pemanggil bisa membedakan 429 kuota dari galat lain. */
@@ -189,11 +222,15 @@ async function* parseSSE(body: ReadableStream<Uint8Array>): AsyncGenerator<strin
  */
 export async function openRouterStream(
   messages: OpenRouterMessage[],
+  opts: OpenRouterStreamOptions = {},
 ): Promise<AsyncIterable<string>> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY belum diisi di frontend/.env.local");
   }
+
+  const models = opts.models ?? CHAT_MODELS;
+  const maxTokens = opts.maxTokens ?? MAX_TOKENS;
 
   let lastError: OpenRouterError | null = null;
 
@@ -210,10 +247,10 @@ export async function openRouterStream(
       body: JSON.stringify({
         // `models` (jamak), bukan `model` — inilah yang mengaktifkan
         // perpindahan otomatis saat model pertama sedang penuh.
-        models: CHAT_MODELS,
+        models,
         messages,
         stream: true,
-        max_tokens: MAX_TOKENS,
+        max_tokens: maxTokens,
         temperature: TEMPERATURE,
         reasoning: REASONING,
       }),

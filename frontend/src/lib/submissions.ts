@@ -10,6 +10,15 @@ import {
 export const SUBMISSIONS = "submissions";
 
 /**
+ * Batas panjang feedback — dipakai gradeSubmission() saat menyimpan DAN
+ * gradingActions.ts saat memotong saran AI, supaya keduanya menegakkan
+ * batas yang PERSIS SAMA (kalau tidak, kolom feedback yang di-prefill saran
+ * AI bisa menampilkan teks lebih panjang dari yang benar-benar tersimpan
+ * begitu educator menekan simpan).
+ */
+export const MAX_FEEDBACK = 1000;
+
+/**
  * Pengumpulan tugas dari peserta, beserta penilaian educator.
  *
  * Tertutup rapat dari klien lewat firestore.rules, sama seperti `enrollments`

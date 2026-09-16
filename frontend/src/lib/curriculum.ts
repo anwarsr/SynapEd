@@ -27,6 +27,7 @@ const LESSON_TYPES = ["video", "reading", "assignment", "quiz"] as const;
 
 const MAX_SECTIONS = 30;
 const MAX_LESSONS = 200;
+const MAX_INSTRUCTIONS = 4000;
 
 export interface AttachmentInput {
   name: string;
@@ -44,6 +45,8 @@ export interface LessonInput {
   duration: string;
   videoUrl?: string;
   attachments?: AttachmentInput[];
+  /** Instruksi/rubrik — hanya dibaca kalau type === "assignment". */
+  instructions?: string;
 }
 
 export interface SectionInput {
@@ -125,6 +128,11 @@ export function normalizeSections(
         const embed = toEmbedUrl(raw);
         if (!embed) return { ok: false, error: `Tautan video pelajaran "${lessonTitle}" tidak dikenali.` };
         lesson.videoUrl = raw;
+      }
+
+      if (l.type === "assignment") {
+        const instructions = (l.instructions ?? "").trim().slice(0, MAX_INSTRUCTIONS);
+        if (instructions) lesson.instructions = instructions;
       }
 
       if (l.attachments?.length) {
