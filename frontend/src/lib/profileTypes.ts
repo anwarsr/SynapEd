@@ -130,3 +130,23 @@ export function formatYears(entry: EducationEntry): string {
   if (entry.startYear === null) return String(entry.endYear);
   return `${entry.startYear} – ${entry.endYear ?? "sekarang"}`;
 }
+
+/** Sejalan dengan batas lama di firestore.rules. */
+export const MAX_PHONE = 20;
+
+/**
+ * Validasi longgar: hanya bentuk umum nomor Indonesia/internasional.
+ *
+ * Dipakai form (umpan balik saat itu juga) DAN Server Action (penjaga yang
+ * sebenarnya — action bisa dipanggil lewat POST mentah tanpa melewati form).
+ */
+export function validatePhone(raw: string): string | null {
+  const v = raw.trim();
+  if (v === "") return null; // kosong = menghapus nomor, itu sah
+
+  if (v.length > MAX_PHONE || !/^[+]?[\d\s()-]{8,20}$/.test(v)) {
+    return "Nomor tidak valid. Contoh: 0812-3456-7890 atau +62 812 3456 7890.";
+  }
+  if (v.replace(/\D/g, "").length < 8) return "Nomor terlalu pendek.";
+  return null;
+}

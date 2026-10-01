@@ -11,6 +11,9 @@ import LogoutButton from "@/components/dashboard/LogoutButton";
 import SignInMethodsCard from "@/components/dashboard/SignInMethodsCard";
 import { getSignInMethods } from "@/lib/accountProviders";
 import { requireUser } from "@/lib/firebase/session";
+import { getMyPhone } from "@/lib/userProfile";
+import { getUsernameInfo } from "@/lib/usernames";
+import UsernameForm from "@/components/dashboard/UsernameForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Pengaturan – SynapEd" };
@@ -27,7 +30,11 @@ export const dynamic = "force-dynamic";
  */
 export default async function SettingsPage() {
   const user = await requireUser("/pengaturan");
-  const methods = await getSignInMethods(user.uid);
+  const [methods, phone, username] = await Promise.all([
+    getSignInMethods(user.uid),
+    getMyPhone(user.uid),
+    getUsernameInfo(user.uid),
+  ]);
 
   return (
     <>
@@ -59,7 +66,8 @@ export default async function SettingsPage() {
           </div>
 
           <section className="space-y-5">
-            <PhoneForm user={user} />
+            <UsernameForm username={username.username} changedAt={username.changedAt} />
+            <PhoneForm initialPhone={phone} />
             <SignInMethodsCard methods={methods} emailVerified={user.emailVerified} />
             <EmailForm user={user} methods={methods} />
             <PasswordForm methods={methods} />

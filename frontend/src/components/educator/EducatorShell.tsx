@@ -16,6 +16,24 @@ import { cn } from "@/lib/cn";
  * halaman itu juga dibuka oleh pengguna biasa yang belum jadi educator,
  * jadi panel kerja di sini belum pantas untuk mereka.
  */
+/**
+ * Tujuan navigasi, ditulis SEKALI.
+ *
+ * Menu desktop dan menu seluler merender daftar yang sama. Sebelumnya
+ * keduanya ditulis tangan terpisah, dan itu aman selama tujuannya cuma satu —
+ * begitu bertambah, tujuan kedua pasti akan ditambahkan ke salah satunya saja,
+ * dan menu yang tertinggal hanya terlihat pada satu ukuran layar.
+ *
+ * Bentuknya mengikuti NAV di AdminShell.
+ */
+const NAV = [
+  { href: "/educator/courses", label: "Kursus Saya" },
+  { href: "/educator/classes", label: "Kelas Saya" },
+  // Keluar dari panel educator — dashboard melayani semua akun, bukan hanya
+  // educator — tapi penjualan kursus educator tinggal di sana.
+  { href: "/dashboard", label: "Penjualan" },
+] as const;
+
 export default function EducatorShell({
   user,
   children,
@@ -59,19 +77,22 @@ export default function EducatorShell({
             </Link>
 
             <nav className="hidden sm:flex items-center gap-1" aria-label="Navigasi educator">
-              <Link
-                href="/educator/courses"
-                aria-current={pathname.startsWith("/educator/courses") ? "page" : undefined}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm whitespace-nowrap",
-                  "transition-colors duration-200 ease-out-soft",
-                  pathname.startsWith("/educator/courses")
-                    ? "bg-blue-50 text-blue-700 font-medium"
-                    : "text-ink-body hover:bg-blue-50/60 hover:text-blue-700",
-                )}
-              >
-                Kursus Saya
-              </Link>
+              {NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={pathname.startsWith(item.href) ? "page" : undefined}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm whitespace-nowrap",
+                    "transition-colors duration-200 ease-out-soft",
+                    pathname.startsWith(item.href)
+                      ? "bg-blue-50 text-blue-700 font-medium"
+                      : "text-ink-body hover:bg-blue-50/60 hover:text-blue-700",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </nav>
           </div>
 
@@ -113,20 +134,23 @@ export default function EducatorShell({
         {mobileOpen && (
           <div className="sm:hidden border-t border-rule bg-paper-card">
             <nav className="container-page py-3 flex flex-col gap-0.5" aria-label="Navigasi educator (mobile)">
-              <Link
-                href="/educator/courses"
-                aria-current={pathname.startsWith("/educator/courses") ? "page" : undefined}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "px-3 py-2.5 rounded-xl text-sm",
-                  "transition-colors duration-200 ease-out-soft",
-                  pathname.startsWith("/educator/courses")
-                    ? "bg-blue-50 text-blue-700 font-medium"
-                    : "text-ink-body hover:bg-blue-50/60 hover:text-blue-700",
-                )}
-              >
-                Kursus Saya
-              </Link>
+              {NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={pathname.startsWith(item.href) ? "page" : undefined}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "px-3 py-2.5 rounded-xl text-sm",
+                    "transition-colors duration-200 ease-out-soft",
+                    pathname.startsWith(item.href)
+                      ? "bg-blue-50 text-blue-700 font-medium"
+                      : "text-ink-body hover:bg-blue-50/60 hover:text-blue-700",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
               <Link
                 href="/educator"
                 onClick={() => setMobileOpen(false)}

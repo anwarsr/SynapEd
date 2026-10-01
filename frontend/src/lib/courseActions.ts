@@ -6,6 +6,7 @@ import { canonicalDuration } from "@/lib/duration";
 import { purgeCourseReviews } from "@/lib/reviewActions";
 import { LEVELS, nextOrder, tintFor, toSlug, uniqueSlug } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
+import { contributorFields, resolveContributors } from "@/lib/courseContributors";
 import { normalizeSections, type SectionInput } from "@/lib/curriculum";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
 import { attachmentPaths, courseFilePaths, deleteObjects, pruneAttachmentFolders } from "@/lib/storageCleanup";
@@ -47,8 +48,14 @@ export interface NewCourseInput {
   passingGrade: number;
   /** Path gambar latar di Storage. Kosong berarti memakai latar bawaan. */
   thumbnail: string | null;
+  /** Poin "Yang Akan Anda Pelajari", satu baris satu poin. */
+  whatYouLearn: string[];
+  /** Poin "Persyaratan", satu baris satu poin. */
+  requirements: string[];
   /** Kurikulum bebas: berapa pun bagian & pelajarannya, dalam urutan mana pun. */
   sections: SectionInput[];
+  /** Kontributor SELAIN pembuat; jatah pembuat dihitung server sebagai sisa. */
+  contributors?: { uid: string; share: number }[];
 }
 
 
@@ -76,6 +83,21 @@ function clampGrade(raw: unknown): number {
   const n = Math.round(Number(raw));
   if (!Number.isFinite(n)) return DEFAULT_PASSING_GRADE;
   return Math.min(100, Math.max(0, n));
+}
+
+/**
+ * Membersihkan daftar poin bebas (whatYouLearn / requirements).
+ *
+ * Batas 20 dan pemangkasan spasinya disamakan dengan jalur pengajuan
+ * perubahan. Kalau kedua jalur berbeda, kursus yang sama bisa lolos saat
+ * dibuat lalu ditolak saat disunting — atau sebaliknya.
+ */
+function cleanPoints(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((s) => String(s).trim())
+    .filter(Boolean)
+    .slice(0, 20);
 }
 
 export async function createCourse(input: NewCourseInput): Promise<CourseResult> {
@@ -114,6 +136,11 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   const normalized = normalizeSections(input.sections ?? [], [user.uid]);
   if (!normalized.ok) return { ok: false, error: normalized.error };
 
+  // Kursus baru lahir tersembunyi, jadi pembagian ini belum bisa menghasilkan
+  // uang sampai admin menyetujui penayangannya — dan di sanalah ia ditinjau.
+  const contributors = await resolveContributors(user.uid, input.contributors ?? []);
+  if (!contributors.ok) return { ok: false, error: contributors.error };
+
   const slug = await uniqueSlug(toSlug(title) || "kursus");
   const order = await nextOrder();
   const now = new Date().toISOString();
@@ -151,8 +178,8 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       lastUpdated: now,
       instructorName: user.name,
       instructorBio: "",
-      whatYouLearn: [],
-      requirements: [],
+      whatYouLearn: cleanPoints(input.whatYouLearn),
+      requirements: cleanPoints(input.requirements),
       sections: normalized.sections,
       order,
 
@@ -160,6 +187,7 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
       // untuk memastikan educator hanya bisa menghapus buatannya sendiri.
       ownerUid: user.uid,
       ownerName: user.name,
+      ...contributorFields(contributors.contributors),
       createdAt: now,
     });
 

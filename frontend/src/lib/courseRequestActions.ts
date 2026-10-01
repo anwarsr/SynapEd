@@ -5,6 +5,12 @@ import { getCurrentUser } from "@/lib/firebase/session";
 import { DEFAULT_PASSING_GRADE, getCourse } from "@/lib/courses";
 import { LEVELS, ownerUidOf, requireOwnedCourse } from "@/lib/educatorCourses";
 import { categoryExists } from "@/lib/categories";
+import { parseStoredContributors } from "@/lib/contributors";
+import {
+  contributorFields,
+  resolveContributors,
+  type ResolveResult,
+} from "@/lib/courseContributors";
 import { resolveThumbnail } from "@/lib/courseThumbnail";
 import { canonicalDuration } from "@/lib/duration";
 import { purgeCourseReviews } from "@/lib/reviewActions";
@@ -72,6 +78,7 @@ export async function snapshotOf(course: CourseDetail): Promise<CourseSnapshot> 
     whatYouLearn: course.whatYouLearn ?? [],
     requirements: course.requirements ?? [],
     sections: course.sections ?? [],
+    contributors: course.contributors,
   };
 }
 
@@ -208,6 +215,11 @@ export interface CourseEditInput {
   whatYouLearn: string[];
   requirements: string[];
   sections: SectionInput[];
+  /**
+   * Kontributor SELAIN pemilik. undefined = pembagian tidak diubah.
+   * Jatah pemilik tidak pernah diterima dari sini — selalu dihitung server.
+   */
+  contributors?: { uid: string; share: number }[];
 }
 
 /**
@@ -271,6 +283,13 @@ export async function requestCourseEdit(
   const normalized = normalizeSections(input.sections ?? [], ownerUids);
   if (!normalized.ok) return { ok: false, error: normalized.error };
 
+  let contributors = course.contributors;
+  if (input.contributors !== undefined) {
+    const resolved = await resolveContributors(ownerUidOf(course), input.contributors);
+    if (!resolved.ok) return { ok: false, error: resolved.error };
+    contributors = resolved.contributors;
+  }
+
   const after: CourseSnapshot = {
     title,
     shortDesc,
@@ -285,6 +304,7 @@ export async function requestCourseEdit(
     whatYouLearn: input.whatYouLearn.map((s) => s.trim()).filter(Boolean).slice(0, 20),
     requirements: input.requirements.map((s) => s.trim()).filter(Boolean).slice(0, 20),
     sections: normalized.sections,
+    contributors,
   };
 
   return createRequest({
@@ -429,6 +449,33 @@ export async function decideCourseRequest(
     }
 
     if (req.type === "edit" && req.after) {
+      // Divalidasi ULANG sebelum apa pun ditulis: akun kontributor bisa saja
+      // dihapus selama pengajuan menunggu, dan isi pengajuan tersimpan di
+      // Firestore — bukan sesuatu yang dipercaya begitu saja.
+      //
+      // `undefined` = pengajuan dari sebelum fitur kontributor: pembagian
+      // kursus dibiarkan. BUKAN `?? []`, yang akan menghapusnya.
+      let contributorPatch: ReturnType<typeof contributorFields> | null = null;
+      if (req.after.contributors !== undefined) {
+        const ownerUid = typeof data.ownerUid === "string" && data.ownerUid ? data.ownerUid : null;
+        const usulan: unknown = req.after.contributors;
+        const tersimpan = parseStoredContributors(usulan, ownerUid);
+
+        let resolved: ResolveResult;
+        if (tersimpan) {
+          resolved = await resolveContributors(ownerUid, tersimpan.slice(1));
+        } else if (ownerUid === null && Array.isArray(usulan) && usulan.length === 0) {
+          resolved = { ok: true, contributors: [] };
+        } else {
+          resolved = { ok: false, error: "Pembagian hasil di pengajuan ini tidak valid." };
+        }
+
+        if (!resolved.ok) {
+          return { ok: false, error: `${resolved.error} Pengajuan tidak diterapkan.` };
+        }
+        contributorPatch = contributorFields(resolved.contributors);
+      }
+
       const before = attachmentPaths((data.sections ?? []) as Section[]);
 
       await courseRef.update({
@@ -445,6 +492,7 @@ export async function decideCourseRequest(
         whatYouLearn: req.after.whatYouLearn,
         requirements: req.after.requirements,
         sections: req.after.sections,
+        ...(contributorPatch ?? {}),
         lastUpdated: new Date().toISOString(),
       });
 

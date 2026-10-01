@@ -8,6 +8,12 @@ import { adminBadges } from "@/lib/adminBadges";
 import { getRequest, requestStatusLabel, requestTypeLabel } from "@/lib/courseRequests";
 import { changeKindLabel, diffCourse, type Change } from "@/lib/courseDiff";
 import { requireAdmin } from "@/lib/firebase/session";
+import { getCourse } from "@/lib/courses";
+import {
+  contributorPeople,
+  personLabel,
+  type ContributorPerson,
+} from "@/lib/courseContributors";
 import type { RequestStatus } from "@/lib/courseRequests";
 import type { Metadata } from "next";
 
@@ -52,10 +58,38 @@ export default async function CourseRequestDetailPage({ params }: Props) {
 
   if (!request) notFound();
 
+  // Pembagian hasil ikut ditinjau. Pada pengajuan TAYANG, inilah pertama
+  // kalinya admin melihat kontributor yang diatur saat kursus dibuat — sejak
+  // detik penayangan itulah pembagian ini mulai menerima uang.
+  const course =
+    request.type === "publish" && request.status === "pending"
+      ? await getCourse(request.courseSlug)
+      : null;
+
+  const uids = [
+    ...(request.before?.contributors ?? []),
+    ...(request.after?.contributors ?? []),
+    ...(course?.contributors ?? []),
+  ];
+  const people = await contributorPeople(uids);
+  const byUid = new Map(people.map((p) => [p.uid, p]));
+  const labelOf = (uid: string) => {
+    const p = byUid.get(uid);
+    return p ? personLabel(p) : uid;
+  };
+
   const changes =
     request.type === "edit" && request.before && request.after
-      ? diffCourse(request.before, request.after)
+      ? diffCourse(request.before, request.after, labelOf)
       : [];
+
+  const pembagian: ContributorPerson[] = course
+    ? course.contributors.map((c, i) => ({
+        ...(byUid.get(c.uid) as ContributorPerson),
+        share: c.share,
+        role: i === 0 ? "owner" : "contributor",
+      }))
+    : [];
 
   return (
     <AdminShell user={admin} badges={badges}>
@@ -101,6 +135,27 @@ export default async function CourseRequestDetailPage({ params }: Props) {
             )}
           </dl>
         </div>
+
+        {/* ── Pembagian hasil saat tayang ─────────────────────────────── */}
+        {pembagian.length > 0 && (
+          <div className="bg-paper-card border border-rule rounded-2xl p-8 mb-8">
+            <h2 className="t-h3 text-base mb-1.5">Pembagian hasil</h2>
+            <p className="text-sm text-ink-muted mb-6">
+              Setelah potongan platform, setiap penjualan dibagi sesuai persentase ini.
+            </p>
+            <ul className="divide-y divide-rule">
+              {pembagian.map((p) => (
+                <li key={p.uid} className="flex items-center justify-between gap-4 py-3 text-sm">
+                  <span className="min-w-0 break-words text-ink">
+                    {personLabel(p)}
+                    {p.role === "owner" && <span className="ml-2 text-ink-muted">· pemilik</span>}
+                  </span>
+                  <span className="t-numeral shrink-0 tabular-nums text-ink">{p.share}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* ── Perbandingan versi ─────────────────────────────────────── */}
         {request.type === "edit" && (

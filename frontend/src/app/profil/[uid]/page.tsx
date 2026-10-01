@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
+import Reveal from "@/components/ui/Reveal";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileStatsRow from "@/components/profile/ProfileStats";
 import EducationList from "@/components/profile/EducationList";
@@ -53,36 +55,88 @@ export default async function PublicProfilePage({ params }: Props) {
     <>
       <Navbar />
 
-      <main className="bg-paper min-h-screen pt-36 pb-24">
-        <div className="container-reading space-y-10">
-          <ProfileHeader
-            name={profile.name}
-            email=""
-            photoURL={profile.photoURL}
-            role={profile.role}
-            bio={profile.content.bio}
-            skills={profile.content.skills}
-          />
+      <main className="bg-paper">
+        <ProfileHeader
+          name={profile.name}
+          username={profile.username}
+          email=""
+          photoURL={profile.photoURL}
+          role={profile.role}
+          bio={profile.content.bio}
+          skills={profile.content.skills}
+          meta={[
+            isEducator ? `${profile.stats.courses} kursus` : null,
+            isEducator
+              ? `${profile.stats.students.toLocaleString("id-ID")} peserta terdaftar`
+              : null,
+            profile.joinedAt ? `Bergabung ${profile.joinedAt}` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          utama={
+            isEducator ? { label: "Lihat Kursus", href: "#kursus" } : undefined
+          }
+        />
 
-          <ProfileStatsRow stats={profile.stats} isEducator={isEducator} />
+        <div className="container-reading">
+          <ProfileStatsRow stats={profile.stats} isEducator={isEducator} isPublic />
 
-          {profile.content.education.length > 0 && (
-            <section>
-              <h2 className="t-h3 mb-5">Riwayat Pendidikan</h2>
-              <EducationList items={profile.content.education} />
-            </section>
-          )}
+          <div className="flex flex-wrap items-start gap-14 pt-16 pb-[88px]">
+            <div className="flex min-w-0 flex-1 basis-[440px] flex-col gap-14">
+              {isEducator && (
+                <Reveal>
+                  <section id="kursus">
+                    <div className="mb-[18px] flex flex-wrap items-baseline justify-between gap-4">
+                      <h2 className="t-h3">Kursus yang Diajarkan</h2>
+                      <Link
+                        href="/courses"
+                        className="text-[13px] text-blue-700 hover:underline underline-offset-4"
+                      >
+                        Lihat katalog →
+                      </Link>
+                    </div>
+                    <OwnedCourses courses={profile.courses} />
+                  </section>
+                </Reveal>
+              )}
+            </div>
 
-          {isEducator && (
-            <section>
-              <h2 className="t-h3 mb-5">Kursus yang Diajarkan</h2>
-              <OwnedCourses courses={profile.courses} />
-            </section>
-          )}
+            <aside className="flex w-full flex-1 basis-72 flex-col gap-10 lg:sticky lg:top-28">
+              {profile.content.education.length > 0 && (
+                <section>
+                  <h2 className="t-label text-ink-muted mb-4">Riwayat Pendidikan</h2>
+                  <EducationList items={profile.content.education} />
+                </section>
+              )}
+
+              {isEducator && (
+                <section>
+                  <h2 className="t-label text-ink-muted mb-4">Tentang Educator</h2>
+
+                  <dl className="rounded-2xl border border-rule bg-paper-card px-5 py-[18px] text-[13.5px]">
+                    {[
+                      profile.joinedAt ? ["Bergabung", profile.joinedAt] : null,
+                      ["Kursus", `${profile.stats.courses}`],
+                      [
+                        "Pelajaran",
+                        profile.stats.lessons.toLocaleString("id-ID"),
+                      ],
+                    ]
+                      .filter((b): b is [string, string] => b !== null)
+                      .map(([k, v]) => (
+                        <div key={k} className="flex items-baseline justify-between gap-4 py-1.5">
+                          <dt className="text-ink-muted">{k}</dt>
+                          <dd className="font-medium text-ink">{v}</dd>
+                        </div>
+                      ))}
+                  </dl>
+                </section>
+              )}
+            </aside>
+          </div>
         </div>
       </main>
 
       <Footer />
     </>
-  );
-}
+  );}

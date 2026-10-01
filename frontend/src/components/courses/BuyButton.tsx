@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createOrder } from "@/lib/paymentActions";
+import { useReferralCode } from "./ReferralField";
 import { cn } from "@/lib/cn";
 
 /**
@@ -27,7 +28,7 @@ interface SnapCallbacks {
 
 declare global {
   interface Window {
-    snap?: { pay: (token: string, callbacks?: SnapCallbacks) => void };
+    snap?: { pay: (token: string, callbacks?: SnapCallbacks) => void; hide?: () => void };
   }
 }
 
@@ -51,6 +52,7 @@ export default function BuyButton({
   production: boolean;
 }) {
   const router = useRouter();
+  const referralCode = useReferralCode();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   // Menahan pemuatan skrip supaya klik kedua tidak memuatnya dua kali.
@@ -84,10 +86,41 @@ export default function BuyButton({
     loadSnap().catch(() => undefined);
   }, [loadSnap]);
 
+  /**
+   * Membuka popup Snap.
+   *
+   * `snap.pay` MELEMPAR galat — bukan memanggil onError — kalau Snap masih
+   * menganggap popup sebelumnya terbuka ("Invalid state transition from
+   * PopupInView to PopupInView"). Dulu galat itu tidak ditangkap: tombolnya
+   * diam, tanpa popup dan tanpa pesan, padahal pesanannya sudah dibuat di
+   * server. Keadaan basi itu ditutup dulu lewat `snap.hide()`, lalu dicoba
+   * sekali lagi.
+   */
+  async function openSnap(token: string, callbacks: SnapCallbacks): Promise<void> {
+    const snap = window.snap;
+    if (!snap) throw new Error("snap belum dimuat");
+    try {
+      snap.pay(token, callbacks);
+    } catch (first) {
+      console.warn("[payment] snap.pay ditolak, mencoba ulang:", first);
+      snap.hide?.();
+      await new Promise((r) => setTimeout(r, 400));
+      snap.pay(token, callbacks);
+    }
+  }
+
   async function buy() {
+    // Klik kedua selagi yang pertama berjalan akan memanggil snap.pay dua kali.
+    if (status.kind === "working") return;
     setStatus({ kind: "working" });
 
-    const res = await createOrder(slug);
+    let res: Awaited<ReturnType<typeof createOrder>>;
+    try {
+      res = await createOrder(slug, referralCode);
+    } catch {
+      setStatus({ kind: "error", message: "Pesanan gagal dibuat. Periksa koneksi lalu coba lagi." });
+      return;
+    }
     if (!res.ok) {
       setStatus({ kind: "error", message: res.error });
       return;
@@ -105,21 +138,28 @@ export default function BuyButton({
       return;
     }
 
-    setStatus({ kind: "idle" });
-
-    window.snap.pay(res.token, {
-      // Pembayaran tercatat di server lewat webhook, yang bisa datang
-      // sedetik setelah ini. Menyegarkan halaman menampilkan hasilnya.
-      onSuccess: () => {
-        setStatus({ kind: "waiting" });
-        router.refresh();
-      },
-      // QRIS yang sudah dipindai tapi belum tuntas berakhir di sini.
-      onPending: () => setStatus({ kind: "waiting" }),
-      onError: () =>
-        setStatus({ kind: "error", message: "Pembayaran gagal. Tidak ada dana yang terpotong." }),
-      onClose: () => router.refresh(),
-    });
+    try {
+      await openSnap(res.token, {
+        // Pembayaran tercatat di server lewat webhook, yang bisa datang
+        // sedetik setelah ini. Menyegarkan halaman menampilkan hasilnya.
+        onSuccess: () => {
+          setStatus({ kind: "waiting" });
+          router.refresh();
+        },
+        // QRIS yang sudah dipindai tapi belum tuntas berakhir di sini.
+        onPending: () => setStatus({ kind: "waiting" }),
+        onError: () =>
+          setStatus({ kind: "error", message: "Pembayaran gagal. Tidak ada dana yang terpotong." }),
+        onClose: () => router.refresh(),
+      });
+      setStatus({ kind: "idle" });
+    } catch (err) {
+      console.error("[payment] popup pembayaran gagal dibuka:", err);
+      setStatus({
+        kind: "error",
+        message: "Halaman pembayaran gagal dibuka. Muat ulang halaman ini lalu coba lagi.",
+      });
+    }
   }
 
   return (

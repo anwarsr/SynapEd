@@ -8,15 +8,26 @@ import { useActiveSection } from "@/lib/useActiveSection";
 import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/cn";
 
-const NAV_LINKS = [
+/**
+ * `href` menandai tautan RUTE; tanpanya, tautan itu jangkar ke section
+ * beranda.
+ *
+ * "Kelas" menggantikan "Kurikulum" atas permintaan pemilik proyek. Section
+ * kurikulumnya sendiri tetap ada di beranda — yang dilepas hanya pintu
+ * masuknya di navbar.
+ */
+const NAV_LINKS: readonly { label: string; id: string; href?: string }[] = [
   { label: "Beranda", id: "hero" },
   { label: "Tentang", id: "about" },
-  { label: "Kurikulum", id: "value" },
+  { label: "Kelas", id: "kelas", href: "/kelas" },
   { label: "Kursus", id: "courses" },
   { label: "FAQ", id: "faq" },
 ];
 
-const SECTION_IDS = NAV_LINKS.map((l) => l.id);
+// HANYA yang benar-benar section. Mengikutkan tautan rute membuat
+// useActiveSection memasang IntersectionObserver pada elemen yang tidak
+// pernah ada, dan penanda aktifnya diam-diam berhenti bekerja.
+const SECTION_IDS = NAV_LINKS.filter((l) => !l.href).map((l) => l.id);
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -55,18 +66,21 @@ export default function Navbar() {
     const onScroll = () => {
       setScrolled(window.scrollY > 24);
 
-      if (!isHome) {
-        setOverDarkHero(false);
-        return;
-      }
-      const hero = document.getElementById("hero");
+      // Hero gelap mana pun, bukan hanya #hero di beranda.
+      //
+      // Halaman kelas juga membuka dengan pita biru penuh, dan tanpa ini
+      // logo putihnya tergambar di atas kertas krem begitu hero terlewat —
+      // atau logo gelap di atas biru sejak awal. Ditandai lewat atribut,
+      // bukan daftar rute, supaya halaman berikutnya tidak perlu
+      // mendaftarkan dirinya di berkas ini.
+      const hero = document.getElementById("hero") ?? document.querySelector("[data-dark-hero]");
       setOverDarkHero(hero ? hero.getBoundingClientRect().bottom > NAVBAR_MID : false);
     };
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isHome]);
+  }, [pathname]);
 
   return (
     // Kapsul mengambang, bukan bilah penuh — memberi navbar bentuk sendiri
@@ -102,11 +116,19 @@ export default function Navbar() {
         {/* Link + penanda section aktif */}
         <div className="hidden md:flex items-center gap-1">
           {NAV_LINKS.map((link) => {
-            const href = isHome ? `#${link.id}` : `/#${link.id}`;
-            const isActive = isHome && activeId === link.id;
+            const rute = link.href;
+            const href = rute ?? (isHome ? `#${link.id}` : `/#${link.id}`);
+            const isActive = rute
+              ? pathname === rute || pathname.startsWith(`${rute}/`)
+              : isHome && activeId === link.id;
+
+            // next/link untuk rute, <a> untuk jangkar: Link melakukan
+            // navigasi klien dan prefetch, sedangkan jangkar dalam halaman
+            // justru rusak kalau dilewatkan router.
+            const Tag = rute ? Link : "a";
 
             return (
-              <a
+              <Tag
                 key={link.id}
                 href={href}
                 aria-current={isActive ? "true" : undefined}
@@ -124,7 +146,7 @@ export default function Navbar() {
                 )}
               >
                 {link.label}
-              </a>
+              </Tag>
             );
           })}
         </div>
@@ -177,20 +199,57 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {user.role === "educator" && (
-                <Link
-                  href="/educator/courses"
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-full border",
-                    "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-                    light
-                      ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
-                      : "border-white/25 text-white hover:bg-white/10",
-                  )}
-                >
-                  Kursus Saya
-                </Link>
-              )}
+              {/* Dua pintu ke panel educator, ditulis sekali lewat map.
+
+                  Sebelumnya hanya "Kursus Saya" dan ia ditulis tangan. Menambah
+                  tujuan kedua dengan cara yang sama berarti gaya tombolnya harus
+                  dijaga sama di dua tempat — dan yang tertinggal baru terlihat
+                  saat keduanya kebetulan tampil bersebelahan. */}
+              {user.role === "educator" &&
+                [
+                  { href: "/educator/courses", label: "Kursus Saya", sempit: true },
+                  { href: "/educator/classes", label: "Kelas Saya", sempit: false },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-full border whitespace-nowrap",
+                      "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                      // Di lebar tablet kapsul navbar sudah penuh oleh lima
+                      // tautan bagian; tombol kedua mendorong foto profil ke
+                      // luar layar. Diukur, bukan ditebak: pada 820px dengan
+                      // dua tombol, avatarnya benar-benar terpotong.
+                      //
+                      // Yang disembunyikan tetap terjangkau — panel educator
+                      // punya kedua tab, dan menu lipat di bawah md memuat
+                      // keduanya.
+                      item.sempit ? "" : "hidden lg:block",
+                      light
+                        ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
+                        : "border-white/25 text-white hover:bg-white/10",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+
+              {/* Dashboard untuk SEMUA akun — kontributor kursus tidak harus
+                  educator. Baru tampil di xl: di bawahnya kapsul navbar sudah
+                  penuh, dan dashboard tetap terjangkau dari halaman profil
+                  serta menu lipat. */}
+              <Link
+                href="/dashboard"
+                className={cn(
+                  "hidden xl:block px-4 py-2 text-sm font-medium rounded-full border whitespace-nowrap",
+                  "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
+                  light
+                    ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
+                    : "border-white/25 text-white hover:bg-white/10",
+                )}
+              >
+                Dashboard
+              </Link>
 
               {/* Foto profil sebagai tombol. Lebih jelas bisa diklik daripada
                   nama polos, dan tombol Keluar pindah ke halaman profil supaya
@@ -272,17 +331,22 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden max-w-7xl mx-auto mt-2 bg-paper-card border border-rule rounded-3xl shadow-lift overflow-hidden">
           <div className="px-5 py-4 space-y-0.5">
-            {NAV_LINKS.map((link, i) => (
-              <a
-                key={link.id}
-                href={isHome ? `#${link.id}` : `/#${link.id}`}
-                className="rise-in block text-sm text-ink-body hover:text-blue-700 hover:bg-blue-50/60 rounded-xl px-3 py-2.5 transition-colors"
-                style={{ "--rise-delay": `${i * 40}ms` } as React.CSSProperties}
-                onClick={() => setMobileOpen(false)}
-              >
-                {link.label}
-              </a>
-            ))}
+            {NAV_LINKS.map((link, i) => {
+              const Tag = link.href ? Link : "a";
+              const href = link.href ?? (isHome ? `#${link.id}` : `/#${link.id}`);
+
+              return (
+                <Tag
+                  key={link.id}
+                  href={href}
+                  className="rise-in block text-sm text-ink-body hover:text-blue-700 hover:bg-blue-50/60 rounded-xl px-3 py-2.5 transition-colors"
+                  style={{ "--rise-delay": `${i * 40}ms` } as React.CSSProperties}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.label}
+                </Tag>
+              );
+            })}
             <hr className="rule-line my-3" />
             <div className="flex flex-col gap-2">
               {status === "authenticated" ? (
@@ -315,15 +379,28 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {user.role === "educator" && (
-                    <Link
-                      href="/educator/courses"
-                      onClick={() => setMobileOpen(false)}
-                      className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
-                    >
-                      Kursus Saya
-                    </Link>
-                  )}
+                  {user.role === "educator" &&
+                    [
+                      { href: "/educator/courses", label: "Kursus Saya" },
+                      { href: "/educator/classes", label: "Kelas Saya" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
 
                   {/* Tidak ada tombol Keluar di sini — keluar dilakukan dari
                       halaman profil, sejalan dengan navbar desktop. */}

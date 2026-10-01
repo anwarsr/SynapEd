@@ -29,6 +29,7 @@
     "verify:profile": "tsx scripts/verify-profile.ts",
     "verify:quiz": "tsx scripts/verify-quiz.ts",
     "verify:certificate": "tsx scripts/verify-certificate.ts",
+    "verify:classroom": "tsx scripts/verify-classroom.ts",
     "verify:google": "tsx scripts/verify-google-account.ts",
     "verify:manual-payment": "tsx scripts/verify-manual-payment.ts",
     "verify:material": "tsx scripts/verify-material.ts",
@@ -36,7 +37,14 @@
     "verify:review": "tsx scripts/verify-review.ts",
     "verify:rules": "tsx scripts/verify-rules.ts",
     "verify:signup": "tsx scripts/verify-signup.ts",
-    "verify:submission": "tsx scripts/verify-submission.ts"
+    "verify:submission": "tsx scripts/verify-submission.ts",
+    "verify:username": "tsx scripts/verify-username.ts",
+    "verify:royalty-split": "tsx scripts/verify-royalty-split.ts",
+    "verify:royalty": "tsx scripts/verify-royalty.ts",
+    "verify:referral": "tsx scripts/verify-referral.ts",
+    "backfill:usernames": "tsx scripts/backfill-usernames.ts",
+    "migrate:contributors": "tsx scripts/migrate-contributors.ts",
+    "realise:sales": "tsx scripts/realise-sales.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

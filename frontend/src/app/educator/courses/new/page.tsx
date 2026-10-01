@@ -4,6 +4,8 @@ import CourseForm from "@/components/educator/CourseForm";
 import { LEVELS } from "@/lib/educatorCourses";
 import { listCategories } from "@/lib/categories";
 import { requireEducator } from "@/lib/firebase/session";
+import { getPaymentSettings } from "@/lib/paymentSettings";
+import { getUsernameInfo } from "@/lib/usernames";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Buat Kursus – SynapEd" };
@@ -12,7 +14,11 @@ export const dynamic = "force-dynamic";
 
 export default async function NewCoursePage() {
   const user = await requireEducator("/educator/courses/new");
-  const categories = await listCategories();
+  const [categories, settings, handle] = await Promise.all([
+    listCategories(),
+    getPaymentSettings(),
+    getUsernameInfo(user.uid),
+  ]);
 
   return (
     <EducatorShell user={user}>
@@ -35,6 +41,8 @@ export default async function NewCoursePage() {
         <CourseForm
           levels={LEVELS.map((l) => ({ value: l.value }))}
           categories={categories.map((c) => ({ value: c.slug, label: c.label }))}
+          owner={{ uid: user.uid, name: user.name, username: handle.username, photoURL: user.photoURL }}
+          feePercent={settings.platformFeePercent}
         />
       </div>
     </EducatorShell>

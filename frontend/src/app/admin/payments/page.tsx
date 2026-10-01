@@ -2,6 +2,7 @@ import Link from "next/link";
 import AdminShell from "@/components/admin/AdminShell";
 import ManualOrderDecision from "@/components/admin/ManualOrderDecision";
 import PaymentSettingsForm from "@/components/admin/PaymentSettingsForm";
+import PlatformFeeForm from "@/components/admin/PlatformFeeForm";
 import { adminBadges } from "@/lib/adminBadges";
 import { formatDate } from "@/lib/adminUsers";
 import { formatPrice } from "@/lib/courseUi";
@@ -9,6 +10,7 @@ import { listOrdersAwaitingReview } from "@/lib/orders";
 import { paymentsConfigured } from "@/lib/payments/midtrans";
 import { getPaymentSettings } from "@/lib/paymentSettings";
 import { requireAdmin } from "@/lib/firebase/session";
+import { listPostPaidOrders, listUnallocatedSales } from "@/lib/royaltyDashboard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Pembayaran – Panel Admin SynapEd" };
@@ -17,10 +19,12 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPaymentsPage() {
   const admin = await requireAdmin("/admin/payments");
-  const [settings, orders, badges] = await Promise.all([
+  const [settings, orders, badges, unallocated, postPaid] = await Promise.all([
     getPaymentSettings(),
     listOrdersAwaitingReview(),
     adminBadges(),
+    listUnallocatedSales(),
+    listPostPaidOrders(),
   ]);
 
   return (
@@ -46,6 +50,64 @@ export default async function AdminPaymentsPage() {
           }}
           midtransConfigured={paymentsConfigured()}
         />
+
+        <PlatformFeeForm initialFee={settings.platformFeePercent} initialReferral={settings.referralPercent} />
+
+        {/* ── Perlu tindak lanjut ─────────────────────────────────── */}
+        {(unallocated.length > 0 || postPaid.length > 0) && (
+          <section className="space-y-6">
+            {postPaid.length > 0 && (
+              <div className="bg-paper-card border border-rust-700/30 rounded-2xl p-7">
+                <h2 className="t-h3 mb-1.5">Kabar gagal setelah lunas</h2>
+                <p className="t-body text-sm text-ink-muted mb-5">
+                  Midtrans mengirim status gagal untuk pesanan yang sudah lunas — biasanya refund atau
+                  chargeback. Status dan pendapatan kontributor TIDAK diubah otomatis; periksa di
+                  dashboard Midtrans lalu tindak lanjuti manual.
+                </p>
+                <ul className="divide-y divide-rule">
+                  {postPaid.map((o) => (
+                    <li key={o.orderId} className="flex flex-wrap items-baseline justify-between gap-3 py-3 text-sm">
+                      <span className="min-w-0 break-words text-ink">
+                        {o.courseTitle}
+                        <span className="block text-xs text-ink-muted break-all">{o.orderId}</span>
+                      </span>
+                      <span className="text-right text-ink-body">
+                        {formatPrice(o.amount)} · <span className="text-rust-700">{o.postPaidTransactionStatus || o.postPaidStatus}</span>
+                        <span className="block text-xs text-ink-muted">{formatDate(o.postPaidAt)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {unallocated.length > 0 && (
+              <div className="bg-paper-card border border-amber-500/40 rounded-2xl p-7">
+                <h2 className="t-h3 mb-1.5">Penjualan belum teralokasi</h2>
+                <p className="t-body text-sm text-ink-muted mb-5">
+                  Sebagian uang penjualan ini tidak punya penerima: kursusnya tanpa pemilik, atau
+                  syarat pembagian di pesanannya tidak terbaca.
+                </p>
+                <ul className="divide-y divide-rule">
+                  {unallocated.map((s) => (
+                    <li key={s.orderId} className="flex flex-wrap items-baseline justify-between gap-3 py-3 text-sm">
+                      <span className="min-w-0 break-words text-ink">
+                        {s.courseTitle || s.courseSlug}
+                        <span className="block text-xs text-ink-muted break-all">
+                          {s.orderId} · {s.termsOrigin === "invalid" ? "syarat rusak" : "tanpa pemilik"}
+                        </span>
+                      </span>
+                      <span className="text-right text-ink-body">
+                        <span className="t-numeral text-amber-700">{formatPrice(s.unallocatedAmount)}</span> dari {formatPrice(s.gross)}
+                        <span className="block text-xs text-ink-muted">{formatDate(s.saleAt)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
 
         <section>
           <h2 className="t-h3 mb-1.5">Menunggu Diperiksa</h2>

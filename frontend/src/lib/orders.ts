@@ -83,6 +83,26 @@ export interface Order {
 
   /** Muatan notifikasi terakhir, apa adanya, untuk menelusuri masalah. */
   lastNotification: Record<string, unknown> | null;
+
+  /**
+   * Notifikasi gagal/kedaluwarsa yang datang SETELAH pesanan lunas — refund,
+   * chargeback, atau sekadar datang tidak berurutan. Statusnya tetap `paid`;
+   * ini hanya penanda supaya admin menindaklanjutinya secara manual.
+   */
+  postPaidStatus: OrderStatus | null;
+  /** `transaction_status` mentah dari Midtrans, mis. "deny" atau "refund". */
+  postPaidTransactionStatus: string | null;
+  postPaidAt: string | null;
+
+  /**
+   * Syarat bagi hasil yang dibekukan saat pesanan dibuat — MENTAH, dibaca
+   * lewat `parseRoyaltyTerms`. `null` pada pesanan dari sebelum fitur royalti.
+   *
+   * Sengaja `unknown`, bukan `RoyaltyTerms | null`: menormalkan syarat rusak
+   * menjadi null di sini akan membuatnya tak bisa dibedakan dari pesanan lama,
+   * dan pesanan lama dibagi 100% ke pemilik tanpa potongan.
+   */
+  royalty: unknown;
 }
 
 /**
@@ -120,6 +140,10 @@ function toOrder(d: FirebaseFirestore.DocumentData): Order {
     paidAt: (d.paidAt as string | null | undefined) ?? null,
     updatedAt: (d.updatedAt as string | undefined) ?? "",
     lastNotification: (d.lastNotification as Record<string, unknown> | null | undefined) ?? null,
+    postPaidStatus: (d.postPaidStatus as OrderStatus | null | undefined) ?? null,
+    postPaidTransactionStatus: (d.postPaidTransactionStatus as string | null | undefined) ?? null,
+    postPaidAt: (d.postPaidAt as string | null | undefined) ?? null,
+    royalty: d.royalty ?? null,
   };
 }
 
@@ -131,6 +155,66 @@ export async function getOrder(orderId: string): Promise<Order | null> {
   const doc = await orderRef(orderId).get();
   const data = doc.data();
   return data ? toOrder(data) : null;
+}
+
+export interface NotificationUpdate {
+  status: OrderStatus;
+  transactionStatus: string;
+  paymentType: string | null;
+  payload: Record<string, unknown>;
+  now: string;
+}
+
+/**
+ * Menerapkan satu notifikasi Midtrans ke pesanan, dalam transaksi.
+ *
+ * Aturan satu-satunya: begitu `paid`, status TIDAK PERNAH turun. Notifikasi
+ * bisa datang tidak berurutan (expire yang tertahan di antrean retry tiba
+ * sesudah settlement), dan refund/chargeback juga datang lewat jalur ini.
+ * Menimpa `paid` berarti pesanan yang uangnya sudah masuk tampak gagal —
+ * dan apa pun yang dihitung dari status itu ikut hilang diam-diam.
+ *
+ * Kabar buruk sesudah lunas dicatat di `postPaidStatus` untuk ditinjau admin.
+ * `pending` yang terlambat bukan kabar apa-apa, jadi tidak mencatat apa pun.
+ *
+ * Transaksi, bukan baca-lalu-tulis biasa: dua notifikasi yang tiba bersamaan
+ * (settlement dan expire) bisa sama-sama membaca "pending", lalu yang
+ * menulis terakhir menang — dan itu bisa saja expire.
+ */
+export async function applyNotification(
+  orderId: string,
+  u: NotificationUpdate,
+): Promise<OrderStatus | null> {
+  const ref = orderRef(orderId);
+
+  return adminDb().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.data();
+    if (!data) return null;
+
+    const current = toOrder(data);
+    const patch: Record<string, unknown> = {
+      updatedAt: u.now,
+      lastNotification: u.payload,
+    };
+    if (u.paymentType) patch.paymentType = u.paymentType;
+
+    if (current.status === "paid") {
+      if (u.status === "failed" || u.status === "expired") {
+        patch.postPaidStatus = u.status;
+        patch.postPaidTransactionStatus = u.transactionStatus;
+        patch.postPaidAt = u.now;
+      }
+      tx.update(ref, patch);
+      return "paid";
+    }
+
+    patch.status = u.status;
+    if (u.status === "paid") patch.paidAt = current.paidAt ?? u.now;
+
+    tx.update(ref, patch);
+    return u.status;
+  });
 }
 
 /**

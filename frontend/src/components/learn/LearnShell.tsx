@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { CourseDetail, Lesson } from "@/lib/courses";
 import type { Progress } from "@/lib/enrollments";
@@ -7,6 +7,7 @@ import type { PublicQuiz } from "@/lib/quiz";
 import { CHECK_ICON, LOCK_ICON, lessonIcons } from "@/lib/courseUi";
 import { formatBytes, lessonAssetUrl, previewKind, toEmbedUrl } from "@/lib/videoEmbed";
 import { cn } from "@/lib/cn";
+import { useChatLessonContext } from "@/components/ui/ChatContext";
 import LessonCompleteButton from "./LessonCompleteButton";
 import AssignmentPanel, { type SubmissionView } from "./AssignmentPanel";
 import MaterialViewer from "./MaterialViewer";
@@ -108,6 +109,15 @@ export default function LearnShell({
       return !v;
     });
   }
+
+  // Beritahu ChatWidget global (lewat ChatContext) pelajaran mana yang
+  // sedang dibuka, supaya /api/chat bisa beralih ke mode tutor — lihat
+  // komentar di ChatContext.tsx. Hanya slug yang dikirim, bukan konten.
+  const { setLessonContext } = useChatLessonContext();
+  useEffect(() => {
+    setLessonContext({ courseSlug: course.slug, lessonSlug: current.slug });
+    return () => setLessonContext(null);
+  }, [course.slug, current.slug, setLessonContext]);
 
   // Pelajaran yang penyelesaiannya lewat pengumpulan berkas, bukan tombol.
   const butuhPengumpulan = current.type === "assignment" || current.type === "quiz";
@@ -339,6 +349,13 @@ export default function LearnShell({
             </div>
 
             <h1 className="t-h2 mb-8">{current.title}</h1>
+
+            {current.type === "assignment" && current.instructions && (
+              <section className="mb-8 rounded-2xl border border-rule bg-paper-alt p-5">
+                <h2 className="t-label text-ink-muted mb-3">Instruksi Tugas</h2>
+                <p className="text-sm text-ink-body whitespace-pre-line">{current.instructions}</p>
+              </section>
+            )}
 
             {quiz ? (
               <div className="mb-8">

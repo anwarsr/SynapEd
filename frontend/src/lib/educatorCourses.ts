@@ -106,7 +106,22 @@ export function tintFor(icon: string): string {
 }
 
 /** Kursus milik seorang educator, terbaru di atas. */
-export async function listOwnedCourses(uid: string): Promise<EducatorCourseRow[]> {
+export async function listOwnedCourses(
+  uid: string,
+  /**
+   * Nama pemiliknya yang berlaku sekarang.
+   *
+   * Diminta dari pemanggil, bukan dibaca ulang dari Auth di sini: kedua
+   * pemanggilnya sudah memegang nama itu (halaman profil publik baru saja
+   * memanggil getUser, halaman educator memegang sesinya), jadi membacanya
+   * lagi hanya menambah satu permintaan tanpa menambah apa pun.
+   *
+   * Dikosongkan berarti jatuh ke salinan di dokumen kursus — salinan itu
+   * dibuat sekali saat kursus dibuat dan tidak pernah ikut berubah saat
+   * pemiliknya berganti nama, jadi ia hanya layak jadi cadangan.
+   */
+  ownerName?: string,
+): Promise<EducatorCourseRow[]> {
   const snap = await adminDb().collection("courses").where("ownerUid", "==", uid).get();
 
   return snap.docs
@@ -128,7 +143,7 @@ export async function listOwnedCourses(uid: string): Promise<EducatorCourseRow[]
         reviews: (data.reviews as number) ?? 0,
         lessonsCount: sections.reduce((n, s) => n + s.lessons.length, 0),
         thumbnail: (data.thumbnail as string | null | undefined) ?? null,
-        instructorName: (data.instructorName as string | undefined) ?? "",
+        instructorName: ownerName || (data.instructorName as string | undefined) || "",
         ownerUid: (data.ownerUid as string | undefined) ?? null,
         // Daftar ini selalu milik SATU educator yang fotonya sudah tampil di
         // kepala halaman profilnya, jadi tidak perlu dibaca ulang per kursus.

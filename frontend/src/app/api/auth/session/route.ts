@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase/admin";
 import { SESSION_COOKIE, SESSION_MAX_AGE_MS } from "@/lib/firebase/session";
+import { ensureUsername } from "@/lib/usernames";
 
 /**
  * Menukar ID token Firebase (dari SDK klien) menjadi session cookie httpOnly.
@@ -26,6 +27,18 @@ export async function POST(request: Request) {
     const sessionCookie = await adminAuth().createSessionCookie(idToken, {
       expiresIn: SESSION_MAX_AGE_MS,
     });
+
+    // Setiap cara masuk melewati rute ini, jadi di sinilah akun baru — dan
+    // akun lama yang terlewat backfill — mendapat username. Kegagalannya
+    // hanya dicatat: tidak punya username bukan alasan untuk gagal masuk,
+    // dan login berikutnya akan mencobanya lagi.
+    try {
+      const { uid } = await adminAuth().verifySessionCookie(sessionCookie);
+      const hasil = await ensureUsername(uid);
+      if (!hasil.ok) console.error(`[auth/session] username untuk ${uid}:`, hasil.error);
+    } catch (err) {
+      console.error("[auth/session] ensureUsername gagal:", err);
+    }
 
     const res = NextResponse.json({ ok: true });
     res.cookies.set(SESSION_COOKIE, sessionCookie, {

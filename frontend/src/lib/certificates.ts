@@ -5,6 +5,7 @@ import { flattenLessons, type CourseDetail } from "@/lib/courses";
 import { enrollmentRef, type Enrollment } from "@/lib/enrollments";
 import { gradingStateOf, listStudentSubmissions } from "@/lib/submissions";
 import type { SessionUser } from "@/lib/firebase/session";
+import { CROCKFORD } from "@/lib/inviteCode";
 
 export interface Certificate {
   id: string;
@@ -18,9 +19,6 @@ export interface Certificate {
   revokedAt: string | null;
 }
 
-// Alfabet Crockford base32 — tanpa I, L, O, U supaya tidak tertukar saat
-// dibaca manusia (mis. diketik ulang dari sertifikat cetak).
-const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 /**
  * ID sertifikat: acak, TIDAK diturunkan dari uid+slug.
@@ -42,9 +40,51 @@ export function certificateRef(id: string) {
   return adminDb().collection("certificates").doc(id);
 }
 
+/**
+ * Sertifikat milik seseorang, terbaru di atas.
+ *
+ * Yang dicabut TIDAK ikut: sertifikat yang sudah ditarik tidak boleh tampil
+ * di profil pemiliknya seolah masih berlaku. Halaman verifikasi publik tetap
+ * bisa membukanya lewat ID — di sana justru statusnya yang jadi jawabannya.
+ *
+ * Diurutkan di memori, bukan lewat orderBy: Firestore membuang dokumen yang
+ * tidak punya field yang diurutkan, dan sertifikat lama bisa saja lahir
+ * sebelum sebuah field ada.
+ */
+export async function listMyCertificates(uid: string): Promise<Certificate[]> {
+  const snap = await adminDb().collection("certificates").where("uid", "==", uid).get();
+
+  return snap.docs
+    .map((d) => toCertificate(d.id, d.data()))
+    .filter((c) => c.revokedAt === null)
+    .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
+}
+
+/**
+ * Normaliser dokumen sertifikat.
+ *
+ * Menggantikan `doc.data() as Certificate`. Cast itu membuat TypeScript
+ * percaya setiap field ada, padahal sertifikat yang terbit sebelum sebuah
+ * field diperkenalkan akan bernilai undefined — dan galatnya baru muncul
+ * jauh dari sini, saat nilainya dipakai merender halaman.
+ */
+function toCertificate(id: string, d: FirebaseFirestore.DocumentData): Certificate {
+  return {
+    id: (d.id as string | undefined) ?? id,
+    uid: (d.uid as string | undefined) ?? "",
+    holderName: (d.holderName as string | undefined) ?? "",
+    courseSlug: (d.courseSlug as string | undefined) ?? "",
+    courseTitle: (d.courseTitle as string | undefined) ?? "",
+    instructorName: (d.instructorName as string | undefined) ?? "",
+    issuedAt: (d.issuedAt as string | undefined) ?? "",
+    lessonsTotal: (d.lessonsTotal as number | undefined) ?? 0,
+    revokedAt: (d.revokedAt as string | null | undefined) ?? null,
+  };
+}
+
 export async function getCertificate(id: string): Promise<Certificate | null> {
   const doc = await certificateRef(id).get();
-  return doc.exists ? (doc.data() as Certificate) : null;
+  return doc.exists ? toCertificate(doc.id, doc.data() ?? {}) : null;
 }
 
 /**

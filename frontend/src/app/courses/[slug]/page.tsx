@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
@@ -7,11 +8,17 @@ import Tag from "@/components/ui/Tag";
 import EnrollButton from "@/components/courses/EnrollButton";
 import BuyButton from "@/components/courses/BuyButton";
 import ManualQrisPanel from "@/components/courses/ManualQrisPanel";
+import ReferralField, { ReferralProvider } from "@/components/courses/ReferralField";
+import ShareCourseButton from "@/components/courses/ShareCourseButton";
+import { getMyReferralCode, resolveReferral } from "@/lib/referrals";
+import { REFERRAL_COOKIE, REFERRAL_PARAM } from "@/lib/referralRules";
+import { adminAuth } from "@/lib/firebase/admin";
 import ReviewForm from "@/components/courses/ReviewForm";
 import ReviewList from "@/components/courses/ReviewList";
 import CurriculumList, { ENROLL_ANCHOR } from "@/components/courses/CurriculumList";
 import Stars from "@/components/ui/Stars";
 import { getCourse } from "@/lib/courses";
+import { contributorPeople } from "@/lib/courseContributors";
 import { getCourseAccess } from "@/lib/courseAccess";
 import { progressOf } from "@/lib/enrollments";
 import { getReview, listCourseReviews } from "@/lib/reviews";
@@ -27,6 +34,7 @@ import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /**
@@ -48,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CourseDetailPage({ params }: Props) {
+export default async function CourseDetailPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const course = await getCourse(slug);
   if (!course) notFound();
@@ -81,15 +89,42 @@ export default async function CourseDetailPage({ params }: Props) {
       ? await findLiveManualOrder(access.user.uid, slug)
       : null;
 
+  // ── Referral ────────────────────────────────────────────────────────
+  // Kode dari tautan yang sedang dibuka didahulukan; kalau tidak ada, kode
+  // yang diingat cookie dari tautan sebelumnya. Cookie yang baru dipasang
+  // proxy belum terbaca di permintaan yang sama, karena itu parameter URL
+  // juga dibaca langsung di sini.
+  //
+  // Kode yang tidak sah, sudah mati, atau MILIK PEMBELI SENDIRI tidak diisikan
+  // — pembeli tetap bisa memasukkan kode lain secara manual.
+  const dariTautan = (await searchParams)[REFERRAL_PARAM];
+  const kodeMasuk =
+    (typeof dariTautan === "string" ? dariTautan : "") || (await cookies()).get(REFERRAL_COOKIE)?.value || "";
+
+  let referralAwal: { code: string; referrerName: string | null } | null = null;
+  if (access && !enrolled && course.price > 0 && kodeMasuk) {
+    const ref = await resolveReferral(kodeMasuk, access.user.uid);
+    if (ref.ok && ref.referral) {
+      const perujuk = await adminAuth().getUser(ref.referral.uid).catch(() => null);
+      referralAwal = { code: ref.referral.code, referrerName: perujuk?.displayName?.trim() || null };
+    }
+  }
+  const kodeSaya = access ? await getMyReferralCode(access.user.uid) : null;
+
   const enrollment = access?.enrollment ?? null;
   const progress = enrollment ? progressOf(course, enrollment) : null;
 
   // Formulir ulasan hanya untuk yang enrollment-nya sudah selesai. Penjaga
   // sebenarnya tetap di submitReview() — ini cuma menentukan yang terlihat.
   const selesai = access?.enrollment?.status === "completed";
-  const [reviews, myReview] = await Promise.all([
+  const [reviews, myReview, penyusun] = await Promise.all([
     listCourseReviews(slug),
     selesai && access ? getReview(access.user.uid, slug) : Promise.resolve(null),
+    // Kredit hanya tampil kalau penyusunnya lebih dari satu orang; kursus
+    // satu penyusun sudah menyebut namanya di "Diajarkan oleh".
+    course.contributors.length > 1
+      ? contributorPeople(course.contributors).then((ps) => ps.filter((p) => p.exists))
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -107,7 +142,19 @@ export default async function CourseDetailPage({ params }: Props) {
           </nav>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
+            {/* min-w-0 WAJIB di sini.
+
+                Grid item bawaannya `min-width: auto`, jadi ia menolak
+                menyusut di bawah lebar min-content anaknya. Judul modul di
+                kurikulum memakai `truncate` — yang berarti `white-space:
+                nowrap` — sehingga lebar min-content-nya sama dengan panjang
+                penuh judulnya. Tanpa min-w-0, judul terpanjang memaksa
+                seluruh halaman melebar melewati layar ponsel, dan isinya
+                terpotong tanpa satu pun galat.
+
+                Bagian dalamnya sudah diberi min-w-0; yang terlewat justru
+                item grid paling luar ini. */}
+            <div className="lg:col-span-2 min-w-0 space-y-6">
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <div className="flex items-center gap-3 mb-5">
                   <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
@@ -116,6 +163,26 @@ export default async function CourseDetailPage({ params }: Props) {
 
                 <h1 className="t-h2 mb-5">{course.title}</h1>
                 <p className="t-body">{course.longDesc}</p>
+
+                {/* Nama tampilan, bukan username, dan TANPA persentase:
+                    berapa bagian tiap orang adalah urusan mereka dengan
+                    pemilik kursus, bukan informasi untuk calon pembeli. */}
+                {penyusun.length > 1 && (
+                  <p className="mt-5 text-sm text-ink-muted">
+                    Disusun oleh{" "}
+                    {penyusun.map((p, i) => (
+                      <span key={p.uid}>
+                        {i > 0 && (i === penyusun.length - 1 ? " dan " : ", ")}
+                        <Link
+                          href={`/profil/${p.uid}`}
+                          className="text-ink hover:text-blue-700 hover:underline underline-offset-4"
+                        >
+                          {p.name}
+                        </Link>
+                      </span>
+                    ))}
+                  </p>
+                )}
 
                 <div className="flex flex-wrap gap-x-8 gap-y-3 mt-8 pt-6 border-t border-rule text-sm text-ink-muted">
                   <div className="flex items-center gap-2">
@@ -151,6 +218,12 @@ export default async function CourseDetailPage({ params }: Props) {
                 </div>
               </div>
 
+              {/* Disembunyikan saat kosong.
+
+                  Kursus yang baru dibuat bisa belum punya poin ini, dan judul
+                  bagian tanpa satu pun isi di bawahnya terbaca seperti halaman
+                  yang rusak, bukan seperti bagian yang memang belum diisi. */}
+              {course.whatYouLearn.length > 0 && (
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <h2 className="t-h3 mb-6">Yang Akan Anda Pelajari</h2>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3.5">
@@ -164,6 +237,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   ))}
                 </div>
               </div>
+              )}
 
               <div className="bg-paper-card border border-rule rounded-2xl p-8">
                 <h2 className="t-h3 mb-6">Kurikulum</h2>
@@ -195,7 +269,7 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
             </div>
 
-            <aside id={ENROLL_ANCHOR}>
+            <aside id={ENROLL_ANCHOR} className="min-w-0">
               <div className="bg-paper-card border border-rule rounded-2xl p-6 sticky top-28">
                 <CourseThumb
                   thumbnail={course.thumbnail}
@@ -268,7 +342,11 @@ export default async function CourseDetailPage({ params }: Props) {
                       Masuk untuk Mendaftar
                     </Button>
                   ) : course.price > 0 ? (
-                    <>
+                    <ReferralProvider initial={referralAwal}>
+                      {(midtransUsable || manualUsable) && (
+                        <ReferralField />
+                      )}
+
                       {/* Kunci Midtrans belum terpasang, atau saklarnya dimatikan
                           admin, berarti tombolnya pasti gagal — jadi tidak
                           dirender sama sekali. */}
@@ -305,7 +383,7 @@ export default async function CourseDetailPage({ params }: Props) {
                           Pembayaran sedang tidak tersedia
                         </span>
                       )}
-                    </>
+                    </ReferralProvider>
                   ) : (
                     <EnrollButton slug={slug} />
                   )}
@@ -313,6 +391,18 @@ export default async function CourseDetailPage({ params }: Props) {
                   <Button href="/courses" variant="outline" className="w-full">
                     Lihat Kursus Lain
                   </Button>
+
+                  {/* Kursus gratis tidak menghasilkan komisi, jadi tidak ada
+                      kode yang perlu ikut di tautannya. */}
+                  <div className="pt-2">
+                    <ShareCourseButton
+                      slug={slug}
+                      title={course.title}
+                      code={course.price > 0 ? kodeSaya : null}
+                      loggedIn={Boolean(access) && course.price > 0}
+                      referralPercent={paymentSettings.referralPercent}
+                    />
+                  </div>
 
                   {/* Ketentuan pembelian harus terbaca SEBELUM membayar, bukan
                       hanya tersembunyi di footer. Khusus kursus berbayar:
@@ -339,6 +429,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   )}
                 </div>
 
+                {course.requirements.length > 0 && (
                 <div className="mt-7 pt-6 border-t border-rule">
                   <h3 className="t-label text-ink-muted mb-4">Persyaratan</h3>
                   <ul className="space-y-2.5">
@@ -350,6 +441,7 @@ export default async function CourseDetailPage({ params }: Props) {
                     ))}
                   </ul>
                 </div>
+                )}
 
                 {course.lastUpdated && (
                   <p className="mt-6 pt-5 border-t border-rule text-xs text-ink-muted">

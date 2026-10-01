@@ -194,6 +194,38 @@ async function main() {
     const kunciLain = await postWebhook(notification(orderId, PRICE, "settlement", "kunci-orang-lain"));
     check("tanda tangan dari kunci lain ditolak", kunciLain === 403, `HTTP ${kunciLain}`);
 
+    // ── Uji notifikasi dari dashboard Midtrans ──────────────────────────
+    //
+    // Tombol "Test notification URL" mengirim pesanan tiruan yang tidak ada
+    // di sini. Ia harus dijawab 200, kalau tidak dashboard melaporkan URL-nya
+    // gagal — dan pemilik toko kehilangan satu-satunya alat untuk memastikan
+    // URL-nya benar.
+    {
+      const ujiId = `payment_notif_test_G${randomUUID().slice(0, 8)}`;
+
+      const sah = await postWebhook(notification(ujiId, PRICE, "capture"));
+      check("uji notifikasi dashboard dijawab 200", sah === 200, `HTTP ${sah}`);
+
+      check(
+        "uji notifikasi tidak menulis pesanan apa pun",
+        !(await db.collection("orders").doc(ujiId).get()).exists,
+        "tidak ada dokumen baru",
+      );
+
+      // Yang terpenting: cabang ini ada DI BELAKANG pemeriksaan tanda tangan.
+      // Kalau ia mendahului, siapa pun cukup menamai pesanannya
+      // "payment_notif_test..." untuk melewati seluruh penjagaan.
+      const tanpaTandaTangan = await postWebhook(
+        notification(ujiId, PRICE, "capture", "kunci-orang-lain"),
+      );
+      check(
+        "awalan uji BUKAN pintu belakang — tanda tangan tetap wajib",
+        tanpaTandaTangan === 403,
+        `HTTP ${tanpaTandaTangan}`,
+      );
+    }
+
+
     // Ditandatangani dengan benar TAPI nominalnya bukan harga kursus.
     const nominal = await postWebhook(notification(orderId, 1000, "settlement"));
     check("nominal dipalsukan ditolak", nominal === 400, `HTTP ${nominal}`);
@@ -205,6 +237,8 @@ async function main() {
 
     const asing = await postWebhook(notification("SYN-tidak-ada", PRICE, "settlement"));
     check("pesanan tak dikenal ditolak", asing === 404, `HTTP ${asing}`);
+    // Sekaligus menjaga cabang uji dashboard tetap sempit: hanya nomor
+    // berawalan payment_notif_test yang boleh lolos tanpa pesanan.
 
     // ── Webhook: pembayaran sah ─────────────────────────────────────────
     const sebelum = (await db.collection("courses").doc(paidSlug).get()).data()?.enrolledStudents;
@@ -235,6 +269,43 @@ async function main() {
       `${sebelum} -> ${sesudah}`,
     );
 
+    // ── Webhook: notifikasi terlambat SETELAH lunas ─────────────────────
+    // Midtrans bisa mengirim expire/cancel/deny sesudah settlement — datang
+    // tidak berurutan, atau karena refund/chargeback. Status `paid` tidak
+    // boleh turun: buku royalti dan akses peserta bersandar padanya.
+    {
+      const lunasSebelum = (await db.collection("orders").doc(orderId).get()).data();
+
+      const kodeTerlambat: number[] = [];
+      for (const s of ["expire", "cancel", "deny", "pending"]) {
+        kodeTerlambat.push(await postWebhook(notification(orderId, PRICE, s)));
+      }
+      check(
+        "notifikasi terlambat tetap dijawab 200 (supaya Midtrans berhenti mengulang)",
+        kodeTerlambat.every((c) => c === 200),
+        kodeTerlambat.join(","),
+      );
+
+      const o = (await db.collection("orders").doc(orderId).get()).data();
+      check("status lunas TIDAK turun oleh notifikasi terlambat", o?.status === "paid", `status=${o?.status}`);
+      check("paidAt tidak berubah", o?.paidAt === lunasSebelum?.paidAt, `${o?.paidAt}`);
+      check(
+        "notifikasi gagal sesudah lunas dicatat untuk ditinjau admin",
+        o?.postPaidStatus === "failed" && typeof o?.postPaidAt === "string",
+        `postPaidStatus=${o?.postPaidStatus}`,
+      );
+      check(
+        "pending yang datang terlambat tidak menimpa catatan itu",
+        o?.postPaidTransactionStatus === "deny",
+        `postPaidTransactionStatus=${o?.postPaidTransactionStatus}`,
+      );
+      check(
+        "akses peserta tetap ada",
+        await enrollmentExists(buyer.uid, paidSlug),
+        "enrollment utuh",
+      );
+    }
+
     // ── createOrder setelah terdaftar ───────────────────────────────────
     const lagi = await callAction(`/courses/${paidSlug}`, createId, [paidSlug], buyer.cookie);
     check("sudah terdaftar tidak bisa memesan lagi", lagi.includes("sudah terdaftar"), "ditolak");
@@ -246,6 +317,72 @@ async function main() {
       html.html.includes("Lanjutkan Belajar"),
       "tombol berubah setelah lunas",
     );
+
+    // ── Harga berubah saat pesanan lama masih hidup ─────────────────────
+    //
+    // Pesanan tertunda dipakai ulang supaya klik berulang tidak menumpuk
+    // transaksi. Tapi harga kursus bisa berubah dalam 30 menit itu, dan
+    // pesanan lama membawa nominal lamanya. Kalau ia tetap dipakai ulang,
+    // pembeli melihat harga baru di halaman lalu membayar harga lama di
+    // popup Midtrans — dan webhook meloloskannya, karena yang ia bandingkan
+    // adalah nominal pesanan itu sendiri, bukan harga kursusnya.
+    {
+      const gantiHarga = await createTestUser("user", "ganti-harga");
+      const lamaId = `SYN-harga-${randomUUID().slice(0, 8)}`;
+      orders.push(lamaId);
+
+      await seedOrder(lamaId, gantiHarga, paidSlug, PRICE);
+
+      // Harga belum berubah: pesanan lama MEMANG harus dipakai ulang.
+      const sama = await callAction(
+        `/courses/${paidSlug}`, createId, [paidSlug], gantiHarga.cookie,
+      );
+      check(
+        "pesanan tertunda dipakai ulang selama harganya sama",
+        sama.includes("token-uji"),
+        "klik berulang tidak menumpuk transaksi",
+      );
+
+      // Educator menaikkan harganya.
+      const HARGA_BARU = PRICE + 50_000;
+      await db.collection("courses").doc(paidSlug).update({ price: HARGA_BARU });
+
+      const beda = await callAction(
+        `/courses/${paidSlug}`, createId, [paidSlug], gantiHarga.cookie,
+      );
+      check(
+        "token lama TIDAK dibagikan lagi setelah harganya berubah",
+        !beda.includes("token-uji"),
+        `harga ${PRICE} -> ${HARGA_BARU}`,
+      );
+
+      const lama = (await db.collection("orders").doc(lamaId).get()).data();
+      check(
+        "pesanan berharga lama ditandai kedaluwarsa",
+        lama?.status === "expired",
+        `status=${lama?.status}`,
+      );
+
+      if (LIVE_KEY) {
+        const baru = await db
+          .collection("orders")
+          .where("uid", "==", gantiHarga.uid)
+          .get();
+        const pending = baru.docs
+          .map((d) => d.data())
+          .filter((o) => o.status === "pending");
+
+        baru.docs.forEach((d) => orders.includes(d.id) || orders.push(d.id));
+        check(
+          "pesanan pengganti memakai harga yang baru",
+          pending.length === 1 && pending[0]?.amount === HARGA_BARU,
+          `${pending.length} pending, nominal ${pending[0]?.amount}`,
+        );
+      }
+
+      await db.collection("courses").doc(paidSlug).update({ price: PRICE });
+      await auth.deleteUser(gantiHarga.uid).catch(() => undefined);
+    }
 
     // ── Notifikasi gagal & kedaluwarsa ──────────────────────────────────
     const orderGagal = `SYN-gagal-${randomUUID().slice(0, 8)}`;
@@ -292,6 +429,11 @@ async function main() {
       ...orders.map((id) => db.collection("orders").doc(id).delete()),
       auth.deleteUser(buyer.uid),
     ]);
+    // Webhook yang lunas kini juga mencatat penjualan di buku royalti.
+    for (const c of ["royaltySales", "royaltyEarnings"]) {
+      const snap = await db.collection(c).where("courseSlug", "==", paidSlug).get();
+      await Promise.allSettled(snap.docs.map((d) => d.ref.delete()));
+    }
     console.log("\nakun, kursus, & pesanan uji dihapus.");
   }
 

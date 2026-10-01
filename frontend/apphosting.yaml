@@ -70,14 +70,17 @@ env:
   # menuding formatnya, padahal YAML-nya sendiri sah. Kalau kuncinya memang
   # belum ada, komentari seluruh entri ini alih-alih mengosongkan nilainya.
   - variable: NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
-    value: Mid-client-bOPniI701PgZf_Pt
+    value: Mid-client-B63KwqjhM0UfHN3O
     availability: [BUILD, RUNTIME]
 
-  # "true" hanya setelah akun produksi Midtrans disetujui. Selama masih
-  # "false", seluruh transaksi memakai sandbox dan tidak ada uang sungguhan
-  # yang berpindah.
+  # "true" sejak akun produksi Midtrans disetujui — transaksi di situs ini
+  # memindahkan UANG SUNGGUHAN.
+  #
+  # Nilai ini harus berubah BERSAMAAN dengan kedua kuncinya. Kunci sandbox
+  # ditolak endpoint produksi dan sebaliknya, keduanya dengan HTTP 401 —
+  # jadi mengganti salah satunya saja mematikan seluruh pembayaran.
   - variable: MIDTRANS_IS_PRODUCTION
-    value: "false"
+    value: "true"
     availability: [BUILD, RUNTIME]
 
   # Server key BERBEDA sifatnya dari semua nilai di atas: ia kredensial

@@ -92,7 +92,13 @@ export default function CurriculumList({
 
                     <span
                       className={cn(
-                        "truncate",
+                        // Membungkus di ponsel, dipotong mulai sm.
+                        //
+                        // `truncate` menyisakan "Modul 1 : Apa itu N…" pada
+                        // layar 390px — judulnya justru bagian yang paling
+                        // dicari orang di daftar ini. Di layar lebar barulah
+                        // memotong lebih baik daripada baris yang melompat.
+                        "break-words sm:truncate",
                         bisaBuka ? "text-ink-body" : "text-ink-muted",
                         sudah && "text-ink-muted",
                       )}

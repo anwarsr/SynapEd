@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { paymentSettingsRef } from "@/lib/paymentSettings";
 import { QRIS_IMAGES } from "@/lib/storagePaths";
+import { validateRevenueSplit } from "@/lib/royaltyTerms";
 
 export type SettingsResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -63,4 +64,47 @@ export async function updatePaymentSettings(input: {
   revalidatePath("/courses", "layout");
 
   return { ok: true, message: "Setelan pembayaran tersimpan." };
+}
+
+/**
+ * Mengubah potongan platform dan bagian referral — SELALU bersamaan.
+ *
+ * Satu action untuk keduanya, supaya aturan "referral tidak lebih besar dari
+ * potongan" diperiksa terhadap pasangan yang benar-benar akan tersimpan,
+ * bukan terhadap angka lama di dokumen yang mungkin sudah diubah tab lain.
+ *
+ * Terpisah dari saklar metode pembayaran, supaya menyimpan saklar tidak ikut
+ * mengirim ulang angka dari form yang basi.
+ */
+export async function updateRevenueSettings(input: {
+  platformFeePercent: unknown;
+  referralPercent: unknown;
+}): Promise<SettingsResult> {
+  const admin = await getCurrentUser();
+  if (admin?.role !== "admin") {
+    return { ok: false, error: "Hanya admin yang dapat mengubah potongan platform." };
+  }
+
+  const invalid = validateRevenueSplit(input?.platformFeePercent, input?.referralPercent);
+  if (invalid) return { ok: false, error: invalid };
+
+  const platformFeePercent = input.platformFeePercent as number;
+  const referralPercent = input.referralPercent as number;
+
+  await paymentSettingsRef().set(
+    {
+      platformFeePercent,
+      referralPercent,
+      updatedAt: new Date().toISOString(),
+      updatedByUid: admin.uid,
+    },
+    { merge: true },
+  );
+
+  revalidatePath("/admin/payments");
+  revalidatePath("/dashboard");
+  return {
+    ok: true,
+    message: `Potongan ${platformFeePercent}% dan referral ${referralPercent}% berlaku untuk pesanan berikutnya.`,
+  };
 }

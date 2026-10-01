@@ -202,6 +202,45 @@ async function run(owner: TestUser, pembeli: TestUser, lain: TestUser, admin: Te
         (await orderOf(pembeli.uid, slug)).length === 1,
         "cegah antrean admin dipenuhi duplikat",
       );
+
+      // Tapi pemakaian ulang itu BERHENTI kalau harganya sudah berubah.
+      //
+      // Pembeli membayar lewat QRIS dengan nominal yang tertera di pesanan.
+      // Kalau pesanan berharga lama dipakai ulang, ia mentransfer angka yang
+      // sudah tidak berlaku — dan uang yang sudah pindah jauh lebih sulit
+      // dibereskan daripada transaksi yang tinggal dibatalkan.
+      const HARGA_BARU = HARGA + 50_000;
+      await db.collection("courses").doc(slug).update({ price: HARGA_BARU });
+
+      const setelahNaik = await callAction(path, buatId, [slug], pembeli.cookie);
+      check(
+        "harga berubah -> pesanan BARU, bukan melanjutkan yang lama",
+        setelahNaik.includes("Pesanan dibuat"),
+        `${HARGA} -> ${HARGA_BARU}`,
+      );
+
+      const semua = await orderOf(pembeli.uid, slug);
+      const lamaSekarang = semua.find((o) => o.orderId === orderId);
+      const aktif = semua.filter((o) => o.status === "pending");
+
+      check(
+        "pesanan berharga lama ditandai kedaluwarsa",
+        lamaSekarang?.status === "expired",
+        `status=${lamaSekarang?.status}`,
+      );
+      check(
+        "pesanan pengganti memakai harga yang baru",
+        aktif.length === 1 && aktif[0]?.amount === HARGA_BARU,
+        `${aktif.length} pending, nominal ${aktif[0]?.amount}`,
+      );
+
+      // Dikembalikan supaya sisa pengujian memakai pesanan berharga semula.
+      await db.collection("courses").doc(slug).update({ price: HARGA });
+      for (const o of semua) {
+        await db.collection("orders").doc(o.orderId as string).delete();
+      }
+      await callAction(path, buatId, [slug], pembeli.cookie);
+      orderId = (await orderOf(pembeli.uid, slug))[0]?.orderId as string;
     }
 
     // ── Bukti bayar ────────────────────────────────────────────────
@@ -402,7 +441,7 @@ async function run(owner: TestUser, pembeli: TestUser, lain: TestUser, admin: Te
     await setSaklar(true, false, null);
     for (const s of [slug, gratis]) {
       await db.collection("courses").doc(s).delete().catch(() => undefined);
-      for (const c of ["orders", "enrollments"]) {
+      for (const c of ["orders", "enrollments", "royaltySales", "royaltyEarnings"]) {
         const snap = await db.collection(c).where("courseSlug", "==", s).get();
         for (const d of snap.docs) await d.ref.delete().catch(() => undefined);
       }

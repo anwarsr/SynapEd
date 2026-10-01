@@ -192,8 +192,64 @@ function diffCurriculum(before: Section[], after: Section[]): Change[] {
   return out;
 }
 
-/** Seluruh perbedaan antara dua versi kursus. Kosong berarti tidak ada yang berubah. */
-export function diffCourse(before: CourseSnapshot, after: CourseSnapshot): Change[] {
+/**
+ * Perubahan pembagian hasil.
+ *
+ * Pengajuan lama tanpa `contributors` di sisi usulan tidak mengubah pembagian
+ * apa pun, jadi tidak menghasilkan baris apa pun — sejalan dengan cara
+ * persetujuannya diterapkan.
+ */
+function diffContributors(
+  before: CourseSnapshot["contributors"],
+  after: CourseSnapshot["contributors"],
+  labelOf: (uid: string) => string,
+): Change[] {
+  if (!Array.isArray(after)) return [];
+  const lama = Array.isArray(before) ? before : [];
+  const out: Change[] = [];
+
+  const pemilikLama = lama[0];
+  const pemilikBaru = after[0];
+  if (pemilikBaru && (!pemilikLama || pemilikLama.share !== pemilikBaru.share)) {
+    out.push({
+      kind: "changed",
+      field: "Bagian pemilik",
+      before: pemilikLama ? `${pemilikLama.share}%` : "—",
+      after: `${pemilikBaru.share}%`,
+    });
+  }
+
+  const lamaLain = new Map(lama.slice(1).map((c) => [c.uid, c.share]));
+  const baruLain = new Map(after.slice(1).map((c) => [c.uid, c.share]));
+
+  for (const [uid, share] of baruLain) {
+    const dulu = lamaLain.get(uid);
+    if (dulu === undefined) {
+      out.push({ kind: "added", field: "Kontributor", after: `${labelOf(uid)} — ${share}%` });
+    } else if (dulu !== share) {
+      out.push({ kind: "changed", field: `Bagian ${labelOf(uid)}`, before: `${dulu}%`, after: `${share}%` });
+    }
+  }
+  for (const [uid, share] of lamaLain) {
+    if (!baruLain.has(uid)) {
+      out.push({ kind: "removed", field: "Kontributor", before: `${labelOf(uid)} — ${share}%` });
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Seluruh perbedaan antara dua versi kursus. Kosong berarti tidak ada yang berubah.
+ *
+ * `labelOf` menerjemahkan uid kontributor menjadi "Nama (@username)"; tanpa
+ * itu uid mentah yang tampil.
+ */
+export function diffCourse(
+  before: CourseSnapshot,
+  after: CourseSnapshot,
+  labelOf: (uid: string) => string = (uid) => uid,
+): Change[] {
   const out: Change[] = [];
 
   for (const f of META_FIELDS) {
@@ -217,6 +273,8 @@ export function diffCourse(before: CourseSnapshot, after: CourseSnapshot): Chang
       });
     }
   }
+
+  out.push(...diffContributors(before.contributors, after.contributors, labelOf));
 
   out.push(...diffCurriculum(before.sections ?? [], after.sections ?? []));
 

@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { gradeSubmission } from "@/lib/submissionActions";
+import { suggestGrade } from "@/lib/gradingActions";
 import { cn } from "@/lib/cn";
 
 /**
@@ -30,6 +31,11 @@ export default function GradeForm({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
+  // State AI TERPISAH dari state simpan di atas, supaya dua aksi ini tidak
+  // saling menimpa pesan pending/galat masing-masing.
+  const [aiPending, startAiTransition] = useTransition();
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const angka = Number(nilai);
   const lulus = nilai !== "" && Number.isFinite(angka) && angka >= passingGrade;
 
@@ -46,8 +52,35 @@ export default function GradeForm({
     });
   }
 
+  function askAi() {
+    setAiError(null);
+    startAiTransition(async () => {
+      const res = await suggestGrade(id);
+      if (!res.ok) return setAiError(res.error);
+      // Hanya mengisi kolom — TIDAK memanggil gradeSubmission. Educator tetap
+      // harus meninjau lalu menekan tombol Simpan/Perbarui Nilai sendiri.
+      setNilai(String(res.grade));
+      setCatatan(res.feedback);
+    });
+  }
+
   return (
     <form onSubmit={submit} className="mt-4 border-t border-rule pt-4">
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={askAi}
+          disabled={aiPending || pending}
+          className="rounded-lg border border-rule px-4 py-2 text-sm font-medium text-ink-body transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {aiPending ? "Meminta saran AI…" : "Minta Saran AI"}
+        </button>
+        <p className="mt-1 text-xs text-ink-faint">
+          Saran AI mengisi kolom di bawah — tinjau dan sunting sebelum menyimpan.
+        </p>
+        {aiError && <p className="mt-2 text-sm text-rust-700">{aiError}</p>}
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-28">
           <label htmlFor={`nilai-${id}`} className="block t-label text-ink-muted mb-2">

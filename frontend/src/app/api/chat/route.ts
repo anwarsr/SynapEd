@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { buildChatSystemPrompt } from "@/lib/chatPrompt";
+import { buildChatSystemPrompt, type LessonPromptContext } from "@/lib/chatPrompt";
+import { resolveLessonPromptContext } from "@/lib/chatLessonContext";
 import { checkChatRateLimit } from "@/lib/chatRateLimit";
 import { OpenRouterError, openRouterStream } from "@/lib/openrouter";
 
@@ -40,6 +41,24 @@ function isValidMessages(value: unknown): value is ChatMessage[] {
   return value[value.length - 1].role === "user";
 }
 
+interface ChatContextInput {
+  courseSlug: string;
+  lessonSlug: string;
+}
+
+function isValidContext(v: unknown): v is ChatContextInput {
+  if (typeof v !== "object" || v === null) return false;
+  const { courseSlug, lessonSlug } = v as Record<string, unknown>;
+  return (
+    typeof courseSlug === "string" &&
+    courseSlug.length > 0 &&
+    courseSlug.length <= 100 &&
+    typeof lessonSlug === "string" &&
+    lessonSlug.length > 0 &&
+    lessonSlug.length <= 100
+  );
+}
+
 const FRIENDLY_STREAM_ERROR =
   "\n\nMaaf, terjadi gangguan saat menyusun jawaban. Coba kirim ulang pertanyaanmu.";
 
@@ -71,10 +90,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Konteks pelajaran itu sendiri OPSIONAL dan cuma berisi identitas (slug) —
+  // isi sesungguhnya diambil & diotorisasi ulang di resolveLessonPromptContext
+  // dari sesi asli, BUKAN dipercaya dari body ini. Konteks yang tidak
+  // valid/kedaluwarsa/tidak berhak diam-diam jatuh ke null (mode FAQ), tidak
+  // pernah jadi 400 — ini cuma pelengkap, bukan payload utama permintaan.
+  const contextInput = (body as Record<string, unknown> | null)?.context;
+  let lessonContext: LessonPromptContext | null = null;
+  if (contextInput && isValidContext(contextInput)) {
+    lessonContext = await resolveLessonPromptContext(contextInput.courseSlug, contextInput.lessonSlug).catch(
+      () => null,
+    );
+  }
+
   // System prompt jadi giliran pertama percakapan — peran "user"/"assistant"
   // dari klien dipakai apa adanya karena OpenRouter memakai nama peran yang
   // sama persis (tidak perlu terjemahan bentuk seperti kasus Gemini).
-  const systemPrompt = await buildChatSystemPrompt();
+  const systemPrompt = await buildChatSystemPrompt(lessonContext);
   const chatMessages = [
     { role: "system" as const, content: systemPrompt },
     ...messages,

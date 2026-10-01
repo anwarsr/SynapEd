@@ -13,6 +13,8 @@ import {
 } from "@/lib/orders";
 import { getPaymentSettings, manualQrisReady } from "@/lib/paymentSettings";
 import { PAYMENT_PROOFS } from "@/lib/storagePaths";
+import { realiseOrderSale, referralCodeOf, termsForNewOrder } from "@/lib/royalty";
+import { resolveReferral } from "@/lib/referrals";
 
 export type ManualResult =
   | { ok: true; message: string; order?: Order }
@@ -50,7 +52,7 @@ function clean(raw: unknown, max: number): string {
  * sama dengan enrollFree dan createOrder. Server Action bisa dipanggil lewat
  * POST langsung, jadi apa pun yang dikirim browser bukan bukti.
  */
-export async function createManualOrder(slug: string): Promise<ManualResult> {
+export async function createManualOrder(slug: string, referralCode?: unknown): Promise<ManualResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
 
@@ -71,11 +73,32 @@ export async function createManualOrder(slug: string): Promise<ManualResult> {
   const existing = await getEnrollment(user.uid, slug);
   if (existing) return { ok: false, error: "Anda sudah terdaftar di kursus ini." };
 
+  const ref = await resolveReferral(referralCode, user.uid);
+  if (!ref.ok) return { ok: false, error: ref.error };
+  const kode = ref.referral?.code ?? null;
+
   // Pesanan yang masih hidup dipakai ulang. Tanpa ini, setiap kali halaman
   // dibuka lahir satu pesanan baru dan antrean admin dipenuhi duplikat.
+  //
+  // Syarat nominalnya sama seperti di jalur Midtrans, dan di sini akibatnya
+  // justru lebih sulit dibereskan: pembeli sudah terlanjur mentransfer
+  // sejumlah uang lewat QRIS, dan uang yang sudah pindah tidak bisa ditarik
+  // kembali semudah membatalkan transaksi.
   const reuse = await findPendingOrder(user.uid, slug, "manual");
   if (reuse) {
-    return { ok: true, message: "Melanjutkan pesanan yang belum selesai.", order: reuse };
+    if (reuse.amount === course.price && referralCodeOf(reuse) === kode) {
+      return { ok: true, message: "Melanjutkan pesanan yang belum selesai.", order: reuse };
+    }
+
+    await orderRef(reuse.orderId).update({
+      status: "expired",
+      updatedAt: new Date().toISOString(),
+    });
+
+    console.info(
+      `[payment] pesanan manual ${reuse.orderId} dihanguskan: harga/referral ${slug} berubah ` +
+        `${reuse.amount} -> ${course.price}, ${referralCodeOf(reuse) ?? "-"} -> ${kode ?? "-"}`,
+    );
   }
 
   const now = new Date();
@@ -105,6 +128,12 @@ export async function createManualOrder(slug: string): Promise<ManualResult> {
     paidAt: null,
     updatedAt: now.toISOString(),
     lastNotification: null,
+    postPaidStatus: null,
+    postPaidTransactionStatus: null,
+    postPaidAt: null,
+    // Dibekukan sekarang: tinjauan admin bisa memakan waktu sampai sehari,
+    // dan pembagian yang berubah di tengahnya tidak boleh menjangkau pesanan ini.
+    royalty: termsForNewOrder(course, settings, ref.referral, now.toISOString()),
   };
 
   await orderRef(orderId).set(order);
@@ -232,6 +261,17 @@ export async function decideManualOrder(
   // yang benar-benar dibayar pembeli. Harga kursus bisa saja berubah setelah
   // pesanannya dibuat.
   await writeEnrollment(newEnrollment(order.uid, course, "paid", order.amount, order.orderId));
+
+  // Dicatat SEBELUM status berubah. Kalau pencatatan gagal, pesanan tetap
+  // menunggu tinjauan dan admin cukup menekan setujui lagi — keduanya aman
+  // diulang. Urutan terbalik akan meninggalkan pesanan lunas tanpa catatan
+  // penjualan, dan tombol setujui sudah tidak muncul lagi.
+  try {
+    await realiseOrderSale(order, { paidAt: now, source: "manual", courseOwnerUid: course.ownerUid });
+  } catch (err) {
+    console.error(`[royalty] gagal mencatat penjualan ${order.orderId}:`, err);
+    return { ok: false, error: "Pencatatan penjualan gagal. Pesanan belum disetujui — coba lagi." };
+  }
 
   await orderRef(orderId).update({
     status: "paid",

@@ -1,15 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { establishSession, authErrorMessage } from "@/lib/authActions";
-import {
-  fetchProfile,
-  savePhone,
-  uploadAvatar,
-  validateAvatar,
-  validatePhone,
-} from "@/lib/profile";
+import { uploadAvatar, validateAvatar } from "@/lib/profile";
+import { updateMyPhone } from "@/lib/profileActions";
+import { validatePhone } from "@/lib/profileTypes";
 import type { SessionUser } from "@/lib/firebase/session";
 import { cn } from "@/lib/cn";
 
@@ -136,25 +132,14 @@ export function AvatarForm({ user }: { user: SessionUser }) {
 
 // ── Nomor HP ────────────────────────────────────────────────────────────
 
-export function PhoneForm({ user }: { user: SessionUser }) {
-  const [phone, setPhone] = useState("");
-  const [loaded, setLoaded] = useState(false);
+/**
+ * Nomornya dibaca server lalu diteruskan sebagai `initialPhone`, dan disimpan
+ * lewat Server Action. Browser tidak lagi membaca maupun menulis `users/{uid}`.
+ */
+export function PhoneForm({ initialPhone }: { initialPhone: string }) {
+  const [phone, setPhone] = useState(initialPhone);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [pending, setPending] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    fetchProfile(user.uid)
-      .then((p) => {
-        if (!alive) return;
-        setPhone(p.phone ?? "");
-        setLoaded(true);
-      })
-      .catch(() => alive && setLoaded(true));
-    return () => {
-      alive = false;
-    };
-  }, [user.uid]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -168,13 +153,10 @@ export function PhoneForm({ user }: { user: SessionUser }) {
     setPending(true);
     setStatus({ kind: "idle" });
     try {
-      await savePhone(user.uid, phone);
-      setStatus({
-        kind: "ok",
-        msg: phone.trim() === "" ? "Nomor HP dihapus." : "Nomor HP disimpan.",
-      });
-    } catch (err) {
-      setStatus({ kind: "err", msg: authErrorMessage(err) });
+      const res = await updateMyPhone(phone);
+      setStatus(res.ok ? { kind: "ok", msg: res.message } : { kind: "err", msg: res.error });
+    } catch {
+      setStatus({ kind: "err", msg: "Gagal menyimpan. Periksa koneksi lalu coba lagi." });
     } finally {
       setPending(false);
     }
@@ -197,8 +179,7 @@ export function PhoneForm({ user }: { user: SessionUser }) {
           inputMode="tel"
           autoComplete="tel"
           value={phone}
-          disabled={!loaded}
-          placeholder={loaded ? "0812-3456-7890" : "Memuat…"}
+          placeholder="0812-3456-7890"
           onChange={(e) => setPhone(e.target.value)}
           className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:opacity-60"
         />
@@ -206,7 +187,7 @@ export function PhoneForm({ user }: { user: SessionUser }) {
 
       <button
         type="submit"
-        disabled={pending || !loaded}
+        disabled={pending}
         className="mt-6 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
       >
         {pending ? "Menyimpan…" : "Simpan Nomor"}

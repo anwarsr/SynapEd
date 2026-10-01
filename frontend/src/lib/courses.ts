@@ -2,6 +2,7 @@ import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
 import { getUserCards } from "@/lib/userCards";
 import { listCategories } from "@/lib/categories";
+import { parseStoredContributors, type Contributor } from "@/lib/contributors";
 
 /** Sengaja di sini, bukan diimpor dari submissions.ts: modul itu mengimpor
  *  courses.ts, dan saling-impor membuat salah satunya undefined saat dimuat. */
@@ -26,6 +27,8 @@ export interface Lesson {
   /** Tautan YouTube/Vimeo. Kosong berarti materi belum diunggah. */
   videoUrl?: string;
   attachments?: Attachment[];
+  /** Instruksi/rubrik penugasan, teks bebas — hanya relevan untuk type "assignment". */
+  instructions?: string;
 }
 
 export interface Section {
@@ -56,6 +59,12 @@ export interface CourseSummary {
    * memberi tahu kursus itu milik siapa, dan pengunjung baru tahu setelah
    * membuka halamannya. Kursus hasil migrasi bisa saja kosong, jadi selalu
    * perlakukan sebagai boleh-kosong.
+   *
+   * Nilainya dibaca dari Firebase Auth saat halaman dirender, BUKAN dari
+   * salinan di dokumen kursus. Salinan itu dibuat sekali saat kursus dibuat
+   * dan tidak pernah ikut berubah saat educator mengganti nama akunnya —
+   * akibatnya katalog menampilkan nama lama tanpa satu pun pesan galat.
+   * Salinannya kini hanya jadi cadangan untuk akun yang sudah dihapus.
    */
   instructorName: string;
   /**
@@ -69,9 +78,8 @@ export interface CourseSummary {
   /**
    * Foto penyedia kursus, dibaca dari Firebase Auth saat halaman dirender.
    *
-   * TIDAK disalin ke dokumen kursus seperti `instructorName`: foto lebih
-   * sering berganti daripada nama, dan foto basi lebih terasa salah karena
-   * wajah yang tampil di katalog bukan lagi wajah yang dipilih orangnya.
+   * Dibaca dari Auth dengan alasan yang sama seperti `instructorName`, dan
+   * lewat panggilan yang sama pula — keduanya datang dari satu UserCard.
    */
   instructorPhoto: string | null;
   /**
@@ -111,6 +119,14 @@ export interface CourseDetail extends CourseSummary {
   whatYouLearn: string[];
   requirements: string[];
   sections: Section[];
+  /**
+   * Penerima bagi hasil, pemilik selalu pertama; total share tepat 100.
+   *
+   * Kursus yang dibuat sebelum fitur ini — atau yang datanya rusak — dibaca
+   * sebagai "pemilik 100%". Kursus tanpa pemilik (hasil migrasi) mendapat
+   * daftar kosong: penjualannya tercatat belum teralokasi.
+   */
+  contributors: Contributor[];
 }
 
 export interface Category {
@@ -165,14 +181,19 @@ function toSummary(doc: CourseDoc): CourseSummary {
 }
 
 /**
- * Melengkapi daftar kursus dengan foto penyedianya.
+ * Melengkapi daftar kursus dengan NAMA dan foto penyedianya dari Auth.
  *
  * Dipanggil di lapisan data, bukan di tiap halaman: katalog, beranda, dan
- * halaman detail semuanya butuh foto yang sama, dan menyerahkannya ke masing-
+ * halaman detail semuanya butuh keduanya, dan menyerahkannya ke masing-
  * masing pemanggil berarti cepat atau lambat ada satu yang lupa — kartunya
  * lalu tampil berinisial sementara yang lain berfoto.
+ *
+ * Namanya ikut diambil di sini, bukan dipakai apa adanya dari dokumen:
+ * educator yang mengganti nama akunnya tetap tampil dengan nama lamanya di
+ * seluruh kartu kursus, karena salinan di dokumen dibuat sekali saat kursus
+ * dibuat. Kartunya lalu menampilkan foto baru bersama nama lama sekaligus.
  */
-async function withInstructorPhotos<T extends CourseSummary>(rows: T[]): Promise<T[]> {
+async function withInstructorCards<T extends CourseSummary>(rows: T[]): Promise<T[]> {
   const uids = rows.map((r) => r.ownerUid).filter((u): u is string => Boolean(u));
   if (uids.length === 0) return rows;
 
@@ -180,7 +201,16 @@ async function withInstructorPhotos<T extends CourseSummary>(rows: T[]): Promise
 
   return rows.map((r) => {
     const found = r.ownerUid ? instructors.get(r.ownerUid) : undefined;
-    return found ? { ...r, instructorPhoto: found.photoURL } : r;
+    if (!found) return r;
+
+    return {
+      ...r,
+      // Nama tersimpan tetap jadi cadangan: akun yang sudah dihapus tidak
+      // punya UserCard, dan kartu tanpa nama sama sekali lebih buruk
+      // daripada kartu dengan nama lama.
+      instructorName: found.name || r.instructorName,
+      instructorPhoto: found.photoURL,
+    };
   });
 }
 
@@ -218,7 +248,7 @@ export async function listCourses(category?: string): Promise<CourseSummary[]> {
     .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
     .map(toSummary);
 
-  return withInstructorPhotos(rows);
+  return withInstructorCards(rows);
 }
 
 /** Satu pembacaan dokumen — section & lesson tertanam di dalamnya. */
@@ -242,6 +272,8 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
     ownerUid,
     passingGrade:
       typeof data.passingGrade === "number" ? data.passingGrade : DEFAULT_PASSING_GRADE,
+    instructorName:
+      (ownerUid && instructors?.get(ownerUid)?.name) || data.instructorName || "",
     instructorPhoto: (ownerUid && instructors?.get(ownerUid)?.photoURL) || null,
 
     // WAJIB dinormalkan di sini, bukan hanya di toSummary.
@@ -256,6 +288,10 @@ export async function getCourse(slug: string): Promise<CourseDetail | null> {
     // sebelum visibility ada, dan membacanya terbalik akan menyembunyikan
     // seluruh katalog.
     visibility: data.visibility === "private" ? "private" : "public",
+
+    contributors:
+      parseStoredContributors((data as { contributors?: unknown }).contributors, ownerUid) ??
+      (ownerUid ? [{ uid: ownerUid, share: 100 }] : []),
   };
 }
 

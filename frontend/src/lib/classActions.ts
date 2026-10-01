@@ -1,0 +1,389 @@
+"use server";
+import { revalidatePath } from "next/cache";
+import { FieldValue } from "firebase-admin/firestore";
+import { adminDb } from "@/lib/firebase/admin";
+import { getCurrentUser } from "@/lib/firebase/session";
+import { requireClassAccess, requireOwnedClass } from "@/lib/classGuards";
+import { normalizeInviteCode } from "@/lib/inviteCode";
+import {
+  CLASS_MEMBERS,
+  MAX_CLASS_DESC,
+  MAX_CLASS_NAME,
+  MAX_POST_BODY,
+  MAX_REPLY_BODY,
+  classRef,
+  findClassByJoinCode,
+  freshJoinCode,
+  getMembership,
+  getPost,
+  listOwnedClasses,
+  getReply,
+  memberRef,
+  postsRef,
+  repliesRef,
+} from "@/lib/classes";
+
+export type ClassResult = { ok: true; message: string } | { ok: false; error: string };
+export type JoinResult =
+  | { ok: true; message: string; classId: string }
+  | { ok: false; error: string };
+
+/**
+ * Seluruh mutasi kelas.
+ *
+ * Tiga penjaga menopang gunanya fitur ini, dan ketiganya diperiksa DI SINI —
+ * bukan dengan menyembunyikan tombolnya, sebab Server Action bisa dipanggil
+ * lewat POST langsung tanpa pernah membuka halamannya:
+ *
+ * 1. Yang MEMPOSTING hanya pemilik kelas. Kalau longgar, anggota mana pun bisa
+ *    menulis pengumuman yang tampak berasal dari pengajarnya.
+ * 2. Yang MEMBACA dan MEMBALAS hanya anggota. Kalau longgar, kelas menjadi
+ *    forum publik yang isinya bisa dibaca siapa saja yang menebak alamatnya.
+ * 3. Yang MENGHAPUS balasan hanya penulisnya, pemilik kelas, atau admin. Kalau
+ *    longgar, satu anggota bisa membungkam seluruh percakapan.
+ */
+
+function clean(raw: unknown, max: number): string {
+  return typeof raw === "string" ? raw.trim().slice(0, max) : "";
+}
+
+function now(): string {
+  return new Date().toISOString();
+}
+
+/** Kelas maksimal per educator. Menahan pembuatan massal, bukan pemakaian wajar. */
+const MAX_CLASSES_PER_OWNER = 50;
+
+// ── Pembatas percobaan kode undangan ────────────────────────────────────
+//
+// Kode undangan adalah kunci pembawa: siapa pun yang menebaknya menjadi
+// anggota dan bisa membaca seluruh isi kelas. 32^8 memang besar, tetapi tanpa
+// pembatas laju sama sekali, menebak adalah pekerjaan mesin yang gratis dan
+// tidak berisiko — dan tidak ada satu pun jejak yang tertinggal.
+//
+// KETERBATASAN YANG DISADARI: sama persis dengan chatRateLimit — state ini
+// hidup di memori satu proses Node, jadi banyak instance berarti banyak batas
+// yang berdiri sendiri. Cukup untuk sekarang; ganti dengan penyimpanan bersama
+// kalau situs ini dijalankan multi-instance.
+//
+// Sengaja TIDAK memakai ulang checkChatRateLimit: jendela dan ambangnya
+// berbeda, dan menyatukannya berarti mengubah ambang obrolan setiap kali
+// ambang kelas disesuaikan.
+const JOIN_WINDOW_MS = 60_000;
+const JOIN_MAX_ATTEMPTS = 10;
+
+const joinBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function tooManyJoinAttempts(uid: string): boolean {
+  const saat = Date.now();
+  const bucket = joinBuckets.get(uid);
+
+  if (!bucket || bucket.resetAt <= saat) {
+    joinBuckets.set(uid, { count: 1, resetAt: saat + JOIN_WINDOW_MS });
+    return false;
+  }
+
+  if (bucket.count >= JOIN_MAX_ATTEMPTS) return true;
+
+  bucket.count++;
+  return false;
+}
+
+// ── Kelas ───────────────────────────────────────────────────────────────
+
+export async function createClass(nameRaw: string, descRaw: string): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+  if (user.role !== "educator") {
+    return { ok: false, error: "Hanya educator yang dapat membuat kelas." };
+  }
+
+  const name = clean(nameRaw, MAX_CLASS_NAME);
+  if (name.length < 3) return { ok: false, error: "Nama kelas minimal 3 karakter." };
+
+  // Memakai ulang kueri yang memang sudah ada untuk halaman daftar kelas.
+  const milik = await listOwnedClasses(user.uid);
+  if (milik.length >= MAX_CLASSES_PER_OWNER) {
+    return {
+      ok: false,
+      error: `Anda sudah punya ${MAX_CLASSES_PER_OWNER} kelas. Hapus salah satunya dulu.`,
+    };
+  }
+
+  const description = clean(descRaw, MAX_CLASS_DESC);
+  const waktu = now();
+
+  const ref = adminDb().collection("classes").doc();
+  await ref.set({
+    name,
+    description,
+    ownerUid: user.uid,
+    joinCode: await freshJoinCode(),
+    memberCount: 0,
+    postCount: 0,
+    createdAt: waktu,
+    updatedAt: waktu,
+  });
+
+  revalidatePath("/educator/classes");
+  revalidatePath("/admin/classes");
+  return { ok: true, message: "Kelas berhasil dibuat." };
+}
+
+export async function updateClass(
+  classId: string,
+  nameRaw: string,
+  descRaw: string,
+): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Anda tidak berhak mengubah kelas ini." };
+
+  const name = clean(nameRaw, MAX_CLASS_NAME);
+  if (name.length < 3) return { ok: false, error: "Nama kelas minimal 3 karakter." };
+
+  await classRef(classId).update({
+    name,
+    description: clean(descRaw, MAX_CLASS_DESC),
+    updatedAt: now(),
+  });
+
+  revalidatePath("/educator/classes");
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/kelas/${classId}`);
+  return { ok: true, message: "Kelas diperbarui." };
+}
+
+/**
+ * Mengganti kode undangan.
+ *
+ * Sekaligus satu-satunya cara menutup kelas dari pendaftar baru: kode lama
+ * langsung tidak berlaku, sementara anggota yang sudah masuk tidak terusik.
+ */
+export async function regenerateJoinCode(classId: string): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Anda tidak berhak mengubah kelas ini." };
+
+  await classRef(classId).update({ joinCode: await freshJoinCode(), updatedAt: now() });
+
+  revalidatePath(`/educator/classes/${classId}`);
+  return { ok: true, message: "Kode undangan diganti. Kode lama tidak berlaku lagi." };
+}
+
+export async function deleteClass(classId: string): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Anda tidak berhak menghapus kelas ini." };
+
+  const db = adminDb();
+
+  // recursiveDelete, bukan .delete() biasa: postingan dan balasan hidup sebagai
+  // subcollection, dan .delete() hanya menghapus dokumen induknya sambil
+  // meninggalkan keduanya yatim — dokumen yang tidak bisa dicapai lewat
+  // antarmuka mana pun. Alasan yang sama sudah ditulis di deleteCourse.
+  await db.recursiveDelete(classRef(classId));
+
+  // Keanggotaan hidup di koleksi TERPISAH, jadi recursiveDelete tidak
+  // menjangkaunya. Yang tertinggal akan menunjuk kelas yang sudah tidak ada.
+  const anggota = await db.collection(CLASS_MEMBERS).where("classId", "==", classId).get();
+  await Promise.all(anggota.docs.map((d) => d.ref.delete().catch(() => undefined)));
+
+  revalidatePath("/educator/classes");
+  revalidatePath("/admin/classes");
+  revalidatePath("/kelas");
+  revalidatePath("/profil");
+  return { ok: true, message: "Kelas dihapus." };
+}
+
+// ── Keanggotaan ─────────────────────────────────────────────────────────
+
+export async function joinClass(codeRaw: string): Promise<JoinResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  if (tooManyJoinAttempts(user.uid)) {
+    return { ok: false, error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." };
+  }
+
+  const code = normalizeInviteCode(codeRaw);
+  const kelas = code ? await findClassByJoinCode(code) : null;
+
+  // Pesan yang SAMA untuk kode ngawur dan kode yang tidak cocok. Membedakannya
+  // memberi penebak sinyal bahwa sebuah kode "hampir benar", dan itu mengubah
+  // tebakan buta menjadi pencarian terarah.
+  if (!kelas) return { ok: false, error: "Kode kelas tidak ditemukan." };
+
+  if (kelas.ownerUid === user.uid) {
+    return { ok: false, error: "Ini kelas Anda sendiri." };
+  }
+
+  const sudah = await getMembership(user.uid, kelas.id);
+  if (sudah) {
+    return { ok: true, message: "Anda sudah menjadi anggota kelas ini.", classId: kelas.id };
+  }
+
+  // Transaksi: memeriksa lalu menulis dalam satu langkah, supaya dua klik
+  // beruntun tidak menaikkan memberCount dua kali untuk satu orang.
+  await adminDb().runTransaction(async (tx) => {
+    const mRef = memberRef(user.uid, kelas.id);
+    const mSnap = await tx.get(mRef);
+    if (mSnap.exists) return;
+
+    tx.set(mRef, {
+      uid: user.uid,
+      classId: kelas.id,
+      role: "member",
+      joinedAt: now(),
+    });
+    tx.update(classRef(kelas.id), { memberCount: FieldValue.increment(1) });
+  });
+
+  revalidatePath("/kelas");
+  revalidatePath("/profil");
+  revalidatePath(`/educator/classes/${kelas.id}/members`);
+  return { ok: true, message: `Berhasil bergabung ke ${kelas.name}.`, classId: kelas.id };
+}
+
+export async function leaveClass(classId: string): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const anggota = await getMembership(user.uid, classId);
+  if (!anggota) return { ok: false, error: "Anda bukan anggota kelas ini." };
+
+  await adminDb().runTransaction(async (tx) => {
+    const mRef = memberRef(user.uid, classId);
+    const mSnap = await tx.get(mRef);
+    if (!mSnap.exists) return;
+
+    tx.delete(mRef);
+    tx.update(classRef(classId), { memberCount: FieldValue.increment(-1) });
+  });
+
+  revalidatePath("/kelas");
+  revalidatePath("/profil");
+  revalidatePath(`/educator/classes/${classId}/members`);
+  return { ok: true, message: "Anda keluar dari kelas." };
+}
+
+// ── Postingan ───────────────────────────────────────────────────────────
+
+export async function createPost(classId: string, bodyRaw: string): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  // Penjaga inti: HANYA pemilik. Anggota biasa tidak memposting di tahap ini.
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Hanya pemilik kelas yang dapat memposting." };
+
+  const body = clean(bodyRaw, MAX_POST_BODY);
+  if (!body) return { ok: false, error: "Isi postingan tidak boleh kosong." };
+
+  const waktu = now();
+  await adminDb().runTransaction(async (tx) => {
+    tx.set(postsRef(classId).doc(), {
+      classId,
+      authorUid: user.uid,
+      body,
+      replyCount: 0,
+      createdAt: waktu,
+      updatedAt: waktu,
+    });
+    tx.update(classRef(classId), { postCount: FieldValue.increment(1) });
+  });
+
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/kelas/${classId}`);
+  return { ok: true, message: "Postingan terkirim." };
+}
+
+export async function deletePost(classId: string, postId: string): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Anda tidak berhak menghapus postingan ini." };
+
+  const post = await getPost(classId, postId);
+  if (!post) return { ok: false, error: "Postingan tidak ditemukan." };
+
+  // recursiveDelete supaya balasannya ikut terhapus, bukan tertinggal yatim.
+  await adminDb().recursiveDelete(postsRef(classId).doc(postId));
+  await classRef(classId).update({ postCount: FieldValue.increment(-1) });
+
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/kelas/${classId}`);
+  return { ok: true, message: "Postingan dihapus." };
+}
+
+// ── Balasan ─────────────────────────────────────────────────────────────
+
+export async function createReply(
+  classId: string,
+  postId: string,
+  bodyRaw: string,
+): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const akses = await requireClassAccess(user, classId);
+  if (!akses) return { ok: false, error: "Anda bukan anggota kelas ini." };
+
+  const post = await getPost(classId, postId);
+  if (!post) return { ok: false, error: "Postingan tidak ditemukan." };
+
+  const body = clean(bodyRaw, MAX_REPLY_BODY);
+  if (!body) return { ok: false, error: "Balasan tidak boleh kosong." };
+
+  await adminDb().runTransaction(async (tx) => {
+    tx.set(repliesRef(classId, postId).doc(), {
+      postId,
+      classId,
+      authorUid: user.uid,
+      body,
+      createdAt: now(),
+    });
+    tx.update(postsRef(classId).doc(postId), { replyCount: FieldValue.increment(1) });
+  });
+
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/kelas/${classId}`);
+  return { ok: true, message: "Balasan terkirim." };
+}
+
+export async function deleteReply(
+  classId: string,
+  postId: string,
+  replyId: string,
+): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const akses = await requireClassAccess(user, classId);
+  if (!akses) return { ok: false, error: "Anda bukan anggota kelas ini." };
+
+  const reply = await getReply(classId, postId, replyId);
+  if (!reply) return { ok: false, error: "Balasan tidak ditemukan." };
+
+  // Penulisnya sendiri, pemilik kelas, atau admin. Tanpa syarat pertama satu
+  // anggota bisa menghapus balasan anggota lain dan membungkam percakapan.
+  if (reply.authorUid !== user.uid && !akses.isOwner) {
+    return { ok: false, error: "Anda hanya dapat menghapus balasan Anda sendiri." };
+  }
+
+  await adminDb().runTransaction(async (tx) => {
+    tx.delete(repliesRef(classId, postId).doc(replyId));
+    tx.update(postsRef(classId).doc(postId), { replyCount: FieldValue.increment(-1) });
+  });
+
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/kelas/${classId}`);
+  return { ok: true, message: "Balasan dihapus." };
+}

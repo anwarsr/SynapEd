@@ -1,5 +1,11 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import {
+  DEFAULT_PLATFORM_FEE_PERCENT,
+  DEFAULT_REFERRAL_PERCENT,
+  parseFeePercent,
+  validateRevenueSplit,
+} from "@/lib/royaltyTerms";
 
 export const SETTINGS = "settings";
 export const PAYMENTS_DOC = "payments";
@@ -22,6 +28,17 @@ export interface PaymentSettings {
   qrisImagePath: string | null;
   /** Keterangan tambahan yang dibaca pembeli, mis. nama merchant. */
   qrisNote: string;
+  /**
+   * Potongan platform dari setiap penjualan, bilangan bulat 0..100.
+   * Dibekukan ke setiap pesanan saat dibuat, jadi mengubahnya hanya berlaku
+   * untuk pesanan berikutnya.
+   */
+  platformFeePercent: number;
+  /**
+   * Bagian perujuk dari harga kotor, diambil DARI potongan platform.
+   * Tidak pernah lebih besar dari `platformFeePercent`.
+   */
+  referralPercent: number;
   updatedAt: string | null;
   updatedByUid: string | null;
 }
@@ -39,9 +56,26 @@ const DEFAULTS: PaymentSettings = {
   manualQrisEnabled: false,
   qrisImagePath: null,
   qrisNote: "",
+  platformFeePercent: DEFAULT_PLATFORM_FEE_PERCENT,
+  referralPercent: DEFAULT_REFERRAL_PERCENT,
   updatedAt: null,
   updatedByUid: null,
 };
+
+/**
+ * Potongan & referral dibaca SEBAGAI PASANGAN.
+ *
+ * Kalau salah satunya rusak — atau referral lebih besar dari potongan, mis.
+ * disunting lewat Console — keduanya jatuh ke bawaan. Membetulkan satu angka
+ * saja bisa menghasilkan pasangan yang tetap tidak sah.
+ */
+function revenueSplitOf(fee: unknown, referral: unknown) {
+  const f = parseFeePercent(fee) ?? DEFAULT_PLATFORM_FEE_PERCENT;
+  const r = parseFeePercent(referral) ?? DEFAULT_REFERRAL_PERCENT;
+  return validateRevenueSplit(f, r) === null
+    ? { platformFeePercent: f, referralPercent: r }
+    : { platformFeePercent: DEFAULT_PLATFORM_FEE_PERCENT, referralPercent: DEFAULT_REFERRAL_PERCENT };
+}
 
 export function paymentSettingsRef() {
   return adminDb().collection(SETTINGS).doc(PAYMENTS_DOC);
@@ -59,6 +93,9 @@ export async function getPaymentSettings(): Promise<PaymentSettings> {
     manualQrisEnabled: d.manualQrisEnabled === true,
     qrisImagePath: (d.qrisImagePath as string | null | undefined) ?? null,
     qrisNote: (d.qrisNote as string | undefined) ?? "",
+    // Nilai rusak jatuh ke bawaan, bukan ke 0 — potongan nol yang tak sengaja
+    // tidak akan terlihat sampai laporan bulanan.
+    ...revenueSplitOf(d.platformFeePercent, d.referralPercent),
     updatedAt: (d.updatedAt as string | null | undefined) ?? null,
     updatedByUid: (d.updatedByUid as string | null | undefined) ?? null,
   };
