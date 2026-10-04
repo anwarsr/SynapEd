@@ -20,7 +20,7 @@ interface Props {
 ========================================================= */
 
 const HEADING: React.CSSProperties = {
-  fontFamily: "var(--font-inter)",
+  fontFamily: "var(--font-sans)",
   fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
   fontWeight: 800,
   lineHeight: 1.03,
@@ -28,7 +28,7 @@ const HEADING: React.CSSProperties = {
 };
 
 const CARD_TITLE: React.CSSProperties = {
-  fontFamily: "var(--font-inter)",
+  fontFamily: "var(--font-sans)",
   fontWeight: 800,
   letterSpacing: "-0.035em",
 };
@@ -108,7 +108,7 @@ export default function Courses({ courses, categories }: Props) {
                         : "bg-white/75 text-blue-600 hover:-translate-y-0.5 hover:bg-white hover:text-blue-700",
                     )}
                     style={{
-                      fontFamily: "var(--font-inter)",
+                      fontFamily: "var(--font-sans)",
                       fontWeight: 600,
                       letterSpacing: "-0.01em",
                     }}
@@ -856,7 +856,7 @@ export default function Courses({ courses, categories }: Props) {
                         group-hover:text-white
                       "
                       style={{
-                        fontFamily: "var(--font-inter)",
+                        fontFamily: "var(--font-sans)",
                         fontWeight: 800,
                       }}
                     >
@@ -968,7 +968,7 @@ export default function Courses({ courses, categories }: Props) {
                       <span
                         className="text-lg text-ink"
                         style={{
-                          fontFamily: "var(--font-inter)",
+                          fontFamily: "var(--font-sans)",
                           fontWeight: 700,
                           letterSpacing: "-0.025em",
                         }}

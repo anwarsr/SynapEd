@@ -68,7 +68,7 @@ export default function About() {
               "
               style={
                 {
-                  fontFamily: "var(--font-inter)",
+                  fontFamily: "var(--font-sans)",
                   "--rise-delay": "170ms",
                 } as React.CSSProperties
               }
@@ -238,7 +238,7 @@ function AboutCard({
           tracking-[-0.09em]
         "
         style={{
-          fontFamily: "var(--font-inter)",
+          fontFamily: "var(--font-sans)",
         }}
       >
         {point.num}
@@ -284,7 +284,7 @@ function AboutCard({
             group-hover:translate-x-1
           "
           style={{
-            fontFamily: "var(--font-inter)",
+            fontFamily: "var(--font-sans)",
           }}
         >
           {point.title}

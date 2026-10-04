@@ -604,7 +604,7 @@ export default function Hero() {
             "
             style={
               {
-                fontFamily: "var(--font-inter)",
+                fontFamily: "var(--font-sans)",
                 /* Lantai clamp sengaja RENDAH, bukan 2.5rem.
                    Kedua baris judul dikunci whitespace-nowrap supaya
                    pemenggalannya tetap "Platform Terbaik / Kuasai Ilmu

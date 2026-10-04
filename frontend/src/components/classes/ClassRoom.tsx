@@ -21,21 +21,18 @@ export function toTab(raw: unknown): TabKelas {
   return raw === "anggota" || raw === "tentang" ? raw : "pengumuman";
 }
 
-const FRAUNCES_JUDUL = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 72, "SOFT" 30, "WONK" 1',
+const DISPLAY_JUDUL = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
-const FRAUNCES_ANGKA = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25',
+const DISPLAY_ANGKA = {
+  fontFamily: "var(--font-sans)",
   fontFeatureSettings: '"tnum"',
 } as const;
 
-const FRAUNCES_SEKSI = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25, "WONK" 0',
+const DISPLAY_SEKSI = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
@@ -171,7 +168,7 @@ export default function ClassRoom({
                   className="rise-in text-paper leading-[1.1]"
                   style={
                     {
-                      ...FRAUNCES_JUDUL,
+                      ...DISPLAY_JUDUL,
                       fontSize: "clamp(2rem, 4.4vw, 3.1rem)",
                       "--rise-delay": "220ms",
                     } as React.CSSProperties
@@ -322,7 +319,7 @@ export default function ClassRoom({
 
             {tab === "tentang" && (
               <div className="rounded-2xl border border-rule bg-paper-card p-6">
-                <h2 className="text-[20px] text-ink mb-4" style={FRAUNCES_SEKSI}>
+                <h2 className="text-[20px] text-ink mb-4" style={DISPLAY_SEKSI}>
                   Tentang kelas ini
                 </h2>
 
@@ -364,7 +361,7 @@ export default function ClassRoom({
                 ].map((b) => (
                   <div key={b.label} className="flex items-center justify-between py-2.5">
                     <dt className="text-sm text-ink-muted">{b.label}</dt>
-                    <dd className="text-[17px] leading-none text-ink" style={FRAUNCES_ANGKA}>
+                    <dd className="text-[17px] leading-none text-ink" style={DISPLAY_ANGKA}>
                       <CountUp value={String(b.nilai)} />
                     </dd>
                   </div>

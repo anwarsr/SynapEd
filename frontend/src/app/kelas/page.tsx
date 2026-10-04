@@ -16,9 +16,8 @@ export const dynamic = "force-dynamic";
 
 const HERO_ID = "kelas-hero";
 
-const FRAUNCES_SEKSI = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25, "WONK" 0',
+const DISPLAY_SEKSI = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
@@ -114,7 +113,7 @@ export default async function MyClassesPage() {
         <div className="bg-paper py-14">
           <div className="container-page grid gap-9 grid-cols-[minmax(0,1fr)_minmax(260px,320px)] max-lg:grid-cols-1 max-lg:gap-6">
             <div className="min-w-0">
-              <h2 className="text-[22px] text-ink mb-5" style={FRAUNCES_SEKSI}>
+              <h2 className="text-[22px] text-ink mb-5" style={DISPLAY_SEKSI}>
                 Kelas yang diikuti
               </h2>
 
@@ -152,7 +151,7 @@ export default async function MyClassesPage() {
                     </svg>
                   </span>
 
-                  <p className="text-[22px] text-ink" style={FRAUNCES_SEKSI}>
+                  <p className="text-[22px] text-ink" style={DISPLAY_SEKSI}>
                     Belum ada kelas di sini
                   </p>
 

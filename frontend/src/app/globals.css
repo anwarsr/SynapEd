@@ -12,10 +12,12 @@
 /* Font — `inline` supaya utility font-display/font-body memakai variabel
    yang disuntik next/font (lihat layout.tsx) apa adanya.
    Catatan: karena `inline`, --font-display TIDAK diterbitkan ke :root,
-   jadi CSS di bawah selalu merujuk --font-fraunces / --font-inter langsung. */
+   jadi CSS di bawah selalu merujuk --font-sans langsung.
+   Satu keluarga (Plus Jakarta Sans) untuk judul maupun isi — dulu
+   --font-display dan --font-body menunjuk font berbeda (Fraunces/Inter). */
 @theme inline {
-    --font-display: var(--font-fraunces);
-    --font-body: var(--font-inter);
+    --font-display: var(--font-sans);
+    --font-body: var(--font-sans);
 }
 
 @theme {
@@ -38,8 +40,11 @@
     --color-blue-300: #8FAEF8;
     --color-blue-500: #2563EB;     /* biru logo   4.9:1  AA  */
     --color-blue-600: #1D4FD0;     /* tombol      6.8:1  AAA */
-    --color-blue-700: #1A3F9E;     /* teks aksen */
-    --color-navy: #142A56;         /* footer, permukaan gelap */
+    /* blue-700 & navy SENGAJA disamakan dengan biru hero (.bg-hero-navy)
+       — dulu dua biru gelap berbeda (teks aksen #1A3F9E, permukaan gelap
+       #142A56), disatukan jadi satu biru terang di seluruh situs. */
+    --color-blue-700: #0445D1;     /* teks aksen   7.2:1  AAA di atas paper */
+    --color-navy: #0445D1;         /* footer, permukaan gelap — == biru hero */
 
     /* ── Stabilo — kehangatan + sinyal belajar ─────────────── */
     --color-amber-100: #FBEBCB;
@@ -76,7 +81,7 @@
 /* ══ Base ═══════════════════════════════════════════════════ */
 
 html {
-    font-family: var(--font-inter);
+    font-family: var(--font-sans);
     scroll-behavior: smooth;
 }
 
@@ -171,29 +176,24 @@ section[id] {
     }
 
     /* ══ Skala tipografi ═════════════════════════════════════
-       Fraunces dengan axis SOFT (ujung huruf membulat = hangat),
-       WONK (bentuk alternatif yang khas), dan opsz (detail di
-       ukuran besar). Tanpa axis ini Fraunces hanya serif biasa.
-       Jangan pakai Fraunces di bawah 1.25rem — teks isi selalu Inter.
+       Plus Jakarta Sans di seluruh skala — judul maupun isi.
        ═══════════════════════════════════════════════════════ */
 
     .t-display {
-        font-family: var(--font-fraunces);
+        font-family: var(--font-sans);
         font-size: clamp(2.75rem, 6vw, 4.5rem);
-        font-weight: 400;
+        font-weight: 700;
         line-height: 1.05;
         letter-spacing: -0.02em;
-        font-variation-settings: "opsz" 96, "SOFT" 40, "WONK" 1;
         color: var(--color-ink);
     }
 
     .t-h2 {
-        font-family: var(--font-fraunces);
+        font-family: var(--font-sans);
         font-size: clamp(2rem, 3.5vw, 2.75rem);
-        font-weight: 400;
+        font-weight: 700;
         line-height: 1.15;
         letter-spacing: -0.015em;
-        font-variation-settings: "opsz" 48, "SOFT" 30, "WONK" 1;
         color: var(--color-ink);
     }
 
@@ -202,64 +202,59 @@ section[id] {
        demi halaman ini akan ikut membesarkan setiap judul section di seluruh
        situs. */
     .t-h1-profile {
-        font-family: var(--font-fraunces);
+        font-family: var(--font-sans);
         font-size: clamp(2.2rem, 4.4vw, 3.4rem);
-        font-weight: 400;
+        font-weight: 700;
         line-height: 1.05;
         letter-spacing: -0.02em;
-        font-variation-settings: "opsz" 96, "SOFT" 40, "WONK" 1;
         color: var(--color-ink);
         text-wrap: pretty;
     }
 
     .t-h3 {
-        font-family: var(--font-fraunces);
+        font-family: var(--font-sans);
         font-size: 1.375rem;
-        font-weight: 500;
+        font-weight: 600;
         line-height: 1.25;
-        font-variation-settings: "opsz" 24, "SOFT" 25, "WONK" 0;
         color: var(--color-ink);
     }
 
-    /* Angka besar (Stats) — serif display murni */
+    /* Angka besar (Stats) */
     .t-numeral {
-        font-family: var(--font-fraunces);
-        font-weight: 400;
+        font-family: var(--font-sans);
+        font-weight: 700;
         line-height: 1;
-        font-variation-settings: "opsz" 72, "SOFT" 30, "WONK" 0;
         color: var(--color-ink);
     }
 
     /* Numeral hantu di latar (LearningPath, halaman kursus) */
     .t-numeral-ghost {
-        font-family: var(--font-fraunces);
-        font-weight: 400;
+        font-family: var(--font-sans);
+        font-weight: 700;
         line-height: 1;
-        font-variation-settings: "opsz" 96, "SOFT" 20, "WONK" 0;
     }
 
     .t-body {
-        font-family: var(--font-inter);
+        font-family: var(--font-sans);
         font-size: 1rem;
         line-height: 1.7;
         color: var(--color-ink-body);
     }
 
     .t-label {
-        font-family: var(--font-inter);
+        font-family: var(--font-sans);
         font-size: 0.72rem;
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.14em;
     }
 
-    /* Kutipan (Testimonials) — Fraunces italic asli */
+    /* Kutipan (Testimonials) */
     .t-quote {
-        font-family: var(--font-fraunces);
+        font-family: var(--font-sans);
         font-style: italic;
         font-size: 1.0625rem;
         line-height: 1.6;
-        font-variation-settings: "opsz" 20, "SOFT" 40, "WONK" 1;
         color: var(--color-ink-body);
     }
 
@@ -318,7 +313,7 @@ section[id] {
 
     /* ══ Motif 2 — nomor bab di margin ═══════════════════════ */
     .chapter-mark {
-        font-family: var(--font-inter);
+        font-family: var(--font-sans);
         font-size: 0.72rem;
         font-weight: 500;
         text-transform: uppercase;
@@ -353,10 +348,10 @@ section[id] {
     }
 
     /* ══ Hero navy — permukaan biru penuh ════════════════════
-       Gradient navy hangat + satu kilau amber tipis supaya
-       tetap terasa "kertas malam", bukan biru korporat datar. */
+       Sumber acuan "biru terang" situs ini — --color-navy &
+       --color-blue-700 sengaja disamakan dengan nilai ini. */
     .bg-hero-navy {
-        background:#0445d1;
+        background: var(--color-navy);
     }
 }
 
@@ -532,14 +527,14 @@ section[id] {
 }
 
 .feature-card__number {
-    font-family: var(--font-inter);
+    font-family: var(--font-sans);
     font-size: .8rem;
     font-weight: 500;
     color: var(--color-ink-faint);
 }
 
 .feature-card__label {
-    font-family: var(--font-inter);
+    font-family: var(--font-sans);
     font-size: .72rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -551,7 +546,7 @@ section[id] {
 /* Samakan dengan judul About.tsx: Inter 900, tracking rapat, biru
    identitas — satu suara tipografi dengan section Tentang. */
 .feature-card__title {
-    font-family: var(--font-inter);
+    font-family: var(--font-sans);
     font-size: clamp(1.875rem, 4vw, 3rem);
     font-weight: 900;
     line-height: .98;
@@ -561,7 +556,7 @@ section[id] {
 
 .feature-card__desc {
     max-width: 30ch;
-    font-family: var(--font-inter);
+    font-family: var(--font-sans);
     font-size: .9375rem;
     line-height: 1.55;
     color: var(--color-ink-muted);
@@ -639,6 +634,30 @@ section[id] {
         animation: none;
         opacity: .2;
     }
+}
+
+/* ══ Panel Masuk/Daftar — kartu terbelah dengan sisi "merek" (navy) DIAM
+   di kiri dan sisi formulir DIAM di kanan (md:+) — TIDAK ADA panel yang
+   meluncur/bertukar posisi (itu pernah dicoba lalu dibatalkan, terlihat
+   seperti komponen slider/toggle). Perpindahan mode tetap terasa "bergerak"
+   lewat .auth-fade: isinya singkat bergeser mendatar + memudar masuk.
+   Arahnya dari --auth-fade-from (diisi AuthForm.tsx: dari kanan saat
+   menuju Daftar, dari kiri saat menuju Masuk) dipakai sama di kartu
+   ponsel maupun kedua sisi kartu desktop. */
+.auth-brand-panel {
+    background:
+        radial-gradient(130% 120% at 14% 10%, color-mix(in srgb, var(--color-blue-300) 38%, transparent), transparent 60%),
+        radial-gradient(90% 90% at 100% 100%, color-mix(in srgb, var(--color-amber-500) 20%, transparent), transparent 55%),
+        var(--color-navy);
+}
+
+@keyframes auth-fade-in {
+    from { opacity: 0; transform: translateX(var(--auth-fade-from, 18px)); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.auth-fade {
+    animation: auth-fade-in 420ms var(--ease-warm);
 }
 
 /* ══ Entrance hero (saat halaman dimuat) ════════════════════ */

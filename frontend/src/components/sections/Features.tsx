@@ -535,7 +535,7 @@ export default function Features() {
             "
             style={{
               fontFamily:
-                "var(--font-inter)",
+                "var(--font-sans)",
 
               fontSize:
                 "clamp(2.5rem, 6.5vw, 5.75rem)",
@@ -740,7 +740,7 @@ export default function Features() {
                       "
                       style={{
                         fontFamily:
-                          "var(--font-inter)",
+                          "var(--font-sans)",
 
                         fontSize:
                           "clamp(4.5rem, 10vw, 7rem)",
@@ -787,7 +787,7 @@ export default function Features() {
                         "
                         style={{
                           fontFamily:
-                            "var(--font-inter)",
+                            "var(--font-sans)",
 
                           fontSize:
                             "clamp(1.75rem, 3.6vw, 2.75rem)",
@@ -817,7 +817,7 @@ export default function Features() {
                         "
                         style={{
                           fontFamily:
-                            "var(--font-inter)",
+                            "var(--font-sans)",
                         }}
                       >
                         {feat.desc}

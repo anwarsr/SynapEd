@@ -45,8 +45,15 @@ docs/SETUP-FIREBASE.md
 - Firebase project: `synap-ed`. Dev lokal memakai **database asli**.
 - Tidak ada backend terpisah: Server Component & Server Action memakai Admin
   SDK (`lib/firebase/admin.ts`). SDK klien hanya untuk Auth dan unggah Storage.
-- Sistem desain "Tinta & Kertas" (`app/globals.css`): Fraunces + Inter, token
-  `ink-*`, `paper-*`, `rule`, `blue-*`, `amber-*`, `rust-*`; kelas `t-h1..t-h3`,
+- Sistem desain "Tinta & Kertas" (`app/globals.css`): satu keluarga font —
+  Plus Jakarta Sans (`--font-sans`, dimuat di `layout.tsx`) — untuk judul
+  maupun isi (dulu Fraunces untuk judul + Inter untuk isi; diganti karena
+  Jakarta Sans tidak punya axis variabel SOFT/WONK/opsz, jadi
+  `font-variation-settings` yang dulu dipakai sudah dihapus). `--color-navy`
+  & `--color-blue-700` SENGAJA disamakan nilainya dengan `.bg-hero-navy`
+  (`#0445D1`, biru hero) — dulu dua biru gelap berbeda, sekarang satu biru
+  terang di seluruh situs (footer, panel gelap `AuthForm`, teks aksen).
+  Token `ink-*`, `paper-*`, `rule`, `blue-*`, `amber-*`, `rust-*`; kelas `t-h1..t-h3`,
   `t-body`, `t-label`, `t-numeral`, `container-page`, `container-reading`, `mark`.
   `amber-500` hanya untuk grafis (kontras gagal untuk teks); teks pakai `amber-700`.
 
@@ -65,6 +72,19 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 
 - Login di klien → `POST /api/auth/session` menukar ID token jadi cookie
   httpOnly `synaped_session`. Rute ini juga memanggil `ensureUsername` (gagal = log saja).
+- `/login` & `/register` keduanya merender `AuthForm` (satu komponen), yang
+  menyimpan mode aktif di state lokal (bukan sekadar lewat props) supaya
+  tombol "Masuk"/"Daftar" bisa berpindah dengan geser + memudar (`.auth-fade`,
+  arah dari `--auth-fade-from`) tanpa menunggu navigasi Next. Di layar md:+
+  kartunya terbelah DIAM (sisi navy kiri, sisi formulir kanan — tidak ada
+  PANEL yang meluncur/bertukar posisi, itu sempat dicoba lalu dibatalkan
+  karena terlihat seperti komponen "slider/toggle"); yang bergerak hanya
+  ISI tiap sisi. URL disinkronkan lewat `window.history.replaceState`
+  langsung, **bukan** `router.replace` — `router.replace` membuat Next
+  mengambil ulang RSC
+  halaman tujuan dan me-remount `AuthForm`, yang mengulang animasi masuk
+  kartu (`.rise-in`) di tengah transisi dan terlihat patah (sudah pernah
+  terjadi, lihat riwayat git pada berkas ini).
 - `lib/firebase/session.ts`: `getCurrentUser`, `requireUser/Admin/Educator` (redirect `?next=`).
 - **Role = custom claim** (`user` | `educator` | `admin`), bukan field DB.
   Berubah role → cookie harus diterbitkan ulang (masuk lagi).
@@ -231,6 +251,14 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 
 ## Jebakan yang pernah terjadi
 
+- **`router.replace`/`router.push` me-remount komponen tujuan** kalau halaman
+  asal & tujuan sama-sama merender komponen yang sama (mis. `/login` &
+  `/register` sama-sama `<AuthForm>`) — Next mengambil ulang RSC lalu
+  mengganti elemen, jadi animasi yang hanya jalan saat mount (`.rise-in`,
+  `.reveal` tanpa re-trigger) ikut terulang di tengah transisi lain dan
+  terlihat patah/berkedip. Kalau cuma perlu URL ikut berubah (kosmetik,
+  tanpa butuh re-render dari server), pakai `window.history.replaceState`
+  langsung — lihat `AuthForm.tsx`.
 - **Python di Windows memakai cp1252**: jalankan `PYTHONUTF8=1 python`, atau "—" di
   komentar menjadi byte rusak dan Turbopack gagal ("Action … tidak ada di manifest").
   Heredoc bash kadang gagal diurai — tulis skrip ke berkas dulu. Berkas repo CRLF.

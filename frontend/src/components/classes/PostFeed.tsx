@@ -8,9 +8,8 @@ import { formatDate } from "@/lib/adminUsers";
 import type { KelasPost, KelasReply } from "@/lib/classTypes";
 import type { UserCard } from "@/lib/userCards";
 
-const FRAUNCES_KOSONG = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25, "WONK" 0',
+const DISPLAY_KOSONG = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
@@ -51,7 +50,7 @@ export default function PostFeed({
   if (posts.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-rule-strong bg-paper-card/55 px-8 py-14 text-center">
-        <p className="text-[22px] text-ink" style={FRAUNCES_KOSONG}>
+        <p className="text-[22px] text-ink" style={DISPLAY_KOSONG}>
           Belum ada pengumuman
         </p>
         <p className="mx-auto mt-3 max-w-[44ch] text-sm leading-[1.7] text-ink-muted">
