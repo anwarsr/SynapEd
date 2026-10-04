@@ -185,6 +185,8 @@ export default function LabWorkspace<S, Op extends { kind: string }, P>({
         jalur={langkahIni?.jalur}
         peran={langkahIni?.peran}
         labelSel={langkahIni?.labelSel}
+        variabel={langkahIni?.variabel}
+        posisiSimpul={langkahIni?.posisiSimpul}
         terpilih={pilihanSah}
         onPilih={setTerpilih}
         onMulai={jalankan}

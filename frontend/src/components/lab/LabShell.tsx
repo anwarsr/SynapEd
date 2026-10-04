@@ -1,20 +1,57 @@
 "use client";
 import { useCallback, useState } from "react";
+import LabNavigasi, { type BagianNavigasi } from "./LabNavigasi";
 import LabWorkspace from "./LabWorkspace";
-import { KIT_ARRAY_1D, KIT_ARRAY_2D, KIT_ARRAY_3D, KIT_ARRAY_ND } from "./labKits";
+import { KIT_ARRAY_1D, KIT_ARRAY_2D, KIT_ARRAY_3D, KIT_ARRAY_ND, KIT_LINKED_LIST } from "./labKits";
 import type { LabSnapshot } from "@/lib/lab/labUrl";
 import type { LabId } from "@/lib/lab/labTypes";
 import { cn } from "@/lib/cn";
 
-const URUTAN: readonly { id: LabId; nama: string; ringkas: string }[] = [
+type Materi = "array" | "list";
+
+const DIMENSI_ARRAY: readonly { id: LabId; nama: string; ringkas: string }[] = [
   KIT_ARRAY_1D,
   KIT_ARRAY_2D,
   KIT_ARRAY_3D,
   KIT_ARRAY_ND,
 ];
 
+/** Materi di SynapLab; nomornya tampil di kepala ("Lab 02 · Linked List"). */
+const MATERI: readonly { id: Materi; nomor: string; nama: string }[] = [
+  { id: "array", nomor: "01", nama: "Array" },
+  { id: "list", nomor: "02", nama: "Linked List" },
+];
+
 /**
- * Pengalih antar lab array (1D · 2D · 3D · N-D) beserta kepala halamannya.
+ * Isi laci navigasi: setiap materi beserta lab-labnya. Materi baru cukup
+ * menambah satu bagian di sini (dan cabang ruang kerjanya di bawah) — lacinya
+ * sendiri tidak perlu disentuh.
+ */
+const NAVIGASI: readonly BagianNavigasi[] = [
+  {
+    nomor: "01",
+    nama: "Array",
+    item: [
+      { id: "array1d", nama: "Array 1D", ket: KIT_ARRAY_1D.ringkas },
+      { id: "array2d", nama: "Array 2D", ket: KIT_ARRAY_2D.ringkas },
+      { id: "array3d", nama: "Array 3D", ket: KIT_ARRAY_3D.ringkas },
+      { id: "arrayNd", nama: "Array N-dimensi", ket: KIT_ARRAY_ND.ringkas },
+    ],
+  },
+  {
+    nomor: "02",
+    nama: "Linked List",
+    item: [{ id: "linkedList", nama: "Singly linked list", ket: KIT_LINKED_LIST.ringkas }],
+  },
+];
+
+const ID_LAB: ReadonlySet<string> = new Set(NAVIGASI.flatMap((b) => b.item.map((it) => it.id)));
+
+const materiDari = (id: LabId): Materi => (id === "linkedList" ? "list" : "array");
+
+/**
+ * Pengalih materi (Array · Linked List) dan, untuk array, pengalih dimensinya
+ * (1D · 2D · 3D · N-D), beserta kepala halamannya.
  *
  * Setiap lab punya ruang kerjanya sendiri. Ruang kerja dipasang saat pertama
  * kali dibuka lalu DIBIARKAN terpasang (hanya disembunyikan) — berpindah ke 2D
@@ -33,7 +70,9 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
 
   const sembunyikanPemberitahuan = useCallback(() => setBeritahuRusak(false), []);
 
-  const lab = URUTAN.find((l) => l.id === aktif) ?? URUTAN[0];
+  const materi = materiDari(aktif);
+  const infoMateri = MATERI.find((m) => m.id === materi)!;
+  const lab = aktif === "linkedList" ? KIT_LINKED_LIST : (DIMENSI_ARRAY.find((l) => l.id === aktif) ?? DIMENSI_ARRAY[0]);
 
   const judul = (
     <header className="flex flex-col gap-3">
@@ -44,15 +83,19 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-60 motion-reduce:hidden" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
             </span>
-            Lab 01 · Array {lab.nama}
+            Lab {infoMateri.nomor} · {infoMateri.nama}
+            {materi === "array" ? ` ${lab.nama}` : ""}
           </p>
           <h1 className="t-h3 mt-1 text-2xl lg:text-[1.75rem]">
             Synap<span className="text-blue-600">Lab</span>
           </h1>
         </div>
 
-        <div role="tablist" aria-label="Dimensi array" className="flex rounded-full border border-rule bg-paper-card p-1 shadow-soft">
-          {URUTAN.map((l) => {
+        <div className="flex flex-wrap items-center gap-2">
+
+          {materi === "array" && (
+        <div role="tablist" aria-label="Dimensi array" className="lab-fade-up flex rounded-full border border-rule bg-paper-card p-1 shadow-soft">
+          {DIMENSI_ARRAY.map((l) => {
             const dipilih = l.id === aktif;
             return (
               <button
@@ -74,6 +117,8 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
             );
           })}
         </div>
+          )}
+        </div>
       </div>
 
       <p key={aktif} className="lab-fade-up text-sm text-ink-muted">
@@ -92,7 +137,19 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
   // tahu tipe keadaan lab-nya sendiri, dan peta heterogen hanya bisa diketik
   // dengan membuang tipe itu.
   return (
-    <>
+    // Di layar lebar: kolom tombol materi di kiri + ruang kerja. Kolom itu
+    // milik kerangka lab, bukan milik materi — tidak ikut tergulir, berganti,
+    // atau tersembunyi bersama ruang kerja.
+    <div className="lg:flex lg:h-full lg:gap-5">
+      {/* Navigasi materi dirender SEKALI di sini, di luar ruang kerja mana pun. */}
+      <LabNavigasi
+        bagian={NAVIGASI}
+        aktif={aktif}
+        onPilih={(id) => {
+          if (ID_LAB.has(id)) pilih(id as LabId);
+        }}
+      />
+      <div className="min-w-0 lg:h-full lg:flex-1">
       {dibuka.has("array1d") && (
         <div hidden={aktif !== "array1d"} className="lg:h-full">
           <LabWorkspace
@@ -126,6 +183,17 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
           />
         </div>
       )}
+      {dibuka.has("linkedList") && (
+        <div hidden={aktif !== "linkedList"} className="lg:h-full">
+          <LabWorkspace
+            kit={KIT_LINKED_LIST}
+            awal={awal?.lab === "linkedList" ? awal.state : KIT_LINKED_LIST.kosong()}
+            judul={judul}
+            aktif={aktif === "linkedList"}
+            onJalan={sembunyikanPemberitahuan}
+          />
+        </div>
+      )}
       {dibuka.has("arrayNd") && (
         <div hidden={aktif !== "arrayNd"} className="lg:h-full">
           <LabWorkspace
@@ -137,6 +205,7 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
           />
         </div>
       )}
-    </>
+      </div>
+    </div>
   );
 }
