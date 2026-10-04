@@ -89,6 +89,8 @@ export const LAB_PERAN_CLASS: Record<LabPeran, string> = {
   sementara: "border-dashed border-ink/50 bg-paper-alt text-ink",
   terurut: "border-ink bg-ink text-paper",
   luar: "border-rule bg-paper-card text-ink-faint opacity-40",
+  hapus: "border-dashed border-rust-700 bg-rust-100 text-rust-700",
+  hasil: "border-blue-600 bg-blue-600 text-white",
 };
 
 export const LAB_PERAN_LABEL: Record<LabPeran, string> = {
@@ -98,10 +100,12 @@ export const LAB_PERAN_LABEL: Record<LabPeran, string> = {
   sementara: "sudah urut sementara",
   terurut: "sudah di tempat akhir",
   luar: "sedang tidak dikerjakan",
+  hapus: "akan dihapus",
+  hasil: "ditemukan",
 };
 
 /** Urutan tampil di legenda. */
-export const LAB_PERAN_URUT: readonly LabPeran[] = ["banding", "kunci", "pivot", "sementara", "terurut", "luar"];
+export const LAB_PERAN_URUT: readonly LabPeran[] = ["banding", "hasil", "kunci", "pivot", "hapus", "sementara", "terurut", "luar"];
 
 export function kelasPeran(peran: Record<number, LabPeran> | undefined, id: number): string | null {
   const r = peran?.[id];

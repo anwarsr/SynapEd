@@ -241,8 +241,19 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 
 Papan sandbox untuk memvisualisasikan materi. **Tanpa Firestore, tanpa Server
 Action, tanpa login** — seluruh keadaan hidup di memori browser dan di URL.
-Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
-**N-D** (`arrayNd`).
+Dua materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
+**3D** (`array3d`), **N-D** (`arrayNd`) — dan **Linked List** (`linkedList`,
+singly). Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
+MENIMPA halaman (fixed + latar gelap, `inert` saat tertutup, fokus dikurung,
+gulir `body` dikunci, `Esc` ditangkap di fase capture supaya tidak ikut menutup
+mode presentasi). Komponennya generik — hanya menerima `BagianNavigasi[]`
+(teks) dan `onPilih(id)` — dan dirender SEKALI oleh `LabShell` di luar ruang
+kerja mana pun, jadi tidak bergantung pada halaman materi yang sedang dibuka
+(materi baru boleh punya halaman yang sama sekali berbeda). Tombolnya: di lg
+kolom sempit di kiri judul — `LabShell` membungkus `[LabNavigasi | ruang kerja]`
+dalam `lg:flex`, jadi tombol sejajar judul dan tidak ikut tergulir; di layar
+sempit pil mengambang di tengah bawah. Materi/lab baru = satu entri di `NAVIGASI` + `MATERI` + cabang
+ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
 
 - **Logika murni di `lib/lab/`** (semuanya netral; `scripts/verify-lab.ts`
   mengimpornya lewat path relatif):
@@ -256,8 +267,8 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   - URL: `labUrl.ts` (dispatcher `encodeLabSnapshot`/`decodeLabSnapshot`),
     `labUrlMatrix.ts`, `labUrlCube.ts`, `labUrlNd.ts`, `labUrlBagian.ts` (penolong
     urai bersama).
-- **UI**: `LabShell.tsx` = pengalih 1D·2D·3D·N-D + kepala halaman. Tiap lab adalah
-  sebuah `LabKit` (`labKit.ts` kontraknya, `labKits.tsx` keempatnya: reducer,
+- **UI**: `LabShell.tsx` = laci materi (`LabNavigasi`), pengalih dimensi, dan kepala halaman. Tiap lab adalah
+  sebuah `LabKit` (`labKit.ts` kontraknya, `labKits.tsx` kelimanya: reducer,
   katalog, kanvas, encode, navigasi panah, isian "pakai sel" + `isianSel` = nama
   isian yang boleh diisi dari sel dan karenanya TIDAK diisi contoh di awal). `LabWorkspace.tsx`
   generik (bilah alat, langkah, riwayat, presentasi, bagikan, pintasan) dan
@@ -300,7 +311,8 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
 - Transformasi 2D & 3D memindahkan **sel** (id, catatan) beserta penunjuk & sorotannya;
   `verify-lab` memeriksa "yang ditandai" tetap sel yang sama.
 - **Skema URL** `?s=1<huruf>~ruas~ruas~ruas~ruas` (selalu 5 ruas), huruf `a`=1D,
-  `m`=2D, `c`=3D, `n`=N-D. 1D: nilai~penunjuk~rentang~catatan. 2D: baris dipisah `;`,
+  `m`=2D, `c`=3D, `n`=N-D, `l`=linked list. Linked list: nilai dari head ~ tiga ruas
+  cadangan yang WAJIB kosong (alamat dihitung ulang dari id). 1D: nilai~penunjuk~rentang~catatan. 2D: baris dipisah `;`,
   nilai `,` ~ `nama:r:c:nada` ~ `r1:c1:r2:c2:nada` ~ `r:c:teks`. 3D: bentuk `DxRxC` (kosong = kubus kosong) ~ nilai row-major ~
   `nama:k:i:j:nada` ~ `k1:i1:j1:k2:i2:j2:nada`. N-D: bentuk dipisah
   `x` ~ nilai row-major ~ kursor dipisah `x` (kosong = tanpa) ~ `sumbu:posisi:nada`.
@@ -342,6 +354,30 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   - `StepTimeline` hanya merender jendela 60 langkah di sekitar langkah aktif
     (pengurutan bisa ratusan langkah) + tombol lompat ke awal/akhir.
   - Isian `pilihan` (select) di `labForm`/`LabControls`; nilai bawaannya opsi pertama.
+- **Linked list** (`listLab.ts`, `listLabCatalog.ts`, `labUrlList.ts`, `ListBoard.tsx`):
+  - Keadaan = `nodes[{id,value,next}]` + `head` + `nextId`; urutan larik `nodes` tidak
+    bermakna, urutan list = rantai `next` dari head. Maksimal `LIST_MAX_NODES` 8.
+    `alamatSimpul(id)` = 1000 + (id×7919 mod 8999): tiruan alamat yang sengaja
+    TIDAK berurutan, unik untuk id < 8999.
+  - Dua tingkat invarian: `assertListInvariants` (keadaan akhir & URL: semua simpul
+    tercapai dari head tepat sekali, tanpa siklus) dan `assertListLangkah` (setiap
+    langkah tengah: simpul boleh lepas dari rantai, tetapi **tidak boleh hilang** —
+    harus tercapai dari head atau dari variabel penunjuk langkah itu). Inilah yang
+    menangkap urutan pointer yang salah (mis. `cur.next = baru` sebelum
+    `baru.next = cur.next`). Langkah terakhir tanpa variabel.
+  - Tanda khusus di `LabStep`: `variabel` (`{nama, id|null}[]`, chip dikunci NAMA
+    sehingga `cur` yang maju meluncur) dan `posisiSimpul` (id → {kolom, baris};
+    dipakai saat tata letak bawaan menyesatkan — simpul baru/dihapus di baris 1,
+    dan seluruh simpul dikunci di tempat selama list dibalik). Tanpa `posisiSimpul`,
+    papan menata rantai dari head (simpul lepas di baris 1).
+  - `ListBoard` menggambar dalam piksel tetap lalu `scale()` agar muat (minimum
+    0,6, selebihnya digulir). Panah = `<path>` SVG yang bentuknya ditulis lewat
+    properti CSS `d` dan ditransisikan (`.lab-panah`) — SELALU satu perintah
+    `M … C …` dengan jumlah angka sama supaya bisa dianimasikan; pointer null =
+    jalur yang mengerut di titik asal (titik kendali di titik asal juga, supaya
+    tidak mengayun). Panah yang menunjuk ke belakang melengkung di bawah rantai
+    dan masuk dari bawah simpul (toleransi "sebaris" = setengah tinggi baris).
+  - Pilihan papan = INDEKS simpul di rantai (bukan id).
 - **Panah keyboard** memilih sel hanya kalau fokus ada di papan (atau di body);
   di tempat lain panah tetap menggulir panel. 2D: ←→↑↓; 3D: ←→ kolom, ↑↓ baris,
   PgUp/PgDn lapisan; N-D: ←→ sumbu terakhir, ↑↓ sumbu sebelumnya.

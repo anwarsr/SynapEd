@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "SynapLab – SynapEd",
   description:
-    "Papan coba-coba untuk memvisualisasikan array 1D, 2D, dan N-dimensi: isi, telusuri, ubah bentuk, dan jalankan langkahnya satu per satu.",
+    "Papan coba-coba untuk memvisualisasikan array (1D, 2D, 3D, N-dimensi) dan linked list: isi, telusuri, urutkan, sisip, hapus, dan jalankan langkahnya satu per satu.",
 };
 
 interface Props {
@@ -42,7 +42,7 @@ export default async function LabPage({ searchParams }: Props) {
     <>
       <Navbar />
 
-      <main className="bg-paper pt-28 pb-16 lg:h-dvh lg:overflow-hidden lg:pt-[100px] lg:pb-5">
+      <main className="bg-paper pt-28 pb-20 lg:h-dvh lg:overflow-hidden lg:pt-[100px] lg:pb-5">
         <div className="container-page lg:h-full">
           <LabShell awal={dibaca} tautanRusak={kode !== null && dibaca === null} />
         </div>

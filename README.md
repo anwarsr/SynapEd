@@ -126,9 +126,12 @@ penyusun kursus tidak pernah berkurang.
 ### SynapLab — papan coba-coba (`/lab`)
 
 Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
-orang lain. Isinya saat ini **lab array** dalam empat versi yang dipilih lewat
-tombol **1D · 2D · 3D · N-D** di kepala halaman. Tiap versi punya papan, operasi,
-dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
+orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
+tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
+(Lab 01 — 1D, 2D, 3D, N-D) dan **Linked List** (Lab 02). Laci menimpa halaman
+tanpa menggesernya. Array punya empat versi lagi — **1D · 2D · 3D · N-D**.
+Tiap lab punya papan, operasi, dan tautan bagikannya sendiri; berpindah lab
+tidak menghapus papan lab lain.
 
 - **Terbuka untuk siapa saja**, tanpa login. Tautan yang dibagikan guru bisa
   langsung dibuka siswa.
@@ -193,6 +196,23 @@ dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
 - **Batalkan & ulangi** untuk setiap operasi.
 - **Mode presentasi** (sel membesar, layar penuh, `Esc` untuk keluar) dan
   tombol pintas keyboard.
+- **Linked list (singly)** — materi tersendiri, terpisah dari array:
+  - setiap simpul digambar `[nilai | next]` lengkap dengan **alamat memorinya**,
+    disambung panah; kotak `head` menunjuk simpul pertama, dan tabel **Memori**
+    di bawah papan memperlihatkan bahwa simpul-simpul tersebar, tidak berderet
+    seperti array (maksimal 8 simpul);
+  - operasi: isi dari teks/acak, kosongkan, sisip di depan / belakang / di
+    indeks, hapus di depan / belakang / di indeks / menurut nilai, cari nilai,
+    baca & ubah nilai di indeks, telusuri, dan **balik list**;
+  - variabel penunjuk algoritma (`cur`, `prev`, `next`, `baru`, `hapus`)
+    meluncur dari simpul ke simpul; panah pointer **berbelok** saat diubah;
+    simpul baru muncul di bawah rantai lalu naik masuk, simpul yang dihapus
+    turun keluar lalu dibebaskan; saat dibalik, panah dibalik satu per satu
+    sementara simpulnya diam;
+  - narasinya menekankan biaya: sisip/hapus di depan O(1), mencapai indeks k
+    harus berjalan k langkah dari head, dan **urutan mengubah pointer** saat
+    menyisip (sambungkan simpul baru ke sisa list dulu, baru belokkan
+    pendahulunya — kalau terbalik, sisa list hilang).
 - **Bagikan papan lewat tautan**: seluruh keadaan papan ikut di URL. Tidak ada
   yang tersimpan di server — menutup tab berarti papan itu hilang.
 
@@ -328,7 +348,7 @@ npm run verify:lab                # SynapLab — murni, tanpa dev server & krede
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
 - Asisten chat di dalam halaman belajar.
 - Soal kuis selain pilihan tunggal.
-- Lab selain array di SynapLab (string, visualisasi data), dan algoritma selain pengurutan di atas papan (mis. pencarian linear/biner).
+- Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
 
 ---
