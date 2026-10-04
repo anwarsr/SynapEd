@@ -448,7 +448,9 @@ export default function CubeBoard({
         )}
 
         {!kosong && tampilan === "lapisan" && (
-          <div className="lab-scroller overflow-x-auto scrollbar-hide">
+          // `pb-4`: wadah gulir mendatar ikut memotong ke arah tegak; tanpa
+          // ruang ini cincin fokus sel di baris paling bawah terpangkas.
+          <div className="lab-scroller overflow-x-auto scrollbar-hide pb-4">
             <div
               ref={datarRef}
               className="lab-fade-up relative mx-auto mt-3"

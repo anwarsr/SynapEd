@@ -371,7 +371,17 @@ ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
     dan seluruh simpul dikunci di tempat selama list dibalik). Tanpa `posisiSimpul`,
     papan menata rantai dari head (simpul lepas di baris 1).
   - `ListBoard` menggambar dalam piksel tetap lalu `scale()` agar muat (minimum
-    0,6, selebihnya digulir). Panah = `<path>` SVG yang bentuknya ditulis lewat
+    0,72 — di bawahnya alamat tak terbaca — selebihnya digulir). Simpul = kartu
+    `[data | next]`, head = kotak pointer berlabel "HEAD" (bentuk sama dengan
+    bagian next), pointer null = coretan miring di kotaknya, indeks & alamat di
+    BAWAH kartu (atas kartu dipakai chip variabel). SVG panah dirender SESUDAH
+    simpul (di atasnya); bulatan pointer BUKAN elemen HTML melainkan
+    `marker-start` panahnya, jadi bulatan & garis selalu menyatu (juga saat
+    meluncur). Pangkalnya = pusat isi kotak next (memperhitungkan tepi 2px), dan
+    tombol simpul `flex justify-start` — `<button>` bawaannya memusatkan isi
+    tegak dan menggeser kartu ±2px dari posisi hitungan panah;
+    panah maju berakhir di tengah sisi kiri simpul tujuan, jadi rantai lurus
+    benar-benar lurus (titik awal & akhir sama tinggi). Panah = `<path>` SVG yang bentuknya ditulis lewat
     properti CSS `d` dan ditransisikan (`.lab-panah`) — SELALU satu perintah
     `M … C …` dengan jumlah angka sama supaya bisa dianimasikan; pointer null =
     jalur yang mengerut di titik asal (titik kendali di titik asal juga, supaya
