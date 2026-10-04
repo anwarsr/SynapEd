@@ -16,11 +16,19 @@ import { cn } from "@/lib/cn";
  * kurikulumnya sendiri tetap ada di beranda — yang dilepas hanya pintu
  * masuknya di navbar.
  */
-const NAV_LINKS: readonly { label: string; id: string; href?: string }[] = [
+/**
+ * `sempit: true` berarti tautan ini DISEMBUNYIKAN di kapsul desktop sampai
+ * lebar lg. Kapsulnya sudah penuh di lebar tablet: diukur di 820px, menambah
+ * satu tautan mendorong tombol "Daftar Gratis" keluar layar (846px dari 820px
+ * yang tersedia). Yang disembunyikan tetap terjangkau — menu lipat memuat
+ * seluruh tautan tanpa kecuali.
+ */
+const NAV_LINKS: readonly { label: string; id: string; href?: string; sempit?: boolean }[] = [
   { label: "Beranda", id: "hero" },
   { label: "Tentang", id: "about" },
   { label: "Kelas", id: "kelas", href: "/kelas" },
   { label: "Kursus", id: "courses" },
+  { label: "Lab", id: "lab", href: "/lab", sempit: true },
   { label: "FAQ", id: "faq" },
 ];
 
@@ -135,6 +143,7 @@ export default function Navbar() {
                 className={cn(
                   "relative px-3.5 py-2 rounded-full text-sm",
                   "transition-colors duration-200 ease-out-soft",
+                  link.sempit && "hidden lg:block",
                   // Keping section aktif sama di kedua latar: teks biru tua di
                   // atas keping biru muda cukup kontras baik di kertas maupun
                   // di atas navy. Hanya keadaan tidak-aktif yang berbeda.
