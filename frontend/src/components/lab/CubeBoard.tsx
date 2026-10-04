@@ -12,9 +12,9 @@ import {
 } from "@/lib/lab/cubeLab";
 import { useFlip } from "@/lib/useFlip";
 import type { LabBoardProps } from "./labKit";
-import JejakPanah, { NomorKunjungan } from "./JejakPanah";
+import JejakPanah, { LabelSel, NomorKunjungan } from "./JejakPanah";
 import { urutStabil } from "./urutStabil";
-import { kelasFokus, kelasKelompok, LAB_POINTER_CLASS, LAB_POINTER_LABEL, LAB_TONE_CLASS, LAB_TONE_LABEL } from "./labTone";
+import { kelasFokus, kelasKelompok, kelasPeran, LAB_POINTER_CLASS, LAB_POINTER_LABEL, LAB_TONE_CLASS, LAB_TONE_LABEL } from "./labTone";
 import { cn } from "@/lib/cn";
 
 /**
@@ -68,6 +68,8 @@ export default function CubeBoard({
   fokus,
   kelompok,
   jalur,
+  peran,
+  labelSel,
   terpilih,
   onPilih,
   onMulai,
@@ -142,14 +144,16 @@ export default function CubeBoard({
           "rounded-lg border-2 tabular-nums",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
           // Warna asal mengalahkan sorotan selama transformasi.
-          warnaAsal ?? (kotak ? LAB_TONE_CLASS[kotak.tone] : SEL_NETRAL),
+          kelasPeran(peran, sel.id) ?? warnaAsal ?? (kotak ? LAB_TONE_CLASS[kotak.tone] : SEL_NETRAL),
           difokus && kelasFokus(fokus.length),
           dipilih && !difokus && "border-ink",
         )}
         style={
           {
             translate,
-            opacity,
+            // Gaya `opacity` sebaris mengalahkan kelas, jadi peran "luar"
+            // (sel yang sedang tidak dikerjakan) diredupkan di sini.
+            opacity: peran?.[sel.id] === "luar" ? 0.3 : opacity,
             margin: datar ? undefined : "calc(var(--kubus-sel) / -2)",
             "--d": `${Math.min(o, 40) * 10}ms`,
             // Huruf mengecil bersama selnya: di ponsel sel kubus 5×5×5 hanya
@@ -171,6 +175,7 @@ export default function CubeBoard({
           </span>
         )}
         <NomorKunjungan jalur={jalur} id={sel.id} />
+        <LabelSel labelSel={labelSel} id={sel.id} />
       </button>
     );
   }
@@ -553,7 +558,7 @@ export default function CubeBoard({
                     <span
                       className={cn(
                         "t-numeral flex h-7 w-7 items-center justify-center rounded-md border text-[11px] tabular-nums transition-colors duration-200",
-                        warnaAsal ?? (kotak ? LAB_TONE_CLASS[kotak.tone] : "border-rule bg-paper-card text-ink"),
+                        kelasPeran(peran, sel.id) ?? warnaAsal ?? (kotak ? LAB_TONE_CLASS[kotak.tone] : "border-rule bg-paper-card text-ink"),
                         difokus && kelasFokus(fokus.length),
                         o === offsetTerpilih && !difokus && "border-ink",
                       )}

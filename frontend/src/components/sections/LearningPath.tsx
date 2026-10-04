@@ -56,7 +56,7 @@ export default function LearningPath() {
           <h3
             className="text-blue-600 pt-28"
             style={{
-              fontFamily: "var(--font-inter)",
+              fontFamily: "var(--font-sans)",
               fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
               fontWeight: 800,
               lineHeight: 1.03,
@@ -73,7 +73,7 @@ export default function LearningPath() {
                 key={active}
                 className="rise-in text-blue-600 max-w-4xl"
                 style={{
-                  fontFamily: "var(--font-inter)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: "clamp(1.5rem, 5vw, 4rem)",
                   fontWeight: 800,
                   lineHeight: 1.03,
@@ -155,7 +155,7 @@ export default function LearningPath() {
               <span
                 className="text-blue-600 shrink-0"
                 style={{
-                  fontFamily: "var(--font-inter)",
+                  fontFamily: "var(--font-sans)",
                   fontWeight: 800,
                   letterSpacing: "-0.02em",
                 }}
@@ -168,7 +168,7 @@ export default function LearningPath() {
                 <h3
                   className="text-blue-600 mb-1"
                   style={{
-                    fontFamily: "var(--font-inter)",
+                    fontFamily: "var(--font-sans)",
                     fontWeight: 800,
                     letterSpacing: "-0.02em",
                   }}

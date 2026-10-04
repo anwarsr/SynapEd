@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { LabId, LabKelompok, LabOpResult } from "@/lib/lab/labTypes";
+import type { LabId, LabKelompok, LabOpResult, LabPeran } from "@/lib/lab/labTypes";
 import type { OpSpecOf } from "@/lib/lab/labForm";
 
 /**
@@ -21,6 +21,10 @@ export interface LabBoardProps<S, P, Op> {
   kelompok?: LabKelompok;
   /** Id sel yang sudah dikunjungi penelusuran, berurutan, kalau ada. */
   jalur?: readonly number[];
+  /** Peran sel selama pengurutan (id → peran), kalau ada. */
+  peran?: Record<number, LabPeran>;
+  /** Label variabel algoritma di atas sel (id → teks), kalau ada. */
+  labelSel?: Record<number, string>;
   terpilih: P | null;
   onPilih: (p: P) => void;
   /** Menjalankan operasi dari tombol mulai cepat di papan kosong. */

@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 
 /** Tipografi FAQ */
 const HEADING: React.CSSProperties = {
-  fontFamily: "var(--font-inter)",
+  fontFamily: "var(--font-sans)",
   fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
   fontWeight: 800,
   lineHeight: 1.03,
@@ -15,7 +15,7 @@ const HEADING: React.CSSProperties = {
 };
 
 const QUESTION: React.CSSProperties = {
-  fontFamily: "var(--font-inter)",
+  fontFamily: "var(--font-sans)",
   fontWeight: 700,
   letterSpacing: "-0.015em",
 };

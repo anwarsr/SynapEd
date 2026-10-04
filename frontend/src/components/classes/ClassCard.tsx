@@ -4,15 +4,13 @@ import { ClassSpine } from "@/components/classes/ClassPlate";
 import { nadaKelas } from "@/lib/classColor";
 import { formatDateOnly } from "@/lib/adminUsers";
 
-const FRAUNCES_JUDUL = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25, "WONK" 0',
+const DISPLAY_JUDUL = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
-const FRAUNCES_ANGKA = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25',
+const DISPLAY_ANGKA = {
+  fontFamily: "var(--font-sans)",
   fontFeatureSettings: '"tnum"',
 } as const;
 
@@ -20,7 +18,7 @@ const FRAUNCES_ANGKA = {
 function Figur({ angka, label }: { angka: number | string; label: string }) {
   return (
     <span className="flex items-baseline gap-1.5">
-      <span className="text-[19px] leading-none text-ink" style={FRAUNCES_ANGKA}>
+      <span className="text-[19px] leading-none text-ink" style={DISPLAY_ANGKA}>
         {angka}
       </span>
       <span className="text-[13px] text-ink-muted">{label}</span>
@@ -59,7 +57,7 @@ export default function ClassCard({
         <span className="flex flex-wrap items-start justify-between gap-3">
           <span
             className="text-[21px] leading-[1.3] text-ink transition-colors duration-200 group-hover:text-blue-700"
-            style={FRAUNCES_JUDUL}
+            style={DISPLAY_JUDUL}
           >
             {kelas.name}
           </span>

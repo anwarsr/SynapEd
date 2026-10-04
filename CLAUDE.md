@@ -46,8 +46,15 @@ docs/SETUP-FIREBASE.md
 - Firebase project: `synap-ed`. Dev lokal memakai **database asli**.
 - Tidak ada backend terpisah: Server Component & Server Action memakai Admin
   SDK (`lib/firebase/admin.ts`). SDK klien hanya untuk Auth dan unggah Storage.
-- Sistem desain "Tinta & Kertas" (`app/globals.css`): Fraunces + Inter, token
-  `ink-*`, `paper-*`, `rule`, `blue-*`, `amber-*`, `rust-*`; kelas `t-h1..t-h3`,
+- Sistem desain "Tinta & Kertas" (`app/globals.css`): satu keluarga font —
+  Plus Jakarta Sans (`--font-sans`, dimuat di `layout.tsx`) — untuk judul
+  maupun isi (dulu Fraunces untuk judul + Inter untuk isi; diganti karena
+  Jakarta Sans tidak punya axis variabel SOFT/WONK/opsz, jadi
+  `font-variation-settings` yang dulu dipakai sudah dihapus). `--color-navy`
+  & `--color-blue-700` SENGAJA disamakan nilainya dengan `.bg-hero-navy`
+  (`#0445D1`, biru hero) — dulu dua biru gelap berbeda, sekarang satu biru
+  terang di seluruh situs (footer, panel gelap `AuthForm`, teks aksen).
+  Token `ink-*`, `paper-*`, `rule`, `blue-*`, `amber-*`, `rust-*`; kelas `t-h1..t-h3`,
   `t-body`, `t-label`, `t-numeral`, `container-page`, `container-reading`, `mark`.
   `amber-500` hanya untuk grafis (kontras gagal untuk teks); teks pakai `amber-700`.
 
@@ -66,6 +73,19 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 
 - Login di klien → `POST /api/auth/session` menukar ID token jadi cookie
   httpOnly `synaped_session`. Rute ini juga memanggil `ensureUsername` (gagal = log saja).
+- `/login` & `/register` keduanya merender `AuthForm` (satu komponen), yang
+  menyimpan mode aktif di state lokal (bukan sekadar lewat props) supaya
+  tombol "Masuk"/"Daftar" bisa berpindah dengan geser + memudar (`.auth-fade`,
+  arah dari `--auth-fade-from`) tanpa menunggu navigasi Next. Di layar md:+
+  kartunya terbelah DIAM (sisi navy kiri, sisi formulir kanan — tidak ada
+  PANEL yang meluncur/bertukar posisi, itu sempat dicoba lalu dibatalkan
+  karena terlihat seperti komponen "slider/toggle"); yang bergerak hanya
+  ISI tiap sisi. URL disinkronkan lewat `window.history.replaceState`
+  langsung, **bukan** `router.replace` — `router.replace` membuat Next
+  mengambil ulang RSC
+  halaman tujuan dan me-remount `AuthForm`, yang mengulang animasi masuk
+  kartu (`.rise-in`) di tengah transisi dan terlihat patah (sudah pernah
+  terjadi, lihat riwayat git pada berkas ini).
 - `lib/firebase/session.ts`: `getCurrentUser`, `requireUser/Admin/Educator` (redirect `?next=`).
 - **Role = custom claim** (`user` | `educator` | `admin`), bukan field DB.
   Berubah role → cookie harus diterbitkan ulang (masuk lagi).
@@ -294,6 +314,34 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   memanjang dan panel tidak pernah menggulir), dan kedua panel `.lab-pane`
   menggulir sendiri dengan `overscroll-behavior: contain`. Footer dibungkus
   `lg:hidden`. Di bawah lg semuanya kembali ke aliran halaman biasa.
+- **Pengurutan** (`labSort.ts`, netral): lima algoritma (`bubbleSort`,
+  `selectionSort`, `insertionSort`, `mergeSort`, `quickSort`) ditulis SEKALI di atas
+  deret slot abstrak (`rekamUrut` → permutasi `isi` per langkah + peran + label
+  per slot + flag `gerak`), lalu `langkahUrut` menerjemahkannya ke langkah lab
+  untuk satu deret atau lebih. Tiap lab hanya menentukan deretnya: 1D satu deret;
+  2D `cakupan` baris/kolom/semua; 3D baris/kolom/pilar/semua; N-D `sumbu` (garis
+  sepanjang satu sumbu) atau `null` = seluruhnya. "Semua" = urutan memori
+  (row-major), jadi sel bisa pindah baris/lapisan.
+  - `bandingkanNilai`: dua angka sebagai angka, angka sebelum teks, teks menurut
+    abjad (tanpa beda huruf besar-kecil, kode karakter penentu seri).
+  - Invarian yang diuji: hasil = pengurutan stabil bawaan (dua arah); setiap
+    langkah permutasi; **hanya langkah `gerak` yang memindahkan sel**; bubble,
+    insertion, merge stabil (merge menyisipkan dengan rotasi supaya keadaan tetap
+    permutasi); deret yang selesai berperan `terurut`, yang belum `luar`.
+  - Batas `LAB_MAX_STEPS_URUT` 1000, dihitung SETELAH merekam (bubble pada data
+    urut hanya satu putaran); kelebihan → ditolak dengan saran merge/quick sort.
+    Operasi biasa tetap dipangkas di `MAX_STEPS` lab masing-masing — pengurutan
+    tidak lewat `berhasil()` supaya tidak dipangkas.
+  - `LabStep.peran` (id → `banding`/`kunci`/`pivot`/`sementara`/`terurut`/`luar`)
+    mengalahkan warna asal & sorotan; `LabStep.labelSel` (id → "j", "min",
+    "pivot", …). Di 1D label digambar di lajur sendiri di atas penunjuk dan
+    meluncur seperti penunjuk (`.lab-pointer`); di papan lain sebagai chip di atas
+    sel (`LabelSel`). Legenda peran ada di `LangkahSekarang`.
+  - Sorotan pengguna disembunyikan selama animasi (bentrok warna) dan kembali di
+    langkah terakhir; penunjuk tetap di indeksnya; catatan ikut selnya.
+  - `StepTimeline` hanya merender jendela 60 langkah di sekitar langkah aktif
+    (pengurutan bisa ratusan langkah) + tombol lompat ke awal/akhir.
+  - Isian `pilihan` (select) di `labForm`/`LabControls`; nilai bawaannya opsi pertama.
 - **Panah keyboard** memilih sel hanya kalau fokus ada di papan (atau di body);
   di tempat lain panah tetap menggulir panel. 2D: ←→↑↓; 3D: ←→ kolom, ↑↓ baris,
   PgUp/PgDn lapisan; N-D: ←→ sumbu terakhir, ↑↓ sumbu sebelumnya.
@@ -303,7 +351,7 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
     Lama sel meluncur = `--lab-gerak` (1000 ms ÷ kecepatan pemutar), diterbitkan
     `LabWorkspace` di pembungkus papan. Ada pemeriksaan `verify-lab` yang mencegah
     tempo dipercepat diam-diam.
-  - **Papan 2D/3D/N-D TIDAK memakai FLIP.** Posisi tiap sel dihitung dari
+  - **Papan sel (1D/2D/3D/N-D) TIDAK memakai FLIP.** Posisi tiap sel dihitung dari
     koordinatnya dan ditulis ke properti CSS `translate` (bukan `transform`, supaya
     tidak bertabrakan dengan `lab-enter`/`lab-pop`); kelas `.lab-posisi` memberi
     transisinya, `.lab-bingkai` untuk bingkai yang berubah ukuran. N-D menghitung
@@ -317,7 +365,7 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
     Ini bug yang dilaporkan pemilik (kotak yang seharusnya diam ikut beranimasi);
     sel juga jangan pernah ditaruh di dalam elemen baris/lapisan/kotak yang bisa
     berganti.
-  - `useFlip` kini hanya untuk `ArrayBoard` (1D) dan pita memori 3D/N-D. Ia
+  - `useFlip` kini hanya untuk pita memori 3D/N-D. Ia
     mengukur relatif terhadap wadah, dan melupakan posisi saat wadah tidak
     dirender (lab tersembunyi) atau ref-nya `null`.
   - **Tanda di `LabStep`**: `kelompok` (warna asal per id sel, ikut sel saat
@@ -377,6 +425,14 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
 
 ## Jebakan yang pernah terjadi
 
+- **`router.replace`/`router.push` me-remount komponen tujuan** kalau halaman
+  asal & tujuan sama-sama merender komponen yang sama (mis. `/login` &
+  `/register` sama-sama `<AuthForm>`) — Next mengambil ulang RSC lalu
+  mengganti elemen, jadi animasi yang hanya jalan saat mount (`.rise-in`,
+  `.reveal` tanpa re-trigger) ikut terulang di tengah transisi lain dan
+  terlihat patah/berkedip. Kalau cuma perlu URL ikut berubah (kosmetik,
+  tanpa butuh re-render dari server), pakai `window.history.replaceState`
+  langsung — lihat `AuthForm.tsx`.
 - **Python di Windows memakai cp1252**: jalankan `PYTHONUTF8=1 python`, atau "—" di
   komentar menjadi byte rusak dan Turbopack gagal ("Action … tidak ada di manifest").
   Heredoc bash kadang gagal diurai — tulis skrip ke berkas dulu. Berkas repo CRLF.

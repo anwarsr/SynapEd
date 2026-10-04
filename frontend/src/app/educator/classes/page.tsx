@@ -12,15 +12,13 @@ export const metadata: Metadata = { title: "Kelas Saya – SynapEd" };
 
 export const dynamic = "force-dynamic";
 
-const FRAUNCES_JUDUL = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 72, "SOFT" 30, "WONK" 1',
+const DISPLAY_JUDUL = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
-const FRAUNCES_BARIS = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25, "WONK" 0',
+const DISPLAY_BARIS = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
@@ -48,7 +46,7 @@ export default async function MyClassesPage() {
             <span>Panel Educator</span>
           </p>
 
-          <h1 className="text-ink" style={{ ...FRAUNCES_JUDUL, fontSize: "clamp(2rem,4vw,2.8rem)" }}>
+          <h1 className="text-ink" style={{ ...DISPLAY_JUDUL, fontSize: "clamp(2rem,4vw,2.8rem)" }}>
             Kelas yang Anda <span className="mark">kelola</span>
           </h1>
 
@@ -65,7 +63,7 @@ export default async function MyClassesPage() {
           <div className="min-w-0">
             {kelas.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-rule-strong bg-paper-card/55 px-8 py-14 text-center">
-                <p className="text-[22px] text-ink" style={FRAUNCES_BARIS}>
+                <p className="text-[22px] text-ink" style={DISPLAY_BARIS}>
                   Belum ada kelas
                 </p>
                 <p className="mx-auto mt-3 max-w-[44ch] text-sm leading-[1.7] text-ink-muted">
@@ -86,7 +84,7 @@ export default async function MyClassesPage() {
                               <Link
                                 href={`/educator/classes/${k.id}`}
                                 className="text-[20px] text-ink transition-colors duration-200 hover:text-blue-700"
-                                style={FRAUNCES_BARIS}
+                                style={DISPLAY_BARIS}
                               >
                                 {k.name}
                               </Link>

@@ -37,6 +37,13 @@ export const LAB_MOVE_HOLD_MS = 2600;
 export const LAB_VISIT_HOLD_MS = 950;
 /** Jumlah warna asal yang bisa dibedakan papan (lihat `LabKelompok`). */
 export const LAB_MAX_KELOMPOK = 8;
+/**
+ * Batas langkah satu operasi pengurutan. Jauh di atas batas operasi biasa
+ * karena setiap perbandingan adalah satu langkah — tapi tetap dibatasi: lebih
+ * dari ini animasinya berjalan belasan menit dan tidak lagi mengajarkan apa pun.
+ * Pengguna diminta memperkecil array atau memilih algoritma yang lebih cepat.
+ */
+export const LAB_MAX_STEPS_URUT = 1000;
 
 /**
  * Lab yang tersedia — tiga cara memandang array: satu deret (1D), kisi baris ×
@@ -138,7 +145,20 @@ export interface LabStep<S> {
    * bukan cuma satu sel yang berpindah-pindah.
    */
   jalur?: number[];
+  /**
+   * Peran setiap sel dalam algoritma pengurutan (id sel → peran), mis. sedang
+   * dibandingkan, pivot, sudah di tempat akhir. Mengalahkan warna lain.
+   */
+  peran?: Record<number, LabPeran>;
+  /** Label kecil di atas sel (id sel → teks), mis. "j", "min", "pivot". */
+  labelSel?: Record<number, string>;
 }
+
+/**
+ * Peran sel selama pengurutan. Sengaja sedikit: setiap peran punya satu warna
+ * dan satu kalimat di legenda, dan siswa harus bisa mengingat semuanya.
+ */
+export type LabPeran = "banding" | "kunci" | "pivot" | "sementara" | "terurut" | "luar";
 
 /**
  * Pewarnaan sel menurut ASALNYA selama transformasi.

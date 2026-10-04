@@ -11,9 +11,10 @@
  */
 import { isLabTone, LAB_MAX_ITEM_CHARS } from "./labTypes";
 import { formAngka, formTeks, formTeksWajib, type OpField, type OpSpecOf } from "./labForm";
+import { isArahUrut, isKindUrut, katalogUrut } from "./labSort";
 import { ND_MAX_DIMS, ND_MAX_ELEMENTS, type NdOp } from "./ndLab";
 
-export type NdOpGrup = "bentuk" | "akses" | "telusur" | "ubah";
+export type NdOpGrup = "bentuk" | "akses" | "telusur" | "ubah" | "urut";
 export type NdOpSpec = OpSpecOf<NdOp["kind"], NdOpGrup, NdOp>;
 
 export const ND_OP_GROUPS: readonly { id: NdOpGrup; label: string }[] = [
@@ -21,6 +22,7 @@ export const ND_OP_GROUPS: readonly { id: NdOpGrup; label: string }[] = [
   { id: "akses", label: "Akses & sorotan" },
   { id: "telusur", label: "Penelusuran" },
   { id: "ubah", label: "Transformasi" },
+  { id: "urut", label: "Pengurutan" },
 ];
 
 const F_INDEKS: OpField = { name: "indeks", label: "Indeks", kind: "teks", placeholder: "1, 2, 0", maxLength: ND_MAX_DIMS * 4 };
@@ -152,10 +154,32 @@ export const ND_OP_CATALOG: Record<NdOp["kind"], NdOpSpec> = {
     ],
     contoh: { kind: "tukarSumbu", sumbuA: 0, sumbuB: 1 },
   },
+  ...katalogUrut<NdOpGrup, NdOp>(
+    "urut",
+    [
+      {
+        name: "sepanjang",
+        label: "Yang diurutkan",
+        kind: "pilihan",
+        opsi: [
+          { nilai: "semua", label: "Seluruh array (urutan memori)" },
+          ...Array.from({ length: ND_MAX_DIMS }, (_, s) => ({ nilai: String(s), label: `Tiap garis sepanjang sumbu ${s}` })),
+        ],
+      },
+    ],
+    (kind) => ({ kind, arah: "naik", sumbu: null }),
+  ),
 };
 
 /** Null hanya untuk masalah BENTUK form — domainnya urusan `applyNdOp`. */
 export function buildNdOp(kind: NdOp["kind"], nilai: Record<string, string>): NdOp | null {
+  if (isKindUrut(kind)) {
+    const arah = formTeks(nilai, "arah");
+    const sepanjang = formTeks(nilai, "sepanjang");
+    const sumbu = sepanjang === "semua" ? null : Number(sepanjang);
+    if (!isArahUrut(arah) || (sumbu !== null && !Number.isInteger(sumbu))) return null;
+    return { kind, arah, sumbu };
+  }
   const angka = (n: string) => formAngka(nilai, n);
   switch (kind) {
     case "buat":

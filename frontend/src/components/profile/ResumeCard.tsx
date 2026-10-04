@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { progressFromSnapshot, type Enrollment } from "@/lib/enrollments";
 
-const FRAUNCES_JUDUL = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 32, "SOFT" 25, "WONK" 0',
+const DISPLAY_JUDUL = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
@@ -38,7 +37,7 @@ export default function ResumeCard({ enrollment }: { enrollment: Enrollment }) {
       <div className="relative">
         <p className="t-label text-ink-muted">Pelajaran terakhir</p>
 
-        <p className="mt-3 max-w-[calc(100%-7rem)] text-[26px] leading-tight text-ink" style={FRAUNCES_JUDUL}>
+        <p className="mt-3 max-w-[calc(100%-7rem)] text-[26px] leading-tight text-ink" style={DISPLAY_JUDUL}>
           {enrollment.courseTitle}
         </p>
 

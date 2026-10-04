@@ -3,9 +3,8 @@ import Tag from "@/components/ui/Tag";
 import type { ApplicationStatus } from "@/lib/educator";
 import type { Role } from "@/lib/roles";
 
-const FRAUNCES_JUDUL = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25, "WONK" 0',
+const DISPLAY_JUDUL = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
@@ -42,7 +41,7 @@ export default function EducatorStatus({
         {menunggu ? "Menunggu" : ditolak ? "Ditolak" : "Program Educator"}
       </Tag>
 
-      <h2 className="mt-3 text-[20px] leading-snug text-ink" style={FRAUNCES_JUDUL}>
+      <h2 className="mt-3 text-[20px] leading-snug text-ink" style={DISPLAY_JUDUL}>
         {menunggu ? "Pengajuan Educator" : ditolak ? "Ajukan Kembali" : "Jadi Educator"}
       </h2>
 

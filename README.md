@@ -176,6 +176,20 @@ dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
     pilar demi pilar) terlihat utuh;
   - membaca `arr[i][j]` (atau `arr[k][i][j]`, atau N-D) diurai **bertahap**:
     pilih baris dulu, lalu kolomnya — nomor baris & kolom ikut menyala.
+- **Pengurutan (sorting)** di keempat lab: bubble sort, selection sort,
+  insertion sort, merge sort, dan quick sort, naik atau turun.
+  - Setiap perbandingan dan pertukaran adalah satu langkah: sel yang
+    dibandingkan berwarna biru, kunci/minimum kuning, pivot merah bata, yang
+    sudah di tempat akhir gelap, dan yang sedang tidak dikerjakan redup.
+    Variabel algoritmanya (`j`, `j+1`, `min`, `kunci`, `pivot`) tampil sebagai
+    label yang ikut bergerak.
+  - Di akhir ditampilkan jumlah perbandingan dan pertukaran — cocok untuk
+    membandingkan algoritma pada isi yang sama.
+  - Array 2D, 3D, dan N-D juga bisa diurutkan: **tiap baris / tiap kolom / tiap
+    pilar** (atau tiap garis sepanjang satu sumbu pada N-D) sendiri-sendiri,
+    atau **seluruhnya** sebagai satu deret mengikuti urutan memori.
+  - Animasi yang terlalu panjang (mis. bubble sort 64 elemen) ditolak dengan
+    saran memakai array lebih kecil atau merge/quick sort.
 - **Batalkan & ulangi** untuk setiap operasi.
 - **Mode presentasi** (sel membesar, layar penuh, `Esc` untuk keluar) dan
   tombol pintas keyboard.
@@ -314,7 +328,7 @@ npm run verify:lab                # SynapLab — murni, tanpa dev server & krede
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
 - Asisten chat di dalam halaman belajar.
 - Soal kuis selain pilihan tunggal.
-- Lab selain array di SynapLab (string, visualisasi data, algoritma langkah demi langkah).
+- Lab selain array di SynapLab (string, visualisasi data), dan algoritma selain pengurutan di atas papan (mis. pencarian linear/biner).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
 
 ---

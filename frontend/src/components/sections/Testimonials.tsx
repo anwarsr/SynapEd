@@ -45,7 +45,7 @@ export interface TestimonialItem {
 const MARQUEE_MIN = 4;
 
 const HEADING: React.CSSProperties = {
-  fontFamily: "var(--font-inter)",
+  fontFamily: "var(--font-sans)",
   fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
   fontWeight: 800,
   lineHeight: 1.03,
@@ -53,13 +53,13 @@ const HEADING: React.CSSProperties = {
 };
 
 const NAME: React.CSSProperties = {
-  fontFamily: "var(--font-inter)",
+  fontFamily: "var(--font-sans)",
   fontWeight: 900,
   letterSpacing: "-0.025em",
 };
 
 const QUOTE: React.CSSProperties = {
-  fontFamily: "var(--font-inter)",
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
   lineHeight: 1.6,
   letterSpacing: "-0.02em",

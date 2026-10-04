@@ -10,9 +10,10 @@
  */
 import { isLabPointerTone, isLabTone, LAB_MAX_ITEM_CHARS } from "./labTypes";
 import { formAngka, formTeks, formTeksWajib, type OpField, type OpSpecOf } from "./labForm";
-import { CUBE_MAX_SIDE, type CubeOp } from "./cubeLab";
+import { CAKUPAN_KUBUS, CUBE_MAX_SIDE, type CakupanKubus, type CubeOp } from "./cubeLab";
+import { isArahUrut, isKindUrut, katalogUrut } from "./labSort";
 
-export type CubeOpGrup = "bentuk" | "akses" | "sorot" | "telusur" | "ubah";
+export type CubeOpGrup = "bentuk" | "akses" | "sorot" | "telusur" | "ubah" | "urut";
 export type CubeOpSpec = OpSpecOf<CubeOp["kind"], CubeOpGrup, CubeOp>;
 
 export const CUBE_OP_GROUPS: readonly { id: CubeOpGrup; label: string }[] = [
@@ -21,6 +22,7 @@ export const CUBE_OP_GROUPS: readonly { id: CubeOpGrup; label: string }[] = [
   { id: "sorot", label: "Sorotan" },
   { id: "telusur", label: "Penelusuran" },
   { id: "ubah", label: "Transformasi" },
+  { id: "urut", label: "Pengurutan" },
 ];
 
 const indeks = (name: string, label: string): OpField => ({
@@ -257,12 +259,34 @@ export const CUBE_OP_CATALOG: Record<CubeOp["kind"], CubeOpSpec> = {
     ],
     contoh: { kind: "tukarSumbu", sumbuA: 0, sumbuB: 1 },
   },
+  ...katalogUrut<CubeOpGrup, CubeOp>(
+    "urut",
+    [
+      {
+        name: "cakupan",
+        label: "Yang diurutkan",
+        kind: "pilihan",
+        opsi: [
+          { nilai: "baris", label: "Tiap baris (di setiap lapisan)" },
+          { nilai: "kolom", label: "Tiap kolom (di setiap lapisan)" },
+          { nilai: "pilar", label: "Tiap pilar (menembus lapisan)" },
+          { nilai: "semua", label: "Seluruh kubus (urutan memori)" },
+        ],
+      },
+    ],
+    (kind) => ({ kind, arah: "naik", cakupan: "baris" }),
+  ),
 };
 
 /** Null hanya untuk masalah BENTUK form — domainnya urusan `applyCubeOp`. */
 export function buildCubeOp(kind: CubeOp["kind"], nilai: Record<string, string>): CubeOp | null {
   const angka = (n: string) => formAngka(nilai, n);
   const tone = formTeks(nilai, "tone");
+  if (isKindUrut(kind)) {
+    const arah = formTeks(nilai, "arah");
+    const cakupan = formTeks(nilai, "cakupan") as CakupanKubus;
+    return isArahUrut(arah) && CAKUPAN_KUBUS.includes(cakupan) ? { kind, arah, cakupan } : null;
+  }
   switch (kind) {
     case "buat":
     case "acak": {

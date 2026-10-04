@@ -85,11 +85,13 @@ import {
   type LabHistory,
 } from "../frontend/src/lib/lab/labHistory";
 import { mulberry32 } from "../frontend/src/lib/lab/labRandom";
+import { bandingkanNilai, KIND_URUT, rekamUrut } from "../frontend/src/lib/lab/labSort";
 import {
   LAB_MAX_HISTORY,
   LAB_MAX_ITEMS,
   LAB_MAX_KELOMPOK,
   LAB_MAX_STEPS,
+  LAB_MAX_STEPS_URUT,
   LAB_STEP_HOLD_MS,
   LAB_TONES,
 } from "../frontend/src/lib/lab/labTypes";
@@ -169,7 +171,7 @@ const HURUF = arrayStateFromValues(["a", "b", "c", "d", "e"]);
 
   check(
     "katalog memuat seluruh operasi yang dikenal reducer",
-    spesifikasi.length === 20,
+    spesifikasi.length === 25,
     `${spesifikasi.length} operasi terdaftar`,
   );
 
@@ -634,7 +636,7 @@ const DUA_TIGA = akhir2(emptyMatrixState(), { kind: "isiDariTeks", teks: "1 2 3;
     .map(([k, h]) => `${k}: ${h.ok ? "" : h.error}`);
   check(
     "2D: setiap operasi di katalog punya contoh yang benar-benar jalan",
-    gagalContoh.length === 0 && spesifikasi.length === 24,
+    gagalContoh.length === 0 && spesifikasi.length === 29,
     gagalContoh.length === 0 ? `${spesifikasi.length} operasi` : gagalContoh.join(" | "),
   );
 
@@ -982,7 +984,7 @@ const B234 = akhirNd(emptyNdState(), { kind: "buat", bentuk: "2, 3, 4" });
   const sah = buildNdOp("bacaElemen", { indeks: "1, 2, 0" });
   check(
     "N-D: setiap operasi di katalog jalan, buildNdOp menolak form kosong",
-    gagalContoh.length === 0 && spesifikasi.length === 13 && sah !== null && buildNdOp("bacaElemen", { indeks: " " }) === null,
+    gagalContoh.length === 0 && spesifikasi.length === 18 && sah !== null && buildNdOp("bacaElemen", { indeks: " " }) === null,
     gagalContoh.length === 0 ? `${spesifikasi.length} operasi` : gagalContoh.join(" | "),
   );
 
@@ -1327,7 +1329,7 @@ const K223 = akhir3(emptyCubeState(), { kind: "isiDariTeks", teks: "1 2 3; 4 5 6
   check(
     "3D: setiap operasi di katalog jalan, buildCubeOp menolak form yang belum lengkap",
     gagalContoh.length === 0 &&
-      spesifikasi.length === 23 &&
+      spesifikasi.length === 28 &&
       sah !== null &&
       buildCubeOp("bacaSel", { lapisan: "1", baris: "", kolom: "2" }) === null,
     gagalContoh.length === 0 ? `${spesifikasi.length} operasi` : gagalContoh.join(" | "),
@@ -1785,6 +1787,170 @@ const idNd = (s: unknown) => (s as NdLabState).cells.map((c) => c.id);
     "animasi: langkah biasa ≥ 1,5 detik, langkah yang menggeser sel ditahan lebih lama dari geraknya",
     LAB_STEP_HOLD_MS >= 1500 && geser.length > 0 && geser.every((ms) => ms >= 2000),
     `langkah ${LAB_STEP_HOLD_MS} ms, geser ${geser.join(",")} ms`,
+  );
+}
+
+// ── 12. Pengurutan ───────────────────────────────────────────────────────
+
+{
+  const urutHarap = (nilai: readonly string[], arah: "naik" | "turun") =>
+    [...nilai].sort((a, b) => (arah === "naik" ? bandingkanNilai(a, b) : bandingkanNilai(b, a)));
+
+  // ── Aturan perbandingan ──
+  check(
+    "urut: angka dibandingkan sebagai angka, angka sebelum huruf, huruf menurut abjad",
+    bandingkanNilai("10", "9") > 0 && bandingkanNilai("-3", "2") < 0 && bandingkanNilai("9", "A") < 0 && bandingkanNilai("b", "A") > 0,
+    "10 > 9, −3 < 2, 9 < A, A < b",
+  );
+
+  // ── Kebenaran, permutasi, dan kejujuran gerak — untuk kelima algoritma ──
+  const rng = mulberry32(20261008);
+  let salahHasil: string | null = null;
+  let bukanPermutasi = 0;
+  let gerakDiam = 0;
+  let pindahDiamDiam = 0;
+  let slotLiar = 0;
+  for (let t = 0; t < 1500 && salahHasil === null; t++) {
+    const n = Math.floor(rng() * 11);
+    const nilai = Array.from({ length: n }, () => (rng() < 0.25 ? "ABCabc"[Math.floor(rng() * 6)] : String(Math.floor(rng() * 15) - 4)));
+    for (const kind of KIND_URUT) {
+      for (const arah of ["naik", "turun"] as const) {
+        const r = rekamUrut(nilai, kind, arah, (s) => `indeks ${s}`);
+        let sebelum = nilai.map((_, i) => i);
+        for (const l of r.langkah) {
+          if (![...l.isi].sort((a, b) => a - b).every((v, i) => v === i)) bukanPermutasi++;
+          const berubah = l.isi.some((v, i) => v !== sebelum[i]);
+          // Sel hanya boleh berpindah di langkah yang ditandai `gerak` (yang
+          // ditahan lebih lama dan dinarasikan sebagai perpindahan) — dan
+          // langkah `gerak` harus benar-benar memindahkan sesuatu.
+          if (berubah && !l.gerak) pindahDiamDiam++;
+          if (!berubah && l.gerak) gerakDiam++;
+          for (const s of [...Object.keys(l.peran), ...Object.keys(l.label)]) if (Number(s) < 0 || Number(s) >= n) slotLiar++;
+          sebelum = l.isi;
+        }
+        const hasil = sebelum.map((i) => nilai[i]);
+        if (JSON.stringify(hasil) !== JSON.stringify(urutHarap(nilai, arah))) {
+          salahHasil = `${kind} ${arah} [${nilai.join(",")}] → [${hasil.join(",")}]`;
+        }
+      }
+    }
+  }
+  check("urut: kelima algoritma menghasilkan urutan yang benar, naik maupun turun", salahHasil === null, salahHasil ?? "1.500 array acak × 5 algoritma × 2 arah");
+  check(
+    "urut: setiap langkah tetap permutasi, dan HANYA langkah 'gerak' yang memindahkan sel",
+    bukanPermutasi === 0 && pindahDiamDiam === 0 && gerakDiam === 0 && slotLiar === 0,
+    `${bukanPermutasi} bukan permutasi, ${pindahDiamDiam} pindah diam-diam, ${gerakDiam} gerak kosong, ${slotLiar} slot liar`,
+  );
+
+  // ── Stabil & jumlah langkah yang khas ──
+  const kembar = arrayStateFromValues(["3", "1", "3", "2", "1", "3"]);
+  const tidakStabil = (["bubbleSort", "insertionSort", "mergeSort"] as const).filter((kind) => {
+    const h = applyArrayOp(kembar, { kind, arah: "naik" });
+    if (!h.ok) return true;
+    const akhir = h.steps[h.steps.length - 1].state.items;
+    // Nilai kembar harus mempertahankan urutan id semula.
+    return akhir.some((it, i) => i > 0 && akhir[i - 1].value === it.value && akhir[i - 1].id > it.id);
+  });
+  const sudahUrut = ["1", "2", "3", "4", "5", "6"];
+  const bubbleUrut = rekamUrut(sudahUrut, "bubbleSort", "naik", String);
+  const insertUrut = rekamUrut(sudahUrut, "insertionSort", "naik", String);
+  const seleksi = rekamUrut(["5", "4", "3", "2", "1", "0"], "selectionSort", "naik", String);
+  check(
+    "urut: bubble/insertion/merge stabil; data yang sudah urut cukup n−1 perbandingan; selection ≤ n−1 pertukaran",
+    tidakStabil.length === 0 &&
+      bubbleUrut.perbandingan === 5 && bubbleUrut.perpindahan === 0 &&
+      insertUrut.perbandingan === 5 && insertUrut.perpindahan === 0 &&
+      seleksi.perpindahan <= 5,
+    `tidak stabil: [${tidakStabil.join(",")}], bubble ${bubbleUrut.perbandingan}/${bubbleUrut.perpindahan}, insertion ${insertUrut.perbandingan}/${insertUrut.perpindahan}, selection ${seleksi.perpindahan} tukar`,
+  );
+
+  // ── 1D di dalam lab: penanda pengguna bertahan ──
+  let papan1 = arrayStateFromValues(["5", "3", "8", "1"]);
+  papan1 = jalan(papan1, { kind: "setPenunjuk", nama: "i", indeks: 2, tone: "utama" });
+  papan1 = jalan(papan1, { kind: "sorotRentang", dari: 0, sampai: 1, tone: "sorot" });
+  papan1 = jalan(papan1, { kind: "catat", indeks: 0, catatan: "awal" });
+  const u1 = applyArrayOp(papan1, { kind: "quickSort", arah: "naik" });
+  const a1 = u1.ok ? u1.steps[u1.steps.length - 1].state : null;
+  check(
+    "urut 1D: hasil urut, catatan ikut elemennya, penunjuk & sorotan kembali di akhir (disembunyikan selama animasi)",
+    a1 !== null &&
+      nilai(a1).join(",") === "1,3,5,8" &&
+      a1.items.find((x) => x.value === "5")?.note === "awal" &&
+      a1.pointers[0]?.index === 2 &&
+      a1.ranges.length === 1 &&
+      u1.ok &&
+      u1.steps.slice(1, -1).every((st) => st.state.ranges.length === 0),
+    a1 ? nilai(a1).join(",") : "ditolak",
+  );
+
+  // ── 2D: tiap baris, tiap kolom, seluruhnya ──
+  const kisi2 = akhir2(emptyMatrixState(), { kind: "isiDariTeks", teks: "9 2 7; 4 8 1; 6 3 5" });
+  const hasil2 = (cakupan: "baris" | "kolom" | "semua") => {
+    const h = applyMatrixOp(kisi2, { kind: "insertionSort", arah: "naik", cakupan });
+    return h.ok ? kisi(h.steps[h.steps.length - 1].state) : null;
+  };
+  check(
+    "urut 2D: tiap baris, tiap kolom, dan seluruh array (urutan memori) masing-masing benar",
+    JSON.stringify(hasil2("baris")) === JSON.stringify([["2", "7", "9"], ["1", "4", "8"], ["3", "5", "6"]]) &&
+      JSON.stringify(hasil2("kolom")) === JSON.stringify([["4", "2", "1"], ["6", "3", "5"], ["9", "8", "7"]]) &&
+      JSON.stringify(hasil2("semua")) === JSON.stringify([["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"]]),
+    `baris=${JSON.stringify(hasil2("baris"))} kolom=${JSON.stringify(hasil2("kolom"))} semua=${JSON.stringify(hasil2("semua"))}`,
+  );
+
+  // Saat baris 1 dikerjakan: baris 0 sudah "terurut", baris 2 masih "luar".
+  const perBaris = applyMatrixOp(kisi2, { kind: "bubbleSort", arah: "naik", cakupan: "baris" });
+  const tengahBaris = perBaris.ok ? perBaris.steps.find((st) => st.narasi.startsWith("Baris 1:")) : undefined;
+  const idBaris = (r: number) => kisi2.rows[r].map((c) => c.id);
+  const peranBenar =
+    tengahBaris?.peran !== undefined &&
+    tengahBaris.state.rows[0].every((c) => tengahBaris.peran![c.id] === "terurut") &&
+    idBaris(2).every((id) => tengahBaris.peran![id] === "luar");
+  check("urut 2D: baris yang sudah selesai gelap, yang belum disentuh redup", peranBenar, tengahBaris?.narasi ?? "tidak ada langkah baris 1");
+
+  // ── 3D & N-D: sepanjang sumbu ──
+  const kubus = akhir3(emptyCubeState(), { kind: "isiDariTeks", teks: "8 1; 5 7 | 2 6; 3 4" });
+  const pilar = applyCubeOp(kubus, { kind: "selectionSort", arah: "naik", cakupan: "pilar" });
+  const kubusAkhir = pilar.ok ? pilar.steps[pilar.steps.length - 1].state : null;
+  const pilarUrut =
+    kubusAkhir !== null &&
+    [0, 1].every((i) => [0, 1].every((j) => bandingkanNilai(kubusAkhir.cells[cubeOffset([0, i, j], kubusAkhir.shape)].value, kubusAkhir.cells[cubeOffset([1, i, j], kubusAkhir.shape)].value) <= 0));
+  const semua3 = applyCubeOp(kubus, { kind: "mergeSort", arah: "turun", cakupan: "semua" });
+  const nd = applyNdOp(B234, { kind: "quickSort", arah: "turun", sumbu: 1 });
+  const ndAkhir = nd.ok ? nd.steps[nd.steps.length - 1].state : null;
+  const ndBenar =
+    ndAkhir !== null &&
+    [0, 1].every((a) => [0, 1, 2, 3].every((c) => {
+      const garis = [0, 1, 2].map((b) => Number(ndAkhir.cells[ndOffset([a, b, c], ndAkhir.shape)].value));
+      return garis[0] >= garis[1] && garis[1] >= garis[2];
+    }));
+  check(
+    "urut 3D/N-D: tiap pilar kubus, seluruh kubus (memori), dan tiap garis sepanjang sumbu N-D benar",
+    pilarUrut && semua3.ok && nilai3(semua3.steps[semua3.steps.length - 1].state) === "8,7,6,5,4,3,2,1" && ndBenar,
+    `pilar=${pilarUrut}, kubus=${semua3.ok ? nilai3(semua3.steps[semua3.steps.length - 1].state) : semua3.error}, N-D=${ndBenar}`,
+  );
+
+  // ── Penolakan ──
+  const terbalik8 = akhir2(emptyMatrixState(), {
+    kind: "isiDariTeks",
+    teks: Array.from({ length: 8 }, (_, r) => Array.from({ length: 8 }, (_, c) => String(64 - r * 8 - c)).join(" ")).join(";"),
+  });
+  const terlaluPanjang = applyMatrixOp(terbalik8, { kind: "bubbleSort", arah: "naik", cakupan: "semua" });
+  const mergeMuat = applyMatrixOp(terbalik8, { kind: "mergeSort", arah: "naik", cakupan: "semua" });
+  const ditolak = [
+    applyArrayOp(emptyArrayState(), { kind: "bubbleSort", arah: "naik" }).ok,
+    applyArrayOp(LIMA, { kind: "bubbleSort", arah: "acak" as "naik" }).ok,
+    applyMatrixOp(DUA_TIGA, { kind: "bubbleSort", arah: "naik", cakupan: "diagonal" as "baris" }).ok,
+    applyNdOp(B234, { kind: "bubbleSort", arah: "naik", sumbu: 3 }).ok,
+    applyCubeOp(emptyCubeState(), { kind: "quickSort", arah: "naik", cakupan: "semua" }).ok,
+  ];
+  check(
+    "urut: animasi yang terlalu panjang ditolak dengan saran algoritma lain; masukan tidak sah ditolak",
+    !terlaluPanjang.ok &&
+      /merge sort/.test(terlaluPanjang.error) &&
+      mergeMuat.ok &&
+      mergeMuat.steps.length <= LAB_MAX_STEPS_URUT &&
+      ditolak.every((ok) => !ok),
+    terlaluPanjang.ok ? "bubble 64 elemen diterima" : `${terlaluPanjang.error.slice(0, 70)}… | merge ${mergeMuat.ok ? mergeMuat.steps.length : "ditolak"} langkah`,
   );
 }
 

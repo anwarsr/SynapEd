@@ -22,9 +22,10 @@ import {
 } from "./labTypes";
 import { LAB_MAX_RANDOM_VALUE, type ArrayOp } from "./arrayLab";
 import { formAngka, formTeks, formTeksWajib, type OpField, type OpSpecOf } from "./labForm";
+import { isArahUrut, isKindUrut, katalogUrut } from "./labSort";
 
 /** Pengelompokan tombol di panel kontrol. */
-export type OpGrup = "isi" | "ujung" | "indeks" | "susun" | "penanda";
+export type OpGrup = "isi" | "ujung" | "indeks" | "susun" | "penanda" | "urut";
 
 // Bentuk kolom & spesifikasi dipakai bersama semua lab (lihat labForm.ts);
 // nama lamanya tetap diekspor supaya pemakai lab 1D tidak perlu berubah.
@@ -37,6 +38,7 @@ export const ARRAY_OP_GROUPS: readonly { id: OpGrup; label: string }[] = [
   { id: "indeks", label: "Lewat indeks" },
   { id: "susun", label: "Susun ulang" },
   { id: "penanda", label: "Penunjuk & sorotan" },
+  { id: "urut", label: "Pengurutan" },
 ];
 
 /** Panjang maksimal kolom teks isi: cukup untuk 24 nilai beserta pemisahnya. */
@@ -293,6 +295,7 @@ export const ARRAY_OP_CATALOG: Record<ArrayOp["kind"], OpSpec> = {
     fields: [],
     contoh: { kind: "hapusSorotan" },
   },
+  ...katalogUrut<OpGrup, ArrayOp>("urut", [], (kind) => ({ kind, arah: "naik" })),
 };
 
 const angka = formAngka;
@@ -308,6 +311,10 @@ const teksWajib = formTeksWajib;
  * penolakan lain beserta kalimat galatnya ditinggalkan untuk `applyArrayOp`.
  */
 export function buildArrayOp(kind: ArrayOp["kind"], nilai: Record<string, string>): ArrayOp | null {
+  if (isKindUrut(kind)) {
+    const arah = formTeks(nilai, "arah");
+    return isArahUrut(arah) ? { kind, arah } : null;
+  }
   switch (kind) {
     case "isiDariTeks": {
       const t = teksWajib(nilai, "teks");

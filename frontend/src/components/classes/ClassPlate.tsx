@@ -13,14 +13,12 @@ import { cn } from "@/lib/cn";
  * paletnya disesuaikan, dan kelas yang sama tampil dua warna.
  */
 
-const FRAUNCES_SPINE = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 72, "SOFT" 30, "WONK" 1',
+const DISPLAY_SPINE = {
+  fontFamily: "var(--font-sans)",
 } as const;
 
-const FRAUNCES_PLATE = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 48, "SOFT" 30, "WONK" 1',
+const DISPLAY_PLATE = {
+  fontFamily: "var(--font-sans)",
 } as const;
 
 /**
@@ -62,7 +60,7 @@ export function ClassSpine({
       {tebal && (
         <span
           className={cn("hidden sm:block text-[34px] leading-none", nada.deep)}
-          style={FRAUNCES_SPINE}
+          style={DISPLAY_SPINE}
         >
           {inisialKelas(nama)}
         </span>
@@ -93,7 +91,7 @@ export function ClassPlate({ nama, className }: { nama: string; className?: stri
       }}
     >
       <span className="feature-card__holo" />
-      <span className="relative text-[36px] leading-none text-navy" style={FRAUNCES_PLATE}>
+      <span className="relative text-[36px] leading-none text-navy" style={DISPLAY_PLATE}>
         {inisialKelas(nama)}
       </span>
     </span>

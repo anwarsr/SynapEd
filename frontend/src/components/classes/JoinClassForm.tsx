@@ -5,9 +5,8 @@ import { joinClass } from "@/lib/classActions";
 import { INVITE_CODE_LENGTH, normalizeInviteCode } from "@/lib/inviteCode";
 import { cn } from "@/lib/cn";
 
-const FRAUNCES_JUDUL = {
-  fontFamily: "var(--font-fraunces)",
-  fontVariationSettings: '"opsz" 24, "SOFT" 25, "WONK" 0',
+const DISPLAY_JUDUL = {
+  fontFamily: "var(--font-sans)",
   fontWeight: 500,
 } as const;
 
@@ -46,7 +45,7 @@ export default function JoinClassForm() {
     <div className="space-y-4">
       <form onSubmit={onSubmit} className="rounded-2xl border border-rule bg-paper-card p-6">
         <p className="t-label text-ink-muted mb-1.5">Gabung kelas</p>
-        <p className="text-[20px] leading-snug text-ink mb-5" style={FRAUNCES_JUDUL}>
+        <p className="text-[20px] leading-snug text-ink mb-5" style={DISPLAY_JUDUL}>
           Punya kode dari pengajar?
         </p>
 

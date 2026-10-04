@@ -1,22 +1,16 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import ChatWidget from "@/components/ui/ChatWidget";
 import { ChatContextProvider } from "@/components/ui/ChatContext";
 import "./globals.css";
 
-// Fraunces variabel. `axes` wajib — secara default next/font hanya
-// menyertakan wght, sedangkan SOFT/WONK/opsz justru yang memberi
-// kesan hangat & "dicetak". Lihat globals.css → .t-display.
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+// Satu keluarga font untuk seluruh situs (dulu Fraunces untuk judul +
+// Inter untuk isi — lihat globals.css untuk variabel --font-sans).
+// `style` menyertakan italic karena .t-quote (Testimonials) butuh miring.
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
-  display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -42,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="id" className={plusJakartaSans.variable}>
       <body className="antialiased font-body bg-paper text-ink-body">
         <ChatContextProvider>
           {children}

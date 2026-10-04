@@ -1,4 +1,4 @@
-import type { LabPointerTone, LabTone } from "@/lib/lab/labTypes";
+import type { LabPeran, LabPointerTone, LabTone } from "@/lib/lab/labTypes";
 
 /**
  * Satu-satunya tempat nada sorotan bertemu warna.
@@ -75,4 +75,35 @@ export function kelasKelompok(kelompok: { warna: Record<number, number> } | unde
  */
 export function kelasFokus(jumlahFokus: number): string {
   return jumlahFokus === 1 ? "lab-glow border-blue-500" : "ring-2 ring-blue-600 ring-offset-2 ring-offset-paper-card";
+}
+
+/**
+ * Warna peran sel selama pengurutan (`LabStep.peran`). Mengalahkan semua warna
+ * lain: selama algoritma berjalan, yang harus terbaca adalah PERAN tiap sel.
+ * "Terurut" sengaja paling gelap — sel yang sudah di tempat akhirnya terkunci.
+ */
+export const LAB_PERAN_CLASS: Record<LabPeran, string> = {
+  banding: "border-blue-600 bg-blue-100 text-blue-700",
+  kunci: "border-amber-500 bg-amber-100 text-amber-700",
+  pivot: "border-rust-700 bg-rust-100 text-rust-700",
+  sementara: "border-dashed border-ink/50 bg-paper-alt text-ink",
+  terurut: "border-ink bg-ink text-paper",
+  luar: "border-rule bg-paper-card text-ink-faint opacity-40",
+};
+
+export const LAB_PERAN_LABEL: Record<LabPeran, string> = {
+  banding: "sedang dibandingkan",
+  kunci: "kunci / min / maks",
+  pivot: "pivot",
+  sementara: "sudah urut sementara",
+  terurut: "sudah di tempat akhir",
+  luar: "sedang tidak dikerjakan",
+};
+
+/** Urutan tampil di legenda. */
+export const LAB_PERAN_URUT: readonly LabPeran[] = ["banding", "kunci", "pivot", "sementara", "terurut", "luar"];
+
+export function kelasPeran(peran: Record<number, LabPeran> | undefined, id: number): string | null {
+  const r = peran?.[id];
+  return r === undefined ? null : LAB_PERAN_CLASS[r];
 }

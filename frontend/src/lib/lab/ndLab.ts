@@ -12,7 +12,9 @@
  * Modul NETRAL — tanpa `"use client"`, tanpa `server-only`, tanpa impor `@/`.
  */
 import { mulberry32 } from "./labRandom";
+import { galatTerlaluPanjang, isArahUrut, langkahUrut, type ArahUrut, type DeretUrut, type KindUrut } from "./labSort";
 import {
+  LAB_MAX_STEPS_URUT,
   cleanLabText,
   LAB_MAX_ITEM_CHARS,
   LAB_MOVE_HOLD_MS,
@@ -75,7 +77,9 @@ export type NdOp =
   | { kind: "sorotIrisan"; sumbu: number; posisi: number; tone: LabTone }
   | { kind: "hapusSorotan" }
   | { kind: "telusuri" }
-  | { kind: "tukarSumbu"; sumbuA: number; sumbuB: number };
+  | { kind: "tukarSumbu"; sumbuA: number; sumbuB: number }
+  /** `sumbu: null` = seluruh array sebagai satu deret (urutan memori). */
+  | { kind: KindUrut; arah: ArahUrut; sumbu: number | null };
 
 // ---------------------------------------------------------------------------
 // Aritmetika bentuk & indeks — diekspor karena papan memakainya juga
@@ -528,9 +532,62 @@ export function applyNdOp(state: NdLabState, op: NdOp): NdOpResult {
       ]);
     }
 
+    case "bubbleSort":
+    case "selectionSort":
+    case "insertionSort":
+    case "mergeSort":
+    case "quickSort":
+      return urutkanNd(state, op);
+
     default: {
       const _lengkap: never = op;
       throw new Error(`applyNdOp: operasi tidak dikenal (${JSON.stringify(_lengkap)}).`);
     }
   }
+}
+
+/**
+ * Pengurutan N-D: seluruhnya (urutan memori), atau setiap garis di sepanjang
+ * satu sumbu — garis = semua elemen yang indeks lainnya sama, misalnya
+ * `arr[1][*][2]` untuk sumbu 1. Satu rumus untuk berapa pun dimensinya.
+ */
+function urutkanNd(state: NdLabState, op: { kind: KindUrut; arah: ArahUrut; sumbu: number | null }): NdOpResult {
+  const { shape } = state;
+  const total = ndTotal(shape);
+  if (total === 0) return gagal("Array masih kosong, tidak ada yang bisa diurutkan.");
+  if (!isArahUrut(op.arah)) return gagal("Arah pengurutan harus naik atau turun.");
+  const s = op.sumbu;
+  if (s !== null && (!Number.isInteger(s) || s < 0 || s >= shape.length)) {
+    return gagal(`Sumbu harus 0 sampai ${shape.length - 1}, atau pilih seluruh array.`);
+  }
+  const strides = ndStrides(shape);
+  let deret: DeretUrut[];
+  let pembuka: string;
+  if (s === null) {
+    deret = [{ posisi: Array.from({ length: total }, (_, o) => o), awalan: "" }];
+    pembuka = `seluruh ${total} elemen diurutkan sebagai SATU deret mengikuti urutan memori; perhatikan pita memori di bawah papan.`;
+  } else {
+    deret = [];
+    for (let o = 0; o < total; o++) {
+      const k = ndKoordinat(o, shape);
+      if (k[s] !== 0) continue;
+      const pola = k.map((v, d) => (d === s ? "[*]" : `[${v}]`)).join("");
+      deret.push({ posisi: Array.from({ length: shape[s] }, (_, t) => o + t * strides[s]), awalan: `Garis arr${pola}: ` });
+    }
+    pembuka = `setiap garis di sepanjang sumbu ${s} (${deret.length} garis, masing-masing ${shape[s]} elemen) diurutkan sendiri-sendiri.`;
+  }
+  const susun = (pen: ReadonlyMap<number, number>) => state.cells.map((_, x) => state.cells[pen.get(x) ?? x]);
+  const { steps } = langkahUrut<NdLabState>({
+    kind: op.kind,
+    arah: op.arah,
+    deret,
+    nilaiDi: (x) => state.cells[x].value,
+    idDi: (x) => state.cells[x].id,
+    nama: (x) => `arr${ndLabelIndeks(ndKoordinat(x, shape))}`,
+    bingkai: (pen) => settleNd({ ...state, cells: susun(pen), slices: [] }),
+    akhir: (pen) => settleNd({ ...state, cells: susun(pen) }),
+    pembuka,
+  });
+  if (steps.length > LAB_MAX_STEPS_URUT) return gagal(galatTerlaluPanjang(op.kind, steps.length, LAB_MAX_STEPS_URUT));
+  return { ok: true, steps };
 }

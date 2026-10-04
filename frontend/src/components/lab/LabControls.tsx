@@ -55,6 +55,21 @@ function Field({
     );
   }
 
+  if (field.kind === "pilihan") {
+    return (
+      <label htmlFor={id} className={cn("block", (field.opsi?.some((o) => o.label.length > 22) ?? false) && "col-span-full")}>
+        <span className={cn("mb-1 block", labelKecil)}>{field.label}</span>
+        <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+          {(field.opsi ?? []).map((o) => (
+            <option key={o.nilai} value={o.nilai}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
   const dariSel = pilihan?.isian(field.name) ?? null;
 
   return (
@@ -114,6 +129,7 @@ function nilaiAwal(fields: readonly OpField[], bisaDariSel: (nama: string) => bo
   for (const f of fields) {
     if (f.kind === "nada") awal[f.name] = LAB_TONES[0];
     else if (f.kind === "penunjukNada") awal[f.name] = LAB_POINTER_TONES[0];
+    else if (f.kind === "pilihan") awal[f.name] = f.opsi?.[0]?.nilai ?? "";
     else if (f.kind === "angka" && !bisaDariSel(f.name)) awal[f.name] = f.placeholder ?? "";
     else awal[f.name] = "";
   }

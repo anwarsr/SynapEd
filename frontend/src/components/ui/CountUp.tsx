@@ -60,7 +60,7 @@ export default function CountUp({ value, className }: { value: string; className
     <span
       ref={ref}
       className={className}
-      style={{ fontFamily: "var(--font-fraunces)", fontVariationSettings: '"opsz" 48, "SOFT" 30' }}
+      style={{ fontFamily: "var(--font-sans)" }}
     >
       {parsed && !reduced && shown !== null ? shown : value}
     </span>
