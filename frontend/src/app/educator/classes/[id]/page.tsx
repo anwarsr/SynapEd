@@ -6,6 +6,7 @@ import ClassForm from "@/components/classes/ClassForm";
 import DeleteButton from "@/components/classes/DeleteButton";
 import { listClassMembers, loadClassFeed } from "@/lib/classes";
 import { requireOwnedClass } from "@/lib/classGuards";
+import { hitunganPengumpulan, jamServer } from "@/lib/classAssignments";
 import { getUserCards } from "@/lib/userCards";
 import { requireUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
@@ -34,7 +35,11 @@ export default async function EducatorClassPage({ params, searchParams }: Props)
   const kelas = await requireOwnedClass(user, id);
   if (!kelas) notFound();
 
-  const [umpan, members] = await Promise.all([loadClassFeed(id), listClassMembers(id)]);
+  const [umpan, members, hitungan] = await Promise.all([
+    loadClassFeed(id),
+    listClassMembers(id),
+    hitunganPengumpulan(id),
+  ]);
   const orang = await getUserCards([kelas.ownerUid, ...members.map((m) => m.uid)]);
 
   return (
@@ -56,6 +61,8 @@ export default async function EducatorClassPage({ params, searchParams }: Props)
         basePath={`/educator/classes/${id}`}
         joinCode={kelas.joinCode}
         kembali={{ href: "/educator/classes", label: "Kelas Saya" }}
+        sudutTugas={{ peran: "pengajar", hitungan, anggota: kelas.memberCount }}
+        saat={jamServer()}
         pengaturan={
           <div>
             <h3 className="t-label text-ink-muted mb-4">Pengaturan kelas</h3>

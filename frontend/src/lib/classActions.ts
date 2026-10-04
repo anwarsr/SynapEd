@@ -5,6 +5,14 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { requireClassAccess, requireOwnedClass } from "@/lib/classGuards";
 import { normalizeInviteCode } from "@/lib/inviteCode";
+import { bersihkanKelas, bersihkanPost, periksaBerkas } from "@/lib/classAssignments";
+import {
+  MAX_ASSIGNMENT_TITLE,
+  MAX_FILES_PER_POST,
+  MIME_KELAS,
+  validasiPengaturan,
+} from "@/lib/classAssignmentRules";
+import { CLASS_FILES } from "@/lib/storagePaths";
 import {
   CLASS_MEMBERS,
   MAX_CLASS_DESC,
@@ -18,6 +26,7 @@ import {
   getPost,
   listOwnedClasses,
   getReply,
+  listPosts,
   memberRef,
   postsRef,
   repliesRef,
@@ -184,6 +193,9 @@ export async function deleteClass(classId: string): Promise<ClassResult> {
 
   const db = adminDb();
 
+  // Dibaca SEBELUM dihapus: lampiran tiap postingan hanya tercatat di sana.
+  const posts = await listPosts(classId);
+
   // recursiveDelete, bukan .delete() biasa: postingan dan balasan hidup sebagai
   // subcollection, dan .delete() hanya menghapus dokumen induknya sambil
   // meninggalkan keduanya yatim — dokumen yang tidak bisa dicapai lewat
@@ -194,6 +206,10 @@ export async function deleteClass(classId: string): Promise<ClassResult> {
   // menjangkaunya. Yang tertinggal akan menunjuk kelas yang sudah tidak ada.
   const anggota = await db.collection(CLASS_MEMBERS).where("classId", "==", classId).get();
   await Promise.all(anggota.docs.map((d) => d.ref.delete().catch(() => undefined)));
+
+  // Pengumpulan tugas juga koleksi terpisah, dan berkas di Storage tidak
+  // pernah ikut terhapus bersama dokumen apa pun.
+  await bersihkanKelas(classId, posts);
 
   revalidatePath("/educator/classes");
   revalidatePath("/admin/classes");
@@ -275,7 +291,30 @@ export async function leaveClass(classId: string): Promise<ClassResult> {
 
 // ── Postingan ───────────────────────────────────────────────────────────
 
-export async function createPost(classId: string, bodyRaw: string): Promise<ClassResult> {
+/** Menulis satu postingan dan menaikkan postCount dalam satu transaksi. */
+async function tulisPost(classId: string, data: Record<string, unknown>): Promise<void> {
+  const waktu = now();
+  await adminDb().runTransaction(async (tx) => {
+    tx.set(postsRef(classId).doc(), { ...data, replyCount: 0, createdAt: waktu, updatedAt: waktu });
+    tx.update(classRef(classId), { postCount: FieldValue.increment(1) });
+  });
+
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/kelas/${classId}`);
+}
+
+/**
+ * Pengumuman, boleh berlampiran.
+ *
+ * `lampiranRaw` berisi `{path, name}` hasil unggahan browser ke
+ * `class-files/{uid}/{classId}/…`; periksaBerkas membaca ukuran & jenisnya
+ * ulang dari Storage. Pengumuman boleh hanya berkas tanpa teks.
+ */
+export async function createPost(
+  classId: string,
+  bodyRaw: string,
+  lampiranRaw?: unknown,
+): Promise<ClassResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
 
@@ -284,24 +323,73 @@ export async function createPost(classId: string, bodyRaw: string): Promise<Clas
   if (!kelas) return { ok: false, error: "Hanya pemilik kelas yang dapat memposting." };
 
   const body = clean(bodyRaw, MAX_POST_BODY);
-  if (!body) return { ok: false, error: "Isi postingan tidak boleh kosong." };
 
-  const waktu = now();
-  await adminDb().runTransaction(async (tx) => {
-    tx.set(postsRef(classId).doc(), {
-      classId,
-      authorUid: user.uid,
-      body,
-      replyCount: 0,
-      createdAt: waktu,
-      updatedAt: waktu,
-    });
-    tx.update(classRef(classId), { postCount: FieldValue.increment(1) });
+  const lampiran = await periksaBerkas(
+    lampiranRaw,
+    `${CLASS_FILES}/${user.uid}/${classId}/`,
+    MIME_KELAS,
+    MAX_FILES_PER_POST,
+  );
+  if (!lampiran.ok) return { ok: false, error: lampiran.error };
+
+  if (!body && lampiran.files.length === 0) {
+    return { ok: false, error: "Isi postingan tidak boleh kosong." };
+  }
+
+  await tulisPost(classId, {
+    classId,
+    authorUid: user.uid,
+    kind: "announcement",
+    title: "",
+    body,
+    attachments: lampiran.files,
+    assignment: null,
   });
 
-  revalidatePath(`/educator/classes/${classId}`);
-  revalidatePath(`/kelas/${classId}`);
   return { ok: true, message: "Postingan terkirim." };
+}
+
+/**
+ * Tugas: judul, instruksi, lampiran, format yang diterima, tenggat (opsional),
+ * dan apakah pengumpulan setelah tenggat masih diterima.
+ *
+ * Masukan diterima sebagai satu objek `unknown` dan diperiksa satu per satu —
+ * action ini endpoint publik, bentuk argumennya tidak bisa diandalkan.
+ */
+export async function createAssignment(classId: string, input: unknown): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Hanya pemilik kelas yang dapat memposting." };
+
+  const r = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+
+  const title = clean(r.title, MAX_ASSIGNMENT_TITLE);
+  if (title.length < 3) return { ok: false, error: "Judul tugas minimal 3 karakter." };
+
+  const pengaturan = validasiPengaturan(r, Date.now(), true);
+  if (!pengaturan.ok) return { ok: false, error: pengaturan.error };
+
+  const lampiran = await periksaBerkas(
+    r.attachments,
+    `${CLASS_FILES}/${user.uid}/${classId}/`,
+    MIME_KELAS,
+    MAX_FILES_PER_POST,
+  );
+  if (!lampiran.ok) return { ok: false, error: lampiran.error };
+
+  await tulisPost(classId, {
+    classId,
+    authorUid: user.uid,
+    kind: "assignment",
+    title,
+    body: clean(r.body, MAX_POST_BODY),
+    attachments: lampiran.files,
+    assignment: pengaturan.value,
+  });
+
+  return { ok: true, message: "Tugas diterbitkan." };
 }
 
 export async function deletePost(classId: string, postId: string): Promise<ClassResult> {
@@ -317,6 +405,9 @@ export async function deletePost(classId: string, postId: string): Promise<Class
   // recursiveDelete supaya balasannya ikut terhapus, bukan tertinggal yatim.
   await adminDb().recursiveDelete(postsRef(classId).doc(postId));
   await classRef(classId).update({ postCount: FieldValue.increment(-1) });
+
+  // Lampiran dan pengumpulan tugasnya tidak berada di bawah dokumen postingan.
+  await bersihkanPost(classId, post);
 
   revalidatePath(`/educator/classes/${classId}`);
   revalidatePath(`/kelas/${classId}`);

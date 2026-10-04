@@ -11,6 +11,7 @@ import {
   type KelasPublik,
   type KelasReply,
 } from "@/lib/classTypes";
+import { toBerkasList, toPengaturan } from "@/lib/classAssignmentRules";
 
 // Diekspor ulang supaya modul server cukup mengimpor dari satu tempat.
 export * from "@/lib/classTypes";
@@ -51,11 +52,16 @@ function toMember(id: string, d: FirebaseFirestore.DocumentData): KelasMember {
 }
 
 function toPost(id: string, d: FirebaseFirestore.DocumentData): KelasPost {
+  const kind = d.kind === "assignment" ? "assignment" : "announcement";
   return {
     id,
     classId: (d.classId as string | undefined) ?? "",
     authorUid: (d.authorUid as string | undefined) ?? "",
+    kind,
+    title: (d.title as string | undefined) ?? "",
     body: (d.body as string | undefined) ?? "",
+    attachments: toBerkasList(d.attachments),
+    assignment: kind === "assignment" ? toPengaturan(d.assignment) : null,
     replyCount: (d.replyCount as number | undefined) ?? 0,
     createdAt: (d.createdAt as string | undefined) ?? "",
     updatedAt: (d.updatedAt as string | undefined) ?? "",

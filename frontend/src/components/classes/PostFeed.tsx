@@ -1,10 +1,13 @@
+import Link from "next/link";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ProfileLink from "@/components/ui/ProfileLink";
 import Tag from "@/components/ui/Tag";
 import Reveal from "@/components/ui/Reveal";
 import DeleteButton from "@/components/classes/DeleteButton";
 import ReplyForm from "@/components/classes/ReplyForm";
+import Lampiran, { hrefLampiran } from "@/components/classes/Lampiran";
 import { formatDate } from "@/lib/adminUsers";
+import { INFO_FORMAT, formatWib } from "@/lib/classAssignmentRules";
 import type { KelasPost, KelasReply } from "@/lib/classTypes";
 import type { UserCard } from "@/lib/userCards";
 
@@ -26,6 +29,7 @@ const DISPLAY_KOSONG = {
  */
 export default function PostFeed({
   classId,
+  basePath,
   posts,
   repliesByPost,
   cards,
@@ -36,6 +40,8 @@ export default function PostFeed({
   canReply,
 }: {
   classId: string;
+  /** Akar rute kelas, untuk tautan ke halaman tugas. */
+  basePath: string;
   posts: readonly KelasPost[];
   repliesByPost: ReadonlyMap<string, KelasReply[]>;
   cards: ReadonlyMap<string, UserCard>;
@@ -89,17 +95,45 @@ export default function PostFeed({
                   </ProfileLink>
 
                   <Tag tone="blue">Pengajar</Tag>
+                  {post.kind === "assignment" && <Tag tone="amber">Tugas</Tag>}
 
                   <span className="ml-auto text-[13px] text-ink-muted">
                     {formatDate(post.createdAt)}
                   </span>
                 </div>
 
+                {post.kind === "assignment" && post.assignment && (
+                  <Link
+                    href={`${basePath}/tugas/${post.id}`}
+                    className="group mt-4 block rounded-xl border border-amber-500/30 bg-amber-100/40 px-4 py-3.5 transition-colors duration-200 hover:border-amber-500/60"
+                  >
+                    <span className="block text-[17px] font-medium text-ink group-hover:text-blue-700">
+                      {post.title}
+                    </span>
+                    <span className="mt-1 block text-[13px] text-ink-muted">
+                      {post.assignment.dueAt ? `Tenggat ${formatWib(post.assignment.dueAt)}` : "Tanpa tenggat"}
+                      {" · "}
+                      {post.assignment.formats.map((f) => INFO_FORMAT[f].label).join(", ")}
+                    </span>
+                    <span className="mt-2 inline-block text-[13px] font-semibold text-blue-700">
+                      Buka tugas →
+                    </span>
+                  </Link>
+                )}
+
                 {/* 15.5px, bukan 14px: ini badan tulisan pengajar, bukan
                     metadata yang menyertainya. */}
-                <p className="mt-4 whitespace-pre-line break-words text-[15.5px] leading-[1.75] text-ink-body">
-                  {post.body}
-                </p>
+                {post.body && (
+                  <p className="mt-4 whitespace-pre-line break-words text-[15.5px] leading-[1.75] text-ink-body">
+                    {post.body}
+                  </p>
+                )}
+
+                <Lampiran
+                  files={post.attachments}
+                  hrefs={post.attachments.map((_, j) => hrefLampiran(classId, post.id, j))}
+                  className="mt-4"
+                />
 
                 {canModerate && (
                   <div className="mt-4">

@@ -127,6 +127,51 @@ service firebase.storage {
                    && request.resource.size < 50 * 1024 * 1024;
     }
 
+    // ── Kelas: lampiran pengajar & jawaban tugas siswa ─────────────────
+    //
+    // Keduanya TERTUTUP dari klien. Yang boleh membaca ditentukan keanggotaan
+    // kelas, yang tinggal di Firestore — rules Storage tidak bisa
+    // memeriksanya, jadi pembacaan selalu lewat route API
+    // (/api/classes/attachment dan /api/classes/submission).
+    //
+    // Batas 20 MB dan daftar jenis di isClassFile() sejalan dengan
+    // classAssignmentRules.ts. Server membaca ulang ukuran & jenis tiap
+    // berkas sebelum menautkannya, jadi rules ini lapis pertama, bukan
+    // satu-satunya.
+    match /class-files/{uid}/{allPaths=**} {
+      allow read: if false;
+
+      // Hanya educator/admin: pengguna biasa tidak punya kelas untuk
+      // diberi lampiran, dan tidak perlu tempat menitipkan berkas di sini.
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.auth.token.role in ['educator', 'admin']
+                   && request.resource.size < 20 * 1024 * 1024
+                   && isClassFile();
+    }
+
+    match /class-submissions/{uid}/{allPaths=**} {
+      allow read: if false;
+
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 20 * 1024 * 1024
+                   && isClassFile();
+    }
+
+    // PDF, JPG, PNG, DOCX, PPTX, XLSX, ZIP — daftar tertutup.
+    function isClassFile() {
+      return request.resource.contentType in [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/zip'
+      ];
+    }
+
     // Hanya PDF.
     //
     // Word sempat diizinkan, tetapi tampilannya di halaman tidak pernah setia

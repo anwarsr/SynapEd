@@ -104,7 +104,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 4. **Modul netral** (tanpa `server-only`, tanpa `"use client"`, tanpa impor `@/`)
    untuk nilai/validasi yang dipakai klien + server + skrip tsx: `*Rules.ts`,
    `*Types.ts`, `contributors.ts`, `royaltySplit.ts`, `royaltyTerms.ts`,
-   `referralRules.ts`, `classTypes.ts`, `profileTypes.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
+   `referralRules.ts`, `classTypes.ts`, `classAssignmentRules.ts`, `profileTypes.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
    `server-only` dari komponen klien menyeret firebase-admin ke bundel browser.
 5. **Semua koleksi Firestore tertutup dari klien** (`allow read, write: if false`),
    kecuali `courses/{slug}` baca publik dan `users/{uid}` baca oleh pemiliknya.
@@ -139,7 +139,8 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `reviews/{id}` | Hanya pemilik enrollment `completed`. |
 | `educatorApplications/{uid}` | Pengajuan jadi educator. |
 | `categories/{slug}` | Dikelola admin; slug tidak berubah saat label diganti. |
-| `classes/{id}` (+ `posts/{id}/replies/{id}`), `classMembers/{uid}_{classId}` | Kelas educator; `joinCode` rahasia (jangan dikirim ke anggota biasa). |
+| `classes/{id}` (+ `posts/{id}/replies/{id}`), `classMembers/{uid}_{classId}` | Kelas educator; `joinCode` rahasia (jangan dikirim ke anggota biasa). Post: `kind` (`announcement`/`assignment`; hilang = announcement), `title`, `body`, `attachments[{name,path,size,mime}]`, `assignment {formats, dueAt, acceptLate, maxPoints}` (null untuk pengumuman). |
+| `classSubmissions/{classId}_{postId}_{uid}` | Pengumpulan tugas kelas: `text`, `files[]`, `status` submitted/graded, `late` (dibekukan saat kirim), `grade`, `feedback`. Koleksi TERPISAH dari `classes` — `recursiveDelete` tidak menjangkaunya. |
 | `users/{uid}` | `bio`, `education`, `skills`, `phone`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
 | `usernames/{username}` | Reservasi `{uid}`. |
 | `orders/{orderId}` | Pesanan. `method` midtrans/manual, `status`, `royalty` (syarat dibekukan), `postPaidStatus`. |
@@ -150,7 +151,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 Storage: `avatars/{uid}`, `course-assets/{uid}` (PDF, dilayani lewat
 `/api/courses/[slug]/asset`), `course-thumbnails/{uid}` (publik), `payment-qris`
 (publik), `payment-proofs/{uid}` (lewat `/api/payments/proof`, admin),
-`submissions/{uid}` (lewat `/api/submissions/file`). Materi terkunci selalu
+`submissions/{uid}` (lewat `/api/submissions/file`), `class-files/{uid}/{classId}/`
+(lampiran pengajar, lewat `/api/classes/attachment`), `class-submissions/{uid}/{classId}/{postId}/`
+(jawaban siswa, lewat `/api/classes/submission`). Materi terkunci selalu
 dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 
 ## Pembayaran
@@ -236,6 +239,44 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
   polos, bukan JSON — karena model gratis OpenRouter terbukti tidak selalu patuh
   ke instruksi format kompleks. `parseGradingResponse` mengambil kecocokan
   **terakhir**, jaga-jaga model menulis contoh/mikir keras dulu sebelum jawaban asli.
+
+## Tugas kelas
+
+Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
+
+- Berkas: `classAssignmentRules.ts` (NETRAL — format, MIME, batas, validasi,
+  status, WIB), `classAssignments.ts` (server-only, tanpa penjaga: data,
+  `periksaBerkas`, `bersihkanPost/Kelas`), `classAssignmentActions.ts`
+  (`"use server"`: `updateAssignment`, `gradeClassSubmission`,
+  `submitClassAssignment`, `unsubmitClassAssignment`), `createPost`/`createAssignment`
+  di `classActions.ts`, unggah klien di `classUpload.ts`, penyaji `serveStorageFile.ts`.
+- Format (`text`/`pdfImage`/`office`/`zip`) dipilih per tugas. **MIME diambil dari
+  ekstensi** (`mimeOfName`), bukan `file.type` (Windows: ZIP = `x-zip-compressed`).
+  Daftar MIME sama persis dengan `isClassFile()` di storage.rules; batas 20 MB eksklusif.
+- **`periksaBerkas` tidak mempercayai browser**: path wajib berawalan folder milik
+  pengirim (`class-files/{uid}/{classId}/` atau `class-submissions/{uid}/{classId}/{postId}/`,
+  tanpa `..`/`//`), lalu ukuran & MIME dibaca ULANG dari metadata Storage. Hanya nama tampilan
+  yang diambil dari klien.
+- Unggahan terjadi saat formulir DIKIRIM (bukan saat berkas dipilih) supaya
+  berkas yang dibuang tidak meninggalkan sampah.
+- Tenggat diukur jam SERVER. `masihDibuka` = belum lewat ATAU `acceptLate`.
+  Satu kiriman per siswa per tugas; mengganti = batalkan dulu. Batal ditolak
+  setelah dinilai dan setelah pengumpulan ditutup. Batal menghapus dokumen DULU,
+  baru berkas. Menilai pakai transaksi (siswa bisa membatalkan bersamaan).
+  `updateAssignment` hanya mengubah `dueAt`/`acceptLate` — format & nilai maksimal terkunci.
+- **WIB tetap** (`inputWibKeIso`, `isoKeInputWib`, `formatWib`): server App Hosting
+  UTC. Komponen klien menerima waktu yang SUDAH diformat server (`waktuKirim`) —
+  Intl Node vs browser bisa berbeda tanda baca → hydration mismatch.
+- Halaman: `/kelas/[id]?tab=tugas`, `/kelas/[id]/tugas/[postId]` (siswa; pemilik/admin
+  dialihkan), `/educator/classes/[id]/tugas/[postId]` (daftar siswa + nilai). Halaman
+  siswa hanya membaca kiriman miliknya lewat ID deterministik. `jamServer()` dipanggil
+  sekali per render (lint purity melarang `Date.now()` langsung di komponen).
+- Hapus post/kelas memanggil `bersihkanPost`/`bersihkanKelas`: dokumen
+  `classSubmissions` + berkasnya + lampiran. `MANAGED_PREFIXES` di `storageCleanup.ts`
+  memuat kedua folder kelas (tanpa itu `deleteObjects` diam-diam tidak menghapus apa-apa).
+- Penyaji berkas: lampiran → anggota/pemilik (bukan anggota = 404); jawaban →
+  pengirim atau `requireOwnedClass` (siswa lain = 403). Keduanya memeriksa ulang
+  awalan path dan selalu `attachment` + `nosniff`.
 
 ## SynapLab (`/lab`)
 
@@ -462,6 +503,11 @@ ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
 - Suite murni tanpa server: `verify-royalty-split`, `verify-lab`. Sisanya butuh `npm run dev`.
+- `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
+  lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
+- Puppeteer dengan dua peran: pakai `browser.createBrowserContext()` per peran. Tab dalam
+  satu konteks berbagi cookie — memasang cookie siswa diam-diam mengubah tab pengajar jadi
+  siswa (halaman pengelola lalu 404 dan tampak seperti bug).
 - `check`/`finish` hidup di `scripts/checks.ts`; `testSupport.ts` me-re-export-nya.
   Suite murni WAJIB mengimpor dari `./checks` — `testSupport.ts` memanggil
   `initAdmin()` di level modul, jadi mengimpornya menuntut kredensial Firebase

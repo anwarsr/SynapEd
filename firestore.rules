@@ -198,6 +198,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── Pengumpulan tugas kelas ────────────────────────────────────────
+    // ID dokumen = "{classId}_{postId}_{uid}". Kalau klien boleh menulis,
+    // siswa bisa memberi nilai pada jawabannya sendiri; kalau boleh membaca,
+    // jawaban teman bisa disalin cukup dengan menebak ID-nya.
+    match /classSubmissions/{id} {
+      allow read, write: if false;
+    }
+
     // ── Username ───────────────────────────────────────────────────────
     // ID dokumen = username. Tertutup rapat: klaim, penggantian, dan
     // pencarian seluruhnya lewat server. Kalau klien boleh menulis, siapa pun

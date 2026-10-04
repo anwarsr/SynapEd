@@ -222,7 +222,30 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 
 - Educator membuat kelas dan membagikan **kode undangan**.
 - Anggota bergabung dengan kode itu di `/kelas`.
-- Di dalam kelas ada pengumuman/postingan dan balasan.
+- Di dalam kelas ada pengumuman/postingan dan balasan. Pengumuman boleh
+  berlampiran berkas (atau berkas saja tanpa teks).
+- **Tugas** (mirip Google Classroom), diterbitkan pengajar dari kotak tulis yang
+  sama dengan memilih "Tugas":
+  - judul, instruksi, dan lampiran berkas (opsional);
+  - format jawaban yang diterima, boleh lebih dari satu: **teks** yang diketik
+    langsung, **PDF & gambar** (PDF/JPG/PNG), **dokumen Office**
+    (DOCX/PPTX/XLSX), **arsip ZIP**;
+  - **tenggat** opsional (ditulis & ditampilkan dalam WIB) dan pilihan
+    **menerima pengumpulan setelah tenggat** (ditandai "Terlambat");
+  - nilai maksimal (bawaan 100).
+
+  Tenggat dan izin terlambat masih bisa diubah setelah terbit (mis. untuk
+  memperpanjang atau menutup lebih awal); format dan nilai maksimal tidak.
+- Siswa melihat semua tugas di tab **Tugas** beserta statusnya (belum
+  mengumpulkan / dikumpulkan / terlambat / dinilai), lalu mengumpulkan di
+  halaman tugas `/kelas/[id]/tugas/[postId]`. Selama belum dinilai dan
+  pengumpulan masih dibuka, kiriman bisa **dibatalkan lalu dikirim ulang**
+  (berkas yang sudah dikirim ikut terhapus).
+- Pengajar melihat daftar seluruh siswa per tugas di
+  `/educator/classes/[id]/tugas/[postId]`, mengunduh jawabannya, lalu memberi
+  **nilai + komentar** yang langsung terlihat oleh siswa.
+- Batas: maksimal 5 berkas per postingan/kiriman, masing-masing di bawah 20 MB.
+  Siswa tidak bisa melihat jawaban siswa lain.
 
 ### Profil & akun
 
@@ -337,6 +360,7 @@ cd frontend && npx tsc --noEmit   # aplikasi
 cd frontend && npm run lint
 npm run verify:royalty            # contoh; daftar lengkap di package.json
 npm run verify:lab                # SynapLab — murni, tanpa dev server & kredensial
+npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 ```
 
 ---
@@ -350,6 +374,9 @@ npm run verify:lab                # SynapLab — murni, tanpa dev server & krede
 - Soal kuis selain pilihan tunggal.
 - Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
+- Tugas kelas: menyunting judul/instruksi/lampiran setelah terbit, mengembalikan
+  tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
+  dan rekap nilai per kelas.
 
 ---
 

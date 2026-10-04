@@ -4,6 +4,8 @@ import Footer from "@/components/sections/Footer";
 import ClassRoom, { toTab } from "@/components/classes/ClassRoom";
 import { listClassMembers, loadClassFeed } from "@/lib/classes";
 import { requireClassAccess } from "@/lib/classGuards";
+import { getMySubmissions, hitunganPengumpulan, jamServer } from "@/lib/classAssignments";
+import type { SudutTugas } from "@/components/classes/AssignmentList";
 import { getUserCards } from "@/lib/userCards";
 import { requireUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
@@ -41,6 +43,19 @@ export default async function ClassPage({ params, searchParams }: Props) {
   // Satu panggilan Auth untuk pemilik dan seluruh anggota sekaligus.
   const orang = await getUserCards([kelas.ownerUid, ...members.map((m) => m.uid)]);
 
+  // Siswa hanya menerima pengumpulan MILIKNYA (dibaca lewat ID deterministik);
+  // pemilik/admin yang membuka halaman ini melihat hitungan, bukan isi.
+  const sudutTugas: SudutTugas = isOwner
+    ? { peran: "pengajar", hitungan: await hitunganPengumpulan(id), anggota: kelas.memberCount }
+    : {
+        peran: "siswa",
+        milikku: await getMySubmissions(
+          user.uid,
+          id,
+          umpan.posts.filter((p) => p.kind === "assignment").map((p) => p.id),
+        ),
+      };
+
   return (
     <>
       <Navbar />
@@ -63,6 +78,8 @@ export default async function ClassPage({ params, searchParams }: Props) {
           basePath={`/kelas/${id}`}
           kembali={{ href: "/kelas", label: "Kelas Saya" }}
           overlayNav
+          sudutTugas={sudutTugas}
+          saat={jamServer()}
         />
       </main>
 
