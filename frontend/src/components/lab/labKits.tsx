@@ -26,6 +26,7 @@ import { encodeLabSnapshot } from "@/lib/lab/labUrl";
 
 /** Path ikon Heroicons outline 24px, ditulis inline seperti sisa repo. */
 const IKON = {
+  urut: "M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25",
   kubus: "M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9",
   kuas: "M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42",
   tambah: "M12 4.5v15m7.5-7.5h-15",
@@ -62,6 +63,7 @@ export const KIT_ARRAY_1D: LabKit<ArrayLabState, ArrayOp, number> = {
     indeks: IKON.pagar,
     susun: IKON.tukar,
     penanda: IKON.pin,
+    urut: IKON.urut,
   }),
   bangun: buildArrayOp,
   namaOperasi: (op) => ARRAY_OP_CATALOG[op.kind].label,
@@ -110,6 +112,7 @@ export const KIT_ARRAY_2D: LabKit<MatrixLabState, MatrixOp, SelMatriks> = {
     penanda: IKON.pin,
     telusur: IKON.jejak,
     ubah: IKON.putar,
+    urut: IKON.urut,
   }),
   bangun: buildMatrixOp,
   namaOperasi: (op) => MATRIX_OP_CATALOG[op.kind].label,
@@ -181,6 +184,7 @@ export const KIT_ARRAY_3D: LabKit<CubeLabState, CubeOp, Koord3> = {
     sorot: IKON.kuas,
     telusur: IKON.jejak,
     ubah: IKON.putar,
+    urut: IKON.urut,
   }),
   bangun: buildCubeOp,
   namaOperasi: (op) => CUBE_OP_CATALOG[op.kind].label,
@@ -223,6 +227,7 @@ export const KIT_ARRAY_ND: LabKit<NdLabState, NdOp, number[]> = {
     akses: IKON.bidik,
     telusur: IKON.jejak,
     ubah: IKON.tukar,
+    urut: IKON.urut,
   }),
   bangun: buildNdOp,
   namaOperasi: (op) => ND_OP_CATALOG[op.kind].label,

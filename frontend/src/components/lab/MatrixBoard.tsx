@@ -2,11 +2,12 @@
 import { useEffect, useRef } from "react";
 import { matrixCols, type MatrixLabState, type MatrixOp, type MatrixRange } from "@/lib/lab/matrixLab";
 import type { LabBoardProps } from "./labKit";
-import JejakPanah, { NomorKunjungan } from "./JejakPanah";
+import JejakPanah, { LabelSel, NomorKunjungan } from "./JejakPanah";
 import { urutStabil } from "./urutStabil";
 import {
   kelasFokus,
   kelasKelompok,
+  kelasPeran,
   LAB_CELL_NETRAL,
   LAB_POINTER_CLASS,
   LAB_POINTER_LABEL,
@@ -56,6 +57,8 @@ export default function MatrixBoard({
   fokus,
   kelompok,
   jalur,
+  peran,
+  labelSel,
   terpilih,
   onPilih,
   onMulai,
@@ -185,7 +188,7 @@ export default function MatrixBoard({
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper-card",
                         // Warna asal mengalahkan sorotan: selama transformasi,
                         // yang perlu diikuti mata adalah ASAL setiap sel.
-                        warnaAsal ?? (sorot ? LAB_TONE_CLASS[sorot.tone] : LAB_CELL_NETRAL),
+                        kelasPeran(peran, sel.id) ?? warnaAsal ?? (sorot ? LAB_TONE_CLASS[sorot.tone] : LAB_CELL_NETRAL),
                         difokus && kelasFokus(fokus.length),
                         dipilih && !difokus && "border-ink",
                         difokus && "z-10",
@@ -221,6 +224,7 @@ export default function MatrixBoard({
                       )}
 
                       <NomorKunjungan jalur={jalur} id={sel.id} />
+                      <LabelSel labelSel={labelSel} id={sel.id} />
                     </button>
                   );
                 }),

@@ -12,9 +12,9 @@ import {
 } from "@/lib/lab/ndLab";
 import { useFlip } from "@/lib/useFlip";
 import type { LabBoardProps } from "./labKit";
-import JejakPanah, { NomorKunjungan } from "./JejakPanah";
+import JejakPanah, { LabelSel, NomorKunjungan } from "./JejakPanah";
 import { urutStabil } from "./urutStabil";
-import { kelasFokus, kelasKelompok, LAB_CELL_NETRAL, LAB_TONE_CLASS, LAB_TONE_LABEL } from "./labTone";
+import { kelasFokus, kelasKelompok, kelasPeran, LAB_CELL_NETRAL, LAB_TONE_CLASS, LAB_TONE_LABEL } from "./labTone";
 import { cn } from "@/lib/cn";
 
 /**
@@ -186,6 +186,8 @@ export default function NdBoard({
   fokus,
   kelompok,
   jalur,
+  peran,
+  labelSel,
   terpilih,
   onPilih,
   onMulai,
@@ -215,7 +217,7 @@ export default function NdBoard({
     const irisan = irisanDi(slices, koordinat);
     const difokus = fokus.includes(offset);
     return cn(
-      kelasKelompok(kelompok, id) ?? (irisan ? LAB_TONE_CLASS[irisan.tone] : LAB_CELL_NETRAL),
+      kelasPeran(peran, id) ?? kelasKelompok(kelompok, id) ?? (irisan ? LAB_TONE_CLASS[irisan.tone] : LAB_CELL_NETRAL),
       difokus && kelasFokus(fokus.length),
       offset === offsetKursor && !difokus && "border-blue-600 ring-2 ring-blue-500/30",
       offset === offsetTerpilih && !difokus && offset !== offsetKursor && "border-ink",
@@ -334,6 +336,7 @@ export default function NdBoard({
                         {sel.value}
                       </span>
                       <NomorKunjungan jalur={jalur} id={sel.id} />
+                      <LabelSel labelSel={labelSel} id={sel.id} />
                     </button>
                   );
                 }))}

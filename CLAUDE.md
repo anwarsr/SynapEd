@@ -294,6 +294,34 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   memanjang dan panel tidak pernah menggulir), dan kedua panel `.lab-pane`
   menggulir sendiri dengan `overscroll-behavior: contain`. Footer dibungkus
   `lg:hidden`. Di bawah lg semuanya kembali ke aliran halaman biasa.
+- **Pengurutan** (`labSort.ts`, netral): lima algoritma (`bubbleSort`,
+  `selectionSort`, `insertionSort`, `mergeSort`, `quickSort`) ditulis SEKALI di atas
+  deret slot abstrak (`rekamUrut` → permutasi `isi` per langkah + peran + label
+  per slot + flag `gerak`), lalu `langkahUrut` menerjemahkannya ke langkah lab
+  untuk satu deret atau lebih. Tiap lab hanya menentukan deretnya: 1D satu deret;
+  2D `cakupan` baris/kolom/semua; 3D baris/kolom/pilar/semua; N-D `sumbu` (garis
+  sepanjang satu sumbu) atau `null` = seluruhnya. "Semua" = urutan memori
+  (row-major), jadi sel bisa pindah baris/lapisan.
+  - `bandingkanNilai`: dua angka sebagai angka, angka sebelum teks, teks menurut
+    abjad (tanpa beda huruf besar-kecil, kode karakter penentu seri).
+  - Invarian yang diuji: hasil = pengurutan stabil bawaan (dua arah); setiap
+    langkah permutasi; **hanya langkah `gerak` yang memindahkan sel**; bubble,
+    insertion, merge stabil (merge menyisipkan dengan rotasi supaya keadaan tetap
+    permutasi); deret yang selesai berperan `terurut`, yang belum `luar`.
+  - Batas `LAB_MAX_STEPS_URUT` 1000, dihitung SETELAH merekam (bubble pada data
+    urut hanya satu putaran); kelebihan → ditolak dengan saran merge/quick sort.
+    Operasi biasa tetap dipangkas di `MAX_STEPS` lab masing-masing — pengurutan
+    tidak lewat `berhasil()` supaya tidak dipangkas.
+  - `LabStep.peran` (id → `banding`/`kunci`/`pivot`/`sementara`/`terurut`/`luar`)
+    mengalahkan warna asal & sorotan; `LabStep.labelSel` (id → "j", "min",
+    "pivot", …). Di 1D label digambar di lajur sendiri di atas penunjuk dan
+    meluncur seperti penunjuk (`.lab-pointer`); di papan lain sebagai chip di atas
+    sel (`LabelSel`). Legenda peran ada di `LangkahSekarang`.
+  - Sorotan pengguna disembunyikan selama animasi (bentrok warna) dan kembali di
+    langkah terakhir; penunjuk tetap di indeksnya; catatan ikut selnya.
+  - `StepTimeline` hanya merender jendela 60 langkah di sekitar langkah aktif
+    (pengurutan bisa ratusan langkah) + tombol lompat ke awal/akhir.
+  - Isian `pilihan` (select) di `labForm`/`LabControls`; nilai bawaannya opsi pertama.
 - **Panah keyboard** memilih sel hanya kalau fokus ada di papan (atau di body);
   di tempat lain panah tetap menggulir panel. 2D: ←→↑↓; 3D: ←→ kolom, ↑↓ baris,
   PgUp/PgDn lapisan; N-D: ←→ sumbu terakhir, ↑↓ sumbu sebelumnya.
@@ -303,7 +331,7 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
     Lama sel meluncur = `--lab-gerak` (1000 ms ÷ kecepatan pemutar), diterbitkan
     `LabWorkspace` di pembungkus papan. Ada pemeriksaan `verify-lab` yang mencegah
     tempo dipercepat diam-diam.
-  - **Papan 2D/3D/N-D TIDAK memakai FLIP.** Posisi tiap sel dihitung dari
+  - **Papan sel (1D/2D/3D/N-D) TIDAK memakai FLIP.** Posisi tiap sel dihitung dari
     koordinatnya dan ditulis ke properti CSS `translate` (bukan `transform`, supaya
     tidak bertabrakan dengan `lab-enter`/`lab-pop`); kelas `.lab-posisi` memberi
     transisinya, `.lab-bingkai` untuk bingkai yang berubah ukuran. N-D menghitung
@@ -317,7 +345,7 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
     Ini bug yang dilaporkan pemilik (kotak yang seharusnya diam ikut beranimasi);
     sel juga jangan pernah ditaruh di dalam elemen baris/lapisan/kotak yang bisa
     berganti.
-  - `useFlip` kini hanya untuk `ArrayBoard` (1D) dan pita memori 3D/N-D. Ia
+  - `useFlip` kini hanya untuk pita memori 3D/N-D. Ia
     mengukur relatif terhadap wadah, dan melupakan posisi saat wadah tidak
     dirender (lab tersembunyi) atau ref-nya `null`.
   - **Tanda di `LabStep`**: `kelompok` (warna asal per id sel, ikut sel saat

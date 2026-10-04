@@ -18,6 +18,7 @@
  *    akan mengubah masa lalu — bug yang nyaris mustahil dilacak dari layar.
  */
 import {
+  LAB_MAX_STEPS_URUT,
   cleanLabText,
   isLabPointerTone,
   isLabTone,
@@ -39,6 +40,7 @@ import {
   type LabTone,
 } from "./labTypes";
 import { mulberry32 } from "./labRandom";
+import { galatTerlaluPanjang, isArahUrut, langkahUrut, type ArahUrut, type KindUrut } from "./labSort";
 
 /**
  * Satu sel array.
@@ -101,7 +103,8 @@ export type ArrayOp =
   | { kind: "hapusPenunjuk"; nama: string }
   | { kind: "sorotRentang"; dari: number; sampai: number; tone: LabTone }
   | { kind: "hapusSorotan" }
-  | { kind: "catat"; indeks: number; catatan: string };
+  | { kind: "catat"; indeks: number; catatan: string }
+  | { kind: KindUrut; arah: ArahUrut };
 
 export function emptyArrayState(): ArrayLabState {
   return { items: [], pointers: [], ranges: [], nextId: 1 };
@@ -869,6 +872,13 @@ export function applyArrayOp(state: ArrayLabState, op: ArrayOp): ArrayOpResult {
       return berhasil([langkah(akhir, narasi, [op.indeks])]);
     }
 
+    case "bubbleSort":
+    case "selectionSort":
+    case "insertionSort":
+    case "mergeSort":
+    case "quickSort":
+      return urutkanArray(state, op);
+
     default: {
       // Operasi baru yang lupa ditangani menjadi galat TIPE di sini, bukan
       // papan yang diam-diam tidak bereaksi saat tombolnya ditekan.
@@ -876,4 +886,29 @@ export function applyArrayOp(state: ArrayLabState, op: ArrayOp): ArrayOpResult {
       throw new Error(`applyArrayOp: operasi tidak dikenal (${JSON.stringify(_lengkap)}).`);
     }
   }
+}
+
+/**
+ * Pengurutan 1D: satu deret, slot = indeks. Sorotan pengguna disembunyikan
+ * selama animasi (warnanya akan bertabrakan dengan warna peran) dan kembali
+ * di langkah terakhir; penunjuk tetap di indeksnya.
+ */
+function urutkanArray(state: ArrayLabState, op: { kind: KindUrut; arah: ArahUrut }): ArrayOpResult {
+  const n = state.items.length;
+  if (n === 0) return { ok: false, error: "Array masih kosong, tidak ada yang bisa diurutkan." };
+  if (!isArahUrut(op.arah)) return { ok: false, error: "Arah pengurutan harus naik atau turun." };
+  const susun = (pen: ReadonlyMap<number, number>) => state.items.map((_, p) => state.items[pen.get(p) ?? p]);
+  const { steps } = langkahUrut<ArrayLabState>({
+    kind: op.kind,
+    arah: op.arah,
+    deret: [{ posisi: state.items.map((_, i) => i), awalan: "" }],
+    nilaiDi: (p) => state.items[p].value,
+    idDi: (p) => state.items[p].id,
+    nama: (p) => `indeks ${p}`,
+    bingkai: (pen) => settleMarkers({ ...state, items: susun(pen), ranges: [] }),
+    akhir: (pen) => settleMarkers({ ...state, items: susun(pen) }),
+    pembuka: `${n} elemen akan diurutkan. Ikuti warna dan label kecil di atas sel; legendanya ada di atas papan.`,
+  });
+  if (steps.length > LAB_MAX_STEPS_URUT) return { ok: false, error: galatTerlaluPanjang(op.kind, steps.length, LAB_MAX_STEPS_URUT) };
+  return { ok: true, steps };
 }

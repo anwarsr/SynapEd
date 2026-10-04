@@ -147,3 +147,22 @@ export function NomorKunjungan({ jalur, id }: { jalur: readonly number[] | undef
     </span>
   );
 }
+
+/**
+ * Label variabel algoritma di atas sel (`j`, `min`, `pivot`, …). Kuncinya
+ * teks labelnya, jadi saat label pindah ke sel lain ia "mendarat" dengan
+ * pantulan kecil — mata mengikuti variabel yang bergerak.
+ */
+export function LabelSel({ labelSel, id }: { labelSel: Record<number, string> | undefined; id: number }) {
+  const teks = labelSel?.[id];
+  if (!teks) return null;
+  return (
+    <span
+      key={teks}
+      aria-hidden="true"
+      className="lab-land pointer-events-none absolute -top-3.5 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-1.5 py-px text-[10px] font-semibold leading-tight text-paper shadow-soft"
+    >
+      {teks}
+    </span>
+  );
+}

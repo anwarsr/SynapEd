@@ -20,7 +20,9 @@
  * langkah itu sendiri.
  */
 import { mulberry32 } from "./labRandom";
+import { galatTerlaluPanjang, isArahUrut, langkahUrut, type ArahUrut, type DeretUrut, type KindUrut } from "./labSort";
 import {
+  LAB_MAX_STEPS_URUT,
   cleanLabText,
   LAB_MAX_ITEM_CHARS,
   LAB_MOVE_HOLD_MS,
@@ -107,7 +109,16 @@ export type CubeOp =
   | { kind: "transposeTiapLapisan" }
   | { kind: "putarTiapLapisan" }
   | { kind: "balikUrutanLapisan" }
-  | { kind: "tukarSumbu"; sumbuA: number; sumbuB: number };
+  | { kind: "tukarSumbu"; sumbuA: number; sumbuB: number }
+  | { kind: KindUrut; arah: ArahUrut; cakupan: CakupanKubus };
+
+/**
+ * Apa yang diurutkan pada kubus: garis di sepanjang satu sumbu (tiap baris
+ * mendatar, tiap kolom tegak, tiap pilar menembus lapisan), atau seluruhnya
+ * sebagai satu deret mengikuti urutan memori.
+ */
+export type CakupanKubus = "baris" | "kolom" | "pilar" | "semua";
+export const CAKUPAN_KUBUS: readonly CakupanKubus[] = ["baris", "kolom", "pilar", "semua"];
 
 /** Nama sumbu untuk narasi; indeksnya sama dengan posisi di `Koord3`. */
 export const CUBE_NAMA_SUMBU = ["lapisan", "baris", "kolom"] as const;
@@ -830,9 +841,56 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
       ]);
     }
 
+    case "bubbleSort":
+    case "selectionSort":
+    case "insertionSort":
+    case "mergeSort":
+    case "quickSort":
+      return urutkanKubus(state, op);
+
     default: {
       const _lengkap: never = op;
       throw new Error(`applyCubeOp: operasi tidak dikenal (${JSON.stringify(_lengkap)}).`);
     }
   }
+}
+
+function urutkanKubus(state: CubeLabState, op: { kind: KindUrut; arah: ArahUrut; cakupan: CakupanKubus }): CubeOpResult {
+  if (cubeKosong(state)) return gagal("Array 3D masih kosong, tidak ada yang bisa diurutkan.");
+  if (!isArahUrut(op.arah)) return gagal("Arah pengurutan harus naik atau turun.");
+  if (!CAKUPAN_KUBUS.includes(op.cakupan)) return gagal("Pilih yang diurutkan: tiap baris, tiap kolom, tiap pilar, atau seluruh kubus.");
+  const { shape } = state;
+  const [D, R, C] = shape;
+  const rentang = (n: number) => Array.from({ length: n }, (_, i) => i);
+  const o = (k: number, i: number, j: number) => cubeOffset([k, i, j], shape);
+
+  let deret: DeretUrut[];
+  let pembuka: string;
+  if (op.cakupan === "semua") {
+    deret = [{ posisi: rentang(D * R * C), awalan: "" }];
+    pembuka = `seluruh ${D * R * C} elemen diurutkan sebagai SATU deret mengikuti urutan memori (lapisan 0 dulu, baris demi baris), jadi sel bisa pindah lapisan.`;
+  } else if (op.cakupan === "baris") {
+    deret = rentang(D).flatMap((k) => rentang(R).map((i) => ({ posisi: rentang(C).map((j) => o(k, i, j)), awalan: `arr[${k}][${i}]: ` })));
+    pembuka = `setiap baris mendatar di setiap lapisan diurutkan sendiri-sendiri (${D * R} baris).`;
+  } else if (op.cakupan === "kolom") {
+    deret = rentang(D).flatMap((k) => rentang(C).map((j) => ({ posisi: rentang(R).map((i) => o(k, i, j)), awalan: `arr[${k}][*][${j}]: ` })));
+    pembuka = `setiap kolom tegak di setiap lapisan diurutkan sendiri-sendiri (${D * C} kolom).`;
+  } else {
+    deret = rentang(R).flatMap((i) => rentang(C).map((j) => ({ posisi: rentang(D).map((k) => o(k, i, j)), awalan: `Pilar arr[*][${i}][${j}]: ` })));
+    pembuka = `setiap pilar — satu sel dari tiap lapisan, menembus kubus — diurutkan sendiri-sendiri (${R * C} pilar).`;
+  }
+  const susun = (pen: ReadonlyMap<number, number>) => state.cells.map((_, x) => state.cells[pen.get(x) ?? x]);
+  const { steps } = langkahUrut<CubeLabState>({
+    kind: op.kind,
+    arah: op.arah,
+    deret,
+    nilaiDi: (x) => state.cells[x].value,
+    idDi: (x) => state.cells[x].id,
+    nama: (x) => `arr${cubeLabel(cubeKoord(x, shape))}`,
+    bingkai: (pen) => settleCube({ ...state, cells: susun(pen), boxes: [] }),
+    akhir: (pen) => settleCube({ ...state, cells: susun(pen) }),
+    pembuka,
+  });
+  if (steps.length > LAB_MAX_STEPS_URUT) return gagal(galatTerlaluPanjang(op.kind, steps.length, LAB_MAX_STEPS_URUT));
+  return { ok: true, steps };
 }

@@ -1,9 +1,9 @@
 "use client";
 import type { LabStep } from "@/lib/lab/labTypes";
-import { LAB_KELOMPOK_CLASS } from "./labTone";
+import { LAB_KELOMPOK_CLASS, LAB_PERAN_CLASS, LAB_PERAN_LABEL, LAB_PERAN_URUT } from "./labTone";
 import { cn } from "@/lib/cn";
 
-type LangkahRingkas = Pick<LabStep<unknown>, "narasi" | "kelompok" | "jalur">;
+type LangkahRingkas = Pick<LabStep<unknown>, "narasi" | "kelompok" | "jalur" | "peran">;
 
 /**
  * Narasi langkah sekarang, dipasang TEPAT DI ATAS papan (dan ikut menempel
@@ -29,6 +29,8 @@ export function LangkahSekarang({
   const total = steps.length;
   const persen = total > 1 ? (frame / (total - 1)) * 100 : total === 1 ? 100 : 0;
   const kelompok = sekarang?.kelompok;
+  const adaPeran = new Set(Object.values(sekarang?.peran ?? {}));
+  const peranTampil = LAB_PERAN_URUT.filter((r) => adaPeran.has(r));
 
   return (
     <div className="rounded-2xl border border-rule bg-paper-card px-4 py-3 shadow-soft">
@@ -62,6 +64,17 @@ export function LangkahSekarang({
           {kelompok.label.map((label, n) => (
             <span key={n} className={cn("rounded-md border-2 px-1.5 py-px font-medium", LAB_KELOMPOK_CLASS[n % LAB_KELOMPOK_CLASS.length])}>
               {label}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {peranTampil.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-dashed border-rule pt-2.5 text-[11px]">
+          {peranTampil.map((r) => (
+            // Kelas sel "luar" memakai opacity; di legenda chip-nya harus tetap terbaca.
+            <span key={r} className={cn("rounded-md border-2 px-1.5 py-px font-medium", LAB_PERAN_CLASS[r].replace("opacity-40", "border-dashed"))}>
+              {LAB_PERAN_LABEL[r]}
             </span>
           ))}
         </div>
@@ -103,6 +116,12 @@ export default function StepTimeline({
 }) {
   const total = steps.length;
   if (total <= 1) return null;
+  // Pengurutan bisa menghasilkan ratusan langkah. Daftar penuh berarti ratusan
+  // tombol dirender ulang setiap langkah berganti — pemutar tersendat tepat
+  // saat diputar cepat. Yang ditampilkan hanya jendela di sekitar langkah ini.
+  const JENDELA = 60;
+  const dari = total <= JENDELA ? 0 : Math.min(Math.max(frame - 15, 0), total - JENDELA);
+  const sampai = Math.min(dari + JENDELA, total);
 
   return (
     <section className="rounded-3xl border border-rule bg-paper-card px-5 py-4 shadow-soft">
@@ -111,8 +130,15 @@ export default function StepTimeline({
         <span className="text-xs text-ink-muted">{label}</span>
       </div>
 
-      <ol className="mt-3 space-y-0.5">
-        {steps.map((s, i) => (
+      {dari > 0 && (
+        <button type="button" onClick={() => onPilihLangkah(0)} className="mt-2 text-xs text-blue-700 hover:underline">
+          ↑ ke langkah pertama ({dari} langkah sebelumnya disembunyikan)
+        </button>
+      )}
+      <ol start={dari + 1} className="mt-3 space-y-0.5">
+        {steps.slice(dari, sampai).map((s, k) => {
+          const i = dari + k;
+          return (
           <li key={i}>
             <button
               type="button"
@@ -138,8 +164,14 @@ export default function StepTimeline({
               <span className="min-w-0 flex-1">{s.narasi}</span>
             </button>
           </li>
-        ))}
+          );
+        })}
       </ol>
+      {sampai < total && (
+        <button type="button" onClick={() => onPilihLangkah(total - 1)} className="mt-2 text-xs text-blue-700 hover:underline">
+          ↓ lompat ke hasil akhir ({total - sampai} langkah berikutnya disembunyikan)
+        </button>
+      )}
     </section>
   );
 }

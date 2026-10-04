@@ -17,7 +17,9 @@
  * (`baris * jumlahKolom + kolom`) terhadap keadaan langkah itu sendiri.
  */
 import { mulberry32 } from "./labRandom";
+import { galatTerlaluPanjang, isArahUrut, langkahUrut, type ArahUrut, type DeretUrut, type KindUrut } from "./labSort";
 import {
+  LAB_MAX_STEPS_URUT,
   cleanLabText,
   LAB_MAX_ITEM_CHARS,
   LAB_MAX_NOTE_CHARS,
@@ -118,7 +120,12 @@ export type MatrixOp =
   | { kind: "transpose" }
   | { kind: "balikTiapBaris" }
   | { kind: "balikUrutanBaris" }
-  | { kind: "putar90" };
+  | { kind: "putar90" }
+  | { kind: KindUrut; arah: ArahUrut; cakupan: CakupanMatriks };
+
+/** Apa yang diurutkan pada array 2D: tiap baris, tiap kolom, atau seluruhnya sebagai satu deret. */
+export type CakupanMatriks = "baris" | "kolom" | "semua";
+export const CAKUPAN_MATRIKS: readonly CakupanMatriks[] = ["baris", "kolom", "semua"];
 
 // ---------------------------------------------------------------------------
 // Pembentuk & penjaga
@@ -924,9 +931,63 @@ export function applyMatrixOp(state: MatrixLabState, op: MatrixOp): MatrixOpResu
       ]);
     }
 
+    case "bubbleSort":
+    case "selectionSort":
+    case "insertionSort":
+    case "mergeSort":
+    case "quickSort":
+      return urutkanMatriks(state, op);
+
     default: {
       const _lengkap: never = op;
       throw new Error(`applyMatrixOp: operasi tidak dikenal (${JSON.stringify(_lengkap)}).`);
     }
   }
+}
+
+/**
+ * Pengurutan 2D. Array 2D tidak punya SATU urutan alami, jadi pengguna memilih
+ * cakupannya: tiap baris (setiap baris adalah array 1D), tiap kolom, atau
+ * seluruh elemen sebagai satu deret mengikuti urutan memori (baris demi
+ * baris) — yang terakhir memindahkan sel menyeberang antarbaris.
+ */
+function urutkanMatriks(state: MatrixLabState, op: { kind: KindUrut; arah: ArahUrut; cakupan: CakupanMatriks }): MatrixOpResult {
+  const R = state.rows.length;
+  const C = matrixCols(state);
+  if (R === 0) return gagal("Array 2D masih kosong, tidak ada yang bisa diurutkan.");
+  if (!isArahUrut(op.arah)) return gagal("Arah pengurutan harus naik atau turun.");
+  if (!CAKUPAN_MATRIKS.includes(op.cakupan)) return gagal("Pilih yang diurutkan: tiap baris, tiap kolom, atau seluruh array.");
+
+  const datar = state.rows.flat();
+  const rentang = (n: number) => Array.from({ length: n }, (_, i) => i);
+  const deret: DeretUrut[] =
+    op.cakupan === "semua"
+      ? [{ posisi: rentang(R * C), awalan: "" }]
+      : op.cakupan === "baris"
+        ? rentang(R).map((r) => ({ posisi: rentang(C).map((c) => r * C + c), awalan: `Baris ${r}: ` }))
+        : rentang(C).map((c) => ({ posisi: rentang(R).map((r) => r * C + c), awalan: `Kolom ${c}: ` }));
+  const susun = (pen: ReadonlyMap<number, number>) => {
+    const sel = datar.map((_, o) => datar[pen.get(o) ?? o]);
+    return rentang(R).map((r) => sel.slice(r * C, r * C + C));
+  };
+  const pembuka =
+    op.cakupan === "semua"
+      ? `seluruh ${R * C} elemen diurutkan sebagai SATU deret mengikuti urutan memori (baris 0, lalu baris 1, …), jadi sel bisa pindah ke baris lain.`
+      : op.cakupan === "baris"
+        ? `setiap baris diurutkan sendiri-sendiri — tiap baris adalah array 1D. Baris yang sedang dikerjakan terang, sisanya redup.`
+        : `setiap kolom diurutkan sendiri-sendiri, dari atas ke bawah. Kolom yang sedang dikerjakan terang, sisanya redup.`;
+
+  const { steps } = langkahUrut<MatrixLabState>({
+    kind: op.kind,
+    arah: op.arah,
+    deret,
+    nilaiDi: (o) => datar[o].value,
+    idDi: (o) => datar[o].id,
+    nama: (o) => `arr[${Math.floor(o / C)}][${o % C}]`,
+    bingkai: (pen) => settleMatrix({ ...state, rows: susun(pen), ranges: [] }),
+    akhir: (pen) => settleMatrix({ ...state, rows: susun(pen) }),
+    pembuka,
+  });
+  if (steps.length > LAB_MAX_STEPS_URUT) return gagal(galatTerlaluPanjang(op.kind, steps.length, LAB_MAX_STEPS_URUT));
+  return { ok: true, steps };
 }

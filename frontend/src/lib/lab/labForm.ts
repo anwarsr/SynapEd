@@ -23,7 +23,9 @@ import { cleanLabText, parseLabInt } from "./labTypes";
 export interface OpField {
   name: string;
   label: string;
-  kind: "teks" | "teksBaris" | "angka" | "nada" | "penunjukNama" | "penunjukNada";
+  kind: "teks" | "teksBaris" | "angka" | "nada" | "penunjukNama" | "penunjukNada" | "pilihan";
+  /** Untuk `pilihan`: daftar pilihan; yang pertama menjadi nilai bawaan. */
+  opsi?: readonly { nilai: string; label: string }[];
   placeholder?: string;
   min?: number;
   max?: number;

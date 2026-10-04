@@ -13,9 +13,10 @@
  */
 import { isLabPointerTone, isLabTone, LAB_MAX_ITEM_CHARS, LAB_MAX_NOTE_CHARS } from "./labTypes";
 import { formAngka, formTeks, formTeksWajib, type OpField, type OpSpecOf } from "./labForm";
-import { MATRIX_MAX_COLS, MATRIX_MAX_ROWS, type MatrixOp } from "./matrixLab";
+import { CAKUPAN_MATRIKS, MATRIX_MAX_COLS, MATRIX_MAX_ROWS, type CakupanMatriks, type MatrixOp } from "./matrixLab";
+import { isArahUrut, isKindUrut, katalogUrut } from "./labSort";
 
-export type MatrixOpGrup = "bentuk" | "akses" | "penanda" | "telusur" | "ubah";
+export type MatrixOpGrup = "bentuk" | "akses" | "penanda" | "telusur" | "ubah" | "urut";
 export type MatrixOpSpec = OpSpecOf<MatrixOp["kind"], MatrixOpGrup, MatrixOp>;
 
 export const MATRIX_OP_GROUPS: readonly { id: MatrixOpGrup; label: string }[] = [
@@ -24,6 +25,7 @@ export const MATRIX_OP_GROUPS: readonly { id: MatrixOpGrup; label: string }[] = 
   { id: "penanda", label: "Penunjuk & sorotan" },
   { id: "telusur", label: "Penelusuran" },
   { id: "ubah", label: "Transformasi" },
+  { id: "urut", label: "Pengurutan" },
 ];
 
 const F_BARIS: OpField = { name: "baris", label: "Baris", kind: "angka", placeholder: "0", min: 0, max: MATRIX_MAX_ROWS - 1 };
@@ -257,6 +259,22 @@ export const MATRIX_OP_CATALOG: Record<MatrixOp["kind"], MatrixOpSpec> = {
     fields: [],
     contoh: { kind: "putar90" },
   },
+  ...katalogUrut<MatrixOpGrup, MatrixOp>(
+    "urut",
+    [
+      {
+        name: "cakupan",
+        label: "Yang diurutkan",
+        kind: "pilihan",
+        opsi: [
+          { nilai: "baris", label: "Tiap baris sendiri-sendiri" },
+          { nilai: "kolom", label: "Tiap kolom sendiri-sendiri" },
+          { nilai: "semua", label: "Seluruh array (urutan memori)" },
+        ],
+      },
+    ],
+    (kind) => ({ kind, arah: "naik", cakupan: "baris" }),
+  ),
 };
 
 /**
@@ -264,6 +282,11 @@ export const MATRIX_OP_CATALOG: Record<MatrixOp["kind"], MatrixOpSpec> = {
  * masalah BENTUK — domainnya beserta kalimat galatnya urusan `applyMatrixOp`.
  */
 export function buildMatrixOp(kind: MatrixOp["kind"], nilai: Record<string, string>): MatrixOp | null {
+  if (isKindUrut(kind)) {
+    const arah = formTeks(nilai, "arah");
+    const cakupan = formTeks(nilai, "cakupan") as CakupanMatriks;
+    return isArahUrut(arah) && CAKUPAN_MATRIKS.includes(cakupan) ? { kind, arah, cakupan } : null;
+  }
   const angka = (n: string) => formAngka(nilai, n);
   switch (kind) {
     case "isiDariTeks": {
