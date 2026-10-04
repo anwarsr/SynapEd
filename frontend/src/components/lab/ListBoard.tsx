@@ -3,18 +3,28 @@ import { useEffect, useId, useRef, useState } from "react";
 import { alamatSimpul, labelAlamat, urutanList, type ListLabState, type ListOp } from "@/lib/lab/listLab";
 import type { LabBoardProps } from "./labKit";
 import { NomorKunjungan } from "./JejakPanah";
-import { kelasPeran, LAB_CELL_NETRAL, LAB_PERAN_LABEL } from "./labTone";
+import { kelasPeran, LAB_PERAN_LABEL } from "./labTone";
 import { urutStabil } from "./urutStabil";
 import { cn } from "@/lib/cn";
 
-/** Ukuran gambar (px, sebelum diskalakan): simpul, celah panah, tinggi baris, ruang kepala. */
-const W = 108;
-const NEXT_W = 44;
+/**
+ * Ukuran gambar (px, sebelum diskalakan): lebar simpul & bagian next-nya,
+ * tinggi simpul, celah antarsimpul (tempat panah), tinggi baris, dan titik
+ * awal rantai (sesudah pointer head).
+ */
+const W = 100;
+const NEXT_W = 40;
+const DATA_W = W - NEXT_W;
 const H = 58;
-const G = 54;
-const BARIS = 124;
-const X0 = 100;
-const Y0 = 92;
+const G = 42;
+const BARIS = 150;
+/** Pointer head = satu kotak pointer, selebar bagian next sebuah simpul. */
+const HEAD_W = NEXT_W + 4;
+const X0 = 10 + HEAD_W + 34;
+const Y0 = 70;
+
+/** Sel netral simpul (data); bagian next diberi latar sendiri di dalamnya. */
+const SIMPUL_NETRAL = "border-ink/70 bg-paper-card text-ink";
 
 const MULAI_CEPAT: { label: string; op: () => ListOp }[] = [
   { label: "3 → 8 → 1 → 5", op: () => ({ kind: "isiDariTeks", teks: "3 8 1 5" }) },
@@ -25,6 +35,8 @@ const MULAI_CEPAT: { label: string; op: () => ListOp }[] = [
 
 type Titik = { x: number; y: number };
 
+const f = (t: Titik) => `${t.x.toFixed(1)} ${t.y.toFixed(1)}`;
+
 /**
  * Lengkung panah dari titik `a` ke `b`. SELALU satu perintah `M … C …` dengan
  * jumlah angka yang sama, supaya peramban bisa menganimasikan perubahan
@@ -33,52 +45,60 @@ type Titik = { x: number; y: number };
  */
 function lengkung(a: Titik, b: Titik): string {
   const maju = b.x > a.x + 8;
-  // Toleransi lebar: titik asal (bulatan di kotak next) sedikit lebih rendah
-  // dari titik tujuan (tengah sisi kiri simpul). Dengan toleransi sempit, panah
-  // yang menunjuk ke belakang dianggap "beda baris" dan menembus simpul lurus.
+  // Toleransi lebar: titik tujuan panah ke belakang (bawah simpul) lebih
+  // rendah dari titik asal, tapi tetap "sebaris" — dengan toleransi sempit,
+  // panah itu dianggap beda baris dan menembus simpul lurus.
   const sebaris = Math.abs(a.y - b.y) < BARIS / 2;
   let c1: Titik;
   let c2: Titik;
   if (sebaris && maju) {
-    c1 = { x: a.x + (b.x - a.x) * 0.45, y: a.y };
-    c2 = { x: b.x - (b.x - a.x) * 0.45, y: b.y };
+    c1 = { x: a.x + (b.x - a.x) * 0.4, y: a.y };
+    c2 = { x: b.x - (b.x - a.x) * 0.4, y: b.y };
   } else if (sebaris) {
     // Panah yang menunjuk ke belakang (saat list dibalik) melengkung di bawah rantai.
-    c1 = { x: a.x + 46, y: a.y + 84 };
-    c2 = { x: b.x - 46, y: b.y + 84 };
+    c1 = { x: a.x + 30, y: a.y + 92 };
+    c2 = { x: b.x, y: b.y + 70 };
   } else {
-    c1 = { x: a.x + 56, y: a.y };
-    c2 = { x: b.x - 56, y: b.y };
+    c1 = { x: a.x + 60, y: a.y };
+    c2 = { x: b.x - 60, y: b.y };
   }
-  const f = (t: Titik) => `${t.x.toFixed(1)} ${t.y.toFixed(1)}`;
   return `M ${f(a)} C ${f(c1)}, ${f(c2)}, ${f(b)}`;
 }
 
 /**
  * Panah yang "mengerut" ke titik asalnya — bentuk saat pointer null. Semua
  * titik kendalinya di titik asal, jadi panah yang menjadi null menyusut lurus
- * ke kotak next-nya, tidak mengayun melengkung lebih dulu.
+ * ke titiknya, tidak mengayun melengkung lebih dulu.
  */
-const kerut = (a: Titik) => {
-  const f = `${a.x.toFixed(1)} ${a.y.toFixed(1)}`;
-  return `M ${f} C ${f}, ${f}, ${f}`;
-};
+const kerut = (a: Titik) => `M ${f(a)} C ${f(a)}, ${f(a)}, ${f(a)}`;
+
+/** Garis miring di kotak pointer null — lambang null yang lazim di buku teks. */
+function CoretNull() {
+  return (
+    <svg aria-hidden="true" className="absolute inset-1.5 h-[calc(100%-0.75rem)] w-[calc(100%-0.75rem)]" viewBox="0 0 10 10" preserveAspectRatio="none">
+      <line x1="0.5" y1="9.5" x2="9.5" y2="0.5" stroke="currentColor" strokeWidth="0.6" vectorEffect="non-scaling-stroke" opacity="0.55" />
+    </svg>
+  );
+}
 
 /**
  * Kanvas linked list (singly).
  *
- * Setiap simpul digambar `[nilai | next]` dengan alamat memorinya, dan
- * disambung panah dari kotak `next` ke simpul yang ditunjuknya. Simpul
- * diposisikan dari letaknya di rantai (atau dari `posisiSimpul` langkah itu)
- * lewat `translate`, dalam urutan DOM yang tetap — simpul yang naik masuk
- * rantai atau turun keluar rantai meluncur, simpul lain diam.
+ * Simpul = kartu `[data | next]`; `head` digambar dengan bentuk yang sama
+ * (`[head | ●]`) karena ia juga sebuah pointer. Setiap panah keluar TEPAT dari
+ * bulatan pointer-nya dan berakhir di tengah sisi kiri simpul tujuan, jadi
+ * rantai yang lurus benar-benar lurus. Pointer null digambar dengan coretan
+ * miring di kotaknya. Indeks dan alamat memori ditulis di bawah kartu, supaya
+ * kartunya bersih dan ruang di atasnya bebas untuk variabel `cur`/`prev`/….
  *
- * Panah dan variabel penunjuk (`cur`, `prev`, `baru`, …) dikunci menurut
- * identitasnya (id simpul asal, nama variabel), jadi saat pointer berubah
- * yang terlihat adalah panah yang BERBELOK dan chip yang MELUNCUR.
+ * Simpul diposisikan dari letaknya di rantai (atau dari `posisiSimpul`
+ * langkah itu) lewat `translate`, dalam urutan DOM yang tetap — simpul yang
+ * naik masuk rantai atau turun keluar rantai meluncur, simpul lain diam.
+ * Panah dan variabel dikunci menurut identitasnya (id simpul asal, nama
+ * variabel), jadi pointer yang berubah terlihat BERBELOK dan chip MELUNCUR.
  *
- * Gambar dibuat dalam piksel tetap lalu diskalakan agar muat lebar papan;
- * di layar sangat sempit skalanya berhenti di batas bawah dan papan bisa
+ * Gambar dibuat dalam piksel tetap lalu diskalakan agar muat lebar papan; di
+ * layar sangat sempit skalanya berhenti di batas bawah dan papan bisa
  * digulir ke samping, supaya tulisannya tidak menjadi terlalu kecil.
  */
 export default function ListBoard({
@@ -113,8 +133,8 @@ export default function ListBoard({
   const adaNull = (variabel ?? []).some((v) => v.id === null);
   const maksKolom = Math.max(n, ...[...posisi.values()].map((p) => p.kolom + 1));
   const maksBaris = Math.max(0, ...[...posisi.values()].map((p) => p.baris));
-  const lebar = X0 + maksKolom * (W + G) + 70;
-  const tinggi = Y0 + maksBaris * BARIS + H + 70;
+  const lebar = X0 + maksKolom * (W + G) + 40;
+  const tinggi = Y0 + maksBaris * BARIS + H + 110;
 
   // ── Skala agar muat ─────────────────────────────────────────────────────
   const wadahRef = useRef<HTMLDivElement>(null);
@@ -126,7 +146,8 @@ export default function ListBoard({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const skala = presentasi ? 1.15 : lebarTersedia === null ? 1 : Math.max(0.6, Math.min(1, lebarTersedia / lebar));
+  // Di bawah 0,72 tulisan alamat terlalu kecil untuk dibaca; lebih baik digulir.
+  const skala = presentasi ? 1.15 : lebarTersedia === null ? 1 : Math.max(0.72, Math.min(1, lebarTersedia / lebar));
 
   // ── Variabel penunjuk: ditumpuk bila menunjuk simpul yang sama ──────────
   const tumpukan = new Map<string, number>();
@@ -136,10 +157,20 @@ export default function ListBoard({
     tumpukan.set(kunci, ke + 1);
     const p = v.id === null ? slotNull : xy(v.id);
     const bawah = v.id !== null && (posisi.get(v.id)?.baris ?? 0) > 0;
-    return { nama: v.nama, x: p.x, y: bawah ? p.y + H + 10 + ke * 26 : p.y - 34 - ke * 26, bawah };
+    // Simpul di baris bawah: chip di bawahnya, melewati label indeks/alamat.
+    return { nama: v.nama, x: p.x, y: bawah ? p.y + H + 30 + ke * 26 : p.y - 36 - ke * 26, bawah };
   });
 
-  const headTitik = { x: 16 + 64, y: Y0 + H / 2 };
+  // Pusat isi bagian next yang SEBENARNYA: kartu bergaris tepi 2px dan bagian
+  // next punya garis kiri 2px — tanpa memperhitungkannya, pangkal panah meleset
+  // dari tengah kotak.
+  const titikPointer = (x: number, y: number) => ({ x: x + W - 2 - (NEXT_W - 2) / 2, y: y + H / 2 });
+  const headPos = { x: 10, y: Y0 };
+  const headTitik = { x: headPos.x + HEAD_W / 2, y: Y0 + H / 2 };
+  const masuk = (t: { x: number; y: number }) => ({ x: t.x - 2, y: t.y + H / 2 });
+
+  const panah = (asal: Titik, tujuan: Titik | null, mundur: boolean) =>
+    tujuan === null ? kerut(asal) : mundur ? lengkung(asal, { x: tujuan.x + DATA_W / 2, y: tujuan.y + H + 2 }) : lengkung(asal, masuk(tujuan));
 
   return (
     <div
@@ -169,71 +200,26 @@ export default function ListBoard({
         <div ref={wadahRef} className="lab-scroller overflow-x-auto scrollbar-hide">
           <div className="relative mx-auto" style={{ width: lebar * skala, height: tinggi * skala }}>
             <div className="absolute left-0 top-0 origin-top-left" style={{ width: lebar, height: tinggi, transform: `scale(${skala})` }}>
-              {/* ── Kotak head ─────────────────────────────── */}
-              <div
-                className="absolute flex h-[30px] w-16 items-center justify-center rounded-lg border-2 border-ink bg-ink text-xs font-semibold text-paper"
-                style={{ left: 16, top: Y0 + H / 2 - 15 }}
+              {/* ── Pointer head: kotak pointer yang sama dengan bagian next, berlabel di atasnya ── */}
+              <span
+                className="absolute text-center text-xs font-bold uppercase tracking-wider text-ink"
+                style={{ left: headPos.x - 10, top: headPos.y - 22, width: HEAD_W + 20 }}
               >
                 head
+              </span>
+              <div
+                className="absolute flex items-center justify-center rounded-xl border-2 border-ink bg-paper-alt text-ink shadow-soft"
+                style={{ left: headPos.x, top: headPos.y, width: HEAD_W, height: H }}
+              >
+                {/* Bulatan pointer digambar oleh panahnya sendiri (penanda pangkal). */}
+                {state.head === null && <CoretNull />}
               </div>
-              {state.head === null && (
-                <span className="absolute text-xs text-ink-muted" style={{ left: 88, top: Y0 + H / 2 - 9 }}>
-                  = null (list kosong)
-                </span>
-              )}
-
-              {/* ── Panah ─────────────────────────────────── */}
-              <svg aria-hidden="true" className="pointer-events-none absolute left-0 top-0 overflow-visible" width={lebar} height={tinggi}>
-                <defs>
-                  <marker id={idPanah} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                    <path d="M0,0 L10,5 L0,10 z" fill="var(--color-ink)" />
-                  </marker>
-                </defs>
-                <path
-                  className="lab-panah"
-                  fill="none"
-                  stroke="var(--color-ink)"
-                  strokeWidth={2.5}
-                  markerEnd={`url(#${idPanah})`}
-                  style={
-                    {
-                      d: `path("${state.head === null ? kerut(headTitik) : lengkung(headTitik, { x: xy(state.head).x - 3, y: xy(state.head).y + H / 2 })}")`,
-                      opacity: state.head === null ? 0 : 1,
-                    } as React.CSSProperties
-                  }
-                />
-                {urutStabil(
-                  state.nodes.map((x) => {
-                    const a = xy(x.id);
-                    const asal = { x: a.x + W - NEXT_W / 2, y: a.y + H / 2 + 6 };
-                    const tujuan = x.next === null || !peta.has(x.next) ? null : xy(x.next);
-                    return (
-                      <path
-                        key={x.id}
-                        className="lab-panah"
-                        fill="none"
-                        stroke="var(--color-ink)"
-                        strokeWidth={2.5}
-                        markerEnd={`url(#${idPanah})`}
-                        style={
-                          {
-                            d: `path("${
-                              tujuan === null
-                                ? kerut(asal)
-                                : tujuan.y === a.y && tujuan.x < a.x
-                                  ? // Menunjuk ke belakang (list dibalik): masuk dari BAWAH simpul,
-                                    // supaya tidak bertumpuk dengan panah head di sisi kirinya.
-                                    lengkung(asal, { x: tujuan.x + 34, y: tujuan.y + H + 3 })
-                                  : lengkung(asal, { x: tujuan.x - 3, y: tujuan.y + H / 2 })
-                            }")`,
-                            opacity: tujuan === null ? 0 : 1,
-                          } as React.CSSProperties
-                        }
-                      />
-                    );
-                  }),
-                )}
-              </svg>
+              <span
+                className="t-numeral absolute text-center text-[11px] tabular-nums text-ink-muted"
+                style={{ left: headPos.x - 20, top: headPos.y + H + 6, width: HEAD_W + 40 }}
+              >
+                {state.head === null ? "null" : labelAlamat(state.head)}
+              </span>
 
               {/* ── Kotak null untuk variabel yang null ───── */}
               {adaNull && (
@@ -268,36 +254,95 @@ export default function ListBoard({
                         .filter(Boolean)
                         .join(", ")}
                       onClick={() => k >= 0 && onPilih(k)}
-                      className={cn(
-                        "lab-cell lab-posisi lab-enter absolute left-0 top-0 flex overflow-visible rounded-xl border-2",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-                        kelasPeran(peran, x.id) ?? LAB_CELL_NETRAL,
-                        k === terpilih && !r && "border-ink",
-                      )}
-                      style={{ width: W, height: H, translate: `${p.x}px ${p.y}px` } as React.CSSProperties}
+                      // flex + justify-start: <button> bawaannya memusatkan isi secara
+                      // tegak, yang menggeser kartu dari posisi hitungan panah.
+                      className="group lab-posisi lab-enter absolute left-0 top-0 flex flex-col items-stretch justify-start focus-visible:outline-none"
+                      style={{ width: W, height: H + 22, translate: `${p.x}px ${p.y}px` } as React.CSSProperties}
                     >
-                      <span className="flex h-full flex-1 flex-col items-center justify-center">
-                        <span className="t-numeral text-[9px] leading-none tabular-nums opacity-70">@{alamatSimpul(x.id)}</span>
-                        <span key={x.value} className="lab-pop t-numeral mt-0.5 text-lg leading-none tabular-nums">
-                          {x.value}
+                      <span className="relative block" style={{ width: W, height: H }}>
+                      <span
+                        className={cn(
+                          "flex h-full w-full overflow-hidden rounded-xl border-2 shadow-soft transition-[background-color,border-color,box-shadow] duration-300",
+                          "group-hover:shadow-lift group-focus-visible:ring-2 group-focus-visible:ring-blue-500",
+                          kelasPeran(peran, x.id) ?? SIMPUL_NETRAL,
+                          k === terpilih && !r && "ring-2 ring-ink ring-offset-2 ring-offset-paper-card",
+                        )}
+                      >
+                        <span className="flex flex-1 items-center justify-center">
+                          <span key={x.value} className="lab-pop t-numeral text-[22px] leading-none tabular-nums">
+                            {x.value}
+                          </span>
+                        </span>
+                        {/* Bagian next: latar sedikit berbeda, bulatan pointer tepat di tengahnya. */}
+                        <span className="relative flex h-full items-center justify-center border-l-2 border-current/25 bg-current/[0.06]" style={{ width: NEXT_W }}>
+                          <span className="absolute left-0 right-0 top-1 text-center text-[8px] font-semibold uppercase tracking-wider opacity-55">next</span>
+                          {x.next === null && <CoretNull />}
                         </span>
                       </span>
-                      <span
-                        className="flex h-full flex-col items-center justify-start border-l-2 border-current/30 pt-1.5"
-                        style={{ width: NEXT_W }}
-                      >
-                        <span className="t-numeral text-[9px] leading-none tabular-nums opacity-70">next</span>
-                        {x.next === null ? (
-                          <span className="mt-1.5 text-[10px] italic opacity-80">null</span>
-                        ) : (
-                          <span aria-hidden="true" className="mt-2 h-2 w-2 rounded-full bg-current" />
-                        )}
-                      </span>
                       <NomorKunjungan jalur={jalur} id={x.id} />
+                      </span>
+                      {/* Indeks di rantai & alamat memori, di bawah kartu. */}
+                      <span className="t-numeral mt-1.5 block text-center text-[11px] tabular-nums text-ink-muted">
+                        {/* Simpul yang (sementara) tidak tercapai dari head — mis. saat list
+                            dibalik — tidak punya indeks; alamatnya saja yang ditampilkan. */}
+                        {lepasDariRantai ? "" : `[${k}] · `}@{alamatSimpul(x.id)}
+                      </span>
                     </button>
                   );
                 }),
               )}
+
+              {/* ── Panah: digambar DI ATAS simpul, jadi terlihat keluar dari bulatan pointer ── */}
+              <svg aria-hidden="true" className="pointer-events-none absolute left-0 top-0 overflow-visible" width={lebar} height={tinggi}>
+                <defs>
+                  <marker id={idPanah} viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+                    <path d="M0,0.8 L9,5 L0,9.2 z" fill="var(--color-ink)" />
+                  </marker>
+                  {/* Bulatan pointer = penanda PANGKAL panah. Dengan begitu bulatan dan
+                      garisnya satu benda: selalu menyatu tepat, juga saat simpul
+                      meluncur dan panahnya berubah bentuk. Pointer null tidak
+                      punya bulatan — panahnya transparan, kotaknya dicoret. */}
+                  <marker id={`${idPanah}-titik`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5">
+                    <circle cx="5" cy="5" r="4.2" fill="var(--color-ink)" />
+                  </marker>
+                </defs>
+                <path
+                  className="lab-panah"
+                  fill="none"
+                  stroke="var(--color-ink)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  markerEnd={`url(#${idPanah})`}
+                  markerStart={`url(#${idPanah}-titik)`}
+                  style={
+                    {
+                      d: `path("${panah(headTitik, state.head === null ? null : xy(state.head), false)}")`,
+                      opacity: state.head === null ? 0 : 1,
+                    } as React.CSSProperties
+                  }
+                />
+                {urutStabil(
+                  state.nodes.map((x) => {
+                    const a = xy(x.id);
+                    const asal = titikPointer(a.x, a.y);
+                    const tujuan = x.next === null || !peta.has(x.next) ? null : xy(x.next);
+                    const mundur = tujuan !== null && tujuan.y === a.y && tujuan.x < a.x;
+                    return (
+                      <path
+                        key={x.id}
+                        className="lab-panah"
+                        fill="none"
+                        stroke="var(--color-ink)"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        markerEnd={`url(#${idPanah})`}
+                        markerStart={`url(#${idPanah}-titik)`}
+                        style={{ d: `path("${panah(asal, tujuan, mundur)}")`, opacity: tujuan === null ? 0 : 1 } as React.CSSProperties}
+                      />
+                    );
+                  }),
+                )}
+              </svg>
 
               {/* ── Variabel penunjuk ─────────────────────── */}
               {chipVariabel.map((c) => (
@@ -307,11 +352,11 @@ export default function ListBoard({
                   className="lab-posisi pointer-events-none absolute left-0 top-0 flex flex-col items-center"
                   style={{ width: W, translate: `${c.x}px ${c.y}px` } as React.CSSProperties}
                 >
-                  {c.bawah && <span className="text-[10px] leading-none text-amber-700">▲</span>}
-                  <span key={c.nama} className="lab-land rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-500">
+                  {c.bawah && <span className="h-2.5 w-0.5 rounded-full bg-amber-500" />}
+                  <span key={c.nama} className="lab-land rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-500">
                     {c.nama}
                   </span>
-                  {!c.bawah && <span className="text-[10px] leading-none text-amber-700">▼</span>}
+                  {!c.bawah && <span className="h-2.5 w-0.5 rounded-full bg-amber-500" />}
                 </span>
               ))}
             </div>
