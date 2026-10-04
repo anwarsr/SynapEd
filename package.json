@@ -40,6 +40,7 @@
     "verify:submission": "tsx scripts/verify-submission.ts",
     "verify:username": "tsx scripts/verify-username.ts",
     "verify:royalty-split": "tsx scripts/verify-royalty-split.ts",
+    "verify:lab": "tsx scripts/verify-lab.ts",
     "verify:royalty": "tsx scripts/verify-royalty.ts",
     "verify:referral": "tsx scripts/verify-referral.ts",
     "backfill:usernames": "tsx scripts/backfill-usernames.ts",

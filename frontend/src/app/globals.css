@@ -811,3 +811,168 @@ section[id] {
         scroll-behavior: auto !important;
     }
 }
+
+/* == SynapLab ===============================================
+   Papan lab. Ukuran sel diterbitkan sebagai variabel supaya penunjuk bergeser
+   dengan satu translateX murni-CSS — JavaScript tidak pernah mengukur apa pun,
+   jadi animasinya tidak bisa meleset saat papan digulir atau jendela diubah. */
+.lab-board {
+    --lab-cell: 2.75rem;
+    --lab-gap: 0.5rem;
+    /* Kertas bertitik: memberi papan rasa "meja kerja" tanpa garis kisi yang
+       bersaing dengan sel. Titiknya diambil dari warna garis, bukan abu-abu
+       baru, supaya tetap satu keluarga dengan sisa halaman. */
+    background-image: radial-gradient(color-mix(in srgb, var(--color-rule-strong) 70%, transparent) 1px, transparent 1.2px);
+    background-size: 18px 18px;
+}
+
+@media (min-width: 640px) {
+    .lab-board { --lab-cell: 3.5rem; }
+}
+
+@media (min-width: 1024px) {
+    .lab-board { --lab-cell: 4.25rem; }
+}
+
+@media (min-width: 1536px) {
+    .lab-board { --lab-cell: 4.75rem; }
+}
+
+/* Tepi memudar: petunjuk bahwa deretnya masih berlanjut, tanpa bilah gulir
+   yang memakan tinggi papan. */
+.lab-scroller {
+    mask-image: linear-gradient(90deg, transparent 0, #000 1.25rem, #000 calc(100% - 1.25rem), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 1.25rem, #000 calc(100% - 1.25rem), transparent 100%);
+}
+
+/* Panel ruang kerja yang menggulir sendiri-sendiri. `overscroll-behavior`
+   mencegah guliran yang sudah mentok di satu panel merambat ke halaman —
+   tanpa itu, sampai di ujung panel operasi, seluruh halaman ikut bergeser. */
+.lab-pane {
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule-strong) transparent;
+}
+
+.lab-pointer {
+    transform: translateX(calc(var(--i) * (var(--lab-cell) + var(--lab-gap))));
+    transition: transform 280ms var(--ease-out-soft);
+}
+
+/* Transisi transform di sini dipakai FLIP (ArrayBoard, pita memori): sel yang
+   bertukar tempat meluncur dari posisi lamanya, bukan melompat. Lamanya
+   mengikuti `--lab-gerak`, yang diterbitkan ruang kerja dari kecepatan pemutar. */
+.lab-cell {
+    transition: transform var(--lab-gerak, 1000ms) var(--ease-out-soft), background-color 300ms var(--ease-out-soft),
+        border-color 300ms var(--ease-out-soft), box-shadow 200ms var(--ease-out-soft);
+}
+
+/* Papan 2D/3D/N-D tidak memakai FLIP: posisi setiap sel DIHITUNG dari
+   koordinatnya dan ditulis ke properti `translate` (terpisah dari `transform`,
+   jadi tidak bertabrakan dengan animasi lab-enter/lab-pop). Sel yang
+   koordinatnya berubah meluncur karena transisi ini; sel lain tidak bergerak
+   sama sekali — elemennya tidak pernah dibuat ulang. */
+.lab-cell.lab-posisi,
+.lab-posisi {
+    transition: translate var(--lab-gerak, 1000ms) var(--ease-out-soft), transform 320ms var(--ease-out-soft),
+        opacity 400ms var(--ease-out-soft), background-color 300ms var(--ease-out-soft),
+        border-color 300ms var(--ease-out-soft), box-shadow 200ms var(--ease-out-soft);
+}
+
+/* Bingkai kotak/lapisan ikut berubah ukuran saat bentuk array berubah. */
+.lab-bingkai {
+    transition: translate var(--lab-gerak, 1000ms) var(--ease-out-soft), width var(--lab-gerak, 1000ms) var(--ease-out-soft),
+        height var(--lab-gerak, 1000ms) var(--ease-out-soft), background-color 300ms var(--ease-out-soft),
+        border-color 300ms var(--ease-out-soft), opacity 300ms var(--ease-out-soft);
+}
+
+/* Jejak penelusuran (JejakPanah): ruas terbaru tegas, ruas lama memudar. */
+.lab-jejak-lama { stroke: var(--color-blue-300); stroke-width: 2; opacity: 0.85; }
+.lab-jejak-baru { stroke: var(--color-blue-600); stroke-width: 3; }
+
+.lab-cell:hover { box-shadow: var(--shadow-lift); }
+
+/* Sel baru masuk dari bawah sambil membesar. `backwards` menahan keadaan
+   awal selama jeda bertingkat (--d), lalu TIDAK menahan keadaan akhir —
+   animasi yang menahan transform akan mengalahkan transform FLIP sesudahnya. */
+@keyframes lab-enter {
+    from { opacity: 0; transform: translateY(14px) scale(0.82); }
+    to   { opacity: 1; transform: none; }
+}
+.lab-enter { animation: lab-enter 420ms var(--ease-out-soft) backwards; animation-delay: var(--d, 0ms); }
+
+/* Nilai yang baru berubah berdenyut sekali — mata langsung tahu sel mana. */
+@keyframes lab-pop {
+    0%   { transform: scale(0.6); opacity: 0; }
+    60%  { transform: scale(1.18); opacity: 1; }
+    100% { transform: scale(1); }
+}
+.lab-pop { display: inline-block; animation: lab-pop 360ms var(--ease-out-soft); }
+
+/* Sel yang sedang menjadi fokus langkah bernapas pelan. */
+@keyframes lab-glow {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-blue-500) 0%, transparent); }
+    50%      { box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-blue-500) 22%, transparent); }
+}
+.lab-glow { animation: lab-glow 1.1s ease-in-out infinite; }
+
+/* Penunjuk yang baru mendarat memantul sekali. */
+@keyframes lab-land {
+    0%   { transform: translateY(-8px); }
+    55%  { transform: translateY(2px); }
+    100% { transform: none; }
+}
+.lab-land { animation: lab-land 380ms var(--ease-out-soft); }
+
+/* Kartu & teks yang muncul berganti (tab operasi, narasi langkah). */
+@keyframes lab-fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+.lab-fade-up { animation: lab-fade-up 300ms var(--ease-out-soft) backwards; animation-delay: var(--d, 0ms); }
+
+/* Kubus 3D (CubeBoard). `--kubus-sel` dipakai tampilan lapisan datar;
+   tampilan kubus menghitung ukuran selnya sendiri dari lebar papan (lihat
+   CubeBoard) dengan `--kubus-maks` sebagai batas atas. */
+.lab-kubus { --kubus-sel: 2.1rem; --kubus-maks: 2.4rem; --kubus-gap: 0.3rem; }
+@media (min-width: 640px) { .lab-kubus { --kubus-sel: 2.5rem; --kubus-maks: 2.9rem; } }
+@media (min-width: 1024px) { .lab-kubus { --kubus-sel: 2.75rem; --kubus-maks: 3.3rem; } }
+
+.lab-kubus-adegan { perspective: 1300px; }
+/* Transisi membuat tombol putar & penggeser renggang terasa halus; saat
+   diseret transisinya dimatikan supaya kubus menempel di jari, tidak mengekor. */
+.lab-kubus-badan { transform-style: preserve-3d; transition: transform 480ms var(--ease-out-soft); }
+.lab-kubus-badan[data-menyeret="true"] { transition: none; }
+.lab-kubus-lapisan { transition: transform 480ms var(--ease-out-soft), opacity 300ms var(--ease-out-soft); }
+
+/* Papan WAJIB benar tanpa animasi. useReducedMotion() bersnapshot `false` di
+   server, jadi render pertama di klien bisa sempat menulis transform; tanpa
+   penjaga ini, sel bisa tertinggal dalam keadaan tergeser dan papan berbohong
+   soal posisi elemen — persis jebakan .feature-card__content. */
+@media (prefers-reduced-motion: reduce) {
+    /* Sel: transform HANYA dipakai untuk animasi geser, jadi dibuang.
+       Penunjuk: transform-nya adalah POSISI, bukan animasi — ia harus tetap
+       berlaku, yang dimatikan cuma transisinya. */
+    .lab-cell {
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .lab-pointer { transition: none !important; }
+
+    /* Sama seperti penunjuk: transform kubus & lapisannya adalah POSISI
+       (sudut pandang, kedalaman), jadi hanya transisinya yang dimatikan. */
+    .lab-kubus-badan,
+    .lab-kubus-lapisan,
+    .lab-posisi,
+    .lab-bingkai { transition: none !important; }
+
+    /* Dimatikan total, bukan dipersingkat: blok global di atas hanya
+       memendekkan durasi, sementara jeda bertingkat (--d) tetap berlaku dan
+       sel akan tampil kosong sejenak sebelum muncul. */
+    .lab-enter,
+    .lab-pop,
+    .lab-glow,
+    .lab-land,
+    .lab-fade-up { animation: none !important; }
+}

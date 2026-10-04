@@ -149,14 +149,12 @@ export async function callAction(
   return res.text();
 }
 
-let failures = 0;
-
-export function check(name: string, ok: boolean, detail: string) {
-  console.log(`${ok ? "  OK  " : " GAGAL"}  ${name} — ${detail}`);
-  if (!ok) failures++;
-}
-
-export function finish() {
-  console.log(failures === 0 ? "\nSemua pemeriksaan lulus.\n" : `\n${failures} pemeriksaan gagal.\n`);
-  process.exit(failures === 0 ? 0 : 1);
-}
+/**
+ * `check`/`finish` kini tinggal di `./checks` dan hanya di-re-export dari sini.
+ *
+ * Alasannya: berkas ini memanggil `initAdmin()` dan membaca `.env.local` di
+ * level modul, jadi suite murni (mis. `verify-lab`, yang hanya menguji logika
+ * browser) akan ikut menuntut kredensial Firebase hanya untuk meminjam
+ * penghitung pemeriksaan. Suite lama tidak berubah — impornya tetap dari sini.
+ */
+export { check, finish } from "./checks";
