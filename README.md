@@ -123,6 +123,79 @@ penyusun kursus tidak pernah berkurang.
 - Data pembeli tidak pernah ditampilkan ke kontributor maupun perujuk.
 - Penarikan dana **belum tersedia**. Dashboard hanya mencatat.
 
+### SynapLab — papan coba-coba (`/lab`)
+
+Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
+orang lain. Isinya saat ini **lab array** dalam empat versi yang dipilih lewat
+tombol **1D · 2D · 3D · N-D** di kepala halaman. Tiap versi punya papan, operasi,
+dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
+
+- **Terbuka untuk siapa saja**, tanpa login. Tautan yang dibagikan guru bisa
+  langsung dibuka siswa.
+- **Ruang kerja dua panel** di layar lebar: papan & langkah di kiri, operasi di
+  kanan, masing-masing menggulir sendiri. Di ponsel keduanya menumpuk.
+- **Operasi lewat tombol dan form**, bukan menulis kode:
+  - **1D** — isi dari teks atau acak, push/pop/shift/unshift, baca & ubah
+    indeks, sisip, hapus, tukar, balik, slice, geser penunjuk (`i`, `j`, …),
+    sorot rentang, dan catat elemen. Maksimal 24 elemen.
+  - **2D** — kisi baris × kolom (maksimal 8 × 8): isi dari teks
+    (`1 2 3; 4 5 6`) atau acak, sisip/hapus baris & kolom, baca/ubah
+    `arr[i][j]`, penunjuk, sorot baris/kolom/sub-kisi, penelusuran baris demi
+    baris, kolom demi kolom, dan diagonal, serta transpose, balik setiap baris,
+    balik urutan baris, dan putar 90°.
+  - **3D** — kubus `arr[lapisan][baris][kolom]` (tiap sisi maksimal 5,
+    ≤ 125 elemen) yang tampil sebagai **kubus 3D sungguhan**: bisa diputar
+    dengan diseret atau lewat tombol (putar, angguk, Depan, Miring) dan
+    direnggangkan lapisannya. Ada juga tampilan **Lapisan** yang menjajarkan
+    tiap lapisan datar, serta pita memori dengan rumus offset
+    `k×R×C + i×C + j`. Operasinya: buat berurutan/acak/dari teks
+    (`1 2; 3 4 | 5 6; 7 8`), sisip/hapus lapisan, baca & ubah `arr[k][i][j]`,
+    penunjuk, sorot lapisan / baris / kolom / pilar, penelusuran lapisan demi
+    lapisan, pilar demi pilar, dan diagonal ruang, serta transpose & putar 90°
+    setiap lapisan, balik urutan lapisan, dan tukar sumbu.
+  - **N-D** — array dengan berapa pun dimensinya (sampai 6 dimensi, tiap
+    dimensi 1–6, total ≤ 120 elemen), digambar sebagai kotak bersarang plus
+    **pita memori** yang menunjukkan urutan row-major dan langkah alamat tiap
+    sumbu. Operasinya: buat bentuk (`2, 3, 4`), isi acak/teks, baca & ubah
+    elemen (lengkap dengan hitungan offset-nya), kursor, sorot irisan,
+    penelusuran urutan memori, **reshape** (alamat berubah, memori tidak), dan
+    **tukar sumbu** (memori disusun ulang — pada 2D sama dengan transpose).
+- **Dijalankan langkah demi langkah** dengan narasi Bahasa Indonesia yang tampil
+  tepat di atas papan: putar, jeda, maju/mundur satu langkah, atau klik langkah
+  mana pun di daftarnya. Temponya sengaja pelan untuk siswa yang baru belajar
+  (±1,6 detik per langkah, sel meluncur selama 1 detik); kecepatan bisa diatur
+  0,5×–4×.
+- **Animasi yang menjelaskan, bukan sekadar bergerak:**
+  - sel yang berpindah **meluncur** ke tempat barunya, dan sel yang tidak
+    berpindah diam sepenuhnya; di kubus 3D sel terbang menembus lapisan;
+  - saat transformasi (transpose, putar, balik, tukar sumbu, reshape) setiap
+    baris/kolom/lapisan asal diberi **warna sendiri** yang ikut berpindah,
+    lengkap dengan legendanya — "baris 0 menjadi kolom 0" terlihat langsung;
+  - penelusuran meninggalkan **jejak panah dan nomor urut** di setiap sel yang
+    sudah dikunjungi, sehingga polanya (baris demi baris, kolom demi kolom,
+    pilar demi pilar) terlihat utuh;
+  - membaca `arr[i][j]` (atau `arr[k][i][j]`, atau N-D) diurai **bertahap**:
+    pilih baris dulu, lalu kolomnya — nomor baris & kolom ikut menyala.
+- **Pengurutan (sorting)** di keempat lab: bubble sort, selection sort,
+  insertion sort, merge sort, dan quick sort, naik atau turun.
+  - Setiap perbandingan dan pertukaran adalah satu langkah: sel yang
+    dibandingkan berwarna biru, kunci/minimum kuning, pivot merah bata, yang
+    sudah di tempat akhir gelap, dan yang sedang tidak dikerjakan redup.
+    Variabel algoritmanya (`j`, `j+1`, `min`, `kunci`, `pivot`) tampil sebagai
+    label yang ikut bergerak.
+  - Di akhir ditampilkan jumlah perbandingan dan pertukaran — cocok untuk
+    membandingkan algoritma pada isi yang sama.
+  - Array 2D, 3D, dan N-D juga bisa diurutkan: **tiap baris / tiap kolom / tiap
+    pilar** (atau tiap garis sepanjang satu sumbu pada N-D) sendiri-sendiri,
+    atau **seluruhnya** sebagai satu deret mengikuti urutan memori.
+  - Animasi yang terlalu panjang (mis. bubble sort 64 elemen) ditolak dengan
+    saran memakai array lebih kecil atau merge/quick sort.
+- **Batalkan & ulangi** untuk setiap operasi.
+- **Mode presentasi** (sel membesar, layar penuh, `Esc` untuk keluar) dan
+  tombol pintas keyboard.
+- **Bagikan papan lewat tautan**: seluruh keadaan papan ikut di URL. Tidak ada
+  yang tersimpan di server — menutup tab berarti papan itu hilang.
+
 ### Kelas
 
 Ruang belajar kelompok milik educator, terpisah dari kursus.
@@ -243,6 +316,7 @@ npm run typecheck                 # skrip
 cd frontend && npx tsc --noEmit   # aplikasi
 cd frontend && npm run lint
 npm run verify:royalty            # contoh; daftar lengkap di package.json
+npm run verify:lab                # SynapLab — murni, tanpa dev server & kredensial
 ```
 
 ---
@@ -254,6 +328,8 @@ npm run verify:royalty            # contoh; daftar lengkap di package.json
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
 - Asisten chat di dalam halaman belajar.
 - Soal kuis selain pilihan tunggal.
+- Lab selain array di SynapLab (string, visualisasi data), dan algoritma selain pengurutan di atas papan (mis. pencarian linear/biner).
+- Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
 
 ---
 
