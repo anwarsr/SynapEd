@@ -34,6 +34,27 @@ async function unggah(folder: string, file: File): Promise<BerkasTerunggah> {
   return { path, name: file.name };
 }
 
+/**
+ * Pesan untuk unggahan yang gagal, menurut kode galat Firebase Storage.
+ *
+ * Dulu semua kegagalan dijawab "periksa koneksi" — padahal penyebab yang
+ * paling sering justru storage.rules yang belum di-deploy (`storage/unauthorized`),
+ * dan pengguna dengan sinyal bagus dibuat menebak-nebak. Galat aslinya juga
+ * dicatat ke konsol supaya bisa ditelusuri.
+ */
+export function pesanGagalUnggah(e: unknown): string {
+  console.error("[unggah kelas]", e);
+  const kode = e && typeof e === "object" && "code" in e ? String((e as { code: unknown }).code) : "";
+
+  if (kode === "storage/unauthorized" || kode === "storage/unauthenticated") {
+    return "Server menolak unggahan (izin penyimpanan). Muat ulang halaman; kalau masih gagal, hubungi admin.";
+  }
+  if (kode === "storage/quota-exceeded") return "Kuota penyimpanan habis. Hubungi admin.";
+  if (kode === "storage/retry-limit-exceeded") return "Unggahan terputus. Periksa koneksi lalu coba lagi.";
+  if (kode === "storage/canceled") return "Unggahan dibatalkan.";
+  return "Unggahan gagal. Coba lagi.";
+}
+
 /** Lampiran pengajar: `class-files/{uid}/{classId}/…`. */
 export function unggahLampiranKelas(uid: string, classId: string, files: readonly File[]) {
   return Promise.all(files.map((f) => unggah(`${CLASS_FILES}/${uid}/${classId}`, f)));

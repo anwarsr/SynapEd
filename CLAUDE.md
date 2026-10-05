@@ -258,7 +258,9 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
   tanpa `..`/`//`), lalu ukuran & MIME dibaca ULANG dari metadata Storage. Hanya nama tampilan
   yang diambil dari klien.
 - Unggahan terjadi saat formulir DIKIRIM (bukan saat berkas dipilih) supaya
-  berkas yang dibuang tidak meninggalkan sampah.
+  berkas yang dibuang tidak meninggalkan sampah. Galat unggah diterjemahkan
+  `pesanGagalUnggah` per kode Firebase — dulu semuanya "periksa koneksi",
+  padahal penyebab nyatanya storage.rules belum di-deploy (`storage/unauthorized`, 403).
 - Tenggat diukur jam SERVER. `masihDibuka` = belum lewat ATAU `acceptLate`.
   Satu kiriman per siswa per tugas; mengganti = batalkan dulu. Batal ditolak
   setelah dinilai dan setelah pengumpulan ditutup. Batal menghapus dokumen DULU,

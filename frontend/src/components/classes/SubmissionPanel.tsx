@@ -7,7 +7,7 @@ import Lampiran, { hrefJawaban } from "@/components/classes/Lampiran";
 import PemilihBerkas from "@/components/classes/PemilihBerkas";
 import { submitClassAssignment, unsubmitClassAssignment } from "@/lib/classAssignmentActions";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { unggahJawabanKelas } from "@/lib/classUpload";
+import { pesanGagalUnggah, unggahJawabanKelas } from "@/lib/classUpload";
 import {
   INFO_FORMAT,
   LABEL_STATUS,
@@ -81,9 +81,9 @@ export default function SubmissionPanel({
       setMengunggah(true);
       try {
         files = await unggahJawabanKelas(uid, classId, postId, berkas);
-      } catch {
+      } catch (e) {
         setMengunggah(false);
-        return setError("Unggahan gagal. Periksa koneksi lalu coba lagi.");
+        return setError(pesanGagalUnggah(e));
       }
       setMengunggah(false);
     }

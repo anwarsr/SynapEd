@@ -5,7 +5,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import PemilihBerkas from "@/components/classes/PemilihBerkas";
 import { createAssignment, createPost } from "@/lib/classActions";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { unggahLampiranKelas } from "@/lib/classUpload";
+import { pesanGagalUnggah, unggahLampiranKelas } from "@/lib/classUpload";
 import { MAX_POST_BODY } from "@/lib/classTypes";
 import {
   DEFAULT_MAX_POINTS,
@@ -94,9 +94,9 @@ export default function PostComposer({
       setMengunggah(true);
       try {
         lampiran = await unggahLampiranKelas(uid, classId, berkas);
-      } catch {
+      } catch (e) {
         setMengunggah(false);
-        return setError("Unggahan lampiran gagal. Coba lagi.");
+        return setError(pesanGagalUnggah(e));
       }
       setMengunggah(false);
     }
