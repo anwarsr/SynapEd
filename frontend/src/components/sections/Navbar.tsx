@@ -46,50 +46,20 @@ export default function Navbar() {
   const isHome = pathname === "/";
   const activeId = useActiveSection(SECTION_IDS, isHome);
 
-  /**
-   * Apakah hero yang gelap masih berada TEPAT di belakang navbar?
-   *
-   * Satu-satunya permukaan gelap di aplikasi ini adalah hero beranda
-   * (`bg-hero-navy`); seluruh section lain dan seluruh halaman lain memakai
-   * `bg-paper` yang krem terang.
-   *
-   * Diukur dari geometri hero, bukan dari "section mana yang sedang aktif".
-   * Dua cara itu terlihat setara padahal tidak: penanda section aktif memakai
-   * IntersectionObserver yang berpindah ke section berikutnya saat section itu
-   * baru menyentuh tengah layar — sekitar 150px SEBELUM hero benar-benar lewat
-   * dari belakang navbar. Selama pita itu, logo gelap tergambar di atas biru.
-   */
-  const [overDarkHero, setOverDarkHero] = useState(false);
-  const light = !overDarkHero;
+  // Seluruh situs bertema gelap (lihat @theme di globals.css): navbar selalu
+  // bergaya gelap dengan logo putih — tidak ada lagi latar terang yang perlu
+  // dideteksi di belakangnya.
+  const light = false;
 
   useEffect(() => {
-    // Titik tengah kapsul navbar secara vertikal — bukan tepi bawahnya.
-    //
-    // Peralihan warna diambil di titik ini karena logo dan teks memang duduk di
-    // sana. Memakai tepi bawah (84) membuat warnanya berganti terlalu cepat:
-    // saat hero tinggal menyisakan 80px, ia masih menutupi hampir seluruh
-    // navbar, tetapi logonya sudah berubah gelap di atas biru.
-    const NAVBAR_MID = 48;
-
     const onScroll = () => {
       setScrolled(window.scrollY > 24);
-
-      // Hero gelap mana pun, ditandai lewat atribut `data-dark-hero`.
-      //
-      // Halaman kelas membuka dengan pita biru penuh, dan tanpa ini logo
-      // putihnya tergambar di atas kertas krem begitu hero terlewat —
-      // atau logo gelap di atas biru sejak awal. Ditandai lewat atribut,
-      // bukan daftar rute, supaya halaman berikutnya tidak perlu
-      // mendaftarkan dirinya di berkas ini. Hero beranda kini berlatar
-      // ivory (terang), jadi TIDAK ikut dihitung.
-      const hero = document.querySelector("[data-dark-hero]");
-      setOverDarkHero(hero ? hero.getBoundingClientRect().bottom > NAVBAR_MID : false);
     };
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [pathname]);
+  }, []);
 
   return (
     // Kapsul mengambang, bukan bilah penuh — memberi navbar bentuk sendiri

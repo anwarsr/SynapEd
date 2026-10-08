@@ -57,7 +57,7 @@ export default async function DashboardPage() {
             <span>Akun Saya</span>
           </p>
           <h1 className="t-h2 mb-3">
-            Dashboard <span className="mark">pendapatan</span>
+            Dashboard pendapatan
           </h1>
           <p className="t-body text-ink-muted mb-12 max-w-[62ch]">
             Bagian Anda dari setiap penjualan kursus yang Anda susun, ikut susun, atau promosikan lewat

@@ -164,7 +164,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
                     <UserAvatar name={t.name} photoURL={t.avatar} size="sm" />
 
                     <div className="min-w-0">
-                      <p className="text-black text-sm truncate" style={NAME}>
+                      <p className="text-white text-sm truncate" style={NAME}>
                         {t.name}
                       </p>
                       <Stars value={t.rating} size="xs" className="mt-1" />
@@ -185,7 +185,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
           role="dialog"
           aria-modal="true"
           aria-labelledby="ulasan-nama"
-          className="fixed inset-0 z-100 flex items-center justify-center bg-ink/50 p-4"
+          className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) setActive(null);
           }}
@@ -226,7 +226,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
 
                 <div className="min-w-0">
                   <ProfileLink uid={current.uid} name={current.name}>
-                    <p id="ulasan-nama" className="text-black text-lg" style={NAME}>
+                    <p id="ulasan-nama" className="text-white text-lg" style={NAME}>
                       {current.name}
                     </p>
                   </ProfileLink>

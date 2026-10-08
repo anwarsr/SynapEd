@@ -92,13 +92,30 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 - **Halaman masuk/daftar** (`AuthForm.tsx`) berlatar `bg-ivory bg-grid`
   (`.bg-grid` = kotak-kotak hitam tipis yang sama dengan hero); logo versi
   gelap, tautan "Kembali ke beranda" gelap. Kartunya tetap berpanel navy.
+- **Tema gelap SELURUH situs** (landing, dashboard, admin, educator, belajar, auth):
+  token di `@theme` (`globals.css`) kini palet "malam" — `paper` `#0B1A24`
+  (teal-navy), `ink*` putih, `rule` putih transparan. **Nama token `blue-*`
+  TETAP, nilainya sekarang biru langit terang** (`#2F6FED` tombol, `#5B9BFF`
+  teks aksen/hover, 50/100 = tint transparan untuk latar chip, 900 = peredam
+  gelap `#0B1A24`) — sengaja terang agar tidak menyatu dengan latar teal-navy;
+  `--color-navy` (footer, `.bg-hero-navy`, pita header /kelas, header ruang
+  belajar, panel `AuthForm`, header profil) = **hitam `#050505`**, jadi teks di
+  atasnya WAJIB `text-white` (token `paper` kini gelap, `text-paper` di
+  permukaan navy tak terbaca). `.mark` (sapuan krem di judul) dimatikan.
+  Jangan menulis ulang ratusan `text-blue-700` — ubah nilai token saja.
+  "Pulau" yang sengaja terang (kartu About, kartu kursus & keadaan kosong
+  Courses, kartu Features, sertifikat) dibungkus `.theme-day` yang memulihkan
+  palet terang. `.theme-night` (pembungkus beranda) tinggal alias. Jangan
+  menambah warna gelap hardcode (`text-black`, `border-black`) di luar
+  `.theme-day`; kotak QR memang `bg-white`. Navbar selalu bergaya gelap
+  (logo putih). Teks terang di atas permukaan gelap ditulis `text-white/NN`,
+  bukan `text-blue-100` (token itu kini tint transparan).
 - **Judul section landing** (About, Courses, Features, Learning Path,
   Comments, FAQ) memakai `sections/SectionTitle.tsx`: kata besar kapital di
   tengah, tanpa label/deskripsi (sengaja dihapus atas permintaan pemilik). Ukuran huruf dihitung dari panjang
   judul (`88 / (panjang × 0.64)` vw, maks 11rem) supaya judul panjang tetap
   muat — jangan diberi `whitespace-nowrap` tanpa menghitung ulang.
-- **Latar section landing** semuanya `bg-ivory` (`#FFFFF5`) — Hero, About,
-  Courses, Features, LearningPath, Testimonials, FAQ — kecuali footer.
+- **Latar section landing** semuanya `bg-ivory` (alias `paper`, kini gelap).
 - **Layar pembuka** `ui/SplashLoader.tsx` (dipasang di `layout.tsx`), alurnya
   meniru intro nomu.store (CSS `.intro-*` di `globals.css`: kata TAHU. → BISA.,
   lapisan ivory naik, logo + tagline mendarat, 5 rel terisi, layar terangkat).

@@ -19,7 +19,7 @@ export default function SectionTitle({
   return (
     <div className={cn("flex flex-col items-center text-center", className)}>
       <Tag
-        className="max-w-full font-extrabold uppercase text-blue-600"
+        className="max-w-full font-extrabold uppercase text-white"
         style={{
           fontFamily: "var(--font-sans)",
           fontSize: `min(${vw}vw, 11rem)`,

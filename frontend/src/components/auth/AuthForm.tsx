@@ -344,7 +344,7 @@ export default function AuthForm({
     return (
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-10 py-12 text-center text-white lg:px-14">
         <h2 className="t-h3 text-[1.7rem] text-white mb-3">{c.heading}</h2>
-        <p className="t-body text-sm text-blue-50/80 mb-8 max-w-[26ch]">{c.sub}</p>
+        <p className="t-body text-sm text-white/80 mb-8 max-w-[26ch]">{c.sub}</p>
         <button
           type="button"
           onClick={() => switchMode(other(mode))}
@@ -361,7 +361,7 @@ export default function AuthForm({
       <div className="w-full max-w-4xl">
         <Link href="/" className="flex justify-center mb-8" aria-label="SynapEd — beranda">
           <Image
-            src="/images/logotext.png"
+            src="/images/logotextwhite.png"
             alt="SynapEd"
             width={667}
             height={667}

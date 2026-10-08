@@ -77,7 +77,7 @@ export default function FAQ() {
                       "bg-paper transition-all duration-200 ease-out-soft",
                       isOpen
                         ? "border-blue-600 shadow-sm"
-                        : "border-black/10 group-hover:border-blue-600/40"
+                        : "border-white/10 group-hover:border-blue-600/40"
                     )}
                   >
                     {/* Question Button */}
@@ -94,13 +94,13 @@ export default function FAQ() {
                             "w-1 h-8 rounded-full transition-colors duration-200",
                             isOpen
                               ? "bg-blue-600"
-                              : "bg-black/15 group-hover:bg-blue-600/50"
+                              : "bg-white/25 group-hover:bg-blue-600/50"
                           )}
                         />
 
                         {/* Question */}
                         <span
-                          className="text-base md:text-lg text-black"
+                          className="text-base md:text-lg text-white"
                           style={QUESTION}
                         >
                           {faq.question}
@@ -116,7 +116,7 @@ export default function FAQ() {
                           "rounded-full transition-all duration-200",
                           isOpen
                             ? "bg-blue-600 text-white"
-                            : "bg-black/5 text-black group-hover:bg-blue-600 group-hover:text-white"
+                            : "bg-white/10 text-white group-hover:bg-blue-600 group-hover:text-white"
                         )}
                       >
                         <svg
@@ -148,9 +148,9 @@ export default function FAQ() {
                       <div className="px-8 md:px-[4.5rem] pb-8 pt-1">
                         <p
                           className={cn(
-                            "text-sm text-black/70",
+                            "text-sm text-white/70",
                             "leading-relaxed",
-                            "border-t border-black/10",
+                            "border-t border-white/10",
                             "pt-5"
                           )}
                         >
@@ -166,11 +166,11 @@ export default function FAQ() {
         </div>
 
         {/* Contact */}
-        <p className="text-center text-black/50 text-sm mt-12">
+        <p className="text-center text-white/50 text-sm mt-12">
           Masih ada pertanyaan?{" "}
           <a
             href="#"
-            className="text-blue-600 font-medium hover:underline underline-offset-4"
+            className="text-white font-medium hover:underline underline-offset-4"
           >
             Hubungi kami
           </a>

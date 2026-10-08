@@ -105,7 +105,7 @@ export default function ReviewForm({
             className="rounded-md p-0.5 transition-transform duration-150 hover:scale-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <svg
-              className={cn("w-8 h-8", s <= tampil ? "text-amber-500" : "text-blue-100")}
+              className={cn("w-8 h-8", s <= tampil ? "text-amber-500" : "text-white/20")}
               fill="currentColor"
               viewBox="0 0 20 20"
               aria-hidden="true"

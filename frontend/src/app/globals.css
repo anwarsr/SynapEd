@@ -21,32 +21,36 @@
 }
 
 @theme {
-    /* ── Kertas — putih hangat ─────────────────────────────── */
-    --color-paper: #FCF9F4;        /* latar halaman */
-    --color-paper-alt: #F5F0E7;    /* section selang-seling */
-    --color-paper-card: #FFFFFF;   /* kartu — putih murni */
-    --color-ivory: #FFFFF5;        /* latar hero beranda & layar pembuka */
-    --color-rule: #E7DED0;         /* garis hairline */
-    --color-rule-strong: #D8CBB6;
+    /* ── Malam — latar gelap teal-navy (seluruh situs) ─────── */
+    --color-paper: #0B1A24;        /* latar halaman */
+    --color-paper-alt: #0F222E;    /* section selang-seling */
+    --color-paper-card: #12293A;   /* kartu */
+    --color-ivory: #0B1A24;        /* alias latar (dipakai hero/section) */
+    --color-rule: rgb(255 255 255 / 0.12);   /* garis hairline */
+    --color-rule-strong: rgb(255 255 255 / 0.22);
 
-    /* ── Tinta — netral hangat, sumber kehangatan ──────────── */
-    --color-ink: #23201C;          /* judul      15.0:1  AAA */
-    --color-ink-body: #57504A;     /* isi         7.4:1  AAA */
-    --color-ink-muted: #6E655C;    /* caption     5.0:1  AA  */
-    --color-ink-faint: #A99F95;    /* DEKORATIF — bukan teks */
+    /* ── Tinta — putih di atas malam ───────────────────────── */
+    --color-ink: #FFFFFF;                      /* judul */
+    --color-ink-body: rgb(255 255 255 / 0.82); /* isi */
+    --color-ink-muted: rgb(255 255 255 / 0.62);/* caption */
+    --color-ink-faint: rgb(255 255 255 / 0.3); /* DEKORATIF — bukan teks */
 
-    /* ── Biru — identitas SynapEd ──────────────────────────── */
-    --color-blue-50: #EDF2FE;
-    --color-blue-100: #DCE6FD;
-    --color-blue-300: #8FAEF8;
-    --color-blue-500: #2563EB;     /* biru logo   4.9:1  AA  */
-    --color-blue-600: #0F52BA;     /* biru sapphire — tombol, 7.3:1 di atas ivory */
-    /* blue-700 & navy SENGAJA disamakan dengan biru hero (.bg-hero-navy)
-       — dulu dua biru gelap berbeda (teks aksen #1A3F9E, permukaan gelap
-       #142A56), disatukan jadi satu biru terang di seluruh situs. */
-    --color-blue-700: #0445D1;     /* teks aksen   7.2:1  AAA di atas paper */
-    --color-blue-900: #0F52BA;     /* biru sapphire — judul hero (== blue-600) */
-    --color-navy: #0445D1;         /* footer, permukaan gelap — == biru hero */
+    /* ── Aksen biru langit — identitas SynapEd ─────────────────
+       Biru TERANG & agak kelabu-cerah supaya tidak menyatu dengan latar
+       teal-navy. Di tema gelap: 50/100 = tint transparan (latar chip),
+       600 = isi tombol (teks putih 4.6:1), 700 = teks aksen & hover
+       (terang, 6:1 di atas malam). */
+    --color-blue-50: rgb(76 141 255 / 0.12);
+    --color-blue-100: rgb(76 141 255 / 0.22);
+    --color-blue-200: #BBD5FF;
+    --color-blue-300: #8DB8FF;
+    --color-blue-400: #6AA0FF;
+    --color-blue-500: #4C8DFF;
+    --color-blue-600: #2F6FED;
+    --color-blue-700: #5B9BFF;
+    --color-blue-800: #1E4FBF;
+    --color-blue-900: #0B1A24;     /* peredam gelap (overlay foto, dll.) */
+    --color-navy: #050505;         /* footer & pita header kelas — hitam */
 
     /* ── Stabilo — kehangatan + sinyal belajar ─────────────── */
     --color-amber-100: #FBEBCB;
@@ -105,8 +109,8 @@ body::after {
 }
 
 ::selection {
-    background: var(--color-amber-100);
-    color: var(--color-ink);
+    background: var(--color-blue-500);
+    color: #FFFFFF;
 }
 
 /* Navbar fixed setinggi ~72px — tanpa ini, lompatan anchor (#about,
@@ -264,19 +268,10 @@ section[id] {
        Sudut 104° + radius tidak rata = terbaca seperti sapuan
        tangan, bukan kotak. Pakai HEMAT: satu frasa per judul besar.
        Saat masuk layar, sapuannya "digambar" dari kiri ke kanan. */
+    /* Sapuan krem DIMATIKAN: di tema gelap teks putih di atasnya tak terbaca.
+       Kelas tetap ada supaya markup lama valid; efeknya kini kosong. */
     .mark {
-        background-image: linear-gradient(104deg,
-                transparent 0.4%,
-                var(--color-amber-100) 2.4%,
-                var(--color-amber-100) 96.8%,
-                transparent 99.2%);
-        background-repeat: no-repeat;
-        background-size: 100% 100%;
-        border-radius: 0.55em 0.25em 0.5em 0.2em;
-        padding: 0.06em 0.24em;
-        margin: 0 -0.12em;
-        -webkit-box-decoration-break: clone;
-        box-decoration-break: clone;
+        background-image: none;
     }
 
     /* Varian di atas permukaan gelap (hero navy).
@@ -671,11 +666,35 @@ section[id] {
     animation-delay: var(--rise-delay, 0ms);
 }
 
+/* ══ Tema gelap — kini berlaku di seluruh situs lewat @theme di atas.
+   .theme-night tinggal alias (latar + teks putih). .theme-day memulihkan
+   palet TERANG untuk "pulau" yang sengaja tetap terang (kartu About, kartu
+   kursus, Features, sertifikat) — isinya memakai warna gelap sendiri. */
+.theme-night {
+    background: var(--color-paper);
+    color: #FFFFFF;
+}
+.theme-day {
+    --color-ivory: #FFFFF5;
+    --color-paper: #FCF9F4;
+    --color-paper-alt: #F5F0E7;
+    --color-paper-card: #FFFFFF;
+    --color-rule: #E7DED0;
+    --color-rule-strong: #D8CBB6;
+    --color-ink: #23201C;
+    --color-ink-body: #57504A;
+    --color-ink-muted: #6E655C;
+    --color-ink-faint: #A99F95;
+    --color-blue-50: #EDF3FF;
+    --color-blue-100: #DCE8FF;
+    --color-blue-700: #1E4FBF;
+}
+
 /* Kotak-kotak hitam tipis ala hero beranda — dipakai di latar halaman masuk. */
 .bg-grid {
     background-image:
-        linear-gradient(to right, rgb(16 21 28 / 0.07) 1px, transparent 1px),
-        linear-gradient(to bottom, rgb(16 21 28 / 0.07) 1px, transparent 1px);
+        linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
     background-size: 100px 100px;
 }
 

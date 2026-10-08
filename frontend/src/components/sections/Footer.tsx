@@ -71,7 +71,7 @@ export default function Footer() {
                   // window.opener dan mengalihkannya.
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full flex items-center justify-center border border-white/15 text-blue-100/70 transition-colors duration-200 ease-out-soft hover:border-blue-300 hover:text-blue-300"
+                  className="w-9 h-9 rounded-full flex items-center justify-center border border-white/15 text-white/70 transition-colors duration-200 ease-out-soft hover:border-blue-300 hover:text-blue-300"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d={s.path} />
@@ -88,7 +88,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-blue-100/70 hover:text-blue-300 transition-colors duration-200"
+                    className="text-sm text-white/70 hover:text-blue-300 transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -108,7 +108,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-blue-100/70 hover:text-blue-300 transition-colors duration-200"
+                    className="text-sm text-white/70 hover:text-blue-300 transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -121,7 +121,7 @@ export default function Footer() {
         {/* Identitas penyelenggara — bagian "Legal Notice" pada template
             Midtrans, dan hal pertama yang dicari saat menilai kelayakan
             merchant: siapa yang bertanggung jawab, dan di mana. */}
-        <div className="mb-10 text-sm text-blue-100/70 leading-relaxed max-w-2xl">
+        <div className="mb-10 text-sm text-white/70 leading-relaxed max-w-2xl">
           <p className="text-white font-medium mb-1">
             {COMPANY.name} — {COMPANY.legalName}
           </p>
@@ -135,12 +135,12 @@ export default function Footer() {
               {COMPANY.phone}
             </a>
           </p>
-          <p className="text-blue-100/50">{COMPANY.supportHours}</p>
+          <p className="text-white/50">{COMPANY.supportHours}</p>
         </div>
 
         <div className="h-px mb-8 bg-white" />
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-100/60">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/60">
           <span>© {new Date().getFullYear()} SynapEd. Learn Anything, Anytime.</span>
           <div className="flex items-center gap-6">
             <Link href="/kebijakan-privasi" className="hover:text-blue-300 transition-colors duration-200">

@@ -138,6 +138,7 @@ function AboutCard({
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       className="
+        theme-day
         group
         relative
         min-h-[560px]
@@ -407,21 +408,21 @@ function DocumentIcon() {
 
       <path
         d="M14 3.5V8H18.5"
-        stroke="#2563EB"
+        stroke="#4C8DFF"
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
 
       <path
         d="M9.5 12H15.5"
-        stroke="#2563EB"
+        stroke="#4C8DFF"
         strokeWidth="1.4"
         strokeLinecap="round"
       />
 
       <path
         d="M9.5 15.5H15.5"
-        stroke="#2563EB"
+        stroke="#4C8DFF"
         strokeWidth="1.4"
         strokeLinecap="round"
       />
@@ -616,7 +617,7 @@ function StructuredGame({ hover }: { hover: boolean }) {
                   rounded-full
                   bg-blue-600
                   text-white
-                  shadow-[0_6px_14px_rgba(37,99,235,.22)]
+                  shadow-[0_6px_14px_rgba(76,141,255,.22)]
                   transition-all
                   duration-300
                   group-hover:scale-105

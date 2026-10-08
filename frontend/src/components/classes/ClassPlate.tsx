@@ -91,7 +91,7 @@ export function ClassPlate({ nama, className }: { nama: string; className?: stri
       }}
     >
       <span className="feature-card__holo" />
-      <span className="relative text-[36px] leading-none text-navy" style={DISPLAY_PLATE}>
+      <span className="relative text-[36px] leading-none text-white" style={DISPLAY_PLATE}>
         {inisialKelas(nama)}
       </span>
     </span>

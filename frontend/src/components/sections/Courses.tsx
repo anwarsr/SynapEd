@@ -52,7 +52,7 @@ export default function Courses({ courses, categories }: Props) {
           className="absolute inset-0 opacity-[0.025]"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 1px 1px, #2563eb 0.65px, transparent 0.65px)",
+              "radial-gradient(circle at 1px 1px, #4C8DFF 0.65px, transparent 0.65px)",
             backgroundSize: "18px 18px",
           }}
         />
@@ -88,7 +88,7 @@ export default function Courses({ courses, categories }: Props) {
                       "group relative overflow-hidden rounded-full px-5 py-2.5 text-sm",
                       "transition-all duration-300 ease-out-soft",
                       active
-                        ? "bg-blue-600 text-white shadow-[0_8px_25px_rgba(37,99,235,0.18)]"
+                        ? "bg-blue-600 text-white shadow-[0_8px_25px_rgba(76,141,255,0.18)]"
                         : "bg-white/75 text-blue-600 hover:-translate-y-0.5 hover:bg-white hover:text-blue-700",
                     )}
                     style={{
@@ -122,7 +122,7 @@ export default function Courses({ courses, categories }: Props) {
 
         {filtered.length === 0 ? (
           <Reveal className="mt-12">
-            <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-[2rem] bg-white/70 px-8 py-20 text-center">
+            <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-[2rem] theme-day bg-white/90 px-8 py-20 text-center">
               {/* =================================================
                   AUTOMATIC GLITCH BACKGROUND
               ================================================= */}
@@ -739,14 +739,15 @@ export default function Courses({ courses, categories }: Props) {
                     h-full
                     flex-col
                     overflow-hidden
+                    theme-day
                     rounded-[1.5rem]
                     bg-white
-                    shadow-[0_8px_30px_rgba(37,99,235,0.045)]
+                    shadow-[0_8px_30px_rgba(76,141,255,0.045)]
                     transition-all
                     duration-500
                     ease-warm
                     hover:-translate-y-2
-                    hover:shadow-[0_24px_60px_rgba(37,99,235,0.12)]
+                    hover:shadow-[0_24px_60px_rgba(76,141,255,0.12)]
                   "
                 >
                   {/* =================================================
@@ -830,7 +831,7 @@ export default function Courses({ courses, categories }: Props) {
                         bg-white/90
                         text-[11px]
                         text-blue-600
-                        shadow-[0_4px_15px_rgba(37,99,235,0.10)]
+                        shadow-[0_4px_15px_rgba(76,141,255,0.10)]
                         backdrop-blur-sm
                         transition-all
                         duration-500
@@ -929,7 +930,7 @@ export default function Courses({ courses, categories }: Props) {
                               "h-3.5 w-3.5 transition-transform duration-300",
                               s <= Math.round(course.rating)
                                 ? "text-amber-500 group-hover:scale-110"
-                                : "text-blue-100",
+                                : "text-white/80",
                             )}
                             viewBox="0 0 20 20"
                             fill="currentColor"

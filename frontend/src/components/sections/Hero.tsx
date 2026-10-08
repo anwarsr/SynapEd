@@ -268,7 +268,7 @@ export default function Hero() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(to right, rgb(16 21 28 / 0.07) 1px, transparent 1px), linear-gradient(to bottom, rgb(16 21 28 / 0.07) 1px, transparent 1px)",
+            "linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px), linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px)",
           backgroundSize: "100px 100px",
         }}
       />
@@ -316,7 +316,7 @@ export default function Hero() {
 
           <h1
             className="
-              text-blue-900
+              text-white
               select-none
             "
             style={{
@@ -412,7 +412,7 @@ export default function Hero() {
                   mt-2
                   text-xs
                   text-ink-muted
-                  hover:text-blue-900
+                  hover:text-white
                   transition-colors
                 "
               >
@@ -468,16 +468,16 @@ export default function Hero() {
 
           {/* Isi bilah */}
           <div
-            className="absolute inset-0 rounded-full bg-white p-2.5 shadow-lift"
+            className="absolute inset-0 rounded-full border border-white/15 bg-white/10 p-2.5 shadow-lift backdrop-blur-md"
             style={{
               opacity: "clamp(0, calc((var(--e) - 0.25) * 2.5), 1)",
               pointerEvents: bar ? "auto" : "none",
             }}
           >
-            <div className="flex h-full items-center gap-3 rounded-full bg-paper-alt pl-6 pr-1.5">
-              <p className="min-w-0 flex-1 truncate text-left text-base text-ink">
+            <div className="flex h-full items-center gap-3 rounded-full bg-white/10 pl-6 pr-1.5">
+              <p className="min-w-0 flex-1 truncate text-left text-base text-white">
                 {PROMPT_TEXT.slice(0, typed)}
-                <span aria-hidden="true" className="ml-px inline-block h-5 w-0.5 translate-y-1 bg-blue-600" />
+                <span aria-hidden="true" className="ml-px inline-block h-5 w-0.5 translate-y-1 bg-white" />
               </p>
               <Link
                 href="/register"

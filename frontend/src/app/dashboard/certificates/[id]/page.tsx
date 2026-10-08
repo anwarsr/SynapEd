@@ -40,7 +40,9 @@ export default async function CertificatePrintPage({ params }: Props) {
             <PrintCertificateButton />
           </div>
 
-          <CertificateCard certificate={certificate} />
+          <div className="theme-day">
+            <CertificateCard certificate={certificate} />
+          </div>
 
           <p className="print:hidden text-center text-xs text-ink-muted mt-6">
             Tautan verifikasi publik: <span className="t-numeral">/verify/{certificate.id}</span>

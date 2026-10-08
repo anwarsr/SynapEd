@@ -60,14 +60,14 @@ export default async function MyClassesPage() {
 
           <div className="container-page relative">
             <p
-              className="rise-in text-[13px] uppercase tracking-[0.2em] text-paper/70 mb-5"
+              className="rise-in text-[13px] uppercase tracking-[0.2em] text-white/70 mb-5"
               style={{ "--rise-delay": "60ms" } as React.CSSProperties}
             >
               Kelas
             </p>
 
             <h1
-              className="rise-in text-paper font-extrabold leading-[1.03] tracking-[-0.04em] max-w-[16ch]"
+              className="rise-in text-white font-extrabold leading-[1.03] tracking-[-0.04em] max-w-[16ch]"
               style={
                 {
                   fontSize: "clamp(2.4rem, 6.5vw, 5rem)",
@@ -79,7 +79,7 @@ export default async function MyClassesPage() {
             </h1>
 
             <p
-              className="rise-in mt-5 max-w-[52ch] text-paper/78 text-base leading-relaxed"
+              className="rise-in mt-5 max-w-[52ch] text-white/80 text-base leading-relaxed"
               style={{ "--rise-delay": "300ms" } as React.CSSProperties}
             >
               {diikuti.length === 0
@@ -93,7 +93,7 @@ export default async function MyClassesPage() {
             >
               <a
                 href="#gabung"
-                className="rounded-lg bg-paper px-7 py-3.5 text-sm font-semibold text-navy transition-all duration-200 ease-out-soft hover:bg-white hover:-translate-y-0.5 hover:shadow-lift"
+                className="rounded-lg bg-white px-7 py-3.5 text-sm font-semibold text-black transition-all duration-200 ease-out-soft hover:bg-white/90 hover:-translate-y-0.5 hover:shadow-lift"
               >
                 Gabung kelas baru →
               </a>
@@ -101,7 +101,7 @@ export default async function MyClassesPage() {
               {terakhir && (
                 <Link
                   href={`/kelas/${terakhir.id}`}
-                  className="rounded-lg border border-white/25 px-7 py-3.5 text-sm font-semibold text-paper whitespace-nowrap transition-all duration-200 ease-out-soft hover:bg-white/10 hover:border-white/50"
+                  className="rounded-lg border border-white/25 px-7 py-3.5 text-sm font-semibold text-white whitespace-nowrap transition-all duration-200 ease-out-soft hover:bg-white/10 hover:border-white/50"
                 >
                   Lanjutkan kelas terakhir
                 </Link>

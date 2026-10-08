@@ -148,7 +148,7 @@ export default function ClassRoom({
         <div className="container-page relative">
           <Link
             href={kembali.href}
-            className="rise-in inline-block text-[13px] text-paper/70 transition-colors duration-200 hover:text-paper"
+            className="rise-in inline-block text-[13px] text-white/70 transition-colors duration-200 hover:text-white"
             style={{ "--rise-delay": "0ms" } as React.CSSProperties}
           >
             ← {kembali.label}
@@ -165,7 +165,7 @@ export default function ClassRoom({
 
               <div className="min-w-0 flex-1">
                 <h1
-                  className="rise-in text-paper leading-[1.1]"
+                  className="rise-in text-white leading-[1.1]"
                   style={
                     {
                       ...DISPLAY_JUDUL,
@@ -179,7 +179,7 @@ export default function ClassRoom({
 
                 {kelas.description && (
                   <p
-                    className="rise-in mt-3 max-w-[58ch] text-paper/78 text-sm leading-[1.7]"
+                    className="rise-in mt-3 max-w-[58ch] text-white/78 text-sm leading-[1.7]"
                     style={{ "--rise-delay": "320ms" } as React.CSSProperties}
                   >
                     {kelas.description}
@@ -194,10 +194,10 @@ export default function ClassRoom({
             >
               <UserAvatar name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
               <span className="min-w-0">
-                <span className="block text-[11px] uppercase tracking-[0.14em] text-paper/60">
+                <span className="block text-[11px] uppercase tracking-[0.14em] text-white/60">
                   Pengajar
                 </span>
-                <span className="block truncate text-sm font-medium text-paper">
+                <span className="block truncate text-sm font-medium text-white">
                   {namaPengajar}
                 </span>
               </span>
@@ -219,7 +219,7 @@ export default function ClassRoom({
                     "rounded-t-xl px-[22px] py-3 text-sm font-semibold transition-colors duration-200",
                     aktif
                       ? "bg-paper text-blue-700"
-                      : "bg-paper/10 text-paper/72 hover:bg-paper/20 hover:text-paper",
+                      : "bg-white/10 text-white/72 hover:bg-white/20 hover:text-white",
                   )}
                 >
                   {t.label}

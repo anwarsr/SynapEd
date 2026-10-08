@@ -41,17 +41,19 @@ export default async function Home() {
 
   return (
     <>
-      <Navbar />
-      <SectionDots />
-      <main>
-        <Hero />
-        <About />
-        <Courses courses={courses} categories={categories} />
-        <Features />
-        <LearningPath />
-        <Testimonials items={testimonials} />
-        <FAQ />
-      </main>
+      <div className="theme-night">
+        <Navbar />
+        <SectionDots />
+        <main>
+          <Hero />
+          <About />
+          <Courses courses={courses} categories={categories} />
+          <Features />
+          <LearningPath />
+          <Testimonials items={testimonials} />
+          <FAQ />
+        </main>
+      </div>
       <Footer />
     </>
   );

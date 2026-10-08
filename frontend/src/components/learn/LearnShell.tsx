@@ -141,7 +141,7 @@ export default function LearnShell({
        masing-masing punya area gulirnya sendiri. */
     <div className="h-screen overflow-hidden bg-paper flex flex-col">
       {/* ── Bilah atas ─────────────────────────────────────── */}
-      <header className="shrink-0 z-40 bg-navy text-paper">
+      <header className="shrink-0 z-40 bg-navy text-white">
         <div className="flex items-center gap-4 px-4 sm:px-6 h-14">
           {/* Ponsel: buka/tutup panel melayang. Layar lebar: ciutkan railnya. */}
           <button
@@ -166,7 +166,7 @@ export default function LearnShell({
               "hidden lg:inline-flex items-center justify-center w-9 h-9 rounded-lg border shrink-0",
               "transition-colors duration-200 ease-out-soft",
               railHidden
-                ? "border-white/20 bg-white/5 text-blue-100 hover:bg-white/15 hover:text-white"
+                ? "border-white/20 bg-white/5 text-white/80 hover:bg-white/15 hover:text-white"
                 : "border-white/25 bg-white/15 text-white hover:bg-white/25",
             )}
             aria-label={railHidden ? "Tampilkan daftar materi" : "Sembunyikan daftar materi"}
@@ -186,7 +186,7 @@ export default function LearnShell({
 
           <Link
             href={`/courses/${course.slug}`}
-            className="flex items-center gap-2 text-sm text-blue-100/80 hover:text-white transition-colors shrink-0"
+            className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors shrink-0"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -199,7 +199,7 @@ export default function LearnShell({
           <div className="ml-auto flex items-center gap-3 shrink-0">
             {canTrackProgress ? (
               <>
-                <span className="text-xs text-blue-100/70 tabular-nums">
+                <span className="text-xs text-white/70 tabular-nums">
                   {progress.done} / {progress.total} selesai
                 </span>
                 <div className="w-24 sm:w-40 h-1.5 rounded-full bg-white/15 overflow-hidden" role="presentation">
@@ -210,7 +210,7 @@ export default function LearnShell({
                 </div>
               </>
             ) : (
-              <span className="text-xs text-blue-100/70">Pratinjau</span>
+              <span className="text-xs text-white/70">Pratinjau</span>
             )}
           </div>
         </div>
@@ -289,7 +289,7 @@ export default function LearnShell({
                           />
                         </svg>
                         <span className="flex-1 leading-snug">{lesson.title}</span>
-                        <span className={cn("text-[11px] shrink-0 mt-0.5", active ? "text-blue-100" : "text-ink-faint")}>
+                        <span className={cn("text-[11px] shrink-0 mt-0.5", active ? "text-white/80" : "text-ink-faint")}>
                           {lesson.duration}
                         </span>
                       </>
@@ -424,10 +424,10 @@ export default function LearnShell({
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[current.type] ?? lessonIcons.reading} />
                     </svg>
-                    <p className={cn("t-h3 text-lg mb-2", current.type === "video" && "text-paper")}>
+                    <p className={cn("t-h3 text-lg mb-2", current.type === "video" && "text-white")}>
                       Materi belum tersedia
                     </p>
-                    <p className={cn("text-sm max-w-sm", current.type === "video" ? "text-blue-100/70" : "text-ink-muted")}>
+                    <p className={cn("text-sm max-w-sm", current.type === "video" ? "text-white/70" : "text-ink-muted")}>
                       {attachments.length > 0
                         ? "Berkasnya tidak bisa ditampilkan di halaman. Silakan unduh di bawah."
                         : "Struktur pelajaran sudah ada, tetapi tautan video dan berkasnya belum diunggah."}
