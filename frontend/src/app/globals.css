@@ -671,6 +671,14 @@ section[id] {
     animation-delay: var(--rise-delay, 0ms);
 }
 
+/* Kotak-kotak hitam tipis ala hero beranda — dipakai di latar halaman masuk. */
+.bg-grid {
+    background-image:
+        linear-gradient(to right, rgb(16 21 28 / 0.07) 1px, transparent 1px),
+        linear-gradient(to bottom, rgb(16 21 28 / 0.07) 1px, transparent 1px);
+    background-size: 100px 100px;
+}
+
 /* ══ Layar pembuka (SplashLoader) ═══════════════════════════
    Mengikuti alur intro nomu.store: kata pertama naik lalu digantikan kata
    kedua, lapisan terang naik dari bawah menutup layar (teks beralih warna

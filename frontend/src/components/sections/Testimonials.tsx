@@ -8,6 +8,7 @@ import ProfileLink from "@/components/ui/ProfileLink";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { cn } from "@/lib/cn";
+import SectionTitle from "@/components/sections/SectionTitle";
 
 /**
  * "Apa Kata Mereka" — ulasan sungguhan dari peserta yang sudah menyelesaikan
@@ -43,14 +44,6 @@ export interface TestimonialItem {
 
 /** Di bawah ini kartunya ditata diam, tanpa pita berjalan. */
 const MARQUEE_MIN = 4;
-
-const HEADING: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
-  fontWeight: 800,
-  lineHeight: 1.03,
-  letterSpacing: "-0.04em",
-};
 
 const NAME: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
@@ -128,14 +121,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
     <section id="testimonials" className="py-28 bg-ivory overflow-hidden">
       <div className="container-page">
         <Reveal className="flex flex-col items-center text-center mb-14">
-          <h2 className="text-blue-600 max-w-4xl" style={HEADING}>
-            Apa Kata Mereka
-          </h2>
-
-          <p className="t-body mt-6 max-w-2xl text-ink-muted">
-            Ulasan dari peserta yang sudah menyelesaikan kursusnya di SynapEd.
-            Ketuk salah satu kartu untuk membaca selengkapnya.
-          </p>
+          <SectionTitle title="Comments" />
         </Reveal>
       </div>
 

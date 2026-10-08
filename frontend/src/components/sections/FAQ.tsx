@@ -4,16 +4,9 @@ import { useState } from "react";
 import Reveal from "@/components/ui/Reveal";
 import { faqs } from "@/data/landing";
 import { cn } from "@/lib/cn";
+import SectionTitle from "@/components/sections/SectionTitle";
 
 /** Tipografi FAQ */
-const HEADING: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
-  fontWeight: 800,
-  lineHeight: 1.03,
-  letterSpacing: "-0.04em",
-};
-
 const QUESTION: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
   fontWeight: 700,
@@ -35,26 +28,7 @@ export default function FAQ() {
       <div className="relative container-reading">
         {/* Heading */}
         <Reveal className="flex flex-col items-center text-center mb-14">
-          <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 mb-6">
-            <span
-              aria-hidden="true"
-              className="w-6 h-px bg-blue-600/30"
-            />
-
-            Pertanyaan
-
-            <span
-              aria-hidden="true"
-              className="w-6 h-px bg-blue-600/30"
-            />
-          </p>
-
-          <h2
-            className="text-blue-600 max-w-3xl"
-            style={HEADING}
-          >
-            Pertanyaan yang sering diajukan
-          </h2>
+          <SectionTitle title="FAQ" />
         </Reveal>
 
         {/* FAQ Cards */}

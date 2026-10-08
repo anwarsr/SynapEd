@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { features } from "@/data/landing";
 import { useReducedMotion } from "@/lib/useReducedMotion";
+import SectionTitle from "@/components/sections/SectionTitle";
 
 const clamp = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, v));
@@ -527,57 +528,9 @@ export default function Features() {
             HEADING
         ====================================== */}
 
-        <div className="flex flex-col items-start text-left">
+        <div className="flex flex-col items-center text-center">
 
-          <h1
-            className="
-              rise-in
-              text-blue-600
-            "
-            style={{
-              fontFamily:
-                "var(--font-sans)",
-
-              fontSize:
-                "clamp(2.5rem, 6.5vw, 5.75rem)",
-
-              fontWeight: 800,
-
-              lineHeight: 1.03,
-
-              letterSpacing:
-                "-0.04em",
-
-              "--rise-delay":
-                "170ms",
-            } as React.CSSProperties}
-          >
-            Keunggulan
-            <br />
-            SynapEd
-          </h1>
-
-          <p
-            className="
-              rise-in
-              mt-8
-              max-w-md
-              text-justify
-              text-base
-              leading-relaxed
-              text-ink-muted
-              md:text-lg
-            "
-            style={{
-              "--rise-delay":
-                "260ms",
-            } as React.CSSProperties}
-          >
-            Pembelajaran yang dirancang
-            sistematis, mudah dipahami,
-            dan relevan untuk kebutuhan
-            belajar masa kini.
-          </p>
+          <SectionTitle as="h1" title="Features" />
 
         </div>
 

@@ -47,7 +47,7 @@ export default function SectionDots() {
                   className={cn(
                     "font-mono text-[11px] uppercase tracking-wider transition-all duration-200 ease-out-soft",
                     isActive
-                      ? "text-amber-700 opacity-100"
+                      ? "text-blue-600 opacity-100"
                       : "pointer-events-none translate-x-1 text-ink-muted opacity-0 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100",
                   )}
                 >
@@ -58,8 +58,8 @@ export default function SectionDots() {
                   className={cn(
                     "block rounded-full transition-all duration-200 ease-out-soft",
                     isActive
-                      ? "h-3 w-3 bg-amber-500"
-                      : "h-2 w-2 bg-ink-faint group-hover:bg-blue-700",
+                      ? "h-3 w-3 bg-blue-600"
+                      : "h-2 w-2 bg-blue-600/30 group-hover:bg-blue-600",
                   )}
                 />
               </button>

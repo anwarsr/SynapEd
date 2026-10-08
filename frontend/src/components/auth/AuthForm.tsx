@@ -357,11 +357,11 @@ export default function AuthForm({
   }
 
   return (
-    <main className="min-h-screen bg-hero-navy flex items-center justify-center px-4 py-12 sm:px-6 sm:py-16">
+    <main className="min-h-screen bg-ivory bg-grid flex items-center justify-center px-4 py-12 sm:px-6 sm:py-16">
       <div className="w-full max-w-4xl">
         <Link href="/" className="flex justify-center mb-8" aria-label="SynapEd — beranda">
           <Image
-            src="/images/logotextwhite.png"
+            src="/images/logotext.png"
             alt="SynapEd"
             width={667}
             height={667}
@@ -416,7 +416,7 @@ export default function AuthForm({
         </div>
 
         <p className="text-center mt-6">
-          <Link href="/" className="text-sm text-blue-100/70 hover:text-white transition-colors">
+          <Link href="/" className="text-sm text-ink-muted hover:text-blue-600 transition-colors">
             ← Kembali ke beranda
           </Link>
         </p>

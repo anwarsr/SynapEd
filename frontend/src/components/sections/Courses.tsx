@@ -9,6 +9,7 @@ import { formatPrice, levelTone } from "@/lib/courseUi";
 import CourseThumb from "@/components/ui/CourseThumb";
 import CourseAuthor from "@/components/ui/CourseAuthor";
 import { cn } from "@/lib/cn";
+import SectionTitle from "@/components/sections/SectionTitle";
 
 interface Props {
   courses: CourseSummary[];
@@ -18,14 +19,6 @@ interface Props {
 /* =========================================================
    TYPOGRAPHY
 ========================================================= */
-
-const HEADING: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
-  fontWeight: 800,
-  lineHeight: 1.03,
-  letterSpacing: "-0.055em",
-};
 
 const CARD_TITLE: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
@@ -70,18 +63,9 @@ export default function Courses({ courses, categories }: Props) {
             HEADING
         ===================================================== */}
 
-        <div className="flex flex-col md:items-end">
-          <Reveal className="wrap-break-word md:text-right">
-            <h2 className="max-w-5xl text-blue-600" style={HEADING}>
-              Materi Pembelajaran
-            </h2>
-          </Reveal>
-
-          <Reveal delay={110} className="mt-6 md:max-w-md">
-            <p className="t-body text-ink/80 md:text-right">
-              Berbagai modul terstruktur dari level dasar hingga lanjutan,
-              dirancang untuk pengalaman belajar yang optimal.
-            </p>
+        <div className="flex flex-col items-center">
+          <Reveal>
+            <SectionTitle title="Courses" />
           </Reveal>
         </div>
 

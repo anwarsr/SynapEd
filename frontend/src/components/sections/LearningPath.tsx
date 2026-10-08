@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { learningSteps } from "@/data/landing";
 import { cn } from "@/lib/cn";
+import SectionTitle from "@/components/sections/SectionTitle";
 
 export default function LearningPath() {
   // Garis horizontal memanjang ke kanan mengikuti scroll — satu "layar"
@@ -51,20 +52,9 @@ export default function LearningPath() {
           height: `${learningSteps.length * 100}vh`,
         }}
       >
-        <div className="sticky top-0 h-screen flex flex-col items-end pr-12">
+        <div className="sticky top-0 h-screen flex flex-col items-center">
           {/* Heading */}
-          <h3
-            className="text-blue-600 pt-28"
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
-              fontWeight: 800,
-              lineHeight: 1.03,
-              letterSpacing: "-0.04em",
-            }}
-          >
-            Alur Belajar
-          </h3>
+          <SectionTitle as="h3" title="Learning Path" className="w-full pt-24" />
 
           <div className="flex-1 flex items-center w-full">
             <div className="container-page w-full">

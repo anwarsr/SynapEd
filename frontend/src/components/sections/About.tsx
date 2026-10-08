@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Reveal from "@/components/ui/Reveal";
+import SectionTitle from "@/components/sections/SectionTitle";
 import { cn } from "@/lib/cn";
 
 /* =============================================================
@@ -56,42 +57,7 @@ export default function About() {
         "
       >
         <Reveal>
-          <div className="max-w-3xl">
-            <h1
-              className="
-                rise-in
-                text-blue-600
-                text-[clamp(2.8rem,6.5vw,5.75rem)]
-                font-extrabold
-                leading-[0.96]
-                tracking-[-0.055em]
-              "
-              style={
-                {
-                  fontFamily: "var(--font-sans)",
-                  "--rise-delay": "170ms",
-                } as React.CSSProperties
-              }
-            >
-              Tentang
-              <br />
-              SynapEd
-            </h1>
-
-            <p
-              className="
-                mt-6
-                max-w-lg
-                text-sm
-                leading-[1.7]
-                text-neutral-600
-                sm:text-base
-              "
-            >
-              Pembelajaran yang terarah, interaktif, dan didukung oleh sumber
-              yang dapat dipercaya.
-            </p>
-          </div>
+          <SectionTitle title="About" />
         </Reveal>
       </div>
 

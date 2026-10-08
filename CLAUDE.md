@@ -89,6 +89,14 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   (`--y1`) sambil melebar (`--w1`) mengikuti `--e` (smoothstep dari `--m`).
   State hanya jumlah huruf terketik + boolean `bar`. Latar kotak-kotak hitam tipis menempel pada section, jadi
   ikut bergeser saat scroll. Tombol "Lihat Kurikulum" sudah dihapus.
+- **Halaman masuk/daftar** (`AuthForm.tsx`) berlatar `bg-ivory bg-grid`
+  (`.bg-grid` = kotak-kotak hitam tipis yang sama dengan hero); logo versi
+  gelap, tautan "Kembali ke beranda" gelap. Kartunya tetap berpanel navy.
+- **Judul section landing** (About, Courses, Features, Learning Path,
+  Comments, FAQ) memakai `sections/SectionTitle.tsx`: kata besar kapital di
+  tengah, tanpa label/deskripsi (sengaja dihapus atas permintaan pemilik). Ukuran huruf dihitung dari panjang
+  judul (`88 / (panjang × 0.64)` vw, maks 11rem) supaya judul panjang tetap
+  muat — jangan diberi `whitespace-nowrap` tanpa menghitung ulang.
 - **Latar section landing** semuanya `bg-ivory` (`#FFFFF5`) — Hero, About,
   Courses, Features, LearningPath, Testimonials, FAQ — kecuali footer.
 - **Layar pembuka** `ui/SplashLoader.tsx` (dipasang di `layout.tsx`), alurnya
