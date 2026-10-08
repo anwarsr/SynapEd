@@ -59,7 +59,7 @@ export default function Navbar() {
    * baru menyentuh tengah layar — sekitar 150px SEBELUM hero benar-benar lewat
    * dari belakang navbar. Selama pita itu, logo gelap tergambar di atas biru.
    */
-  const [overDarkHero, setOverDarkHero] = useState(isHome);
+  const [overDarkHero, setOverDarkHero] = useState(false);
   const light = !overDarkHero;
 
   useEffect(() => {
@@ -74,14 +74,15 @@ export default function Navbar() {
     const onScroll = () => {
       setScrolled(window.scrollY > 24);
 
-      // Hero gelap mana pun, bukan hanya #hero di beranda.
+      // Hero gelap mana pun, ditandai lewat atribut `data-dark-hero`.
       //
-      // Halaman kelas juga membuka dengan pita biru penuh, dan tanpa ini
-      // logo putihnya tergambar di atas kertas krem begitu hero terlewat —
+      // Halaman kelas membuka dengan pita biru penuh, dan tanpa ini logo
+      // putihnya tergambar di atas kertas krem begitu hero terlewat —
       // atau logo gelap di atas biru sejak awal. Ditandai lewat atribut,
       // bukan daftar rute, supaya halaman berikutnya tidak perlu
-      // mendaftarkan dirinya di berkas ini.
-      const hero = document.getElementById("hero") ?? document.querySelector("[data-dark-hero]");
+      // mendaftarkan dirinya di berkas ini. Hero beranda kini berlatar
+      // ivory (terang), jadi TIDAK ikut dihitung.
+      const hero = document.querySelector("[data-dark-hero]");
       setOverDarkHero(hero ? hero.getBoundingClientRect().bottom > NAVBAR_MID : false);
     };
 

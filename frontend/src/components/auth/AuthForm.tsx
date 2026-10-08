@@ -30,7 +30,6 @@ const FADE_MS = 420;
 
 const copy = {
   login: {
-    chapter: "Masuk",
     heading: "Selamat datang kembali",
     sub: "Lanjutkan belajar dari tempat Anda berhenti.",
     submit: "Masuk",
@@ -38,7 +37,6 @@ const copy = {
     altLabel: "Daftar gratis",
   },
   register: {
-    chapter: "Daftar",
     heading: "Mulai belajar hari ini",
     sub: "Buat akun gratis dan akses seluruh kurikulum SynapEd.",
     submit: "Daftar Gratis",
@@ -77,9 +75,7 @@ export default function AuthForm({
   const t = copy[mode];
 
   // Arah animasi .auth-fade: masuk dari kanan saat menuju Daftar, dari
-  // kiri saat menuju Masuk — sedikit gerak horizontal supaya perpindahan
-  // mode tetap terasa "bergerak" tanpa menghadirkan lagi panel yang
-  // meluncur penuh (itu sempat dicoba, terlihat seperti slider/toggle).
+  // kiri saat menuju Masuk — untuk isi yang memudar di atas panel yang meluncur.
   const fadeFromStyle = { "--auth-fade-from": mode === "register" ? "18px" : "-18px" } as React.CSSProperties;
 
   const [name, setName] = useState("");
@@ -342,17 +338,11 @@ export default function AuthForm({
   }
 
   /** Panel "merek" navy (desktop) — isinya selalu ajakan ke mode LAWAN dari
-   *  yang sedang aktif, tetap di sisi kiri (tidak ikut bertukar tempat —
-   *  lihat gambar acuan: panel gelap diam, hanya isinya berganti). */
+   *  yang sedang aktif; panel meluncur kiri/kanan mengikuti mode. */
   function renderInvite() {
     const c = copy[other(mode)];
     return (
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-10 py-12 text-center text-white lg:px-14">
-        <p className="chapter-mark justify-center mb-5 text-blue-100/80">
-          <span aria-hidden="true" className="w-6 h-px bg-blue-100/40" />
-          <span>{c.chapter}</span>
-          <span aria-hidden="true" className="w-6 h-px bg-blue-100/40" />
-        </p>
         <h2 className="t-h3 text-[1.7rem] text-white mb-3">{c.heading}</h2>
         <p className="t-body text-sm text-blue-50/80 mb-8 max-w-[26ch]">{c.sub}</p>
         <button
@@ -386,11 +376,6 @@ export default function AuthForm({
               singkat (.auth-fade). ══ */}
           <div className="p-6 sm:p-8 md:hidden">
             <div key={mode} className="auth-fade" style={fadeFromStyle}>
-              <p className="chapter-mark justify-center mb-5">
-                <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-                <span>{t.chapter}</span>
-                <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-              </p>
               <h1 className="t-h2 text-center text-[1.9rem] mb-3">{t.heading}</h1>
               <p className="t-body text-sm text-center text-ink-muted mb-8">{t.sub}</p>
 
@@ -398,24 +383,30 @@ export default function AuthForm({
             </div>
           </div>
 
-          {/* ══ Desktop — kartu terbelah tetap: sisi merek (navy) selalu
-              kiri, sisi formulir selalu kanan — kedua sisi sendiri diam di
-              tempat (tidak ada panel yang meluncur/bertukar posisi, itu
-              sempat dicoba lalu dibatalkan). Hanya ISINYA yang bergeser +
-              memudar (.auth-fade) saat mode berpindah. ══ */}
-          <div className="hidden md:grid md:grid-cols-2 md:min-h-160">
-            <div className="auth-brand-panel relative overflow-hidden">
+          {/* ══ Desktop — kartu terbelah: panel merek (navy, berisi tombol
+              Masuk/Daftar) dan sisi formulir BERTUKAR tempat dengan
+              meluncur (translate-x, 700ms) saat mode berpindah: Daftar =
+              panel di kiri, Masuk = panel di kanan. Isinya juga memudar
+              (.auth-fade). Atas permintaan pemilik (sesuai gambar acuan). ══ */}
+          <div className="hidden md:block relative md:min-h-160">
+            <div
+              className={cn(
+                "auth-brand-panel absolute inset-y-0 left-0 z-10 w-1/2 overflow-hidden transition-transform duration-700 ease-out-soft motion-reduce:transition-none",
+                mode === "register" ? "translate-x-0" : "translate-x-full",
+              )}
+            >
               <div key={mode} className="auth-fade h-full" style={fadeFromStyle}>
                 {renderInvite()}
               </div>
             </div>
 
-            <div className="relative flex items-center justify-center px-10 py-12 lg:px-14">
+            <div
+              className={cn(
+                "absolute inset-y-0 left-0 flex w-1/2 items-center justify-center px-10 py-12 transition-transform duration-700 ease-out-soft motion-reduce:transition-none lg:px-14",
+                mode === "register" ? "translate-x-full" : "translate-x-0",
+              )}
+            >
               <div key={mode} className="auth-fade w-full max-w-sm" style={fadeFromStyle}>
-                <p className="chapter-mark mb-5">
-                  <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-                  <span>{t.chapter}</span>
-                </p>
                 <h1 className="t-h2 text-[1.9rem] mb-3">{t.heading}</h1>
                 <p className="t-body text-sm text-ink-muted mb-8">{t.sub}</p>
                 {renderFields("desktop")}

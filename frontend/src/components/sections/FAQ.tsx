@@ -30,7 +30,7 @@ export default function FAQ() {
   return (
     <section
       id="faq"
-      className="relative py-28 bg-paper overflow-hidden"
+      className="relative py-28 bg-ivory overflow-hidden"
     >
       <div className="relative container-reading">
         {/* Heading */}

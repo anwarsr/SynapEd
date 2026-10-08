@@ -69,18 +69,54 @@ cd frontend && npm run build       # kadang gagal fetch Google Fonts (jaringan) 
 npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 ```
 
+- **Hero beranda** (`sections/Hero.tsx`) berlatar `bg-ivory` (token
+  `--color-ivory`), tanpa gambar; judul `text-blue-900` dengan huruf muncul
+  "pop" bergiliran (`.letter-pop`, jeda `--letter-delay`; `backwards` bukan
+  `forwards` supaya transform seret huruf tidak tertimpa). Karena hero kini
+  terang, `Navbar` hanya menganggap `[data-dark-hero]` sebagai latar gelap
+  (hero beranda tidak lagi). `sections/SectionDots.tsx` = titik navigasi
+  section di tepi kanan (lg:+), memakai `useActiveSection`; daftar id-nya
+  harus cocok dengan id section di `app/page.tsx`.
+
+- **Hero scroll** (`Hero.tsx`): section setinggi `230vh` (`overflow-clip`,
+  BUKAN `overflow-hidden` — itu mematikan `position: sticky`) dengan isi
+  sticky. Progres scroll ditulis ke variabel CSS `--p` langsung di DOM
+  (bukan state); `--c` (judul/tombol memudar) dan `--q` (bilah muncul &
+  melebar) diturunkan dari `--p` lewat `clamp(calc())`. Tombol oval "Mulai
+  Belajar" adalah SATU elemen yang berubah jadi bilah prompt: di dalam isi
+  hanya ada slot kosong penahan tempat (`slotRef`), tombolnya diposisikan
+  absolut menimpa slot (`--y0` diukur JS) lalu meluncur ke tengah layar
+  (`--y1`) sambil melebar (`--w1`) mengikuti `--e` (smoothstep dari `--m`).
+  State hanya jumlah huruf terketik + boolean `bar`. Latar kotak-kotak hitam tipis menempel pada section, jadi
+  ikut bergeser saat scroll. Tombol "Lihat Kurikulum" sudah dihapus.
+- **Latar section landing** semuanya `bg-ivory` (`#FFFFF5`) — Hero, About,
+  Courses, Features, LearningPath, Testimonials, FAQ — kecuali footer.
+- **Layar pembuka** `ui/SplashLoader.tsx` (dipasang di `layout.tsx`), alurnya
+  meniru intro nomu.store (CSS `.intro-*` di `globals.css`: kata TAHU. → BISA.,
+  lapisan ivory naik, logo + tagline mendarat, 5 rel terisi, layar terangkat).
+  Sekali per sesi tab (`sessionStorage` `synaped_intro_seen_v2`), dilewati bila
+  `prefers-reduced-motion`. **Penanda "sudah tampil" ditulis SETELAH animasi
+  selesai**, bukan di awal: React dev menjalankan efek dua kali, dan penanda
+  yang ditulis di awal membuat putaran kedua membuang intro (bug: intro tak
+  pernah muncul). Dirender terlihat sejak HTML server; keputusan
+  melewati dibuat di callback timer (lint melarang setState sinkron di efek).
+  `--color-blue-600` & `--color-blue-900` = **biru sapphire `#0F52BA`**
+  (permintaan pemilik; keduanya sengaja sama). Animasi hero berjalan di
+  belakang splash pada kunjungan pertama.
+
 ## Autentikasi & otorisasi
 
 - Login di klien → `POST /api/auth/session` menukar ID token jadi cookie
   httpOnly `synaped_session`. Rute ini juga memanggil `ensureUsername` (gagal = log saja).
 - `/login` & `/register` keduanya merender `AuthForm` (satu komponen), yang
   menyimpan mode aktif di state lokal (bukan sekadar lewat props) supaya
-  tombol "Masuk"/"Daftar" bisa berpindah dengan geser + memudar (`.auth-fade`,
-  arah dari `--auth-fade-from`) tanpa menunggu navigasi Next. Di layar md:+
-  kartunya terbelah DIAM (sisi navy kiri, sisi formulir kanan — tidak ada
-  PANEL yang meluncur/bertukar posisi, itu sempat dicoba lalu dibatalkan
-  karena terlihat seperti komponen "slider/toggle"); yang bergerak hanya
-  ISI tiap sisi. URL disinkronkan lewat `window.history.replaceState`
+  tombol "Masuk"/"Daftar" bisa berpindah tanpa menunggu navigasi Next. Di
+  layar md:+ kartunya terbelah dan kedua sisi (panel navy berisi tombol
+  ajakan + sisi formulir) BERTUKAR tempat dengan meluncur (`translate-x`,
+  700ms; Daftar = panel kiri, Masuk = panel kanan), sementara isinya memudar
+  (`.auth-fade`, arah dari `--auth-fade-from`). Sempat dibatalkan
+  (terlihat seperti "slider/toggle"), lalu diminta pemilik lagi sesuai
+  gambar acuan — jangan dihapus. URL disinkronkan lewat `window.history.replaceState`
   langsung, **bukan** `router.replace` — `router.replace` membuat Next
   mengambil ulang RSC
   halaman tujuan dan me-remount `AuthForm`, yang mengulang animasi masuk

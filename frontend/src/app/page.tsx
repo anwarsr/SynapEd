@@ -1,5 +1,6 @@
 import Navbar from "@/components/sections/Navbar";
 import Hero from "@/components/sections/Hero";
+import SectionDots from "@/components/sections/SectionDots";
 import About from "@/components/sections/About";
 import Courses from "@/components/sections/Courses";
 import Features from "@/components/sections/Features";
@@ -41,6 +42,7 @@ export default async function Home() {
   return (
     <>
       <Navbar />
+      <SectionDots />
       <main>
         <Hero />
         <About />

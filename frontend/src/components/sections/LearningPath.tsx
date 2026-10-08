@@ -42,7 +42,7 @@ export default function LearningPath() {
   const step = learningSteps[active];
 
   return (
-    <section id="learning-path" className="bg-paper">
+    <section id="learning-path" className="bg-ivory">
       {/* Desktop — garis progres sticky yang tumbuh mengikuti scroll */}
       <div
         ref={trackRef}

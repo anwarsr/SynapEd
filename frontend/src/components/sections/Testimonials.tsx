@@ -125,7 +125,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
   const kartu = berjalan ? [...items, ...items] : items;
 
   return (
-    <section id="testimonials" className="py-28 bg-paper overflow-hidden">
+    <section id="testimonials" className="py-28 bg-ivory overflow-hidden">
       <div className="container-page">
         <Reveal className="flex flex-col items-center text-center mb-14">
           <h2 className="text-blue-600 max-w-4xl" style={HEADING}>

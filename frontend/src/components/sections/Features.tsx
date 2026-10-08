@@ -517,6 +517,7 @@ export default function Features() {
       id="features"
       className="
         overflow-x-clip
+        bg-ivory
         py-28
       "
     >

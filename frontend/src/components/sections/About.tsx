@@ -37,7 +37,7 @@ export default function About() {
       className="
         relative
         overflow-hidden
-        bg-paper
+        bg-ivory
         py-24
         sm:py-28
         lg:py-32

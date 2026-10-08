@@ -48,7 +48,7 @@ export default function Courses({ courses, categories }: Props) {
   return (
     <section
       id="courses"
-      className="relative overflow-hidden bg-paper py-28"
+      className="relative overflow-hidden bg-ivory py-28"
     >
       {/* =====================================================
           PAPER TEXTURE
