@@ -449,7 +449,7 @@ section[id] {
     position: absolute;
     inset: 0;
     display: grid;
-    border-radius: 28px;
+    border-radius: 0;
     overflow: hidden;
     transform-style: preserve-3d;
     will-change: transform, opacity;
@@ -575,7 +575,7 @@ section[id] {
     }
 
     .feature-card {
-        border-radius: 20px;
+        border-radius: 0;
     }
 
     .feature-card__content {
@@ -696,6 +696,113 @@ section[id] {
         linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
         linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
     background-size: 100px 100px;
+}
+
+/* ══ About — animasi teks panel akordeon ═════════════════════
+   Hanya aktif di panel terbuka: data-open berubah true → animasi mulai
+   dari awal. Panel tertutup tanpa animasi (keadaan akhir, tak terlihat).
+   Jeda memakai 300ms dasar supaya mulai setelah isi panel memudar masuk.
+   backwards (bukan forwards): elemen tahan keadaan awal selama jeda saja. */
+.about-mask {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
+    padding-bottom: 0.08em;
+    margin-bottom: -0.08em;
+}
+.about-up { display: inline-block; }
+
+@keyframes about-up {
+    from { transform: translateY(110%) rotate(5deg); opacity: 0; }
+    to   { transform: translateY(0) rotate(0); opacity: 1; }
+}
+@keyframes about-sweep {
+    from { background-size: 0% 2px; }
+    to   { background-size: 100% 2px; }
+}
+@keyframes about-bar {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+}
+@keyframes about-pop {
+    0%   { opacity: 0; transform: translateY(10px) scale(0.9); }
+    70%  { opacity: 1; transform: translateY(-2px) scale(1.03); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes about-ticker {
+    0%, 18%   { transform: translateY(0); }
+    25%, 43%  { transform: translateY(-1.5em); }
+    50%, 68%  { transform: translateY(-3em); }
+    75%, 93%  { transform: translateY(-4.5em); }
+    100%      { transform: translateY(-6em); }
+}
+
+.about-panel[data-open="true"] .about-up {
+    animation: about-up 800ms var(--ease-warm) backwards;
+    animation-delay: calc(300ms + var(--d, 0ms));
+}
+.about-sweep {
+    background-image: linear-gradient(var(--color-blue-400), var(--color-blue-400));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 2px;
+}
+.about-panel[data-open="true"] .about-sweep {
+    animation: about-up 800ms var(--ease-warm) backwards, about-sweep 900ms var(--ease-warm) backwards;
+    animation-delay: calc(300ms + var(--d, 0ms)), calc(900ms + var(--d, 0ms));
+}
+.about-bar {
+    transform-origin: left;
+}
+.about-panel[data-open="true"] .about-bar {
+    animation: about-bar 900ms var(--ease-warm) backwards;
+    animation-delay: calc(300ms + var(--d, 0ms));
+}
+.about-panel[data-open="true"] .about-pop {
+    animation: about-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+    animation-delay: calc(300ms + var(--d, 0ms));
+}
+.about-ticker { list-style: none; margin: 0; padding: 0; }
+.about-panel[data-open="true"] .about-ticker {
+    animation: about-ticker 8s cubic-bezier(0.65, 0, 0.35, 1) 1.4s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .about-panel .about-up,
+    .about-panel .about-sweep,
+    .about-panel .about-bar,
+    .about-panel .about-pop,
+    .about-panel .about-ticker { animation: none !important; }
+}
+
+/* Keterangan tahap (01) — naik & memudar tiap teks berganti (key berubah). */
+@keyframes about-note {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.about-note { animation: about-note 500ms var(--ease-warm) both; }
+
+@media (prefers-reduced-motion: reduce) {
+    .about-note { animation: none; }
+}
+
+/* ══ Easter egg kartu Features — gelombang sisik ikan ═══════
+   Tiap sisik = lingkaran yang membesar dari nol dengan sedikit lentur;
+   jeda per sisik diisi inline (baris × 38ms + kolom × 16ms) sehingga
+   gelombang menyapu diagonal. Tepi bawah gelap tipis memberi kesan sisik
+   yang bertumpuk. backwards: sisik menunggu gilirannya dalam keadaan nol. */
+.egg-scale {
+    position: absolute;
+    border-radius: 50%;
+    box-shadow:
+        inset 0 -3px 0 rgb(0 0 0 / 0.22),
+        inset 0 1px 0 rgb(255 255 255 / 0.2);
+    /* Tanpa overshoot (cubic-bezier > 1) — membal itu yang membuat tiap sisik
+       terlihat "muncul tiba-tiba"; ease-out murni lebih mulus. */
+    animation: egg-scale 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes egg-scale {
+    from { transform: scale(0.2); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
 }
 
 /* ══ Layar pembuka (SplashLoader) ═══════════════════════════
@@ -973,41 +1080,21 @@ section[id] {
    tidak terlihat melompat. Arahnya ke kanan, dan berhenti saat
    disentuh kursor atau saat salah satu kartu menerima fokus
    keyboard — supaya bisa dibaca dan diklik dengan tenang. */
-@keyframes testimonial-marquee {
-    from { transform: translateX(-50%); }
-    to   { transform: translateX(0); }
-}
-
-.testimonial-track {
-    overflow: hidden;
-    /* Tepi kiri-kanan dilembutkan supaya kartu tidak terpotong mentah. */
+/* Pita ulasan: dapat digeser ke kiri/kanan (seret/usap); gerak otomatisnya
+   dikerjakan Testimonials.tsx lewat scrollLeft. Bilah gulir disembunyikan,
+   tepi kiri-kanan dilembutkan supaya kartu tidak terpotong mentah. */
+.testimonial-scroller {
+    overflow-x: auto;
+    overflow-y: hidden;
+    cursor: grab;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    user-select: none;
+    -webkit-user-select: none;
     mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
-
-.testimonial-marquee {
-    display: flex;
-    gap: 1.25rem;
-    width: max-content;
-    padding-block: .5rem;
-    animation: testimonial-marquee 60s linear infinite;
-}
-
-.testimonial-track:hover .testimonial-marquee,
-.testimonial-track:focus-within .testimonial-marquee {
-    animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    /* Tanpa gerak otomatis, barisnya harus bisa digeser sendiri. */
-    .testimonial-track {
-        overflow-x: auto;
-        mask-image: none;
-        -webkit-mask-image: none;
-    }
-
-    .testimonial-marquee { animation: none; }
-}
+.testimonial-scroller::-webkit-scrollbar { display: none; }
 
 /* ══ Reduced motion ═════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

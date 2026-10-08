@@ -13,8 +13,18 @@ const LETTER_STAGGER_MS = 45;
 /** Judul mulai muncul sedikit setelah halaman terbuka. */
 const LETTER_START_MS = 150;
 
-/** Teks yang "diketik" di bilah saat tombol berubah bentuk lewat scroll. */
-const PROMPT_TEXT = "Saya ingin belajar analisis data dari nol";
+/**
+ * Kalimat yang "diketik" di bilah saat tombol berubah bentuk lewat scroll —
+ * dipilih ACAK tiap kunjungan (dan tiap kali pengunjung kembali ke atas).
+ */
+const PROMPTS = [
+  "Saya ingin belajar analisis data dari nol",
+  "Carikan kursus neuroscience untuk pemula",
+  "Bagaimana cara memulai pemrograman?",
+  "Saya mau belajar membaca sinyal EEG",
+  "Rekomendasi kursus gratis untuk mahasiswa",
+  "Ingin dapat sertifikat dari kursus berbasis riset",
+];
 
 /** Ukuran tombol awal & bilah akhir (px). */
 const BTN_W = 200;
@@ -34,12 +44,16 @@ export default function Hero() {
   const slotRef = useRef<HTMLDivElement>(null);
   const [typed, setTyped] = useState(0);
   const [bar, setBar] = useState(false);
-
+  // Prompt acak (indeks baru dipilih setelah mount supaya HTML server = klien)
+  const [promptIdx, setPromptIdx] = useState(0);
+  const promptRef = useRef(0);
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
 
     let raf = 0;
+    let sudahPenuh = false;
+
     const update = () => {
       raf = 0;
       const rect = el.getBoundingClientRect();
@@ -60,14 +74,31 @@ export default function Hero() {
 
       // Mengetik baru dimulai saat bilah sudah hampir selesai melebar.
       const t = Math.min(1, Math.max(0, (p - 0.4) / 0.4));
-      setTyped(Math.round(t * PROMPT_TEXT.length));
+      setTyped(Math.round(t * PROMPTS[promptRef.current].length));
       setBar(p > 0.3);
+
+      if (t >= 1) sudahPenuh = true;
+
+      // Kembali ke atas: kunjungan berikutnya dapat kalimat baru.
+      if (p < 0.05 && sudahPenuh) {
+        sudahPenuh = false;
+        let n = promptRef.current;
+        while (PROMPTS.length > 1 && n === promptRef.current) n = Math.floor(Math.random() * PROMPTS.length);
+        promptRef.current = n;
+        setPromptIdx(n);
+      }
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
     };
 
-    raf = requestAnimationFrame(update);
+    raf = requestAnimationFrame(() => {
+      // Pilih kalimat acak SEKALI setelah mount, lalu mulai pembaruan.
+      const n = Math.floor(Math.random() * PROMPTS.length);
+      promptRef.current = n;
+      setPromptIdx(n);
+      update();
+    });
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {
@@ -476,7 +507,7 @@ export default function Hero() {
           >
             <div className="flex h-full items-center gap-3 rounded-full bg-white/10 pl-6 pr-1.5">
               <p className="min-w-0 flex-1 truncate text-left text-base text-white">
-                {PROMPT_TEXT.slice(0, typed)}
+                {PROMPTS[promptIdx].slice(0, typed)}
                 <span aria-hidden="true" className="ml-px inline-block h-5 w-0.5 translate-y-1 bg-white" />
               </p>
               <Link

@@ -103,18 +103,72 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   atasnya WAJIB `text-white` (token `paper` kini gelap, `text-paper` di
   permukaan navy tak terbaca). `.mark` (sapuan krem di judul) dimatikan.
   Jangan menulis ulang ratusan `text-blue-700` — ubah nilai token saja.
-  "Pulau" yang sengaja terang (kartu About, kartu kursus & keadaan kosong
-  Courses, kartu Features, sertifikat) dibungkus `.theme-day` yang memulihkan
+  "Pulau" yang sengaja terang (keadaan kosong Courses, kartu Features, sertifikat) dibungkus `.theme-day` yang memulihkan
   palet terang. `.theme-night` (pembungkus beranda) tinggal alias. Jangan
   menambah warna gelap hardcode (`text-black`, `border-black`) di luar
   `.theme-day`; kotak QR memang `bg-white`. Navbar selalu bergaya gelap
   (logo putih). Teks terang di atas permukaan gelap ditulis `text-white/NN`,
   bukan `text-blue-100` (token itu kini tint transparan).
+- **About** (`sections/About.tsx`): tiga panel akordeon yang memenuhi SELURUH
+  section sampai tepi layar — TANPA jarak, garis, sudut membulat, maupun judul
+  "ABOUT" (sengaja dihapus; judul melayang sempat dicoba dan menimpa angka).
+  Batas antar panel hanya beda tipis warna dasar. Yang dipencet melebar
+  (`flex-grow` 3,4), dua lainnya menyempit (1) dan hanya berisi judul tegak
+  (tanpa angka/lingkaran); lebar dianimasikan lewat `flex-grow` +
+  `flex-basis: 0` (jangan diganti width/height). Panel terbuka memuat angka
+  besar samar, judul huruf-demi-huruf, penjelasan kata-demi-kata, lalu peraga
+  interaktif: 01 `LearningPath` (minimalis: tiga kata Dasar/Menengah/Mahir di atas
+  satu garis tipis, garis biru meluncur ke kata aktif), 02 `Ticker` (papan kata
+  berputar), 03 `Sources` (1 Jurnal / 2 Buku ajar / 3 Penelitian, nomor tanpa kurung; penjelasan HANYA muncul saat
+  poin ditekan dan keluar dari ujung teks poinnya, tekan lagi untuk menutup; tanpa
+  garis penanda/pembatas/centang; judul & penjelasan Plus Jakarta Sans, hanya nomornya `font-mono`; penjelasan tanpa tanda pisah "—").
+  `useAutoCycle` selama panel terbuka dan berhenti begitu pengguna menyentuh.
+  CSS `.about-*` di `globals.css`: animasi masuk hanya berjalan di bawah
+  `.about-panel[data-open="true"]` (memutar ulang tiap panel dibuka; pakai
+  `backwards`, bukan `forwards`).
+- **Courses** (`sections/Courses.tsx`): kartu kursus & chip kategori (jenis materi)
+  berbentuk KOTAK (tanpa radius & TANPA border), minimalis — `bg-paper-card`,
+  hover: naik 4px + latar sedikit terang; chip kategori menyatu jadi satu batang
+  di tengah section; tombol "Lihat Detail" kotak biru (bukan `Button`,
+  yang berradius). Jangan menambah `rounded-*` di sini. Keadaan kosong (glitch)
+  masih pulau `.theme-day`.
+- **Comments** (`sections/Testimonials.tsx`): kartu & dialog ulasan berbentuk KOTAK,
+  tanpa border/radius. Bagian atas = FOTO PROFIL pemberi ulasan (`UserAvatar` lg)
+  + nama + bintang; nama kursus ada di atas isi ulasan (huruf kecil kapital biru).
+  Foto kursus (`courseImage`) tak dipakai lagi tampilannya (field tetap ada di tipe).
+- **Features** (`sections/Features.tsx`): kartu karusel 3D berbentuk KOTAK solid
+  `#12293A` (radius 0, tanpa garis/bayangan/kaca/lapisan holo), isi: angka
+  besar di atas, judul (tiap kata satu baris) +
+  deskripsi di bawah, SEMUA putih penuh (tanpa warna selang-seling), tanpa garis.
+  TANPA efek hover. EASTER EGG: memencet ANGKA kartu mengganti warna kartu
+  (siklus `EGG_COLORS`) dengan gelombang sisik ikan (`FishScales`, `.egg-scale`).
+  Klik asli diarahkan ke stage karena `setPointerCapture` untuk drag, jadi egg
+  dipicu dari `pointerup` (tanpa geser > 6px) yang memanggil `.click()` tombol
+  `[data-egg]`; `animatingRef` mencegah pemicu ganda. Dua tahap penutup: warna
+  dasar diganti lalu lapisan sisik MEMUDAR (`FADE_MS`) sebelum dilepas — melepasnya
+  langsung membuat tepi gelap sisik lenyap sekaligus (terlihat terpotong). Jangan beri petunjuk visual. Lapisan holo (foil/rainbow/gloss/grain) sudah dihapus dari JSX.
+- **FAQ** (`sections/FAQ.tsx`): ubin kotak yang memenuhi sisa section sampai tepi
+  layar (jarak 4px, tanpa border/radius); desktop 6 kolom — 3 ubin `col-span-2` di
+  atas, 2 ubin `col-span-3` di bawah (`spanOf`), jadi tak ada sisa kosong. Ditekan →
+  terbalik 3D (`rotateY(180deg)`, depan = nomor + pertanyaan, belakang = jawaban di
+  latar biru); tiap ubin independen. Judul "FAQ" baris tersendiri DI ATAS grid (bukan
+  melayang) supaya tak menimpa ubin. Maskot `3.png` lama dihapus.
+- **Learning Path → Comments**: peralihan KEMBALI biasa (Comments sibling normal,
+  tergulung ke atas); peralihan horizontal, "tergencet", dan rasi bintang latar sudah
+  dihapus atas permintaan pemilik — jangan dikembalikan tanpa diminta.
+  Pita ulasan (`.testimonial-scroller`) bisa digeser: seret mouse (>5px, klik kartu
+  ditahan setelah seret) / usap sentuh, tetap jalan pelan sendiri (rAF + scrollLeft),
+  berhenti saat hover/seret/dialog; isi digandakan & posisi dibungkus di separuh lebar.
 - **Judul section landing** (About, Courses, Features, Learning Path,
   Comments, FAQ) memakai `sections/SectionTitle.tsx`: kata besar kapital di
   tengah, tanpa label/deskripsi (sengaja dihapus atas permintaan pemilik). Ukuran huruf dihitung dari panjang
   judul (`88 / (panjang × 0.64)` vw, maks 11rem) supaya judul panjang tetap
   muat — jangan diberi `whitespace-nowrap` tanpa menghitung ulang.
+  Judul kini CLIENT component: animasi ACAK ALFABET saat masuk layar (huruf berganti A–Z lalu mengunci kiri→kanan, 350ms + 80ms/huruf); lebar tiap huruf dikunci pada huruf asli yang tak terlihat supaya baris tidak bergetar; hemat gerak = langsung tampil.
+- **Hero bilah**: kalimat di bilah dipilih ACAK dari `PROMPTS` (indeks diundi sekali
+  setelah mount agar HTML server = klien; diundi ulang saat pengunjung kembali ke atas).
+  Fitur bilah → panel rekomendasi kursus sudah DIHAPUS atas permintaan pemilik — jangan
+  dikembalikan tanpa diminta; `Hero` kembali tanpa props.
 - **Latar section landing** semuanya `bg-ivory` (alias `paper`, kini gelap).
 - **Layar pembuka** `ui/SplashLoader.tsx` (dipasang di `layout.tsx`), alurnya
   meniru intro nomu.store (CSS `.intro-*` di `globals.css`: kata TAHU. → BISA.,

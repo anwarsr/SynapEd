@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Button from "@/components/ui/Button";
+import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
 import Tag from "@/components/ui/Tag";
 import type { Category, CourseSummary } from "@/lib/courses";
@@ -75,7 +75,8 @@ export default function Courses({ courses, categories }: Props) {
 
         {categories.length > 1 && (
           <Reveal delay={180}>
-            <div className="mt-10 flex flex-wrap gap-2">
+            <div className="mt-10 flex justify-center">
+              <div className="inline-flex max-w-full flex-wrap justify-center bg-paper-card">
               {categories.map((cat) => {
                 const active = filter === cat.slug;
 
@@ -85,11 +86,10 @@ export default function Courses({ courses, categories }: Props) {
                     onClick={() => setFilter(cat.slug)}
                     aria-pressed={active}
                     className={cn(
-                      "group relative overflow-hidden rounded-full px-5 py-2.5 text-sm",
-                      "transition-all duration-300 ease-out-soft",
+                      "px-6 py-3 text-sm transition-colors duration-300 ease-out-soft focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500",
                       active
-                        ? "bg-blue-600 text-white shadow-[0_8px_25px_rgba(76,141,255,0.18)]"
-                        : "bg-white/75 text-blue-600 hover:-translate-y-0.5 hover:bg-white hover:text-blue-700",
+                        ? "bg-blue-600 text-white"
+                        : "text-ink-muted hover:bg-white/5 hover:text-white",
                     )}
                     style={{
                       fontFamily: "var(--font-sans)",
@@ -97,21 +97,11 @@ export default function Courses({ courses, categories }: Props) {
                       letterSpacing: "-0.01em",
                     }}
                   >
-                    <span
-                      className={cn(
-                        "absolute inset-y-0 -left-[70%] w-[45%] rotate-12",
-                        "bg-white/25 blur-md",
-                        "transition-transform duration-700",
-                        active
-                          ? "translate-x-[400%]"
-                          : "group-hover:translate-x-[400%]",
-                      )}
-                    />
-
-                    <span className="relative z-10">{cat.label}</span>
+                    {cat.label}
                   </button>
                 );
               })}
+              </div>
             </div>
           </Reveal>
         )}
@@ -739,29 +729,19 @@ export default function Courses({ courses, categories }: Props) {
                     h-full
                     flex-col
                     overflow-hidden
-                    theme-day
-                    rounded-[1.5rem]
-                    bg-white
-                    shadow-[0_8px_30px_rgba(76,141,255,0.045)]
-                    transition-all
+                    bg-paper-card
+                    transition-[transform,background-color]
                     duration-500
                     ease-warm
-                    hover:-translate-y-2
-                    hover:shadow-[0_24px_60px_rgba(76,141,255,0.12)]
+                    hover:-translate-y-1
+                    hover:bg-[#16324A]
                   "
                 >
                   {/* =================================================
                       THUMBNAIL
                   ================================================= */}
 
-                  <div
-                    className={cn(
-                      "relative h-48 overflow-hidden",
-                      course.tint || "bg-blue-50",
-                    )}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-blue-200/20" />
-
+                  <div className="relative h-48 overflow-hidden bg-paper-alt">
                     <CourseThumb
                       thumbnail={course.thumbnail}
                       className="
@@ -772,8 +752,7 @@ export default function Courses({ courses, categories }: Props) {
                         transition-transform
                         duration-700
                         ease-warm
-                        group-hover:scale-[1.045]
-                        group-hover:-translate-y-1
+                        group-hover:scale-[1.04]
                       "
                       fallback={
                         // eslint-disable-next-line @next/next/no-img-element
@@ -791,65 +770,43 @@ export default function Courses({ courses, categories }: Props) {
                             transition-transform
                             duration-700
                             ease-warm
-                            group-hover:scale-110
-                            group-hover:-rotate-1
+                            group-hover:scale-105
                           "
                           alt=""
                         />
                       }
                     />
 
-                    {/* Shine */}
-                    <div
-                      className="
-                        pointer-events-none
-                        absolute
-                        inset-y-0
-                        -left-1/2
-                        w-1/3
-                        rotate-12
-                        bg-white/30
-                        blur-xl
-                        transition-transform
-                        duration-1000
-                        group-hover:translate-x-[430%]
-                      "
-                    />
-
                     {/* Number */}
                     <span
                       className="
                         absolute
-                        left-4
-                        top-4
+                        left-0
+                        top-0
                         flex
                         h-9
-                        w-9
+                        w-11
                         items-center
                         justify-center
-                        rounded-full
-                        bg-white/90
+                        bg-black/60
                         text-[11px]
-                        text-blue-600
-                        shadow-[0_4px_15px_rgba(76,141,255,0.10)]
+                        tracking-wider
+                        text-white
                         backdrop-blur-sm
-                        transition-all
-                        duration-500
-                        group-hover:scale-110
-                        group-hover:-rotate-6
+                        transition-colors
+                        duration-300
                         group-hover:bg-blue-600
-                        group-hover:text-white
                       "
                       style={{
                         fontFamily: "var(--font-sans)",
-                        fontWeight: 800,
+                        fontWeight: 700,
                       }}
                     >
                       {String(index + 1).padStart(2, "0")}
                     </span>
 
                     {/* Level */}
-                    <span className="absolute bottom-4 right-4">
+                    <span className="absolute bottom-3 right-3">
                       <Tag tone={levelTone(course.levelColor)}>
                         {course.level}
                       </Tag>
@@ -874,10 +831,10 @@ export default function Courses({ courses, categories }: Props) {
                         mb-2
                         text-xl
                         leading-tight
-                        text-black
+                        text-white
                         transition-colors
                         duration-300
-                        group-hover:text-blue-700
+                        group-hover:text-blue-300
                       "
                       style={CARD_TITLE}
                     >
@@ -885,7 +842,7 @@ export default function Courses({ courses, categories }: Props) {
                     </h3>
 
                     {/* Description */}
-                    <p className="t-body mb-7 line-clamp-2 text-sm text-ink/80">
+                    <p className="t-body mb-6 line-clamp-2 text-sm text-ink-body">
                       {course.shortDesc}
                     </p>
 
@@ -893,9 +850,9 @@ export default function Courses({ courses, categories }: Props) {
                         META
                     ================================================= */}
 
-                    <div className="mb-5 flex items-center gap-4 text-[13px] text-ink-muted">
+                    <div className="mb-4 flex items-center gap-4 text-[13px] text-ink-muted">
                       <span>
-                        <span className="font-semibold text-ink">
+                        <span className="font-semibold text-white">
                           {course.lessonsCount}
                         </span>{" "}
                         modul
@@ -903,13 +860,11 @@ export default function Courses({ courses, categories }: Props) {
 
                       <span
                         aria-hidden="true"
-                        className="h-3 w-px bg-blue-100"
+                        className="h-3 w-px bg-white/20"
                       />
 
-                      <span>
-                        <span className="font-semibold text-ink">
-                          {course.duration}
-                        </span>
+                      <span className="font-semibold text-white">
+                        {course.duration}
                       </span>
                     </div>
 
@@ -917,8 +872,8 @@ export default function Courses({ courses, categories }: Props) {
                         RATING
                     ================================================= */}
 
-                    <div className="mb-5 flex items-center gap-1.5 pb-5">
-                      <span className="text-sm font-semibold text-ink">
+                    <div className="mb-5 flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-white">
                         {course.rating}
                       </span>
 
@@ -927,10 +882,10 @@ export default function Courses({ courses, categories }: Props) {
                           <svg
                             key={s}
                             className={cn(
-                              "h-3.5 w-3.5 transition-transform duration-300",
+                              "h-3.5 w-3.5",
                               s <= Math.round(course.rating)
-                                ? "text-amber-500 group-hover:scale-110"
-                                : "text-white/80",
+                                ? "text-amber-500"
+                                : "text-white/20",
                             )}
                             viewBox="0 0 20 20"
                             fill="currentColor"
@@ -949,9 +904,9 @@ export default function Courses({ courses, categories }: Props) {
                         PRICE + ACTION
                     ================================================= */}
 
-                    <div className="mt-auto flex items-center justify-between gap-3">
+                    <div className="mt-auto flex items-center justify-between gap-3 pt-2">
                       <span
-                        className="text-lg text-ink"
+                        className="text-lg text-white"
                         style={{
                           fontFamily: "var(--font-sans)",
                           fontWeight: 700,
@@ -963,14 +918,31 @@ export default function Courses({ courses, categories }: Props) {
                           : "Gratis"}
                       </span>
 
-                      <Button
+                      <Link
                         href={`/courses/${course.slug}`}
-                        variant="primary"
-                        size="sm"
-                        className="after:absolute after:inset-0 after:content-['']"
+                        className="
+                          inline-flex
+                          items-center
+                          gap-1.5
+                          bg-blue-600
+                          px-4
+                          py-2
+                          text-sm
+                          font-semibold
+                          text-white
+                          transition-colors
+                          duration-200
+                          hover:bg-blue-700
+                          after:absolute
+                          after:inset-0
+                          after:content-['']
+                        "
                       >
                         Lihat Detail
-                      </Button>
+                        <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5">
+                          →
+                        </span>
+                      </Link>
                     </div>
                   </div>
                 </article>

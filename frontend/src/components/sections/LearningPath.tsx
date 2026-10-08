@@ -7,8 +7,7 @@ import SectionTitle from "@/components/sections/SectionTitle";
 
 export default function LearningPath() {
   // Garis horizontal memanjang ke kanan mengikuti scroll — satu "layar"
-  // scroll per langkah, sama seperti panel foto sticky di About.tsx,
-  // tapi progresnya divisualkan sebagai garis, bukan crossfade foto.
+  // scroll per langkah.
   const trackRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -47,21 +46,21 @@ export default function LearningPath() {
       {/* Desktop — garis progres sticky yang tumbuh mengikuti scroll */}
       <div
         ref={trackRef}
-        className="hidden md:block relative"
+        className="relative hidden md:block"
         style={{
           height: `${learningSteps.length * 100}vh`,
         }}
       >
-        <div className="sticky top-0 h-screen flex flex-col items-center">
+        <div className="sticky top-0 flex h-screen flex-col items-center">
           {/* Heading */}
           <SectionTitle as="h3" title="Learning Path" className="w-full pt-24" />
 
-          <div className="flex-1 flex items-center w-full">
+          <div className="flex w-full flex-1 items-center">
             <div className="container-page w-full">
               {/* Title */}
               <h2
                 key={active}
-                className="rise-in text-white max-w-4xl"
+                className="rise-in max-w-4xl text-white"
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "clamp(1.5rem, 5vw, 4rem)",
@@ -76,7 +75,7 @@ export default function LearningPath() {
               {/* Description */}
               <p
                 key={`desc-${active}`}
-                className="rise-in text-white text-lg 2xl:text-xl leading-relaxed max-w-lg 2xl:max-w-xl mt-8"
+                className="rise-in mt-8 max-w-lg text-lg leading-relaxed text-white 2xl:max-w-xl 2xl:text-xl"
               >
                 {step.desc}
               </p>
@@ -91,8 +90,7 @@ export default function LearningPath() {
                 />
 
                 {learningSteps.map((s, i) => {
-                  const left =
-                    (i / (learningSteps.length - 1)) * 100;
+                  const left = (i / (learningSteps.length - 1)) * 100;
 
                   const reached = i <= active;
 
@@ -100,10 +98,8 @@ export default function LearningPath() {
                     <span
                       key={s.num}
                       className={cn(
-                        "absolute top-4 -translate-x-1/2 text-xs font-semibold tracking-[0.1em] whitespace-nowrap transition-colors duration-300 ease-out-soft",
-                        reached
-                          ? "text-white"
-                          : "text-white/35",
+                        "absolute top-4 -translate-x-1/2 whitespace-nowrap text-xs font-semibold tracking-[0.1em] transition-colors duration-300 ease-out-soft",
+                        reached ? "text-white" : "text-white/35",
                       )}
                       style={{
                         left: `${left}%`,
@@ -120,30 +116,19 @@ export default function LearningPath() {
       </div>
 
       {/* Mobile */}
-      <div className="md:hidden container-page py-24">
-        <p className="flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/50 mb-10">
-          <span
-            aria-hidden="true"
-            className="w-6 h-px bg-white/20"
-          />
-
+      <div className="container-page py-24 md:hidden">
+        <p className="mb-10 flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
+          <span aria-hidden="true" className="h-px w-6 bg-white/20" />
           Alur Belajar
-
-          <span
-            aria-hidden="true"
-            className="w-6 h-px bg-white/20"
-          />
+          <span aria-hidden="true" className="h-px w-6 bg-white/20" />
         </p>
 
         <div className="flex flex-col">
           {learningSteps.map((s) => (
-            <div
-              key={s.num}
-              className="flex gap-5 py-5 border-b border-white/10 last:border-0"
-            >
+            <div key={s.num} className="flex gap-5 border-b border-white/10 py-5 last:border-0">
               {/* Number */}
               <span
-                className="text-white shrink-0"
+                className="shrink-0 text-white"
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontWeight: 800,
@@ -156,7 +141,7 @@ export default function LearningPath() {
               <div>
                 {/* Title */}
                 <h3
-                  className="text-white mb-1"
+                  className="mb-1 text-white"
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontWeight: 800,
@@ -167,9 +152,7 @@ export default function LearningPath() {
                 </h3>
 
                 {/* Description */}
-                <p className="text-white text-sm leading-relaxed">
-                  {s.desc}
-                </p>
+                <p className="text-sm leading-relaxed text-white">{s.desc}</p>
               </div>
             </div>
           ))}
@@ -178,4 +161,3 @@ export default function LearningPath() {
     </section>
   );
 }
-

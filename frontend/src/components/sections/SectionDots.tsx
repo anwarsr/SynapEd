@@ -45,7 +45,7 @@ export default function SectionDots() {
               >
                 <span
                   className={cn(
-                    "font-mono text-[11px] uppercase tracking-wider transition-all duration-200 ease-out-soft",
+                    "font-sans text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ease-out-soft",
                     isActive
                       ? "text-blue-600 opacity-100"
                       : "pointer-events-none translate-x-1 text-ink-muted opacity-0 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100",

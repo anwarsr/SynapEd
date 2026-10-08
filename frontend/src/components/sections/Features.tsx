@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { features } from "@/data/landing";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import SectionTitle from "@/components/sections/SectionTitle";
@@ -16,11 +16,98 @@ const STAGE_CARDS = [0, 1, 3, 4].map((i) => ({
   desc: features[i].desc,
 }));
 
+/* =============================================================
+   EASTER EGG — angka kartu dipencet → warna kartu berganti dengan
+   gelombang "sisik ikan" dari pojok kiri atas. Tanpa petunjuk visual.
+============================================================= */
+
+const EGG_COLORS = ["#12293A", "#2F6FED", "#0E7C86", "#5B4BC4", "#1F8A5B"];
+/** Lama gelombang (ms) — sedikit di atas jeda terjauh (≈890) + durasi satu sisik (600). */
+const WAVE_MS = 1550;
+/** Lama sisik memudar setelah warna dasar kartu diganti (ms) — inilah yang
+ *  menghilangkan kesan "terpotong" di ujung animasi. */
+const FADE_MS = 550;
+const SCALE = 46;
+const SCALE_COLS = 11;
+const SCALE_ROWS = 26;
+
+/** Lapisan sisik: lingkaran bertumpuk, baris selang-seling bergeser setengah,
+ *  muncul berurutan menyapu diagonal dan menutupi warna lama. */
+function FishScales({ color, fading }: { color: string; fading: boolean }) {
+  const cells: React.ReactNode[] = [];
+
+  for (let r = 0; r < SCALE_ROWS; r++) {
+    for (let c = 0; c < SCALE_COLS; c++) {
+      cells.push(
+        <span
+          key={`${r}-${c}`}
+          className="egg-scale"
+          style={{
+            left: c * SCALE + (r % 2 ? SCALE / 2 : 0) - SCALE / 2,
+            top: r * (SCALE / 2) - SCALE / 2,
+            width: SCALE,
+            height: SCALE,
+            background: color,
+            animationDelay: `${r * 30 + c * 14}ms`,
+          }}
+        />,
+      );
+    }
+  }
+
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-0 overflow-hidden transition-opacity ease-out"
+      style={{ opacity: fading ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
+    >
+      {cells}
+    </div>
+  );
+}
+
 export default function Features() {
+  // Warna dasar tiap kartu (indeks ke EGG_COLORS) + gelombang yang sedang jalan.
+  const reducedMotion = useReducedMotion();
+  const [bases, setBases] = useState<number[]>([0, 0, 0, 0]);
+  const [wave, setWave] = useState<{ card: number; to: number; fading: boolean } | null>(null);
+  const animatingRef = useRef(false);
+  const eggTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const downTargetRef = useRef<EventTarget | null>(null);
+
+  useEffect(() => () => clearTimeout(eggTimer.current), []);
+
+  const triggerEgg = (card: number) => {
+    // Pointerup dan klik asli bisa sama-sama sampai di sini — abaikan yang kedua.
+    if (animatingRef.current) return;
+    const to = (bases[card] + 1) % EGG_COLORS.length;
+
+    if (reducedMotion) {
+      setBases((b) => b.map((v, i) => (i === card ? to : v)));
+      return;
+    }
+
+    animatingRef.current = true;
+    setWave({ card, to, fading: false });
+
+    // 1) gelombang selesai: warna dasar kartu diganti (sama dengan warna sisik,
+    //    jadi tak terlihat berubah) dan lapisan sisik mulai memudar;
+    // 2) setelah memudar, lapisan dilepas. Tanpa tahap pemudaran, tepi gelap
+    //    tiap sisik lenyap sekaligus dan terlihat seperti terpotong.
+    eggTimer.current = setTimeout(() => {
+      setBases((b) => b.map((v, i) => (i === card ? to : v)));
+      setWave((w) => (w ? { ...w, fading: true } : w));
+
+      eggTimer.current = setTimeout(() => {
+        setWave(null);
+        animatingRef.current = false;
+      }, FADE_MS);
+    }, WAVE_MS);
+  };
+
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const reducedMotion = useReducedMotion();
 
   // ============================
   // CAROUSEL ROTATION
@@ -336,6 +423,8 @@ export default function Features() {
     ) => {
       dragging.current = true;
 
+      downTargetRef.current = e.target;
+
       dragStartX.current =
         e.clientX;
 
@@ -401,6 +490,20 @@ export default function Features() {
 
       stage.style.cursor =
         "grab";
+
+      const down = downTargetRef.current;
+      downTargetRef.current = null;
+
+      if (
+        e.type === "pointerup" &&
+        Math.abs(e.clientX - dragStartX.current) < 6 &&
+        down instanceof Element
+      ) {
+        const egg = down.closest<HTMLElement>("[data-egg]");
+
+        // .click() memanggil onClick React pada tombol angka.
+        egg?.click();
+      }
     };
 
     // ========================================
@@ -577,145 +680,32 @@ export default function Features() {
                       group
                       relative
                       overflow-hidden
-                      border-none
-                      outline-none
-                      ring-0
-
-                      !bg-[#FFFFF5]
-
-                      transition-colors
-                      duration-500
-                      ease-out
-
-                      hover:!bg-blue-600
                     "
                     style={{
-                      /*
-                       * Ukuran dibuat lebih sempit
-                       * supaya card tidak terlalu lebar.
-                       */
                       width:
                         "clamp(280px, 68vw, 410px)",
 
                       maxWidth:
                         "410px",
 
-                      /*
-                       * Ivory solid.
-                       * Tidak menggunakan transparansi.
-                       */
+                      /* Kotak solid, tanpa garis, bayangan, kaca, atau
+                         lapisan holo — kesannya datang dari tipografi. */
                       backgroundColor:
-                        "#FFFFF5",
+                        EGG_COLORS[bases[index]],
 
+                      borderRadius: 0,
                       opacity: 1,
-
-                      border:
-                        "none",
-
-                      outline:
-                        "none",
-
-                      boxShadow:
-                        "none",
-
-                      backdropFilter:
-                        "none",
-
-                      WebkitBackdropFilter:
-                        "none",
+                      border: "none",
+                      outline: "none",
+                      boxShadow: "none",
+                      backdropFilter: "none",
+                      WebkitBackdropFilter: "none",
                     }}
                   >
 
-                    {/* =================================
-                        FOIL
-                    ================================= */}
-
-                    <span
-                      className="
-                        feature-card__foil
-                        pointer-events-none
-                      "
-                      aria-hidden="true"
-                    />
-
-                    {/* =================================
-                        RAINBOW
-                    ================================= */}
-
-                    <span
-                      className="
-                        feature-card__rainbow
-                        pointer-events-none
-                      "
-                      aria-hidden="true"
-                    />
-
-                    {/* =================================
-                        GLOSS
-                    ================================= */}
-
-                    <span
-                      className="
-                        feature-card__gloss
-                        pointer-events-none
-                      "
-                      aria-hidden="true"
-                    />
-
-                    {/* =================================
-                        GRAIN
-                    ================================= */}
-
-                    <span
-                      className="
-                        feature-card__grain
-                        pointer-events-none
-                      "
-                      aria-hidden="true"
-                    />
-
-                    {/* =================================
-                        LARGE NUMBER
-                    ================================= */}
-
-                    <span
-                      aria-hidden="true"
-                      className="
-                        pointer-events-none
-                        absolute
-                        right-6
-                        top-5
-                        z-20
-                        select-none
-                        text-blue-600
-                        transition-colors
-                        duration-500
-                        group-hover:text-[#FFFFF5]
-                      "
-                      style={{
-                        fontFamily:
-                          "var(--font-sans)",
-
-                        fontSize:
-                          "clamp(4.5rem, 10vw, 7rem)",
-
-                        fontWeight: 900,
-
-                        lineHeight: 0.8,
-
-                        letterSpacing:
-                          "-0.08em",
-                      }}
-                    >
-                      {String(index + 1).padStart(
-                        2,
-                        "0"
-                      )}
-                    </span>
-
-                    {/* =================================
-                        CONTENT
-                    ================================= */}
+                    {wave?.card === index && (
+                      <FishScales color={EGG_COLORS[wave.to]} fading={wave.fading} />
+                    )}
 
                     <div
                       className="
@@ -725,57 +715,91 @@ export default function Features() {
                         flex
                         h-full
                         flex-col
-                        justify-start
+                        justify-between
                         p-9
                         max-sm:p-6
                       "
                     >
 
-                      <h2
+                      {/* Angka besar — juga pemicu easter egg ganti warna kartu */}
+                      <button
+                        type="button"
+                        data-egg={index}
+                        onClick={() => triggerEgg(index)}
+                        aria-label="Ganti warna kartu"
                         className="
-                          max-w-[75%]
-                          text-blue-600
-                          transition-colors
-                          duration-500
-                          group-hover:text-[#FFFFF5]
+                          cursor-pointer
+                          select-none
+                          self-start
+                          text-left
+                          text-white
+                          focus-visible:outline-none
                         "
                         style={{
                           fontFamily:
                             "var(--font-sans)",
 
                           fontSize:
-                            "clamp(1.75rem, 3.6vw, 2.75rem)",
+                            "clamp(4.5rem, 10vw, 7rem)",
 
                           fontWeight: 900,
 
-                          lineHeight:
-                            0.98,
+                          lineHeight: 0.8,
 
                           letterSpacing:
-                            "-0.025em",
+                            "-0.08em",
                         }}
                       >
-                        {feat.title}
-                      </h2>
+                        {String(index + 1).padStart(
+                          2,
+                          "0"
+                        )}
+                      </button>
 
-                      <p
-                        className="
-                          mt-4
-                          max-w-[30ch]
-                          text-[0.9375rem]
-                          leading-relaxed
-                          text-blue-600
-                          transition-colors
-                          duration-500
-                          group-hover:text-[#FFFFF5]
-                        "
-                        style={{
-                          fontFamily:
-                            "var(--font-sans)",
-                        }}
-                      >
-                        {feat.desc}
-                      </p>
+                      <div>
+                        {/* Judul: tiap kata satu baris */}
+                        <h2
+                          className="text-white"
+                          style={{
+                            fontFamily:
+                              "var(--font-sans)",
+
+                            fontSize:
+                              "clamp(2.1rem, 4.2vw, 3.1rem)",
+
+                            fontWeight: 800,
+
+                            lineHeight: 0.98,
+
+                            letterSpacing:
+                              "-0.04em",
+                          }}
+                        >
+                          {feat.title
+                            .split(" ")
+                            .map((word, w) => (
+                              <span key={w} className="block">
+                                {word}
+                              </span>
+                            ))}
+                        </h2>
+
+                        <p
+                          className="
+                            mt-5
+                            max-w-[30ch]
+                            text-[1.0625rem]
+                            leading-[1.6]
+                            text-white
+                          "
+                          style={{
+                            fontFamily:
+                              "var(--font-sans)",
+                          }}
+                        >
+                          {feat.desc}
+                        </p>
+                      </div>
 
                     </div>
 

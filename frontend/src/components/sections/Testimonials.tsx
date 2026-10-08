@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
 import Stars from "@/components/ui/Stars";
@@ -58,21 +58,6 @@ const QUOTE: React.CSSProperties = {
   letterSpacing: "-0.02em",
 };
 
-/** Latar kartu saat kursusnya belum punya gambar. */
-function CardImage({ src }: { src: string | null }) {
-  if (!src) {
-    return <div className="absolute inset-0 bg-linear-to-br from-blue-600 to-blue-800" />;
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt=""
-      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-warm group-hover:scale-105"
-    />
-  );
-}
-
 export default function Testimonials({ items }: { items: readonly TestimonialItem[] }) {
   const [active, setActive] = useState<number | null>(null);
   const [charCount, setCharCount] = useState(0);
@@ -108,13 +93,100 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
     setCharCount(0);
   }
 
+  // ── Pita kartu: bisa digeser (seret dengan mouse, usap di layar sentuh) dan
+  //    tetap berjalan pelan sendiri; berhenti saat kursor di atasnya, saat
+  //    diseret, atau saat dialog terbuka. Isinya digandakan dan posisinya
+  //    "dibungkus" di separuh lebar, jadi bisa digeser tanpa ujung.
+  const berjalan = items.length >= MARQUEE_MIN;
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const dialogRef = useRef(false);
+  const dragRef = useRef({ down: false, startX: 0, startLeft: 0, moved: 0, captured: false });
+
+  useEffect(() => {
+    dialogRef.current = active !== null;
+  }, [active]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || !berjalan) return;
+
+    const bungkus = () => {
+      const half = el.scrollWidth / 2;
+      if (half <= 0) return;
+      if (el.scrollLeft >= half) el.scrollLeft -= half;
+      else if (el.scrollLeft <= 0.5) el.scrollLeft += half;
+    };
+
+    let raf = 0;
+    let last = performance.now();
+    let acc = 0;
+
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      const dt = Math.min(now - last, 50);
+      last = now;
+
+      if (!reducedMotion && !pausedRef.current && !dialogRef.current && !dragRef.current.down) {
+        // ±30 px/dtk; scrollLeft membulatkan, jadi pecahan ditampung dulu
+        acc += dt * 0.03;
+        const utuh = Math.floor(acc);
+        if (utuh > 0) {
+          el.scrollLeft += utuh;
+          acc -= utuh;
+        }
+      }
+      bungkus();
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [berjalan, reducedMotion]);
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    const el = scrollerRef.current;
+    if (!el || e.pointerType !== "mouse" || e.button !== 0) return;
+    dragRef.current = { down: true, startX: e.clientX, startLeft: el.scrollLeft, moved: 0, captured: false };
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const el = scrollerRef.current;
+    const d = dragRef.current;
+    if (!el || !d.down) return;
+
+    const dx = e.clientX - d.startX;
+    d.moved = Math.max(d.moved, Math.abs(dx));
+
+    // Baru dianggap seret setelah 5px; sebelumnya tetap klik biasa pada kartu.
+    if (d.moved > 5 && !d.captured) {
+      d.captured = true;
+      el.setPointerCapture(e.pointerId);
+      el.style.cursor = "grabbing";
+    }
+    if (d.captured) el.scrollLeft = d.startLeft - dx;
+  }
+
+  function endDrag(e: React.PointerEvent<HTMLDivElement>) {
+    const el = scrollerRef.current;
+    const d = dragRef.current;
+    if (!el) return;
+    if (d.captured) {
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {
+        // sudah dilepas
+      }
+    }
+    d.down = false;
+    el.style.cursor = "";
+  }
+
   const typed = reducedMotion ? full : full.slice(0, charCount);
   const selesaiMengetik = typed.length === full.length;
 
   // Belum ada ulasan sama sekali — bagian ini tidak usah ada.
   if (items.length === 0) return null;
 
-  const berjalan = items.length >= MARQUEE_MIN;
   const kartu = berjalan ? [...items, ...items] : items;
 
   return (
@@ -125,12 +197,28 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
         </Reveal>
       </div>
 
-      <div className={cn(berjalan && "testimonial-track")}>
+      <div
+        ref={scrollerRef}
+        className="testimonial-scroller"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onPointerEnter={() => (pausedRef.current = true)}
+        onPointerLeave={() => (pausedRef.current = false)}
+        // Seret yang berakhir di atas kartu tidak boleh dihitung sebagai klik
+        onClickCapture={(e) => {
+          if (dragRef.current.moved > 5) {
+            e.stopPropagation();
+            e.preventDefault();
+            dragRef.current.moved = 0;
+          }
+        }}
+      >
         <div
           className={cn(
-            berjalan
-              ? "testimonial-marquee"
-              : "container-page flex flex-wrap justify-center gap-5",
+            "flex gap-5 py-2",
+            berjalan ? "w-max px-5" : "container-page flex-wrap justify-center",
           )}
         >
           {kartu.map((t, i) => {
@@ -145,32 +233,28 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
                 aria-hidden={isClone || undefined}
                 tabIndex={isClone ? -1 : undefined}
                 aria-label={`Baca ulasan lengkap dari ${t.name}`}
-                className="group w-64 shrink-0 flex flex-col overflow-hidden rounded-2xl bg-paper-card text-left transition-all duration-400 ease-warm hover:shadow-lift hover:-translate-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+                className="group flex min-h-80 w-72 shrink-0 flex-col bg-paper-card p-7 text-left transition-[transform,background-color] duration-500 ease-warm hover:-translate-y-1.5 hover:bg-[#16324A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
-                <div className="relative h-28 w-full overflow-hidden bg-black">
-                  <CardImage src={t.courseImage} />
-                  <div className="absolute inset-0 bg-linear-to-t from-blue-900/70 via-blue-900/10 to-blue-900/0" />
-                  <span className="absolute bottom-2 left-3 right-3 text-[11px] font-medium text-white/90 truncate">
-                    {t.courseTitle}
-                  </span>
-                </div>
+                {/* Pemberi ulasan: foto profil besar + nama + bintang */}
+                <div className="flex items-center gap-4">
+                  <UserAvatar name={t.name} photoURL={t.avatar} size="lg" />
 
-                <div className="flex flex-1 flex-col p-5">
-                  <p className="text-ink-body text-[13px] line-clamp-2 mb-4" style={QUOTE}>
-                    &ldquo;{t.content}&rdquo;
-                  </p>
-
-                  <div className="mt-auto flex items-center gap-3">
-                    <UserAvatar name={t.name} photoURL={t.avatar} size="sm" />
-
-                    <div className="min-w-0">
-                      <p className="text-white text-sm truncate" style={NAME}>
-                        {t.name}
-                      </p>
-                      <Stars value={t.rating} size="xs" className="mt-1" />
-                    </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-base text-white" style={NAME}>
+                      {t.name}
+                    </p>
+                    <Stars value={t.rating} size="xs" className="mt-2" />
                   </div>
                 </div>
+
+                {/* Kursus yang diulas — dulu tertulis di atas gambar */}
+                <p className="mt-7 truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300">
+                  {t.courseTitle}
+                </p>
+
+                <p className="mt-3 line-clamp-5 text-sm text-ink-body" style={QUOTE}>
+                  &ldquo;{t.content}&rdquo;
+                </p>
               </button>
             );
           })}
@@ -190,57 +274,50 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
             if (e.target === e.currentTarget) setActive(null);
           }}
         >
-          <div className="w-[min(34rem,calc(100vw-2rem))] overflow-hidden rounded-2xl bg-paper-card shadow-lift">
-            <div className="relative h-40 w-full overflow-hidden bg-blue-600">
-              <CardImage src={current.courseImage} />
-              <div className="absolute inset-0 bg-linear-to-t from-blue-900/70 via-blue-900/10 to-blue-900/0" />
+          <div className="relative w-[min(34rem,calc(100vw-2rem))] bg-paper-card p-8 shadow-lift sm:p-10">
+            <button
+              type="button"
+              onClick={() => setActive(null)}
+              aria-label="Tutup"
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center text-white/60 transition-colors duration-200 ease-out-soft hover:bg-white/10 hover:text-white"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setActive(null)}
-                aria-label="Tutup"
-                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-paper-card/90 text-ink flex items-center justify-center transition-colors duration-200 ease-out-soft hover:bg-blue-600 hover:text-white"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+            <div className="flex items-center gap-5 pr-10">
+              <ProfileLink uid={current.uid} name={current.name} secondary className="shrink-0">
+                <UserAvatar name={current.name} photoURL={current.avatar} size="lg" />
+              </ProfileLink>
 
-            <div className="p-7">
-              <p className="text-ink-body text-base min-h-30 whitespace-pre-line" style={QUOTE} aria-live="polite">
-                &ldquo;{typed}
-                {!selesaiMengetik && (
-                  <span
-                    aria-hidden="true"
-                    className="inline-block w-0.5 h-[0.95em] align-middle bg-blue-500 ml-0.5 animate-pulse"
-                  />
-                )}
-                {selesaiMengetik && "”"}
-              </p>
-
-              <div className="mt-7 flex items-center gap-3 pt-5">
-                <ProfileLink uid={current.uid} name={current.name} secondary className="shrink-0">
-                  <UserAvatar name={current.name} photoURL={current.avatar} size="lg" className="w-12 h-12 text-base" />
+              <div className="min-w-0">
+                <ProfileLink uid={current.uid} name={current.name}>
+                  <p id="ulasan-nama" className="truncate text-lg text-white" style={NAME}>
+                    {current.name}
+                  </p>
                 </ProfileLink>
-
-                <div className="min-w-0">
-                  <ProfileLink uid={current.uid} name={current.name}>
-                    <p id="ulasan-nama" className="text-white text-lg" style={NAME}>
-                      {current.name}
-                    </p>
-                  </ProfileLink>
-                  <Link
-                    href={`/courses/${current.courseSlug}`}
-                    className="text-ink-muted text-xs mt-0.5 block truncate transition-colors hover:text-blue-700"
-                  >
-                    Alumni · {current.courseTitle}
-                  </Link>
-                </div>
-
-                <Stars value={current.rating} size="sm" className="ml-auto" />
+                <Stars value={current.rating} size="sm" className="mt-2" />
               </div>
             </div>
+
+            <Link
+              href={`/courses/${current.courseSlug}`}
+              className="mt-8 block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300 transition-colors hover:text-white"
+            >
+              {current.courseTitle}
+            </Link>
+
+            <p className="mt-3 min-h-30 whitespace-pre-line text-base text-ink-body" style={QUOTE} aria-live="polite">
+              &ldquo;{typed}
+              {!selesaiMengetik && (
+                <span
+                  aria-hidden="true"
+                  className="ml-0.5 inline-block h-[0.95em] w-0.5 animate-pulse bg-blue-400 align-middle"
+                />
+              )}
+              {selesaiMengetik && "”"}
+            </p>
           </div>
         </div>
       )}

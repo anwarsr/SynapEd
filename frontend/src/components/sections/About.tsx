@@ -1,1356 +1,379 @@
 "use client";
 
-import { useRef, useState } from "react";
-import Reveal from "@/components/ui/Reveal";
-import SectionTitle from "@/components/sections/SectionTitle";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 
 /* =============================================================
    DATA
 ============================================================= */
 
-const points = [
+type Point = {
+  num: string;
+  title: string;
+  desc: string;
+  /** Kata yang disorot dengan sapuan garis saat panel terbuka. */
+  mark?: string[];
+  /** Warna dasar panel — berbeda tipis antar panel supaya batasnya terbaca tanpa garis. */
+  bg: string;
+};
+
+const points: Point[] = [
   {
     num: "01",
     title: "Terstruktur",
     desc: "Belajar dari dasar hingga mahir melalui alur yang jelas dan bertahap.",
+    bg: "#0F222E",
   },
   {
     num: "02",
     title: "Interaktif",
     desc: "Belajar melalui aktivitas dan kuis yang membuat materi lebih mudah dipahami.",
+    bg: "#0B1A24",
   },
   {
     num: "03",
     title: "Berbasis Riset",
     desc: "Materi dikembangkan berdasarkan literatur dan sumber ilmiah yang relevan.",
+    mark: ["literatur", "ilmiah"],
+    bg: "#12293A",
   },
 ];
+
+/** Bobot lebar: panel terbuka mengambil 3,4 bagian, yang lain 1 bagian. */
+const GROW_OPEN = 3.4;
+const GROW_CLOSED = 1;
 
 /* =============================================================
    ABOUT
 ============================================================= */
 
 export default function About() {
+  const [active, setActive] = useState(0);
+
   return (
-    <section
-      id="about"
-      className="
-        relative
-        overflow-hidden
-        bg-ivory
-        py-24
-        sm:py-28
-        lg:py-32
-      "
-    >
+    <section id="about" className="relative flex min-h-screen flex-col overflow-hidden bg-ivory">
       {/* =====================================================
-          HEADER
+          PANEL — memenuhi SELURUH section sampai tepi layar, tanpa jarak,
+          garis, maupun sudut membulat. Yang dipencet melebar, dua lainnya
+          menyempit; lebar dianimasikan lewat flex-grow. Di ponsel susunannya
+          vertikal dan yang dianimasikan adalah tinggi.
       ====================================================== */}
 
-      <div
-        className="
-          container-page
-          mb-12
-          sm:mb-16
-          lg:mb-20
-        "
-      >
-        <Reveal>
-          <SectionTitle title="About" />
-        </Reveal>
-      </div>
+      <div className="flex min-h-[640px] flex-1 flex-col lg:min-h-[720px] lg:flex-row">
+        {points.map((point, i) => {
+          const isActive = active === i;
 
-      {/* =====================================================
-          CARDS
-      ====================================================== */}
+          return (
+            <article
+              key={point.num}
+              data-open={isActive}
+              className={cn(
+                "about-panel group relative min-h-[84px] min-w-0 overflow-hidden",
+                "transition-[flex-grow] duration-[900ms] ease-warm motion-reduce:transition-none",
+              )}
+              style={{ flexGrow: isActive ? GROW_OPEN : GROW_CLOSED, flexBasis: 0, backgroundColor: point.bg }}
+            >
+              {/* Cahaya lembut di sudut — hanya menyala di panel terbuka */}
+              <div
+                aria-hidden="true"
+                className={cn(
+                  "pointer-events-none absolute inset-0 transition-opacity duration-[900ms] ease-warm",
+                  isActive ? "opacity-100" : "opacity-0",
+                )}
+                style={{
+                  background:
+                    "radial-gradient(80% 70% at 0% 100%, rgba(76,141,255,0.20), transparent 62%), radial-gradient(60% 50% at 100% 0%, rgba(76,141,255,0.08), transparent 65%)",
+                }}
+              />
 
-      <div
-        className="
-          container-page
-          grid
-          grid-cols-1
-          gap-6
-          md:grid-cols-3
-          lg:gap-7
-        "
-      >
-        {points.map((point, index) => (
-          <Reveal key={point.title} delay={index * 120}>
-            <AboutCard point={point} index={index} />
-          </Reveal>
-        ))}
+              {/* Sorotan tipis saat panel yang menyempit di-hover */}
+              {!isActive && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.04]"
+                />
+              )}
+
+              {/* ── Keadaan menyempit: hanya judul (tegak di desktop) ── */}
+              <div
+                aria-hidden={isActive}
+                className={cn(
+                  "pointer-events-none absolute inset-0 flex items-center px-6 lg:justify-center lg:px-0",
+                  "transition-opacity duration-300 ease-out-soft",
+                  isActive ? "opacity-0" : "opacity-100 delay-500",
+                )}
+              >
+                <span
+                  className="text-xl font-extrabold tracking-tight text-white lg:rotate-180 lg:text-[2rem] lg:[writing-mode:vertical-rl]"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
+                  {point.title}
+                </span>
+              </div>
+
+              {/* ── Keadaan melebar: judul huruf-demi-huruf, penjelasan kata-demi-kata, peraga teks ── */}
+              <div
+                aria-hidden={!isActive}
+                className={cn(
+                  "absolute inset-0 flex flex-col justify-end gap-8 p-7 sm:p-10 lg:p-14",
+                  "transition-opacity duration-500 ease-warm",
+                  isActive ? "opacity-100 delay-[300ms]" : "pointer-events-none opacity-0",
+                )}
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-6 top-24 select-none font-black leading-none tracking-[-0.08em] text-white/5 sm:right-10"
+                  style={{ fontFamily: "var(--font-sans)", fontSize: "clamp(8rem, 18vw, 17rem)" }}
+                >
+                  {point.num}
+                </span>
+
+                <div className="relative max-w-2xl">
+                  <h3
+                    className="mb-5 text-[clamp(2.4rem,5.4vw,4.75rem)] font-extrabold leading-[0.95] tracking-[-0.045em] text-white"
+                    style={{ fontFamily: "var(--font-sans)" }}
+                    aria-label={point.title}
+                  >
+                    <Letters text={point.title} />
+                  </h3>
+
+                  <p className="max-w-xl text-base leading-[1.75] text-white/80 sm:text-lg">
+                    <Words text={point.desc} mark={point.mark} start={520} />
+                  </p>
+                </div>
+
+                <div className="relative max-w-xl">
+                  {i === 0 && <LearningPath open={isActive} />}
+                  {i === 1 && <Ticker />}
+                  {i === 2 && <Sources open={isActive} />}
+                </div>
+              </div>
+
+              {/* Penutup klik/keyboard untuk panel yang menyempit */}
+              {!isActive && (
+                <button
+                  type="button"
+                  onClick={() => setActive(i)}
+                  aria-expanded={false}
+                  aria-label={`Buka ${point.title}`}
+                  className="absolute inset-0 z-30 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-blue-500"
+                />
+              )}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
 }
 
 /* =============================================================
-   CARD
+   ANIMASI TEKS
+   Semua animasi hanya berjalan di bawah `.about-panel[data-open="true"]`
+   (lihat globals.css), jadi memutar ulang setiap panel dibuka. Jeda
+   `--d` ditambah 300 ms agar mulai sesudah isi panel selesai memudar masuk.
 ============================================================= */
 
-function AboutCard({
-  point,
-  index,
-}: {
-  point: (typeof points)[number];
-  index: number;
-}) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState(false);
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const card = cardRef.current;
-
-    if (!card) return;
-
-    const rect = card.getBoundingClientRect();
-
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    const rotateY = ((x - 50) / 50) * 4;
-    const rotateX = ((50 - y) / 50) * 4;
-
-    card.style.setProperty("--mouse-x", `${x}%`);
-    card.style.setProperty("--mouse-y", `${y}%`);
-    card.style.setProperty("--rotate-x", `${rotateX}deg`);
-    card.style.setProperty("--rotate-y", `${rotateY}deg`);
-  };
-
-  const handlePointerLeave = () => {
-    const card = cardRef.current;
-
-    if (!card) return;
-
-    card.style.setProperty("--mouse-x", "50%");
-    card.style.setProperty("--mouse-y", "50%");
-    card.style.setProperty("--rotate-x", "0deg");
-    card.style.setProperty("--rotate-y", "0deg");
-
-    setHover(false);
-  };
-
+/** Judul: tiap huruf naik dari balik topeng, bergiliran. */
+function Letters({ text }: { text: string }) {
   return (
-    <article
-      ref={cardRef}
-      onPointerEnter={() => setHover(true)}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-      className="
-        theme-day
-        group
-        relative
-        min-h-[560px]
-        overflow-hidden
-        rounded-[30px]
-        border
-        border-black/[0.07]
-        bg-[#f8f7f2]
-        p-6
-        shadow-[0_18px_50px_rgba(0,0,0,0.07)]
-        transition-[box-shadow,transform]
-        duration-500
-        hover:-translate-y-1
-        hover:shadow-[0_30px_80px_rgba(0,0,0,0.13)]
-        sm:p-7
-        lg:min-h-[590px]
-      "
-      style={
-        {
-          "--mouse-x": "50%",
-          "--mouse-y": "50%",
-          "--rotate-x": "0deg",
-          "--rotate-y": "0deg",
-        } as React.CSSProperties
-      }
-    >
-      {/* =====================================================
-          LIGHT
-      ====================================================== */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          inset-0
-          rounded-[30px]
-          opacity-0
-          transition-opacity
-          duration-500
-          group-hover:opacity-100
-        "
-        style={{
-          background:
-            "radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,.8), transparent 38%)",
-        }}
-      />
-
-      {/* =====================================================
-          LARGE NUMBER
-      ====================================================== */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          left-5
-          top-3
-          z-0
-          select-none
-          text-blue-600
-          text-[clamp(5rem,8vw,7rem)]
-          font-black
-          leading-[0.8]
-          tracking-[-0.09em]
-        "
-        style={{
-          fontFamily: "var(--font-sans)",
-        }}
-      >
-        {point.num}
-      </div>
-
-      {/* =====================================================
-          VISUAL
-      ====================================================== */}
-
-      <div
-        className="
-          relative
-          z-10
-          mt-2
-          flex
-          h-[330px]
-          items-center
-          justify-center
-          [perspective:1000px]
-        "
-      >
-        {index === 0 && <StructuredGame hover={hover} />}
-
-        {index === 1 && <InteractiveGame hover={hover} />}
-
-        {index === 2 && <ResearchGame hover={hover} />}
-      </div>
-
-      {/* =====================================================
-          TEXT
-      ====================================================== */}
-
-      <div className="relative z-50 mt-1">
-        <h2
-          className="
-            text-[clamp(2rem,4vw,3rem)]
-            font-extrabold
-            leading-none
-            tracking-[-0.05em]
-            text-neutral-950
-            transition-transform
-            duration-500
-            group-hover:translate-x-1
-          "
-          style={{
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          {point.title}
-        </h2>
-
-        <p
-          className="
-            mt-3
-            max-w-sm
-            text-[13px]
-            leading-[1.65]
-            text-neutral-500
-            transition-transform
-            duration-500
-            group-hover:translate-x-1
-            sm:text-sm
-          "
-        >
-          {point.desc}
-        </p>
-      </div>
-    </article>
+    <>
+      {text.split("").map((ch, i) =>
+        ch === " " ? (
+          <span key={i}> </span>
+        ) : (
+          <span key={i} className="about-mask" aria-hidden="true">
+            <span className="about-up" style={{ "--d": `${i * 45}ms` } as React.CSSProperties}>
+              {ch}
+            </span>
+          </span>
+        ),
+      )}
+    </>
   );
 }
 
-/* =============================================================
-   01 — TERSTRUKTUR
-============================================================= */
-
-type FileItem = {
-  id: number;
-  title: string;
-};
-
-type FilePosition = {
-  x: number;
-  y: number;
-  rotate: number;
-};
-
-const FILES: FileItem[] = [
-  {
-    id: 1,
-    title: "Materi Dasar",
-  },
-  {
-    id: 2,
-    title: "Konsep Utama",
-  },
-  {
-    id: 3,
-    title: "Latihan",
-  },
-  {
-    id: 4,
-    title: "Evaluasi",
-  },
-  {
-    id: 5,
-    title: "Referensi",
-  },
-  {
-    id: 6,
-    title: "Ringkasan",
-  },
-];
-
-const ORIGINAL_POSITIONS: FilePosition[] = [
-  {
-    x: 50,
-    y: 53,
-    rotate: -3,
-  },
-  {
-    x: 50,
-    y: 51,
-    rotate: 2,
-  },
-  {
-    x: 50,
-    y: 49,
-    rotate: -2,
-  },
-  {
-    x: 50,
-    y: 47,
-    rotate: 3,
-  },
-  {
-    x: 50,
-    y: 45,
-    rotate: -4,
-  },
-  {
-    x: 50,
-    y: 43,
-    rotate: 2,
-  },
-];
-
-const RANDOM_POSITIONS: FilePosition[] = [
-  {
-    x: 35,
-    y: 42,
-    rotate: -12,
-  },
-  {
-    x: 67,
-    y: 45,
-    rotate: 9,
-  },
-  {
-    x: 41,
-    y: 65,
-    rotate: 6,
-  },
-  {
-    x: 65,
-    y: 67,
-    rotate: -8,
-  },
-  {
-    x: 31,
-    y: 55,
-    rotate: 15,
-  },
-  {
-    x: 61,
-    y: 55,
-    rotate: -16,
-  },
-];
-
-/* =============================================================
-   DOCUMENT ICON
-============================================================= */
-
-function DocumentIcon() {
+/** Penjelasan: tiap kata naik dari balik topeng; kata kunci mendapat sapuan garis bawah. */
+function Words({ text, mark = [], start = 0 }: { text: string; mark?: string[]; start?: number }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-[19px] w-[19px]"
-      aria-hidden="true"
-    >
-      <path
-        d="M6.5 3.5H14L18.5 8V20.5H6.5V3.5Z"
-        fill="white"
-        stroke="white"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-      />
-
-      <path
-        d="M14 3.5V8H18.5"
-        stroke="#4C8DFF"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-
-      <path
-        d="M9.5 12H15.5"
-        stroke="#4C8DFF"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-
-      <path
-        d="M9.5 15.5H15.5"
-        stroke="#4C8DFF"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-/* =============================================================
-   01 — STRUCTURED GAME
-============================================================= */
-
-function StructuredGame({ hover }: { hover: boolean }) {
-  const [positions, setPositions] =
-    useState<FilePosition[]>(ORIGINAL_POSITIONS);
-
-  const [dragging, setDragging] = useState<number | null>(null);
-
-  const [isMessy, setIsMessy] = useState(false);
-
-  /* =========================================================
-     ACAK KERTAS
-  ========================================================= */
-
-  const handleShuffle = () => {
-    const shuffled: FilePosition[] = [];
-    const used: number[] = [];
-
-    for (let i = 0; i < FILES.length; i++) {
-      let randomIndex = Math.floor(
-        Math.random() * RANDOM_POSITIONS.length,
-      );
-
-      while (used.includes(randomIndex)) {
-        randomIndex = Math.floor(
-          Math.random() * RANDOM_POSITIONS.length,
-        );
-      }
-
-      used.push(randomIndex);
-
-      shuffled.push({
-        ...RANDOM_POSITIONS[randomIndex],
-      });
-    }
-
-    setPositions(shuffled);
-    setIsMessy(true);
-  };
-
-  /* =========================================================
-     RESET SEMUA
-  ========================================================= */
-
-  const handleReset = () => {
-    setPositions(
-      ORIGINAL_POSITIONS.map((position) => ({
-        ...position,
-      })),
-    );
-
-    setIsMessy(false);
-  };
-
-  const handlePointerMove = (
-    e: React.PointerEvent<HTMLButtonElement>,
-    index: number,
-  ) => {
-    if (dragging !== index) return;
-
-    const parent = e.currentTarget.parentElement;
-
-    if (!parent) return;
-
-    const rect = parent.getBoundingClientRect();
-
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    setPositions((current) => {
-      const updated = [...current];
-
-      updated[index] = {
-        ...updated[index],
-        x: Math.max(18, Math.min(82, x)),
-        y: Math.max(25, Math.min(76, y)),
-      };
-
-      return updated;
-    });
-
-    setIsMessy(true);
-  };
-
-  return (
-    <div
-      className="
-        relative
-        h-[300px]
-        w-62.5
-        sm:w-67.5
-        [transform-style:preserve-3d]
-        [transform:rotateX(var(--rotate-x))_rotateY(var(--rotate-y))]
-        transition-transform
-        duration-200
-      "
-    >
-      {/* =====================================================
-          SHADOW
-      ====================================================== */}
-
-      <div
-        className="
-          absolute
-          bottom-7
-          left-1/2
-          h-8
-          w-48
-          -translate-x-1/2
-          rounded-full
-          bg-black/10
-          blur-xl
-        "
-      />
-
-      {/* =====================================================
-          FILES
-      ====================================================== */}
-
-      {FILES.map((file, index) => {
-        const position = positions[index];
+    <>
+      {text.split(" ").map((word, i) => {
+        const bersih = word.toLowerCase().replace(/[^a-z]/g, "");
+        const disorot = mark.includes(bersih);
+        const d = start + i * 55;
 
         return (
-          <button
-            key={file.id}
-            type="button"
-            onPointerDown={(e) => {
-              e.currentTarget.setPointerCapture(e.pointerId);
-              setDragging(index);
-            }}
-            onPointerMove={(e) => handlePointerMove(e, index)}
-            onPointerUp={() => setDragging(null)}
-            onPointerCancel={() => setDragging(null)}
-            className={cn(
-              `
-                absolute
-                h-[82px]
-                w-[178px]
-                rounded-2xl
-                border
-                border-neutral-200
-                bg-white
-                p-3
-                text-left
-                shadow-[0_14px_30px_rgba(0,0,0,.1)]
-                transition-[left,top,transform,box-shadow]
-                duration-500
-                select-none
-                touch-none
-                cursor-grab
-                active:cursor-grabbing
-              `,
-              dragging === index
-                ? "z-[100] shadow-[0_25px_50px_rgba(0,0,0,.18)]"
-                : "",
-            )}
-            style={{
-              left: `${position.x}%`,
-              top: `${position.y}%`,
-              zIndex: dragging === index ? 100 : index + 1,
-              transform: `
-                translate(-50%, -50%)
-                translateZ(${index * 14}px)
-                rotate(${position.rotate}deg)
-                ${dragging === index ? "scale(1.06)" : ""}
-              `,
-            }}
-          >
-            <div className="flex items-center gap-3">
-              {/* =================================================
-                  ICON DOKUMEN
-                  Putih di dalam lingkaran biru yang lebih jelas
-              ================================================== */}
-
-              <div
-                className="
-                  flex
-                  h-10
-                  w-10
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-blue-600
-                  text-white
-                  shadow-[0_6px_14px_rgba(76,141,255,.22)]
-                  transition-all
-                  duration-300
-                  group-hover:scale-105
-                "
+          <span key={i}>
+            <span className="about-mask">
+              <span
+                className={cn("about-up", disorot && "about-sweep font-semibold text-white")}
+                style={{ "--d": `${d}ms` } as React.CSSProperties}
               >
-                <DocumentIcon />
-              </div>
-
-              <div className="min-w-0">
-                <div className="truncate text-[10px] font-black text-neutral-800">
-                  {file.title}
-                </div>
-
-                <div className="mt-2 h-1.5 w-20 rounded-full bg-neutral-100" />
-
-                <div className="mt-1.5 h-1.5 w-12 rounded-full bg-neutral-100" />
-              </div>
-            </div>
-
-            <div className="absolute bottom-2 right-3 flex gap-1">
-              <span className="h-1 w-1 rounded-full bg-neutral-300" />
-              <span className="h-1 w-1 rounded-full bg-neutral-300" />
-              <span className="h-1 w-1 rounded-full bg-neutral-300" />
-            </div>
-          </button>
+                {word}
+              </span>
+            </span>{" "}
+          </span>
         );
       })}
+    </>
+  );
+}
 
-      {/* =====================================================
-          SHUFFLE BUTTON
-      ====================================================== */}
+/** Memutar indeks 0..n-1 tiap `ms` selama panel terbuka dan belum disentuh pengguna. */
+function useAutoCycle(open: boolean, n: number, ms: number) {
+  const [index, setIndex] = useState(0);
+  const [manual, setManual] = useState(false);
 
-      {!isMessy && (
-        <button
-          type="button"
-          onClick={handleShuffle}
-          className="
-            absolute
-            right-0
-            top-3
-            z-[150]
-            flex
-            h-14
-            w-14
-            items-center
-            justify-center
-            rounded-2xl
-            bg-blue-600
-            text-white
-            shadow-[0_15px_35px_rgba(0,0,0,.14)]
-            transition-all
-            duration-300
-            hover:scale-110
-            hover:-rotate-6
-            active:scale-95
-          "
-          style={{
-            transform: hover
-              ? "translateZ(150px)"
-              : "translateZ(120px)",
-          }}
-          aria-label="Acak kertas"
-        >
-          <svg
-            className="h-6 w-6"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+  useEffect(() => {
+    if (!open || manual) return;
+    const t = setInterval(() => setIndex((v) => (v + 1) % n), ms);
+    return () => clearInterval(t);
+  }, [open, manual, n, ms]);
+
+  const pilih = (i: number) => {
+    setManual(true);
+    setIndex(i);
+  };
+
+  return [index, pilih] as const;
+}
+
+/** 01 — alur belajar, versi minimalis: tiga kata di atas satu garis tipis; garis
+ *  biru pendek meluncur ke kata aktif, keterangannya naik-memudar di bawah.
+ *  Berputar sendiri; arahkan kursor atau tekan kata untuk mengambil alih. */
+function LearningPath({ open }: { open: boolean }) {
+  const stages = [
+    { label: "Dasar", note: "Kenali konsep inti lewat contoh yang sederhana." },
+    { label: "Menengah", note: "Terapkan langsung lewat latihan dan kuis." },
+    { label: "Mahir", note: "Selesaikan tugas nyata dan raih sertifikat." },
+  ];
+  const [stage, pilih] = useAutoCycle(open, stages.length, 2600);
+
+  return (
+    <div className="about-pop max-w-md" style={{ "--d": "900ms" } as React.CSSProperties}>
+      <div className="relative grid grid-cols-3">
+        {stages.map((st, i) => (
+          <button
+            key={st.label}
+            type="button"
+            onClick={() => pilih(i)}
+            onPointerEnter={() => pilih(i)}
+            onFocus={() => pilih(i)}
+            aria-pressed={stage === i}
+            className={cn(
+              "pb-3 text-left text-sm font-semibold tracking-wide transition-colors duration-300 focus-visible:outline-none",
+              stage === i ? "text-white" : "text-white/40 hover:text-white/70",
+            )}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M16 3h5v5"
-            />
+            {st.label}
+          </button>
+        ))}
 
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 20L21 3"
-            />
+        {/* Garis dasar + penanda aktif (sepertiga lebar, meluncur) */}
+        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-px bg-white/15" />
+        <span
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 h-px w-1/3 bg-blue-400 transition-transform duration-500 ease-warm motion-reduce:transition-none"
+          style={{ transform: `translateX(${stage * 100}%)` }}
+        />
+      </div>
 
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M16 16l5 5"
-            />
-
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 16v5h-5"
-            />
-
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 4l5 5"
-            />
-          </svg>
-        </button>
-      )}
-
-      {/* =====================================================
-          RESET BUTTON
-      ====================================================== */}
-
-      {isMessy && (
-        <button
-          type="button"
-          onClick={handleReset}
-          className="
-            absolute
-            right-0
-            top-3
-            z-[150]
-            flex
-            h-14
-            w-14
-            items-center
-            justify-center
-            rounded-2xl
-            bg-blue-600
-            text-white
-            shadow-[0_15px_35px_rgba(0,0,0,.14)]
-            transition-all
-            duration-300
-            hover:scale-110
-            hover:-rotate-6
-            active:scale-95
-          "
-          style={{
-            transform: hover
-              ? "translateZ(150px)"
-              : "translateZ(120px)",
-          }}
-          aria-label="Kembalikan semua kertas"
-        >
-          <svg
-            className="h-7 w-7"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 14L4 9l5-5"
-            />
-
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 9h10a6 6 0 016 6v1"
-            />
-          </svg>
-        </button>
-      )}
+      {/* Keterangan — key = tahap, jadi naik ulang tiap berganti */}
+      <p key={stage} className="about-note mt-4 min-h-12 text-sm leading-relaxed text-white/70">
+        {stages[stage].note}
+      </p>
     </div>
   );
 }
 
-/* =============================================================
-   02 — INTERAKTIF
-============================================================= */
-
-type QuizQuestion = {
-  question: string;
-  answers: string[];
-  correct: number;
-};
-
-const QUIZ_QUESTIONS: QuizQuestion[] = [
-  {
-    question: "Apa tahap setelah memahami konsep?",
-    answers: ["Praktik", "Istirahat", "Mengulang"],
-    correct: 0,
-  },
-  {
-    question: "Apa yang membantu menguji pemahaman?",
-    answers: ["Dekorasi", "Evaluasi", "Warna"],
-    correct: 1,
-  },
-  {
-    question: "Apa tujuan latihan dalam pembelajaran?",
-    answers: [
-      "Menerapkan konsep",
-      "Menghapus materi",
-      "Mengurangi waktu",
-    ],
-    correct: 0,
-  },
-];
-
-function InteractiveGame({ hover }: { hover: boolean }) {
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
-
-  const question = QUIZ_QUESTIONS[questionIndex];
-
-  const progress = finished
-    ? 100
-    : ((questionIndex + (selected !== null ? 1 : 0)) /
-        QUIZ_QUESTIONS.length) *
-      100;
-
-  const chooseAnswer = (index: number) => {
-    if (selected !== null) return;
-
-    setSelected(index);
-
-    if (index === question.correct) {
-      setScore((prev) => prev + 1);
-    }
-  };
-
-  const nextQuestion = () => {
-    if (selected === null) return;
-
-    if (questionIndex >= QUIZ_QUESTIONS.length - 1) {
-      setFinished(true);
-      return;
-    }
-
-    setQuestionIndex((prev) => prev + 1);
-    setSelected(null);
-  };
-
-  const restart = () => {
-    setQuestionIndex(0);
-    setSelected(null);
-    setScore(0);
-    setFinished(false);
-  };
+/** 02 — papan kata berputar: kegiatan belajar bergantian naik ke tengah. */
+function Ticker() {
+  const items = ["Jawab kuis", "Coba langsung", "Diskusi kelas", "Dapat umpan balik"];
+  const loop = [...items, items[0]];
 
   return (
-    <div
-      className="
-        relative
-        h-[300px]
-        w-62.5
-        sm:w-67.5
-        [perspective:1000px]
-        [transform-style:preserve-3d]
-        [transform:rotateX(var(--rotate-x))_rotateY(var(--rotate-y))]
-        transition-transform
-        duration-200
-      "
-    >
-      {/* =====================================================
-          QUIZ
-      ====================================================== */}
+    <div className="flex items-center gap-4">
+      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/60">Sambil</span>
+      <div className="h-[1.5em] overflow-hidden text-2xl font-bold tracking-tight text-white sm:text-3xl" aria-hidden="true">
+        <ul className="about-ticker">
+          {loop.map((item, i) => (
+            <li key={i} className="h-[1.5em] whitespace-nowrap leading-[1.5]">
+              {item}
+              <span className="text-blue-400">.</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <span className="sr-only">{items.join(", ")}</span>
+    </div>
+  );
+}
 
-      <div
-        className="
-          absolute
-          left-1/2
-          top-1/2
-          h-[250px]
-          w-[224px]
-          -translate-x-1/2
-          -translate-y-1/2
-          rounded-[24px]
-          border
-          border-neutral-200
-          bg-white
-          p-4
-          shadow-[0_20px_45px_rgba(0,0,0,.11)]
-          [transform:translateZ(60px)]
-        "
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-[8px] font-black tracking-[0.14em] text-neutral-400">
-            QUICK QUIZ
-          </span>
+/** 03 — daftar sumber: tiga poin (1 Jurnal, 2 Buku ajar, 3 Penelitian).
+ *  Penjelasan HANYA muncul saat poinnya ditekan, dan keluar dari ujung teks
+ *  poin itu sendiri (melebar ke kanan sambil bergeser keluar & memudar masuk).
+ *  Tekan lagi untuk menutup; menekan poin lain memindahkan penjelasan.
+ *  Judul & penjelasan Plus Jakarta Sans; nomor font mono. */
+function Sources({ open }: { open: boolean }) {
+  const rows = [
+    { k: "Jurnal", note: "artikel ilmiah yang ditelaah sejawat" },
+    { k: "Buku ajar", note: "rujukan baku para akademisi" },
+    { k: "Penelitian", note: "temuan mutakhir dari bidangnya" },
+  ];
+  const [sel, setSel] = useState<number | null>(null);
 
-          <span className="rounded-full bg-blue-50 px-2 py-1 text-[9px] font-bold text-blue-600">
-            {score}/{QUIZ_QUESTIONS.length}
-          </span>
-        </div>
+  return (
+    <ul className="about-pop max-w-xl font-sans" style={{ "--d": "900ms" } as React.CSSProperties}>
+      {rows.map((r, i) => {
+        const on = open && sel === i;
 
-        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-blue-50">
-          <div
-            className="
-              h-full
-              rounded-full
-              bg-blue-600
-              transition-all
-              duration-500
-              ease-out
-            "
-            style={{
-              width: `${progress}%`,
-            }}
-          />
-        </div>
-
-        {!finished ? (
-          <div className="relative mt-3 h-[198px]">
-            <div>
-              <div className="text-[7px] font-black uppercase tracking-[0.1em] text-neutral-400">
-                Pertanyaan {questionIndex + 1} / {QUIZ_QUESTIONS.length}
-              </div>
-
-              <p
-                className="
-                  mt-1.5
-                  max-w-[185px]
-                  text-[10px]
-                  font-bold
-                  leading-[1.35]
-                  text-neutral-800
-                "
-              >
-                {question.question}
-              </p>
-            </div>
-
-            <div className="mt-3 space-y-1.5">
-              {question.answers.map((answer, index) => {
-                const isSelected = selected === index;
-
-                const isCorrect = index === question.correct;
-
-                const showCorrect =
-                  selected !== null && isCorrect;
-
-                const showWrong =
-                  isSelected && !isCorrect;
-
-                return (
-                  <button
-                    key={answer}
-                    type="button"
-                    onClick={() => chooseAnswer(index)}
-                    className={cn(
-                      `
-                        flex
-                        min-h-[32px]
-                        w-full
-                        items-center
-                        gap-2
-                        rounded-xl
-                        border
-                        px-2
-                        py-1.5
-                        text-left
-                        transition-all
-                        duration-300
-                      `,
-                      showCorrect
-                        ? "border-green-200 bg-green-50"
-                        : showWrong
-                          ? "border-red-200 bg-red-50"
-                          : "border-neutral-100 bg-white hover:border-blue-200 hover:bg-blue-50/30",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        `
-                          flex
-                          h-6
-                          w-6
-                          shrink-0
-                          items-center
-                          justify-center
-                          rounded-lg
-                          text-[8px]
-                          font-black
-                        `,
-                        showCorrect
-                          ? "bg-green-500 text-white"
-                          : showWrong
-                            ? "bg-red-500 text-white"
-                            : "bg-blue-50 text-blue-500",
-                      )}
-                    >
-                      {showCorrect
-                        ? "✓"
-                        : showWrong
-                          ? "×"
-                          : String.fromCharCode(65 + index)}
-                    </span>
-
-                    <span className="min-w-0 truncate text-[8px] font-semibold text-neutral-600">
-                      {answer}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {selected !== null && (
-              <button
-                type="button"
-                onClick={nextQuestion}
-                className="
-                  absolute
-                  bottom-0
-                  right-0
-                  rounded-full
-                  bg-blue-600
-                  px-3
-                  py-1.5
-                  text-[8px]
-                  font-black
-                  text-white
-                  shadow-[0_8px_18px_rgba(0,0,0,.12)]
-                  transition-all
-                  hover:scale-105
-                  active:scale-95
-                "
-              >
-                {questionIndex === QUIZ_QUESTIONS.length - 1
-                  ? "Selesai"
-                  : "Lanjut →"}
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex h-[195px] flex-col items-center justify-center text-center">
-            <div
-              className="
-                flex
-                h-12
-                w-12
-                items-center
-                justify-center
-                rounded-full
-                bg-green-50
-                text-xl
-              "
-            >
-              {score === QUIZ_QUESTIONS.length ? "✓" : "★"}
-            </div>
-
-            <div className="mt-2 text-[8px] font-black uppercase tracking-[0.12em] text-neutral-400">
-              Quiz selesai
-            </div>
-
-            <div className="mt-1 text-3xl font-black tracking-[-0.05em] text-neutral-900">
-              {score} / {QUIZ_QUESTIONS.length}
-            </div>
-
+        return (
+          <li key={r.k}>
             <button
               type="button"
-              onClick={restart}
-              className="
-                mt-3
-                rounded-full
-                bg-blue-50
-                px-4
-                py-2
-                text-[8px]
-                font-black
-                text-blue-600
-                transition-all
-                hover:bg-blue-100
-                active:scale-95
-              "
+              onClick={() => setSel(on ? null : i)}
+              aria-expanded={on}
+              className="group/row flex min-h-12 w-full cursor-pointer items-center text-left focus-visible:outline-none"
             >
-              Ulangi Quiz
+              <span className="flex min-w-0 items-baseline gap-3">
+                <span className={cn("font-mono text-sm tabular-nums transition-colors duration-300", on ? "text-blue-300" : "text-white/35")}>
+                  {i + 1}
+                </span>
+                <span
+                  className={cn(
+                    "shrink-0 text-xl font-semibold transition-colors duration-300",
+                    on ? "text-white" : "text-white/60 group-hover/row:text-white",
+                  )}
+                >
+                  {r.k}
+                </span>
+
+                {/* Penjelasan: keluar dari ujung teks poin */}
+                <span
+                  aria-hidden={!on}
+                  className={cn(
+                    "overflow-hidden whitespace-nowrap text-sm text-blue-200 transition-[max-width,opacity,transform] duration-700 ease-warm motion-reduce:transition-none",
+                    on ? "max-w-80 translate-x-0 opacity-100" : "max-w-0 -translate-x-3 opacity-0",
+                  )}
+                >
+                  {r.note}
+                </span>
+              </span>
+
+              {/* Petunjuk bisa ditekan: plus yang berputar jadi silang saat terbuka */}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "ml-4 text-lg leading-none text-white/35 transition-transform duration-500 ease-warm group-hover/row:text-white/70",
+                  on && "rotate-45",
+                )}
+              >
+                +
+              </span>
             </button>
-          </div>
-        )}
-      </div>
-
-      {/* =====================================================
-          SHADOW
-      ====================================================== */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          bottom-4
-          left-1/2
-          h-3
-          w-36
-          -translate-x-1/2
-          rounded-full
-          bg-black/10
-          blur-xl
-        "
-        style={{
-          transform: hover
-            ? "translateX(-50%) translateZ(20px) scale(1.08)"
-            : "translateX(-50%)",
-        }}
-      />
-    </div>
-  );
-}
-
-/* =============================================================
-   03 — BERBASIS RISET
-============================================================= */
-
-function ResearchGame({ hover: _hover }: { hover: boolean }) {
-  const paperRef = useRef<HTMLDivElement>(null);
-
-  const [pointer, setPointer] = useState({
-    x: 50,
-    y: 50,
-    visible: false,
-  });
-
-  const handlePointerMove = (
-    e: React.PointerEvent<HTMLDivElement>,
-  ) => {
-    const paper = paperRef.current;
-
-    if (!paper) return;
-
-    const rect = paper.getBoundingClientRect();
-
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    setPointer({
-      x: Math.max(0, Math.min(100, x)),
-      y: Math.max(0, Math.min(100, y)),
-      visible: true,
-    });
-  };
-
-  const handlePointerLeave = () => {
-    setPointer((current) => ({
-      ...current,
-      visible: false,
-    }));
-  };
-
-  return (
-    <div
-      className="
-        relative
-        h-[300px]
-        w-62.5
-        sm:w-67.5
-        [perspective:1000px]
-        [transform-style:preserve-3d]
-        [transform:rotateX(var(--rotate-x))_rotateY(var(--rotate-y))]
-        transition-transform
-        duration-200
-      "
-    >
-      {/* =====================================================
-          PAPER
-      ====================================================== */}
-
-      <div
-        ref={paperRef}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={handlePointerLeave}
-        className="
-          absolute
-          left-1/2
-          top-1/2
-          h-[238px]
-          w-[238px]
-          -translate-x-1/2
-          -translate-y-1/2
-          overflow-hidden
-          rounded-3xl
-          border
-          border-neutral-200
-          bg-white
-          p-5
-          shadow-[0_25px_50px_rgba(0,0,0,.11)]
-          [transform:translateZ(60px)_rotateZ(-3deg)]
-        "
-      >
-        <ResearchDocument />
-
-        {/* =================================================
-            ZOOM LENS
-        ================================================== */}
-
-        {pointer.visible && (
-          <div
-            className="
-              pointer-events-none
-              absolute
-              z-30
-              h-[112px]
-              w-[112px]
-              -translate-x-1/2
-              -translate-y-1/2
-              overflow-hidden
-              rounded-full
-              border-[5px]
-              border-white
-              bg-white
-              shadow-[0_15px_40px_rgba(0,0,0,.28)]
-            "
-            style={{
-              left: `${pointer.x}%`,
-              top: `${pointer.y}%`,
-            }}
-          >
-            <div
-              className="
-                absolute
-                left-0
-                top-0
-                w-[238px]
-                origin-top-left
-                scale-[2.4]
-                bg-white
-                p-5
-              "
-              style={{
-                transformOrigin: `${pointer.x}% ${pointer.y}%`,
-              }}
-            >
-              <ResearchDocument />
-            </div>
-
-            {/* Highlight kecil */}
-
-            <div
-              className="
-                pointer-events-none
-                absolute
-                left-3
-                top-2
-                h-5
-                w-8
-                rotate-[-25deg]
-                rounded-full
-                bg-white/60
-                blur-[2px]
-              "
-            />
-          </div>
-        )}
-
-        {/* =================================================
-            HINT
-        ================================================== */}
-
-        <div
-          className="
-            pointer-events-none
-            absolute
-            bottom-3
-            left-5
-            right-5
-            z-40
-            text-center
-            text-[7px]
-            font-bold
-            text-neutral-400
-            transition-opacity
-            duration-200
-          "
-          style={{
-            opacity: pointer.visible ? 0 : 1,
-          }}
-        >
-          Gerakkan kursor untuk membaca
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* =============================================================
-   RESEARCH DOCUMENT
-============================================================= */
-
-function ResearchDocument() {
-  return (
-    <div className="select-none">
-      {/* =====================================================
-          HEADER TANPA ICON / HURUF R
-      ====================================================== */}
-
-      <div>
-        <h3 className="text-[11px] font-black leading-none text-neutral-800">
-          Learning Research
-        </h3>
-
-        <p className="mt-1.5 text-[6px] text-neutral-400">
-          Evidence-based learning
-        </p>
-      </div>
-
-      {/* =====================================================
-          PARAGRAPH 1
-      ====================================================== */}
-
-      <p className="mt-5 text-[7px] leading-[1.7] text-neutral-600">
-        Interactive learning can support student engagement by encouraging
-        learners to actively participate in the learning process.
-      </p>
-
-      {/* =====================================================
-          PARAGRAPH 2
-      ====================================================== */}
-
-      <p className="mt-3 text-[7px] leading-[1.7] text-neutral-600">
-        Research-based learning materials can also help students connect
-        theoretical concepts with practical activities.
-      </p>
-
-      {/* =====================================================
-          RESEARCH FINDING
-      ====================================================== */}
-
-      <div className="mt-4 rounded-xl bg-blue-50 p-3">
-        <p className="text-[6px] font-black uppercase tracking-[0.12em] text-blue-600">
-          Research finding
-        </p>
-
-        <p className="mt-2 text-[7px] leading-[1.6] text-blue-800">
-          Active participation may improve understanding and retention when
-          learners interact directly with the material.
-        </p>
-      </div>
-
-      {/* =====================================================
-          SOURCE
-      ====================================================== */}
-
-      <p className="mt-4 text-[6px] leading-[1.6] text-neutral-400">
-        Source: Educational Research Review · 2025
-      </p>
-    </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
