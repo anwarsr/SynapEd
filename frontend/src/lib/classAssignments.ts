@@ -4,10 +4,13 @@ import { deleteObjects } from "@/lib/storageCleanup";
 import {
   MAX_CLASS_FILE_BYTES,
   toBerkasList,
+  toPengaturanAi,
   type KelasBerkas,
   type KelasSubmission,
+  type PengaturanAi,
 } from "@/lib/classAssignmentRules";
 import type { KelasPost } from "@/lib/classTypes";
+import { postsRef } from "@/lib/classes";
 
 /**
  * Data pengumpulan tugas kelas, pemeriksa berkas, dan pembersihnya.
@@ -110,6 +113,26 @@ export function jamServer(): number {
   return Date.now();
 }
 
+// ── Pengaturan koreksi AI ───────────────────────────────────────────────
+
+/**
+ * Pengaturan koreksi AI satu tugas, dibaca langsung dari field `aiGrading`.
+ *
+ * Tidak lewat `toPost`/`KelasPost` dengan sengaja (lihat classAssignmentRules):
+ * berkas konteksnya bisa berupa kunci jawaban, jadi hanya halaman pengelola
+ * dan action penilaian yang memanggil fungsi ini.
+ */
+export async function getPengaturanAi(classId: string, postId: string): Promise<PengaturanAi> {
+  const snap = await postsRef(classId).doc(postId).get();
+  return toPengaturanAi(snap.data()?.aiGrading);
+}
+
+/** Path berkas konteks AI seluruh tugas sebuah kelas — dibaca SEBELUM kelasnya dihapus. */
+export async function berkasAiKelas(classId: string): Promise<string[]> {
+  const snap = await postsRef(classId).get();
+  return snap.docs.flatMap((d) => toPengaturanAi(d.data().aiGrading).files.map((f) => f.path));
+}
+
 // ── Pemeriksa berkas ────────────────────────────────────────────────────
 
 export type BerkasHasil = { ok: true; files: KelasBerkas[] } | { ok: false; error: string };
@@ -188,17 +211,22 @@ async function hapusPengumpulan(subs: readonly KelasSubmission[]): Promise<void>
 }
 
 /**
- * Sisa sebuah postingan setelah dokumennya dihapus: lampiran pengajar dan
- * seluruh pengumpulan siswa. Pengumpulan hidup di koleksi TERPISAH, jadi
- * recursiveDelete pada postingan tidak menjangkaunya.
+ * Sisa sebuah postingan setelah dokumennya dihapus: lampiran pengajar, berkas
+ * konteks AI, dan seluruh pengumpulan siswa. Pengumpulan hidup di koleksi
+ * TERPISAH, jadi recursiveDelete pada postingan tidak menjangkaunya. Path
+ * berkas AI dioper pemanggil karena hanya terbaca sebelum dokumennya hilang.
  */
-export async function bersihkanPost(classId: string, post: KelasPost): Promise<void> {
+export async function bersihkanPost(classId: string, post: KelasPost, berkasAi: readonly string[] = []): Promise<void> {
   await hapusPengumpulan(await listPostSubmissions(classId, post.id));
-  await deleteObjects(post.attachments.map((a) => a.path)).catch(() => 0);
+  await deleteObjects([...post.attachments.map((a) => a.path), ...berkasAi]).catch(() => 0);
 }
 
-/** Sama, untuk seluruh kelas. `posts` dibaca SEBELUM kelasnya dihapus. */
-export async function bersihkanKelas(classId: string, posts: readonly KelasPost[]): Promise<void> {
+/** Sama, untuk seluruh kelas. `posts` & `berkasAi` dibaca SEBELUM kelasnya dihapus. */
+export async function bersihkanKelas(
+  classId: string,
+  posts: readonly KelasPost[],
+  berkasAi: readonly string[] = [],
+): Promise<void> {
   await hapusPengumpulan(await listClassSubmissions(classId));
-  await deleteObjects(posts.flatMap((p) => p.attachments.map((a) => a.path))).catch(() => 0);
+  await deleteObjects([...posts.flatMap((p) => p.attachments.map((a) => a.path)), ...berkasAi]).catch(() => 0);
 }

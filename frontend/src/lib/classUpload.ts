@@ -60,6 +60,15 @@ export function unggahLampiranKelas(uid: string, classId: string, files: readonl
   return Promise.all(files.map((f) => unggah(`${CLASS_FILES}/${uid}/${classId}`, f)));
 }
 
+/**
+ * Berkas konteks koreksi AI (soal/kunci jawaban): `class-files/{uid}/{classId}/ai-{postId}/…`.
+ * Folder yang sama dengan lampiran (rules-nya sudah ada), tetapi TIDAK pernah
+ * tercatat sebagai lampiran postingan — route lampiran tidak bisa menyajikannya.
+ */
+export function unggahKonteksAi(uid: string, classId: string, postId: string, files: readonly File[]) {
+  return Promise.all(files.map((f) => unggah(`${CLASS_FILES}/${uid}/${classId}/ai-${postId}`, f)));
+}
+
 /** Jawaban siswa: `class-submissions/{uid}/{classId}/{postId}/…`. */
 export function unggahJawabanKelas(uid: string, classId: string, postId: string, files: readonly File[]) {
   return Promise.all(files.map((f) => unggah(`${CLASS_SUBMISSION_FILES}/${uid}/${classId}/${postId}`, f)));

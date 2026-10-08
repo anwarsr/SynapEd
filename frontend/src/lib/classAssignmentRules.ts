@@ -304,6 +304,42 @@ export const LABEL_STATUS: Record<StatusTugas, { label: string; tone: "neutral" 
   dinilai: { label: "Dinilai", tone: "blue" },
 };
 
+// ── Koreksi AI ──────────────────────────────────────────────────────────
+//
+// Pengaturan per tugas, disimpan di field `aiGrading` dokumen postingan.
+// SENGAJA tidak ikut `KelasPost`: berkas konteks terpisah biasanya kunci
+// jawaban, dan tipe yang tidak memuatnya membuat halaman siswa mustahil
+// menampilkannya, sekalipun ada yang kelak mengoper seluruh postingan ke
+// komponen klien.
+
+/** "assignment" = instruksi + lampiran tugas; "separate" = berkas khusus AI. */
+export type SumberKonteksAi = "assignment" | "separate";
+
+export interface PengaturanAi {
+  source: SumberKonteksAi;
+  /** Berkas konteks khusus AI (dipakai bila `source === "separate"`). */
+  files: KelasBerkas[];
+  /** Bawaan centang "AI juga mengisi komentar" di formulir nilai. */
+  fillComment: boolean;
+}
+
+export const MAX_AI_CONTEXT_FILES = 3;
+
+/** Jenis yang isinya bisa dibaca AI. ZIP tidak — arsip tidak dibongkar. */
+export const MIME_AI_KONTEKS: readonly string[] = MIME_KELAS.filter((m) => m !== "application/zip");
+
+/** Format untuk pemilih berkas konteks AI (semua kecuali ZIP). */
+export const FORMAT_AI_KONTEKS: readonly FormatTugas[] = ["pdfImage", "office"];
+
+export function toPengaturanAi(raw: unknown): PengaturanAi {
+  const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return {
+    source: r.source === "separate" ? "separate" : "assignment",
+    files: toBerkasList(r.files),
+    fillComment: r.fillComment === true,
+  };
+}
+
 // ── Waktu dalam WIB ─────────────────────────────────────────────────────
 //
 // Tenggat ditulis dan dibaca dalam WIB, bukan zona browser maupun zona

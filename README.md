@@ -246,6 +246,23 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   **nilai + komentar** yang langsung terlihat oleh siswa.
 - Batas: maksimal 5 berkas per postingan/kiriman, masing-masing di bawah 20 MB.
   Siswa tidak bisa melihat jawaban siswa lain.
+- **Koreksi dengan AI** (per siswa, di halaman tugas pengajar):
+  - tombol di setiap kiriman mengisi kolom **nilai** otomatis (skala nilai
+    maksimal tugas). Pengajar tetap meninjau, boleh mengubah, lalu menekan
+    *Simpan nilai* sendiri — AI tidak pernah menyimpan;
+  - centang **"AI juga mengisi komentar"** (bawaannya diatur per tugas, bisa
+    diubah per siswa). Kalau tidak dicentang, catatan AI tetap ditampilkan
+    sebagai petunjuk dengan tombol *Pakai sebagai komentar*;
+  - kartu **Koreksi AI** menentukan dari mana AI membaca soal: **instruksi &
+    lampiran tugas**, atau **berkas konteks terpisah** (maks. 3 berkas PDF,
+    gambar, atau Office — misalnya kunci jawaban) yang **tidak pernah terlihat
+    siswa**;
+  - AI bisa membaca jawaban teks, PDF ketikan, gambar JPG/PNG, dan dokumen
+    DOCX/PPTX/XLSX. ZIP dan PDF hasil pindai tidak terbaca — pengajar diberi
+    tahu berkas mana yang dilewati;
+  - memakai OpenRouter (model gratis), berbagi kuota harian dengan asisten chat
+    dan "Minta Saran AI" kursus, maksimal 8 koreksi per menit per pengajar.
+    Jawaban siswa dikirim ke layanan AI pihak ketiga saat dikoreksi.
 
 ### Profil & akun
 
@@ -266,6 +283,15 @@ seputar SynapEd (OpenRouter, model gratis). Dibuka dari dalam halaman
 belajar suatu pelajaran, ia beralih ke **mode tutor**: bisa mendiskusikan
 materi pelajaran itu, tapi menolak memberi jawaban akhir untuk kuis/tugas
 yang sedang dikerjakan.
+
+Yang diketahui asisten:
+- **Pengetahuan fitur** ditulis di `frontend/src/lib/chatKnowledge.ts` dan
+  wajib ikut diperbarui setiap kali fitur yang terlihat pengguna berubah.
+- **Diperbarui otomatis** setiap pesan, karena dibaca langsung dari sistem:
+  katalog kursus, metode pembayaran yang sedang dinyalakan admin, persentase
+  referral, dan kontak resmi.
+- `npm run verify:chat-knowledge` gagal kalau ada halaman baru atau alamat yang
+  berubah tetapi pengetahuan asisten belum ikut diperbarui.
 
 ### Panel admin (`/admin`)
 
@@ -361,6 +387,7 @@ cd frontend && npm run lint
 npm run verify:royalty            # contoh; daftar lengkap di package.json
 npm run verify:lab                # SynapLab — murni, tanpa dev server & kredensial
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
+npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
 
 ---
@@ -370,13 +397,13 @@ npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas,
 - Penarikan dana / payout untuk royalti dan referral.
 - Refund otomatis. Kabar refund dari Midtrans hanya ditandai untuk ditindaklanjuti admin.
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
-- Asisten chat di dalam halaman belajar.
 - Soal kuis selain pilihan tunggal.
 - Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
 - Tugas kelas: menyunting judul/instruksi/lampiran setelah terbit, mengembalikan
   tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
-  dan rekap nilai per kelas.
+  rekap nilai per kelas, dan koreksi AI untuk semua siswa sekaligus.
+- Koreksi AI untuk PDF hasil pindai dan isi arsip ZIP.
 
 ---
 

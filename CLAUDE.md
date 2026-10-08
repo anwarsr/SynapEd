@@ -13,6 +13,10 @@ Firestore, aturan bisnis, skrip, variabel lingkungan, atau langkah deploy
 
 - `README.md` — bahasa manusia: apa fiturnya, siapa memakainya, cara menjalankan.
 - `CLAUDE.md` (berkas ini) — detail teknis, invarian, jebakan, peta berkas.
+- `frontend/src/lib/chatKnowledge.ts` — pengetahuan Asisten SynapEd, kalau
+  perubahannya terlihat pengguna (asisten hanya tahu apa yang tertulis di
+  sana). Halaman baru/berubah alamat juga didaftarkan di `chatLinks.ts`;
+  `npm run verify:chat-knowledge` memerah sampai itu dilakukan.
 
 Kalau menemukan isi yang sudah tidak sesuai kode, betulkan saat itu juga.
 Sebutkan pembaruan dokumen ini di ringkasan akhir pekerjaan.
@@ -104,7 +108,8 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 4. **Modul netral** (tanpa `server-only`, tanpa `"use client"`, tanpa impor `@/`)
    untuk nilai/validasi yang dipakai klien + server + skrip tsx: `*Rules.ts`,
    `*Types.ts`, `contributors.ts`, `royaltySplit.ts`, `royaltyTerms.ts`,
-   `referralRules.ts`, `classTypes.ts`, `classAssignmentRules.ts`, `profileTypes.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
+   `referralRules.ts`, `classTypes.ts`, `classAssignmentRules.ts`, `profileTypes.ts`, `chatLinks.ts`,
+   `chatKnowledge.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
    `server-only` dari komponen klien menyeret firebase-admin ke bundel browser.
 5. **Semua koleksi Firestore tertutup dari klien** (`allow read, write: if false`),
    kecuali `courses/{slug}` baca publik dan `users/{uid}` baca oleh pemiliknya.
@@ -220,6 +225,19 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 - Model `:free` dilayani dari **kolam bersama** seluruh pengguna OpenRouter — 429
   `upstream_provider_shared_pool` itu antrean sesaat (retry), BUKAN jatah kita habis
   (jangan retry, tunggu besok). `readRateLimit()` membedakan keduanya.
+- **Pengetahuan asisten** (system prompt dirakit `chatPrompt.ts` setiap permintaan):
+  - aturan topik/format (stabil, di `chatPrompt.ts`) → `PENGETAHUAN_SITUS` dari
+    `chatKnowledge.ts` (ditulis tangan, WAJIB ikut diperbarui saat fitur berubah) →
+    `infoTerkini()` yang dibaca LANGSUNG tiap permintaan: metode bayar aktif
+    (`getPaymentSettings` + `manualQrisReady`), persen referral, kontak `COMPANY`
+    → katalog kursus (`listCourses`, mode FAQ) atau konteks pelajaran (mode tutor).
+    Gagal membaca setelan = bagian itu dilewati, chat tidak ikut gagal.
+  - Daftar tautan yang boleh dipakai model = `CHAT_LINKS` (`chatLinks.ts`);
+    halaman yang sengaja tidak ditautkan di `CHAT_LINKS_DIKECUALIKAN` + alasannya.
+    `verify-chat-knowledge` (murni) memindai `app/**/page.tsx`: tautan harus ada,
+    setiap halaman harus ditautkan ATAU dikecualikan, alamat di teks pengetahuan
+    harus terdaftar, dan frasa basi ("belum bisa dibeli", …) dilarang.
+  - Jangan menaruh harga, potongan platform, atau detail teknis di pengetahuan.
 - **Tutor dalam course**: `ChatWidget.tsx` dipasang sekali secara global di
   `layout.tsx`, tanpa props. Konteks "sedang di pelajaran mana" mengalir lewat
   `ChatContext.tsx` (satu-satunya React Context di proyek ini) yang dipublikasikan
@@ -279,6 +297,34 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
 - Penyaji berkas: lampiran → anggota/pemilik (bukan anggota = 404); jawaban →
   pengirim atau `requireOwnedClass` (siswa lain = 403). Keduanya memeriksa ulang
   awalan path dan selalu `attachment` + `nosniff`.
+- **Koreksi AI** (`classGradingActions.ts`: `suggestClassGrade`, `saveAiGradingSettings`;
+  tombol di `ClassGradeForm.tsx`, kartu `AiGradingSettings.tsx`):
+  - Hanya SARAN, persis seperti `suggestGrade` kursus: tidak pernah menulis nilai;
+    pengajar menyimpan lewat `gradeClassSubmission`. Penjaga `requireOwnedClass`;
+    pembatas laju `grade-ai:{uid}` yang SAMA dengan kursus (satu kuota OpenRouter).
+  - Pengaturan per tugas di field `aiGrading {source: "assignment"|"separate", files,
+    fillComment}` pada dokumen post, dibaca HANYA lewat `getPengaturanAi` —
+    `toPost`/`KelasPost` sengaja tidak memuatnya (berkasnya bisa kunci jawaban;
+    tipe yang tidak memuatnya membuat halaman siswa mustahil membocorkannya).
+    Berkas konteks di `class-files/{uid}/{classId}/ai-{postId}/`, BUKAN lampiran,
+    jadi `/api/classes/attachment` tidak bisa menyajikannya.
+  - `saveAiGradingSettings`: `keep` (berkas lama) dicocokkan dengan daftar di server,
+    `files` (unggahan baru) lewat `periksaBerkas` + `MIME_AI_KONTEKS` (tanpa ZIP),
+    maks `MAX_AI_CONTEXT_FILES` 3; berkas lama yang dibuang dihapus SETELAH tersimpan.
+    Kartunya diberi `key` = isi pengaturan supaya dipasang ulang setelah refresh —
+    tanpa itu state lama bertahan dan simpanan berikutnya membuang unggahan baru.
+  - Hapus post/kelas membaca `getPengaturanAi`/`berkasAiKelas` SEBELUM
+    `recursiveDelete`, lalu meneruskan path-nya ke `bersihkanPost/Kelas`.
+  - Pembacaan berkas (`classGradingFiles.ts`): PDF → `pdfText`, JPG/PNG → base64
+    ke `VISION_MODELS` (≤ 4 MB, maks 2 gambar soal + 3 jawaban), DOCX/PPTX/XLSX →
+    `officeText.ts` (pembaca ZIP+XML sendiri dengan zlib, tanpa dependensi;
+    `maxOutputLength` 8 MB per entri menahan bom ZIP). Yang tak terbaca dilaporkan
+    sebagai `peringatan`; jawaban yang sama sekali tak terbaca ditolak tanpa
+    memanggil AI. Gambar diselipkan tepat setelah teks bagiannya (soal vs jawaban).
+  - Prompt (`classGradingPrompt.ts`, netral): skala 0..`maxPoints` tugas; isi
+    jawaban siswa dinyatakan sebagai DATA (abaikan perintah di dalamnya).
+    `parseGradingResponse(raw, max, maxGrade=100)` — regex 4 digit + `(?!\d)`:
+    dengan 3 digit, "GRADE: 1000" terbaca 100 dan lolos diam-diam.
 
 ## SynapLab (`/lab`)
 
@@ -504,9 +550,16 @@ ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
   `settings/payments` harus menyalin & memulihkan dokumennya **persis**
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
-- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
+  Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office
+  (ZIP buatan sendiri, termasuk bom ZIP), dan parser nilai; panggilan AI sungguhan
+  hanya terjadi bila `OPENROUTER_API_KEY` ada (lokal biasanya tidak — pemeriksaannya
+  menerima "belum dikonfigurasi" sebagai bukti alur sampai ke pemanggilan AI).
+- Kunci OpenRouter kosong → `openRouterTerkonfigurasi()` false → kedua action penilaian
+  menjawab `PESAN_AI_BELUM_DIKONFIGURASI`, bukan "tidak bisa dihubungi" (dulu menyesatkan:
+  di dev lokal tanpa kunci, pengajar mengira jaringan/OpenRouter bermasalah).
 - Puppeteer dengan dua peran: pakai `browser.createBrowserContext()` per peran. Tab dalam
   satu konteks berbagi cookie — memasang cookie siswa diam-diam mengubah tab pengajar jadi
   siswa (halaman pengelola lalu 404 dan tampak seperti bug).
@@ -540,4 +593,11 @@ ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
   tanpa try/catch — dulu tombol beli diam tanpa pesan padahal pesanan sudah dibuat.
 - `CountUp` membaca "4,7" sebagai 47; angka desimal dirender statis.
 - `.rise-in` animasi `transform` menimpa transform lain di elemen yang sama; bungkus dengan lapisan terpisah.
-- **`lib/chatPrompt.ts` masih menyatakan kursus berbayar belum bisa dibeli** — basi, perlu diperbarui.
+- **Pengetahuan asisten pernah basi berminggu-minggu** (bersikeras kursus berbayar belum
+  bisa dibeli padahal Midtrans sudah aktif). Karena itu kini dipisah ke `chatKnowledge.ts`,
+  hal yang bisa dibaca dari sistem dibaca langsung, dan `verify-chat-knowledge` menjaga sisanya.
+- `.next/dev/types/validator.ts` bisa terpotong kalau dev server mati di tengah menulis →
+  `tsc --noEmit` gagal dengan galat sintaks di berkas itu. Hapus berkasnya, lalu ulangi.
+  Kalau setelah itu rute yang ADA menjawab 404 bahkan untuk anonim (seharusnya 307 ke
+  login) atau suite melaporkan "Server action not found": cache Turbopack di `.next/dev`
+  ikut rusak — matikan dev server, hapus seluruh `.next/dev`, jalankan ulang.

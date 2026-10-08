@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
 import AssignmentDetail from "@/components/classes/AssignmentDetail";
 import AssignmentSettingsForm from "@/components/classes/AssignmentSettingsForm";
+import AiGradingSettings from "@/components/classes/AiGradingSettings";
 import ClassGradeForm from "@/components/classes/ClassGradeForm";
 import DeleteButton from "@/components/classes/DeleteButton";
 import Lampiran, { hrefJawaban } from "@/components/classes/Lampiran";
@@ -9,7 +10,7 @@ import Tag from "@/components/ui/Tag";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { getPost, listClassMembers } from "@/lib/classes";
 import { requireOwnedClass } from "@/lib/classGuards";
-import { jamServer, listPostSubmissions } from "@/lib/classAssignments";
+import { getPengaturanAi, jamServer, listPostSubmissions } from "@/lib/classAssignments";
 import {
   LABEL_STATUS,
   formatWib,
@@ -56,7 +57,12 @@ export default async function TugasPengajarPage({ params }: Props) {
   if (!post || post.kind !== "assignment" || !post.assignment) notFound();
   const p = post.assignment;
 
-  const [members, subs] = await Promise.all([listClassMembers(id), listPostSubmissions(id, postId)]);
+  const [members, subs, ai] = await Promise.all([
+    listClassMembers(id),
+    listPostSubmissions(id, postId),
+    // Hanya halaman pengelola yang membaca ini — berkasnya bisa kunci jawaban.
+    getPengaturanAi(id, postId),
+  ]);
 
   // Anggota saat ini, ditambah pengirim yang sudah keluar dari kelas —
   // jawabannya tetap milik catatan pengajar.
@@ -109,6 +115,18 @@ export default async function TugasPengajarPage({ params }: Props) {
                 ))}
               </dl>
             </div>
+
+            {/* Kunci = isi pengaturan tersimpan: setelah disimpan & disegarkan,
+                kartu dipasang ulang dari data baru. Tanpa ini state lamanya
+                bertahan, dan simpanan berikutnya membuang berkas yang baru
+                diunggah karena tidak ada di daftar "dipertahankan". */}
+            <AiGradingSettings
+              key={JSON.stringify(ai)}
+              classId={id}
+              postId={postId}
+              awal={ai}
+              adaLampiranTugas={post.attachments.length > 0}
+            />
 
             <AssignmentSettingsForm
               classId={id}
@@ -193,6 +211,7 @@ export default async function TugasPengajarPage({ params }: Props) {
                               maxPoints={p.maxPoints}
                               grade={b.sub.grade}
                               feedback={b.sub.feedback}
+                              aiIsiKomentar={ai.fillComment}
                             />
                           </div>
                         )}

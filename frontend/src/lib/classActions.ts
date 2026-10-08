@@ -5,7 +5,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { requireClassAccess, requireOwnedClass } from "@/lib/classGuards";
 import { normalizeInviteCode } from "@/lib/inviteCode";
-import { bersihkanKelas, bersihkanPost, periksaBerkas } from "@/lib/classAssignments";
+import { berkasAiKelas, bersihkanKelas, bersihkanPost, getPengaturanAi, periksaBerkas } from "@/lib/classAssignments";
 import {
   MAX_ASSIGNMENT_TITLE,
   MAX_FILES_PER_POST,
@@ -194,7 +194,7 @@ export async function deleteClass(classId: string): Promise<ClassResult> {
   const db = adminDb();
 
   // Dibaca SEBELUM dihapus: lampiran tiap postingan hanya tercatat di sana.
-  const posts = await listPosts(classId);
+  const [posts, berkasAi] = await Promise.all([listPosts(classId), berkasAiKelas(classId)]);
 
   // recursiveDelete, bukan .delete() biasa: postingan dan balasan hidup sebagai
   // subcollection, dan .delete() hanya menghapus dokumen induknya sambil
@@ -209,7 +209,7 @@ export async function deleteClass(classId: string): Promise<ClassResult> {
 
   // Pengumpulan tugas juga koleksi terpisah, dan berkas di Storage tidak
   // pernah ikut terhapus bersama dokumen apa pun.
-  await bersihkanKelas(classId, posts);
+  await bersihkanKelas(classId, posts, berkasAi);
 
   revalidatePath("/educator/classes");
   revalidatePath("/admin/classes");
@@ -402,12 +402,15 @@ export async function deletePost(classId: string, postId: string): Promise<Class
   const post = await getPost(classId, postId);
   if (!post) return { ok: false, error: "Postingan tidak ditemukan." };
 
+  // Berkas konteks AI hanya tercatat di dokumen ini — dibaca sebelum hilang.
+  const ai = await getPengaturanAi(classId, postId);
+
   // recursiveDelete supaya balasannya ikut terhapus, bukan tertinggal yatim.
   await adminDb().recursiveDelete(postsRef(classId).doc(postId));
   await classRef(classId).update({ postCount: FieldValue.increment(-1) });
 
-  // Lampiran dan pengumpulan tugasnya tidak berada di bawah dokumen postingan.
-  await bersihkanPost(classId, post);
+  // Lampiran, berkas AI, dan pengumpulan tugasnya tidak berada di bawah dokumen postingan.
+  await bersihkanPost(classId, post, ai.files.map((f) => f.path));
 
   revalidatePath(`/educator/classes/${classId}`);
   revalidatePath(`/kelas/${classId}`);

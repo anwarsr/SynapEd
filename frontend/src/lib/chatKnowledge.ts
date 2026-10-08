@@ -1,0 +1,140 @@
+/**
+ * Pengetahuan Asisten SynapEd tentang situs ini — apa yang bisa dilakukan
+ * pengguna dan bagaimana caranya.
+ *
+ * WAJIB DIPERBARUI bersama setiap perubahan fitur yang terlihat pengguna,
+ * sama seperti README.md (aturan di CLAUDE.md). Asisten hanya tahu apa yang
+ * tertulis di sini: fitur yang tidak tercantum akan dijawab "tidak tahu",
+ * dan fitur yang sudah berubah akan dijelaskan dengan cara lama — keduanya
+ * pernah terjadi (asisten sempat bersikeras kursus berbayar belum bisa
+ * dibeli berminggu-minggu setelah pembayaran aktif).
+ *
+ * Yang TIDAK ditulis di sini karena dibaca langsung dari sistem setiap
+ * permintaan (lihat chatPrompt.ts): katalog kursus, metode pembayaran yang
+ * sedang aktif, persentase referral, dan kontak resmi. Daftar halaman yang
+ * boleh ditautkan ada di chatLinks.ts dan diperiksa `verify-chat-knowledge`.
+ *
+ * Tulis apa adanya (perilaku SISTEM SEBENARNYA, bukan rencana), dan jangan
+ * memuat detail teknis internal — asisten dilarang membocorkannya.
+ *
+ * Modul netral tanpa impor supaya skrip verifikasi bisa membacanya.
+ */
+export const PENGETAHUAN_SITUS = `## Akun
+- Daftar di /register atau masuk di /login dengan email + kata sandi, atau
+  tombol "Masuk dengan Google" (sekaligus mendaftar kalau emailnya belum ada).
+- Ada tiga jenis akun: pengguna, educator, dan admin.
+- Profil (/profil) berisi kursus & kelas yang diikuti, tombol Lanjutkan
+  Belajar, dan sertifikat. Foto, perkenalan, riwayat pendidikan, dan keahlian
+  diubah di /profil/edit. Orang lain melihat profil publik tanpa email, nomor
+  HP, atau kursus yang sedang diikuti.
+- Pengaturan (/pengaturan): username, nomor HP, email, kata sandi, cara
+  masuk, dan hapus akun. Username dibuat otomatis dari email dan bisa diganti
+  sekali setiap 14 hari. Akun Google tanpa kata sandi bisa membuat kata sandi
+  di sana.
+
+## Belajar di kursus
+- Katalog ada di /courses, bisa disaring per kategori. Halaman detail kursus
+  menampilkan deskripsi, kurikulum, ulasan, harga, dan penyusunnya.
+- Kursus gratis: tekan "Daftar Kursus Ini" (harus masuk dulu). Kursus berbayar:
+  tekan "Beli Kursus Ini" — metode bayarnya lihat bagian "Info terkini".
+- Jenis pelajaran: bacaan (PDF yang dibaca di halaman, bisa diperbesar dan
+  diunduh), video (YouTube), penugasan (peserta mengunggah berkas jawaban lalu
+  educator menilai), dan kuis (pilihan ganda, dinilai otomatis).
+- Kemajuan tersimpan otomatis; tombol "Lanjutkan Belajar" membawa kembali ke
+  pelajaran terakhir. Bacaan/video ditandai selesai lewat tombol di halaman
+  belajar, penugasan dianggap selesai saat dikumpulkan, kuis saat lulus.
+- Kuis punya nilai lulus dan bisa punya batas jumlah percobaan. Pembahasan
+  tiap soal baru tampil setelah lulus atau kehabisan percobaan.
+- Penugasan kursus bisa dikumpulkan ulang; mengumpulkan ulang menghapus nilai
+  lama dan menunggu dinilai lagi.
+- Sertifikat terbit otomatis setelah SEMUA pelajaran selesai DAN nilai tugas &
+  kuis mencapai nilai lulus kursus (bawaan 70). Penugasan harus sudah dinilai
+  educator dulu. Sertifikat dilihat & dicetak dari /profil; siapa pun bisa
+  memeriksa keasliannya di /verify/{kode} tanpa masuk akun.
+- Peserta yang sudah menyelesaikan kursus bisa memberi ulasan bintang dan
+  komentar.
+
+## Membeli kursus
+- Pembelian lewat Midtrans membuka akses otomatis begitu pembayaran masuk.
+- Pembelian lewat QRIS manual: pindai QR, unggah bukti bayar, lalu admin
+  mencocokkannya dengan mutasi rekening sebelum akses dibuka. Pesanan QRIS
+  manual berlaku 24 jam.
+- Kode referral: pembeli bisa memasukkan kode orang lain saat membeli, atau
+  kode terisi sendiri kalau membuka tautan bagikan (berlaku 30 hari). Harga
+  bagi pembeli TIDAK berubah. Kode milik sendiri tidak bisa dipakai.
+- Pengembalian dana: pembelian bersifat final, kecuali beberapa keadaan
+  (misalnya terbayar ganda, akses terkunci dan tidak terselesaikan dalam 7
+  hari kerja, atau isi kursus tidak sesuai yang dijanjikan). Pengajuan lewat
+  email paling lambat 7 hari kalender sejak pembayaran. Rinciannya di
+  /pengembalian-dana — jangan menjanjikan pengembalian di luar itu.
+
+## Kode referral & pendapatan
+- Setiap akun bisa membuat SATU kode referral di /dashboard. Kode tidak bisa
+  diganti setelah dibuat.
+- Tombol "Bagikan dengan kode referral" di halaman kursus mana pun membuat
+  tautan berisi kode itu. Pemilik kode mendapat bagian dari setiap pembelian
+  lewat tautannya (persentasenya lihat "Info terkini").
+- /dashboard menampilkan total pendapatan (royalti + referral), riwayat per
+  penjualan, dan kursus tempat ia berkontribusi. Data pembeli tidak pernah
+  ditampilkan.
+- Penarikan dana BELUM tersedia; dashboard hanya mencatat pendapatan.
+
+## Kelas
+- Kelas adalah ruang belajar kelompok milik educator, terpisah dari kursus.
+- Educator membuat kelas di /educator/classes lalu membagikan kode undangan
+  8 karakter. Peserta bergabung di /kelas dengan memasukkan kode itu. Peserta
+  bisa keluar dari kelas kapan saja.
+- Di dalam kelas ada tab Pengumuman (pengumuman pengajar, boleh berlampiran;
+  anggota bisa membalas), Tugas, Anggota, dan Tentang. Hanya pengajar yang
+  bisa memposting.
+- Tugas kelas: pengajar menentukan format jawaban yang diterima (teks yang
+  diketik langsung, PDF & gambar JPG/PNG, dokumen Office DOCX/PPTX/XLSX, atau
+  ZIP), tenggat opsional dalam WIB, apakah pengumpulan setelah tenggat masih
+  diterima (ditandai "Terlambat"), dan nilai maksimal.
+- Peserta mengumpulkan di halaman tugas: maksimal 5 berkas, masing-masing di
+  bawah 20 MB. Selama belum dinilai dan pengumpulan masih dibuka, kiriman bisa
+  dibatalkan lalu dikirim ulang (berkas yang sudah dikirim ikut terhapus).
+  Setelah dinilai, peserta melihat nilai + komentar pengajar dan kiriman tidak
+  bisa dibatalkan lagi. Peserta tidak bisa melihat jawaban peserta lain.
+- Status tugas: belum mengumpulkan, dikumpulkan, terlambat, dinilai.
+- Pengajar bisa menekan "Koreksi dengan AI" pada kiriman tiap siswa: AI mengisi
+  nilai (dan komentar, kalau pengajar memintanya), lalu pengajar meninjau,
+  boleh mengubah, dan menyimpannya sendiri. Nilai baru terlihat siswa setelah
+  disimpan pengajar. AI membaca soal dari instruksi & lampiran tugas atau dari
+  berkas konteks khusus milik pengajar (misalnya kunci jawaban) yang tidak
+  pernah terlihat siswa. Jawaban ZIP dan PDF hasil pindai belum bisa dibaca AI.
+
+## Menjadi educator
+- Ajukan diri lewat tombol "Jadi Educator" di navbar atau halaman /educator.
+  Tidak ada persyaratan khusus; admin meninjau dan hasilnya tampil di halaman
+  yang sama.
+- Educator membuat kursus di /educator/courses: judul, deskripsi, harga,
+  kategori, gambar sampul, nilai lulus, dan kurikulum bebas berisi bacaan,
+  video, penugasan, dan kuis.
+- Kursus baru tersembunyi dulu. Menayangkan, menyembunyikan, menyunting, dan
+  menghapus kursus semuanya diajukan ke admin; kursus yang tayang tetap seperti
+  semula sampai perubahannya disetujui.
+- Kursus bisa disusun beberapa orang (maksimal 10, dicari lewat username, tidak
+  harus educator). Pemilik mengatur persentase tiap kontributor; bagian pemilik
+  minimal 10%. Bagian penyusun dihitung dari penjualan setelah potongan
+  platform, dan perubahan pembagian hanya berlaku untuk penjualan berikutnya.
+- Educator menilai penugasan kursus di halaman peserta kursusnya. Tombol
+  "Minta Saran AI" mengisi draf nilai + catatan, tetapi educator tetap harus
+  meninjau dan menyimpannya sendiri.
+
+## SynapLab
+- /lab adalah papan untuk memahami struktur data sambil mencobanya, terbuka
+  untuk siapa saja tanpa login.
+- Materi: Array (1D, 2D, 3D yang tampil sebagai kubus yang bisa diputar, dan
+  N-dimensi) serta Linked List (singly). Operasi dijalankan lewat tombol dan
+  form, bukan menulis kode, lalu diputar langkah demi langkah dengan narasi
+  Bahasa Indonesia; kecepatannya bisa diatur.
+- Ada lima algoritma pengurutan dengan animasi: bubble, selection, insertion,
+  merge, dan quick sort.
+- Papan bisa dibagikan lewat tautan, tetapi tidak tersimpan di server —
+  menutup tab berarti papannya hilang. Ada juga mode presentasi.
+
+## Yang belum tersedia
+Penarikan dana pendapatan, notifikasi email, pengembalian dana otomatis,
+dan menyimpan papan SynapLab ke akun. Kalau
+ditanya, katakan terus terang bahwa fitur itu belum ada.`;

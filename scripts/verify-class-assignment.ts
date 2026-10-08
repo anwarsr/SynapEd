@@ -16,6 +16,7 @@
  *   npx tsx scripts/verify-class-assignment.ts [baseUrl]
  */
 import { randomUUID } from "node:crypto";
+import { deflateRawSync } from "node:zlib";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import {
@@ -45,6 +46,9 @@ import {
   validasiPengaturan,
   type PengaturanTugas,
 } from "../frontend/src/lib/classAssignmentRules";
+import { extractOfficeText } from "../frontend/src/lib/officeText";
+import { parseGradingResponse } from "../frontend/src/lib/gradingPrompt";
+import { teksBagianJawaban, teksBagianSoal } from "../frontend/src/lib/classGradingPrompt";
 
 const db = getFirestore(app);
 const bucket = getStorage(app).bucket(readEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"));
@@ -132,6 +136,94 @@ function aturanMurni() {
     "nilai 1,5 / -1 / 101 ditolak; 100 diterima",
     validasiNilai(1.5, 100) === null && validasiNilai(-1, 100) === null && validasiNilai(101, 100) === null && validasiNilai(100, 100) === 100,
     "validasiNilai",
+  );
+}
+
+// ── Koreksi AI: bagian murni ───────────────────────────────────────────
+
+/** ZIP minimal (tanpa CRC — pembaca kita tidak memeriksanya) untuk menguji officeText. */
+function zip(isi: Record<string, string | Buffer>): Buffer {
+  const lokal: Buffer[] = [];
+  const pusat: Buffer[] = [];
+  let offset = 0;
+  for (const [nama, data] of Object.entries(isi)) {
+    const mentah = typeof data === "string" ? Buffer.from(data, "utf8") : data;
+    const padat = deflateRawSync(mentah);
+    const n = Buffer.from(nama, "utf8");
+    const h = Buffer.alloc(30);
+    h.writeUInt32LE(0x04034b50, 0);
+    h.writeUInt16LE(8, 8);
+    h.writeUInt32LE(padat.length, 18);
+    h.writeUInt32LE(mentah.length, 22);
+    h.writeUInt16LE(n.length, 26);
+    const c = Buffer.alloc(46);
+    c.writeUInt32LE(0x02014b50, 0);
+    c.writeUInt16LE(8, 10);
+    c.writeUInt32LE(padat.length, 20);
+    c.writeUInt32LE(mentah.length, 24);
+    c.writeUInt16LE(n.length, 28);
+    c.writeUInt32LE(offset, 42);
+    lokal.push(h, n, padat);
+    pusat.push(c, n);
+    offset += 30 + n.length + padat.length;
+  }
+  const cd = Buffer.concat(pusat);
+  const e = Buffer.alloc(22);
+  e.writeUInt32LE(0x06054b50, 0);
+  e.writeUInt16LE(Object.keys(isi).length, 8);
+  e.writeUInt16LE(Object.keys(isi).length, 10);
+  e.writeUInt32LE(cd.length, 12);
+  e.writeUInt32LE(offset, 16);
+  return Buffer.concat([...lokal, cd, e]);
+}
+
+function aturanAiMurni() {
+  const docx = zip({
+    "word/document.xml":
+      "<w:document><w:body><w:p><w:r><w:t>Halo &amp; dunia</w:t></w:r></w:p><w:p><w:r><w:t>Baris</w:t><w:tab/><w:t>dua</w:t></w:r></w:p></w:body></w:document>",
+  });
+  const td = extractOfficeText(docx, "docx", 1000);
+  check("DOCX terbaca per paragraf, entitas didekode", td === "Halo & dunia\nBaris\tdua", JSON.stringify(td));
+
+  const pptx = zip({
+    "ppt/slides/slide10.xml": "<p:sld><a:p><a:r><a:t>Sepuluh</a:t></a:r></a:p></p:sld>",
+    "ppt/slides/slide2.xml": "<p:sld><a:p><a:r><a:t>Dua</a:t></a:r></a:p></p:sld>",
+  });
+  const tp = extractOfficeText(pptx, "pptx", 1000) ?? "";
+  check("PPTX urut menurut NOMOR slide, bukan abjad", tp.indexOf("Dua") >= 0 && tp.indexOf("Dua") < tp.indexOf("Sepuluh"), JSON.stringify(tp));
+
+  const xlsx = zip({
+    "xl/sharedStrings.xml": "<sst><si><t>Nama</t></si><si><t>Budi</t></si></sst>",
+    "xl/worksheets/sheet1.xml":
+      '<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1"><v>90</v></c></row><row r="2"><c r="A2" t="s"><v>1</v></c></row></sheetData></worksheet>',
+  });
+  const tx = extractOfficeText(xlsx, "xlsx", 1000) ?? "";
+  check("XLSX: teks bersama & angka terbaca dengan alamat sel", tx.includes("A1: Nama") && tx.includes("B1: 90") && tx.includes("A2: Budi"), JSON.stringify(tx));
+
+  check("teks dipotong ke batas", (extractOfficeText(docx, "docx", 4) ?? "").length === 4, "maxChars");
+  check("bukan ZIP → null, tidak melempar", extractOfficeText(Buffer.from("bukan zip sama sekali"), "docx", 100) === null, "rusak");
+  check("DOCX tanpa document.xml → null", extractOfficeText(zip({ "lain.xml": "<a/>" }), "docx", 100) === null, "kosong");
+
+  // "Bom ZIP": 30 MB nol memampat jadi beberapa puluh KB. Batas per entri 8 MB.
+  const bom = zip({ "word/document.xml": Buffer.alloc(30 * 1024 * 1024) });
+  check("bom ZIP ditolak, tidak dibongkar ke memori", bom.length < 200_000 && extractOfficeText(bom, "docx", 100) === null, `${bom.length} byte terkompresi`);
+
+  check("nilai 1000 sah bila maksimal 1000", parseGradingResponse("GRADE: 1000\nFEEDBACK: ok", 100, 1000)?.grade === 1000, "4 digit");
+  check("nilai 1000 DITOLAK bila maksimal 100 (bukan terbaca 100)", parseGradingResponse("GRADE: 1000\nFEEDBACK: ok", 100, 100) === null, "tanpa pemotongan diam-diam");
+  check("angka 5 digit ditolak", parseGradingResponse("GRADE: 12345", 100, 1000) === null, "12345");
+  check(
+    "bawaan kursus tetap 0–100",
+    parseGradingResponse("GRADE: 95\nFEEDBACK: x", 100)?.grade === 95 && parseGradingResponse("GRADE: 101", 100) === null,
+    "kompatibel",
+  );
+  check("kecocokan TERAKHIR yang dipakai", parseGradingResponse("contoh GRADE: 10\nGRADE: 42\nFEEDBACK: akhir", 100, 50)?.grade === 42, "42");
+
+  const soal = teksBagianSoal({ judul: "T", teks: "kunci", tidakTerbaca: ["x.zip"], jumlahGambar: 1, maxPoints: 50, sumber: "separate" });
+  check("prompt konteks terpisah menyebut siswa tidak melihatnya + nilai maksimal", soal.includes("TIDAK melihat") && soal.includes("50") && soal.includes("x.zip"), "teksBagianSoal");
+  check(
+    "prompt jawaban melarang menghukum berkas tak terbaca",
+    teksBagianJawaban({ teks: "", tidakTerbaca: ["a.zip"], jumlahGambar: 0 }).includes("Jangan menghukum"),
+    "teksBagianJawaban",
   );
 }
 
@@ -399,6 +491,106 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
       check("tab Tugas memuat ketiga tugas", ["Tugas PDF", "Tugas Teks Tutup", "Tugas Teks Longgar"].every((t) => tabTugas.html.includes(t)), "daftar");
     }
 
+    // ── Koreksi AI: penjaga & pengaturan ─────────────────────────
+    const berkasAi = `${folderPemilik}/ai-${A}/kunci.pdf`;
+    {
+      await probe(`/educator/classes/${classId}/tugas/${A}`, owner.cookie);
+      const saranId = await actionId("educator/classes/[id]/tugas/[postId]", "suggestClassGrade");
+      const aturAiId = await actionId("educator/classes/[id]/tugas/[postId]", "saveAiGradingSettings");
+      const jalurAi = `/educator/classes/${classId}/tugas/${A}`;
+      const atur = (cookie: string, input: unknown) => callAction(jalurAi, aturAiId, [classId, A, input], cookie);
+      const saran = (cookie: string, post: string, uid: string) => callAction(jalurAi, saranId, [classId, post, uid], cookie);
+
+      await simpan(berkasAi, "application/pdf");
+      await simpan(`${folderPemilik}/ai-${A}/arsip.zip`, "application/zip");
+      await simpan(`class-files/${siswa.uid}/${classId}/ai-${A}/palsu.pdf`, "application/pdf");
+
+      check("siswa tidak bisa mengatur koreksi AI", (await atur(siswa.cookie, { source: "assignment" })).includes("tidak berhak"), "penjaga");
+      check("siswa tidak bisa meminta saran nilai", (await saran(siswa.cookie, A, siswa.uid)).includes("tidak berhak"), "penjaga");
+      check("sumber tak dikenal ditolak", (await atur(owner.cookie, { source: "apa" })).includes("tidak valid"), "validasi");
+      check("konteks terpisah tanpa berkas ditolak", (await atur(owner.cookie, { source: "separate", files: [] })).includes("minimal satu berkas"), "validasi");
+      check(
+        "berkas konteks dari folder orang lain ditolak",
+        (await atur(owner.cookie, { source: "separate", files: [{ path: `class-files/${siswa.uid}/${classId}/ai-${A}/palsu.pdf`, name: "k.pdf" }] })).includes("Berkas tidak sah"),
+        "awalan path",
+      );
+      check(
+        "ZIP ditolak sebagai konteks AI",
+        (await atur(owner.cookie, { source: "separate", files: [{ path: `${folderPemilik}/ai-${A}/arsip.zip`, name: "a.zip" }] })).includes("Format berkas tidak diterima"),
+        "MIME_AI_KONTEKS",
+      );
+      check(
+        "path asing di daftar keep diabaikan",
+        (await atur(owner.cookie, { source: "separate", keep: [`class-files/${siswa.uid}/${classId}/ai-${A}/palsu.pdf`], files: [] })).includes("minimal satu berkas"),
+        "keep dicocokkan dengan data server",
+      );
+
+      const ok = await atur(owner.cookie, {
+        source: "separate",
+        files: [{ path: berkasAi, name: "kunci-jawaban-rahasia.pdf", size: 1 }],
+        fillComment: true,
+      });
+      check("pemilik menyimpan konteks AI terpisah", ok.includes("disimpan"), "pesan hasil");
+      const d = (await db.collection("classes").doc(classId).collection("posts").doc(A).get()).data();
+      check(
+        "pengaturan AI tersimpan dengan ukuran dari server",
+        d?.aiGrading?.source === "separate" && d?.aiGrading?.files?.[0]?.size === PDF.length && d?.aiGrading?.fillComment === true,
+        String(d?.aiGrading?.files?.[0]?.size),
+      );
+
+      const halSiswa = await probeText(`/kelas/${classId}/tugas/${A}`, siswa.cookie);
+      check("nama berkas kunci TIDAK muncul di halaman siswa", !halSiswa.html.includes("kunci-jawaban-rahasia"), "kerahasiaan");
+      const halGuru = await probeText(jalurAi, owner.cookie);
+      check("halaman pengajar menampilkan berkas konteksnya", halGuru.html.includes("kunci-jawaban-rahasia"), "kartu Koreksi AI");
+      const lampiranKe0 = await unduh(`/api/classes/attachment?class=${classId}&post=${A}&i=0`, siswa.cookie);
+      const lampiranKe1 = await unduh(`/api/classes/attachment?class=${classId}&post=${A}&i=1`, siswa.cookie);
+      check(
+        "route lampiran hanya menyajikan lampiran tugas, bukan berkas konteks AI",
+        (lampiranKe0.headers.get("content-disposition") ?? "").includes("soal.pdf") && lampiranKe1.status === 404,
+        `i=0 ${lampiranKe0.headers.get("content-disposition")}, i=1 HTTP ${lampiranKe1.status}`,
+      );
+
+      check("saran untuk siswa yang belum mengumpulkan ditolak", (await saran(owner.cookie, B, siswa2.uid)).includes("belum mengumpulkan"), "tanpa dokumen");
+
+      // Jawaban yang hanya berupa ZIP tidak bisa dibaca — pengajar diberi tahu, tanpa memanggil AI.
+      const zipSiswa = `class-submissions/${siswa.uid}/${classId}/${C}/jawaban.zip`;
+      await simpan(zipSiswa, "application/zip");
+      await subRef(classId, C, siswa.uid).set({
+        classId,
+        postId: C,
+        uid: siswa.uid,
+        text: "",
+        status: "submitted",
+        late: false,
+        files: [{ name: "jawaban.zip", path: zipSiswa, size: PDF.length, mime: "application/zip" }],
+        grade: null,
+        feedback: null,
+        submittedAt: new Date().toISOString(),
+        gradedAt: null,
+        gradedByUid: null,
+      });
+      const takTerbaca = await saran(owner.cookie, C, siswa.uid);
+      check("jawaban yang tak terbaca dilaporkan, bukan dinilai", takTerbaca.includes("tidak bisa membaca jawaban") && takTerbaca.includes("ZIP"), "tanpa panggilan AI");
+      await subRef(classId, C, siswa.uid).delete();
+
+      // Jawaban teks yang terbaca sampai ke pemanggilan AI. Tanpa OPENROUTER_API_KEY
+      // lokal jawabannya "belum dikonfigurasi"; dengan kunci, sebuah saran nilai.
+      const sampai = await saran(owner.cookie, C, siswa2.uid);
+      check(
+        "jawaban terbaca diteruskan ke AI",
+        sampai.includes("belum dikonfigurasi") || sampai.includes("tidak bisa dihubungi") || sampai.includes("Kuota harian") || sampai.includes('"grade"'),
+        sampai.slice(-160).replace(/\s+/g, " "),
+      );
+      const masih = (await subRef(classId, C, siswa2.uid).get()).data();
+      check("saran AI tidak pernah menyimpan nilai sendiri", masih?.status === "submitted" && masih?.grade === null, String(masih?.status));
+
+      // Mengganti pengaturan: berkas lama yang tidak dipertahankan ikut dibuang.
+      const kedua = `${folderPemilik}/ai-${A}/kunci2.pdf`;
+      await simpan(kedua, "application/pdf");
+      await atur(owner.cookie, { source: "separate", keep: [], files: [{ path: kedua, name: "kunci2.pdf" }] });
+      check("berkas konteks lama yang dibuang terhapus dari Storage", !(await ada(berkasAi)) && (await ada(kedua)), "deleteObjects");
+    }
+
     // ── Menghapus tugas ───────────────────────────────────────────
     {
       // Kiriman segar yang belum dinilai, supaya terbukti ikut tersapu.
@@ -414,6 +606,7 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
       check("pengumpulannya ikut terhapus", sisa.empty, `${sisa.size} tersisa`);
       check("berkas jawaban ikut terhapus", !(await ada(jawabanSiswa)) && !(await ada(segar)), "Storage");
       check("lampiran pengajarnya ikut terhapus", !(await ada(lampiran)), lampiran);
+      check("berkas konteks AI-nya ikut terhapus", !(await ada(`${folderPemilik}/ai-${A}/kunci2.pdf`)), "bersihkanPost");
     }
 
     // ── Menghapus kelas ───────────────────────────────────────────
@@ -447,6 +640,7 @@ async function main() {
   console.log(`\nMenguji ${BASE} terhadap ${targetLabel()}\n`);
 
   aturanMurni();
+  aturanAiMurni();
 
   const owner = await createTestUser("educator", "tugas-pemilik");
   const siswa = await createTestUser("user", "tugas-siswa");
