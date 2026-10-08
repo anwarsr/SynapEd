@@ -9,10 +9,10 @@ import { submitClassAssignment, unsubmitClassAssignment } from "@/lib/classAssig
 import { firebaseAuth } from "@/lib/firebase/client";
 import { pesanGagalUnggah, unggahJawabanKelas } from "@/lib/classUpload";
 import {
-  INFO_FORMAT,
   LABEL_STATUS,
   MAX_ANSWER_TEXT,
   MAX_FILES_PER_SUBMISSION,
+  ringkasFormat,
   terimaBerkas,
   type FormatTugas,
   type KelasSubmission,
@@ -167,7 +167,7 @@ export default function SubmissionPanel({
       ) : dibuka ? (
         <form onSubmit={kirim}>
           <p className="mb-3 text-xs text-ink-muted">
-            Diterima: {formats.map((f) => INFO_FORMAT[f].label).join(", ")}.
+            Diterima: {ringkasFormat(formats)}.
           </p>
 
           {bolehTeks && (

@@ -4,7 +4,7 @@ import Tag from "@/components/ui/Tag";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Lampiran, { hrefLampiran } from "@/components/classes/Lampiran";
 import { formatDate } from "@/lib/adminUsers";
-import { INFO_FORMAT, formatWib, lewatTenggat } from "@/lib/classAssignmentRules";
+import { formatWib, lewatTenggat, pernahDiedit, ringkasFormat } from "@/lib/classAssignmentRules";
 import type { KelasPost } from "@/lib/classTypes";
 import type { UserCard } from "@/lib/userCards";
 
@@ -25,6 +25,7 @@ export default function AssignmentDetail({
   saat,
   samping,
   bawah,
+  aksi,
 }: {
   post: KelasPost;
   namaKelas: string;
@@ -33,6 +34,8 @@ export default function AssignmentDetail({
   saat: number;
   samping: ReactNode;
   bawah?: ReactNode;
+  /** Tepat di bawah kepala tugas — tombol & formulir edit di halaman pengelola. */
+  aksi?: ReactNode;
 }) {
   const p = post.assignment!;
   const lewat = lewatTenggat(p.dueAt, saat);
@@ -70,9 +73,12 @@ export default function AssignmentDetail({
                 </span>
                 <span aria-hidden="true" className="max-sm:hidden">·</span>
                 <span>{formatDate(post.createdAt)}</span>
+                {pernahDiedit(post) && <span className="italic">· diedit</span>}
               </p>
             </div>
           </div>
+
+          {aksi && <div className="mt-4">{aksi}</div>}
 
           <dl className="mt-6 grid gap-px overflow-hidden rounded-2xl border border-rule bg-rule sm:grid-cols-3">
             <div className="bg-paper-card px-5 py-4">
@@ -93,7 +99,7 @@ export default function AssignmentDetail({
             <div className="bg-paper-card px-5 py-4">
               <dt className="t-label text-ink-muted">Format</dt>
               <dd className="mt-1 text-sm font-medium text-ink">
-                {p.formats.map((f) => INFO_FORMAT[f].label).join(", ")}
+                {ringkasFormat(p.formats)}
               </dd>
             </div>
           </dl>

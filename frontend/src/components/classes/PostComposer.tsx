@@ -3,28 +3,27 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/ui/UserAvatar";
 import PemilihBerkas from "@/components/classes/PemilihBerkas";
+import IsianTugas, { KOLOM_KELAS as KOLOM, type NilaiIsianTugas } from "@/components/classes/IsianTugas";
 import { createAssignment, createPost } from "@/lib/classActions";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { pesanGagalUnggah, unggahLampiranKelas } from "@/lib/classUpload";
 import { MAX_POST_BODY } from "@/lib/classTypes";
 import {
   DEFAULT_MAX_POINTS,
-  FORMAT_TUGAS,
-  INFO_FORMAT,
   MAX_ASSIGNMENT_TITLE,
   MAX_FILES_PER_POST,
-  MAX_POINTS_LIMIT,
   inputWibKeIso,
-  type FormatTugas,
   type JenisPost,
 } from "@/lib/classAssignmentRules";
 import { cn } from "@/lib/cn";
 
-const KOLOM = cn(
-  "w-full rounded-xl border border-rule bg-paper px-4 py-2.5 text-[15px] text-ink",
-  "transition-colors duration-200 placeholder:text-ink-faint",
-  "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25",
-);
+const ISIAN_AWAL: NilaiIsianTugas = {
+  formats: ["text", "pdf", "jpg", "png"],
+  pakaiTenggat: false,
+  tenggat: "",
+  terimaTerlambat: false,
+  poin: String(DEFAULT_MAX_POINTS),
+};
 
 /**
  * Kotak tulis kelas: pengumuman ATAU tugas. Hanya dirender untuk pemilik kelas.
@@ -47,11 +46,7 @@ export default function PostComposer({
   const [judul, setJudul] = useState("");
   const [body, setBody] = useState("");
   const [berkas, setBerkas] = useState<File[]>([]);
-  const [formats, setFormats] = useState<FormatTugas[]>(["text", "pdfImage"]);
-  const [pakaiTenggat, setPakaiTenggat] = useState(false);
-  const [tenggat, setTenggat] = useState("");
-  const [terimaTerlambat, setTerimaTerlambat] = useState(false);
-  const [poin, setPoin] = useState(String(DEFAULT_MAX_POINTS));
+  const [isian, setIsian] = useState<NilaiIsianTugas>(ISIAN_AWAL);
 
   const [mengunggah, setMengunggah] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -64,14 +59,8 @@ export default function PostComposer({
     setJudul("");
     setBody("");
     setBerkas([]);
-    setPakaiTenggat(false);
-    setTenggat("");
-    setTerimaTerlambat(false);
-    setPoin(String(DEFAULT_MAX_POINTS));
-  }
-
-  function ubahFormat(f: FormatTugas, aktif: boolean) {
-    setFormats((lama) => (aktif ? FORMAT_TUGAS.filter((x) => x === f || lama.includes(x)) : lama.filter((x) => x !== f)));
+    // Format dipertahankan: pengajar biasanya memakai format yang sama untuk tugas berikutnya.
+    setIsian((x) => ({ ...ISIAN_AWAL, formats: x.formats }));
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -81,8 +70,8 @@ export default function PostComposer({
     // Pemeriksaan cepat di browser hanya demi pesan yang segera; server
     // memeriksa ulang semuanya.
     let dueAt: string | null = null;
-    if (tugas && pakaiTenggat) {
-      dueAt = inputWibKeIso(tenggat);
+    if (tugas && isian.pakaiTenggat) {
+      dueAt = inputWibKeIso(isian.tenggat);
       if (!dueAt) return setError("Isi tanggal dan jam tenggat.");
     }
 
@@ -107,10 +96,10 @@ export default function PostComposer({
             title: judul,
             body,
             attachments: lampiran,
-            formats,
+            formats: isian.formats,
             dueAt,
-            acceptLate: terimaTerlambat,
-            maxPoints: Number(poin),
+            acceptLate: isian.terimaTerlambat,
+            maxPoints: Number(isian.poin),
           })
         : await createPost(classId, body, lampiran);
 
@@ -121,7 +110,7 @@ export default function PostComposer({
   }
 
   const sisa = MAX_POST_BODY - body.length;
-  const bisaKirim = tugas ? judul.trim().length >= 3 && formats.length > 0 : body.trim().length > 0 || berkas.length > 0;
+  const bisaKirim = tugas ? judul.trim().length >= 3 && isian.formats.length > 0 : body.trim().length > 0 || berkas.length > 0;
 
   return (
     <form onSubmit={onSubmit} className="rounded-2xl border border-rule bg-paper-card p-6">
@@ -199,99 +188,13 @@ export default function PostComposer({
           </div>
 
           {tugas && (
-            <div className="mt-5 grid gap-5 rounded-xl border border-rule bg-paper p-4 sm:grid-cols-2">
-              <fieldset className="min-w-0 sm:col-span-2">
-                <legend className="t-label mb-2 text-ink-muted">Format yang boleh dikumpulkan</legend>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {FORMAT_TUGAS.map((f) => (
-                    <label
-                      key={f}
-                      className={cn(
-                        "flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2 transition-colors",
-                        formats.includes(f) ? "border-blue-300 bg-blue-50/50" : "border-rule hover:border-rule-strong",
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formats.includes(f)}
-                        onChange={(e) => ubahFormat(f, e.target.checked)}
-                        disabled={sibuk}
-                        className="mt-1 accent-blue-600"
-                      />
-                      <span className="min-w-0">
-                        <span className="block text-sm font-medium text-ink">{INFO_FORMAT[f].label}</span>
-                        <span className="block text-xs text-ink-muted">{INFO_FORMAT[f].ket}</span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {formats.length === 0 && (
-                  <p className="mt-2 text-xs text-rust-700">Pilih minimal satu format.</p>
-                )}
-              </fieldset>
-
-              <div className="min-w-0">
-                <label className="flex items-center gap-2.5 text-sm font-medium text-ink">
-                  <input
-                    type="checkbox"
-                    checked={pakaiTenggat}
-                    onChange={(e) => setPakaiTenggat(e.target.checked)}
-                    disabled={sibuk}
-                    className="accent-blue-600"
-                  />
-                  Pakai tenggat
-                </label>
-                {pakaiTenggat ? (
-                  <>
-                    <label htmlFor="tenggat" className="sr-only">
-                      Tenggat (WIB)
-                    </label>
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        id="tenggat"
-                        type="datetime-local"
-                        value={tenggat}
-                        onChange={(e) => setTenggat(e.target.value)}
-                        disabled={sibuk}
-                        className={cn(KOLOM, "text-sm")}
-                      />
-                      <span className="shrink-0 text-xs font-semibold text-ink-muted">WIB</span>
-                    </div>
-                    <label className="mt-3 flex items-start gap-2.5 text-sm text-ink-body">
-                      <input
-                        type="checkbox"
-                        checked={terimaTerlambat}
-                        onChange={(e) => setTerimaTerlambat(e.target.checked)}
-                        disabled={sibuk}
-                        className="mt-1 accent-blue-600"
-                      />
-                      <span>
-                        Terima pengumpulan setelah tenggat
-                        <span className="block text-xs text-ink-muted">Ditandai &ldquo;Terlambat&rdquo;.</span>
-                      </span>
-                    </label>
-                  </>
-                ) : (
-                  <p className="mt-2 text-xs text-ink-muted">Tanpa tenggat: pengumpulan selalu dibuka.</p>
-                )}
-              </div>
-
-              <div className="min-w-0">
-                <label htmlFor="poin" className="block text-sm font-medium text-ink">
-                  Nilai maksimal
-                </label>
-                <input
-                  id="poin"
-                  type="number"
-                  min={1}
-                  max={MAX_POINTS_LIMIT}
-                  inputMode="numeric"
-                  value={poin}
-                  onChange={(e) => setPoin(e.target.value)}
-                  disabled={sibuk}
-                  className={cn(KOLOM, "mt-2 w-28 text-sm")}
-                />
-              </div>
+            <div className="mt-5">
+              <IsianTugas
+                nilai={isian}
+                ubah={(patch) => setIsian((x) => ({ ...x, ...patch }))}
+                disabled={sibuk}
+                idAwalan="buat"
+              />
             </div>
           )}
 

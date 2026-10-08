@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { requireClassAccess, requireOwnedClass } from "@/lib/classGuards";
-import { getPost, postsRef } from "@/lib/classes";
+import { getPost } from "@/lib/classes";
 import {
   classSubmissionId,
   classSubmissionRef,
@@ -18,7 +18,6 @@ import {
   masihDibuka,
   mimeUntukFormat,
   validasiNilai,
-  validasiPengaturan,
 } from "@/lib/classAssignmentRules";
 import { deleteObjects } from "@/lib/storageCleanup";
 import { CLASS_SUBMISSION_FILES } from "@/lib/storagePaths";
@@ -58,45 +57,6 @@ async function ambilTugas(classId: string, postId: string) {
 }
 
 // ── Pengajar ────────────────────────────────────────────────────────────
-
-/**
- * Mengubah tenggat dan izin terlambat.
- *
- * Format dan nilai maksimal SENGAJA tidak bisa diubah: nilai yang sudah
- * diberikan bisa melampaui nilai maksimal yang baru, dan berkas yang sudah
- * terkumpul bisa menjadi format yang "tidak diminta".
- */
-export async function updateAssignment(
-  classId: string,
-  postId: string,
-  input: unknown,
-): Promise<TugasResult> {
-  const user = await getCurrentUser();
-  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
-
-  const kelas = await requireOwnedClass(user, classId);
-  if (!kelas) return { ok: false, error: "Anda tidak berhak mengubah tugas ini." };
-
-  const tugas = await ambilTugas(classId, postId);
-  if (!tugas) return { ok: false, error: "Tugas tidak ditemukan." };
-
-  const r = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
-  const hasil = validasiPengaturan(
-    { formats: tugas.p.formats, maxPoints: tugas.p.maxPoints, dueAt: r.dueAt, acceptLate: r.acceptLate },
-    Date.now(),
-    false,
-  );
-  if (!hasil.ok) return { ok: false, error: hasil.error };
-
-  await postsRef(classId).doc(postId).update({
-    "assignment.dueAt": hasil.value.dueAt,
-    "assignment.acceptLate": hasil.value.acceptLate,
-    updatedAt: new Date().toISOString(),
-  });
-
-  segarkan(classId, postId);
-  return { ok: true, message: "Pengaturan tugas disimpan." };
-}
 
 export async function gradeClassSubmission(
   classId: string,

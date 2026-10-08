@@ -36,12 +36,17 @@ import {
 } from "./testSupport";
 import { targetLabel } from "./project";
 import {
+  acceptUntuk,
   galatBerkas,
   inputWibKeIso,
   isoKeInputWib,
   masihDibuka,
+  pernahDiedit,
   mimeUntukFormat,
+  normalisasiFormat,
+  ringkasFormat,
   statusTugas,
+  toPengaturan,
   validasiNilai,
   validasiPengaturan,
   type PengaturanTugas,
@@ -90,12 +95,41 @@ async function unduh(path: string, cookie?: string) {
 function aturanMurni() {
   const MB = 1024 * 1024;
   check("berkas .exe ditolak", galatBerkas({ name: "a.exe", size: 10 }, null) !== null, "daftar tertutup");
-  check("PDF berhuruf besar diterima", galatBerkas({ name: "Tugas.PDF", size: 10 }, ["pdfImage"]) === null, ".PDF");
+  check("PDF berhuruf besar diterima", galatBerkas({ name: "Tugas.PDF", size: 10 }, ["pdf"]) === null, ".PDF");
   check(
     "DOCX ditolak bila tugas hanya meminta PDF & gambar",
-    galatBerkas({ name: "a.docx", size: 10 }, ["pdfImage"]) !== null,
+    galatBerkas({ name: "a.docx", size: 10 }, ["pdf", "jpg", "png"]) !== null,
     "format per tugas",
   );
+
+  // Format per JENIS berkas: "hanya .docx" benar-benar hanya .docx.
+  check(
+    "hanya DOCX: PPTX & XLSX ditolak, DOCX diterima",
+    galatBerkas({ name: "a.pptx", size: 10 }, ["docx"]) !== null &&
+      galatBerkas({ name: "a.xlsx", size: 10 }, ["docx"]) !== null &&
+      galatBerkas({ name: "a.docx", size: 10 }, ["docx"]) === null,
+    "per jenis",
+  );
+  check(
+    "hanya JPG: .jpeg diterima, PNG ditolak",
+    galatBerkas({ name: "foto.JPEG", size: 10 }, ["jpg"]) === null && galatBerkas({ name: "a.png", size: 10 }, ["jpg"]) !== null,
+    ".jpeg = JPG",
+  );
+  check("pesan galat menyebut jenis yang diminta", (galatBerkas({ name: "a.pptx", size: 10 }, ["pdf", "docx"]) ?? "").includes("PDF, DOCX"), "ringkasFormat");
+  check("accept pemilih berkas hanya jenis yang diminta", acceptUntuk(["docx"]) === ".docx" && acceptUntuk(["jpg"]) === ".jpg,.jpeg", acceptUntuk(["jpg"]));
+  check("MIME per jenis", mimeUntukFormat(["pptx"]).length === 1 && mimeUntukFormat(["pptx"])[0].includes("presentationml"), "pptx");
+  check(
+    "format kelompok lama diterjemahkan, urut baku, tanpa ganda",
+    JSON.stringify(normalisasiFormat(["office", "text", "pdfImage", "asing", "text", 7])) ===
+      '["text","pdf","jpg","png","docx","pptx","xlsx"]',
+    JSON.stringify(normalisasiFormat(["office", "text", "pdfImage", "asing", "text", 7])),
+  );
+  check(
+    "tugas lama tersimpan ['office'] tetap menerima ketiga jenis Office",
+    JSON.stringify(toPengaturan({ formats: ["office"], maxPoints: 100 }).formats) === '["docx","pptx","xlsx"]',
+    "toPengaturan",
+  );
+  check("ringkasan format", ringkasFormat(["text", "pdf", "docx"]) === "Teks jawaban, PDF, DOCX", ringkasFormat(["text", "pdf", "docx"]));
   check("berkas tepat 20 MB ditolak (batas eksklusif)", galatBerkas({ name: "a.zip", size: 20 * MB }, ["zip"]) !== null, "sejalan rules");
   check("berkas kosong ditolak", galatBerkas({ name: "a.png", size: 0 }, null) !== null, "0 byte");
   check("tugas teks saja tidak menerima MIME apa pun", mimeUntukFormat(["text"]).length === 0, "teks");
@@ -327,6 +361,12 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
     const B = await postIdBerjudul(classId, "Tugas Teks Tutup");
     const C = await postIdBerjudul(classId, "Tugas Teks Longgar");
     check("ketiga tugas tersimpan", Boolean(A && B && C), `${A} ${B} ${C}`);
+    {
+      // "Tugas PDF" sengaja dibuat dengan nama kelompok LAMA (pdfImage) — klien
+      // versi lama yang masih terbuka di browser tetap harus diterima.
+      const fA = (await db.collection("classes").doc(classId).collection("posts").doc(A).get()).data()?.assignment?.formats;
+      check("format kelompok lama dari formulir disimpan per jenis", JSON.stringify(fA) === '["pdf","jpg","png"]', JSON.stringify(fA));
+    }
 
     {
       const d = (await db.collection("classes").doc(classId).collection("posts").doc(A).get()).data();
@@ -354,7 +394,7 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
     const kirimId = await actionId("kelas/[id]/tugas/[postId]", "submitClassAssignment");
     const batalId = await actionId("kelas/[id]/tugas/[postId]", "unsubmitClassAssignment");
     const nilaiId = await actionId("educator/classes/[id]/tugas/[postId]", "gradeClassSubmission");
-    const aturId = await actionId("educator/classes/[id]/tugas/[postId]", "updateAssignment");
+    const editId = await actionId("educator/classes/[id]/tugas/[postId]", "editPost");
 
     const jalurA = `/kelas/${classId}/tugas/${A}`;
     const folderA = (uid: string) => `class-submissions/${uid}/${classId}/${A}`;
@@ -454,11 +494,14 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
     // ── Tenggat ───────────────────────────────────────────────────
     {
       const lalu = new Date(Date.now() - 3600_000).toISOString();
-      const aturB = await callAction(`/educator/classes/${classId}/tugas/${B}`, aturId, [classId, B, { dueAt: lalu, acceptLate: false }], siswa.cookie);
+      // Tenggat diubah lewat formulir edit — bentuk UTUH, isian lain tetap sama.
+      const isiB = { title: "Tugas Teks Tutup", body: "", keepAttachments: [], attachments: [], formats: ["text"], maxPoints: 50 };
+      const isiC = { title: "Tugas Teks Longgar", body: "", keepAttachments: [], attachments: [], formats: ["text"], maxPoints: 10 };
+      const aturB = await callAction(`/educator/classes/${classId}/tugas/${B}`, editId, [classId, B, { ...isiB, dueAt: lalu, acceptLate: false }], siswa.cookie);
       check("siswa tidak bisa mengubah tenggat", aturB.includes("tidak berhak"), "penjaga");
 
-      await callAction(`/educator/classes/${classId}/tugas/${B}`, aturId, [classId, B, { dueAt: lalu, acceptLate: false }], owner.cookie);
-      await callAction(`/educator/classes/${classId}/tugas/${C}`, aturId, [classId, C, { dueAt: lalu, acceptLate: true }], owner.cookie);
+      await callAction(`/educator/classes/${classId}/tugas/${B}`, editId, [classId, B, { ...isiB, dueAt: lalu, acceptLate: false }], owner.cookie);
+      await callAction(`/educator/classes/${classId}/tugas/${C}`, editId, [classId, C, { ...isiC, dueAt: lalu, acceptLate: true }], owner.cookie);
 
       const dB = (await db.collection("classes").doc(classId).collection("posts").doc(B).get()).data();
       check("tenggat diubah ke masa lalu (menutup pengumpulan)", dB?.assignment?.dueAt === lalu, String(dB?.assignment?.dueAt));
@@ -591,6 +634,86 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
       check("berkas konteks lama yang dibuang terhapus dari Storage", !(await ada(berkasAi)) && (await ada(kedua)), "deleteObjects");
     }
 
+    // ── Menyunting postingan ──────────────────────────────────────
+    const lampiranBaru = `${folderPemilik}/draf/soal-revisi.pdf`;
+    {
+      const jalurEdit = `/educator/classes/${classId}/tugas/${A}`;
+      const ubah = (cookie: string, post: string, input: unknown) => callAction(jalurEdit, editId, [classId, post, input], cookie);
+      const isiA = {
+        title: "Tugas PDF (revisi)",
+        body: "Instruksi baru: kerjakan soal nomor 1-5.",
+        keepAttachments: [lampiran],
+        attachments: [],
+        formats: ["pdf", "docx"],
+        dueAt: null,
+        acceptLate: false,
+        maxPoints: 100,
+      };
+
+      check("siswa tidak bisa menyunting tugas", (await ubah(siswa.cookie, A, isiA)).includes("tidak berhak"), "penjaga");
+      check(
+        "nilai maksimal di bawah nilai yang sudah diberikan ditolak",
+        (await ubah(owner.cookie, A, { ...isiA, maxPoints: 50 })).includes("tidak bisa di bawah 88"),
+        "88/100 tidak boleh jadi 88/50",
+      );
+      check("judul terlalu pendek ditolak", (await ubah(owner.cookie, A, { ...isiA, title: "ab" })).includes("minimal 3"), "validasi sama dengan membuat");
+      check("tanpa format ditolak", (await ubah(owner.cookie, A, { ...isiA, formats: [] })).includes("minimal satu format"), "validasi sama dengan membuat");
+
+      const ok = await ubah(owner.cookie, A, isiA);
+      check("pemilik menyunting tugas", ok.includes("Tugas diperbarui"), "pesan hasil");
+      const d = (await db.collection("classes").doc(classId).collection("posts").doc(A).get()).data();
+      check(
+        "judul, instruksi, format, dan tenggat tersimpan",
+        d?.title === isiA.title && d?.body === isiA.body && JSON.stringify(d?.assignment?.formats) === '["pdf","docx"]' && d?.assignment?.dueAt === null,
+        JSON.stringify([d?.title, d?.assignment?.formats]),
+      );
+      check("lampiran yang dipertahankan tetap ada", d?.attachments?.length === 1 && d.attachments[0].path === lampiran && (await ada(lampiran)), "keep");
+      check("jenis tetap tugas", d?.kind === "assignment", String(d?.kind));
+      check("updatedAt berubah", typeof d?.updatedAt === "string" && d.updatedAt > d.createdAt, String(d?.updatedAt));
+      check("nilai siswa yang sudah ada tidak tersentuh", (await subRef(classId, A, siswa.uid).get()).data()?.grade === 88, "88");
+
+      // Ganti lampiran: yang lama dibuang dari Storage, path asing di keep diabaikan.
+      await simpan(lampiranBaru, "application/pdf");
+      const ganti = await ubah(owner.cookie, A, {
+        ...isiA,
+        keepAttachments: [`class-files/${siswa.uid}/${classId}/draf/palsu.pdf`],
+        attachments: [{ path: lampiranBaru, name: "soal-revisi.pdf" }],
+      });
+      check("lampiran diganti", ganti.includes("Tugas diperbarui"), "pesan hasil");
+      const d2 = (await db.collection("classes").doc(classId).collection("posts").doc(A).get()).data();
+      check(
+        "path asing di keepAttachments diabaikan",
+        d2?.attachments?.length === 1 && d2.attachments[0].path === lampiranBaru,
+        JSON.stringify(d2?.attachments?.map((a: { path: string }) => a.path)),
+      );
+      check("lampiran lama yang dibuang terhapus dari Storage", !(await ada(lampiran)) && (await ada(lampiranBaru)), "deleteObjects");
+
+      const halSiswa = await probeText(`/kelas/${classId}/tugas/${A}`, siswa.cookie);
+      check("siswa melihat judul baru", halSiswa.html.includes("Tugas PDF (revisi)"), "halaman siswa");
+      check(
+        "tanda diedit hanya bila disunting > 1 menit setelah terbit",
+        pernahDiedit({ createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:02:00.000Z" }) &&
+          !pernahDiedit({ createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:30.000Z" }) &&
+          !pernahDiedit({ createdAt: "", updatedAt: "2026-01-01T00:02:00.000Z" }),
+        "pernahDiedit",
+      );
+
+      // Pengumuman: isi bisa disunting, tetapi tidak boleh dikosongkan, dan jenisnya tidak berubah.
+      const snapP = await db.collection("classes").doc(classId).collection("posts").where("kind", "==", "announcement").get();
+      const P = snapP.docs[0]?.id ?? "";
+      const lampP = (snapP.docs[0]?.data().attachments ?? []).map((a: { path: string }) => a.path);
+      const kosong = await ubah(owner.cookie, P, { body: "  ", keepAttachments: [], attachments: [] });
+      check("pengumuman tidak boleh dikosongkan", kosong.includes("tidak boleh kosong"), "validasi");
+      const okP = await ubah(owner.cookie, P, { body: "Pengumuman yang sudah diedit.", keepAttachments: lampP, attachments: [], title: "x", formats: ["zip"] });
+      check("pemilik menyunting pengumuman", okP.includes("Pengumuman diperbarui"), "pesan hasil");
+      const dP = (await db.collection("classes").doc(classId).collection("posts").doc(P).get()).data();
+      check(
+        "pengumuman tetap pengumuman (title/format diabaikan)",
+        dP?.kind === "announcement" && dP?.body === "Pengumuman yang sudah diedit." && !dP?.title && dP?.assignment === null,
+        JSON.stringify([dP?.kind, dP?.title]),
+      );
+    }
+
     // ── Menghapus tugas ───────────────────────────────────────────
     {
       // Kiriman segar yang belum dinilai, supaya terbukti ikut tersapu.
@@ -605,7 +728,7 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
       const sisa = await db.collection("classSubmissions").where("postId", "==", A).get();
       check("pengumpulannya ikut terhapus", sisa.empty, `${sisa.size} tersisa`);
       check("berkas jawaban ikut terhapus", !(await ada(jawabanSiswa)) && !(await ada(segar)), "Storage");
-      check("lampiran pengajarnya ikut terhapus", !(await ada(lampiran)), lampiran);
+      check("lampiran pengajarnya ikut terhapus", !(await ada(lampiran)) && !(await ada(lampiranBaru)), lampiranBaru);
       check("berkas konteks AI-nya ikut terhapus", !(await ada(`${folderPemilik}/ai-${A}/kunci2.pdf`)), "bersihkanPost");
     }
 

@@ -86,10 +86,12 @@ export const PENGETAHUAN_SITUS = `## Akun
   bisa keluar dari kelas kapan saja.
 - Di dalam kelas ada tab Pengumuman (pengumuman pengajar, boleh berlampiran;
   anggota bisa membalas), Tugas, Anggota, dan Tentang. Hanya pengajar yang
-  bisa memposting.
-- Tugas kelas: pengajar menentukan format jawaban yang diterima (teks yang
-  diketik langsung, PDF & gambar JPG/PNG, dokumen Office DOCX/PPTX/XLSX, atau
-  ZIP), tenggat opsional dalam WIB, apakah pengumpulan setelah tenggat masih
+  bisa memposting. Pengajar bisa mengedit pengumuman dan tugas setelah terbit
+  (judul, instruksi, lampiran, format, tenggat, nilai maksimal); kiriman siswa
+  yang sudah masuk tidak berubah.
+- Tugas kelas: pengajar menentukan format jawaban yang diterima, satu per
+  jenis berkas (teks yang diketik langsung, PDF, JPG, PNG, Word .docx,
+  PowerPoint .pptx, Excel .xlsx, atau ZIP — misalnya "hanya .docx"), tenggat opsional dalam WIB, apakah pengumpulan setelah tenggat masih
   diterima (ditandai "Terlambat"), dan nilai maksimal.
 - Peserta mengumpulkan di halaman tugas: maksimal 5 berkas, masing-masing di
   bawah 20 MB. Selama belum dinilai dan pengumpulan masih dibuka, kiriman bisa

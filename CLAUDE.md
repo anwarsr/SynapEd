@@ -265,10 +265,16 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
 - Berkas: `classAssignmentRules.ts` (NETRAL — format, MIME, batas, validasi,
   status, WIB), `classAssignments.ts` (server-only, tanpa penjaga: data,
   `periksaBerkas`, `bersihkanPost/Kelas`), `classAssignmentActions.ts`
-  (`"use server"`: `updateAssignment`, `gradeClassSubmission`,
-  `submitClassAssignment`, `unsubmitClassAssignment`), `createPost`/`createAssignment`
-  di `classActions.ts`, unggah klien di `classUpload.ts`, penyaji `serveStorageFile.ts`.
-- Format (`text`/`pdfImage`/`office`/`zip`) dipilih per tugas. **MIME diambil dari
+  (`"use server"`: `gradeClassSubmission`, `submitClassAssignment`,
+  `unsubmitClassAssignment`), `createPost`/`createAssignment`/`editPost` di
+  `classActions.ts`, isian tugas bersama `IsianTugas.tsx` (kotak tulis + formulir edit), unggah klien di `classUpload.ts`, penyaji `serveStorageFile.ts`.
+- Format dipilih per tugas, SATU PER JENIS BERKAS: `text`/`pdf`/`jpg`/`png`/`docx`/`pptx`/
+  `xlsx`/`zip` (`.jpeg` = `jpg`). Versi pertama berkelompok (`pdfImage`, `office`):
+  `normalisasiFormat` menerjemahkannya saat MEMBACA (`toPengaturan`) dan saat MENERIMA
+  (`validasiPengaturan`, untuk browser yang masih memuat formulir lama) — data lama tidak
+  dimigrasi dan tetap menerima jenis yang sama. Urutan disimpan selalu urutan baku
+  `FORMAT_TUGAS`. `KELOMPOK_FORMAT` hanya untuk tampilan; `ringkasFormat` untuk teks
+  ringkas. **MIME diambil dari
   ekstensi** (`mimeOfName`), bukan `file.type` (Windows: ZIP = `x-zip-compressed`).
   Daftar MIME sama persis dengan `isClassFile()` di storage.rules; batas 20 MB eksklusif.
 - **`periksaBerkas` tidak mempercayai browser**: path wajib berawalan folder milik
@@ -283,7 +289,16 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
   Satu kiriman per siswa per tugas; mengganti = batalkan dulu. Batal ditolak
   setelah dinilai dan setelah pengumpulan ditutup. Batal menghapus dokumen DULU,
   baru berkas. Menilai pakai transaksi (siswa bisa membatalkan bersamaan).
-  `updateAssignment` hanya mengubah `dueAt`/`acceptLate` — format & nilai maksimal terkunci.
+- **Edit postingan** (`editPost`, UI `EditPost.tsx` — di umpan & di halaman tugas):
+  masukan bentuk UTUH, divalidasi persis seperti membuat (`validasiPengaturan(..., false)`:
+  tenggat lampau BOLEH, itu cara menutup lebih awal). `keepAttachments` dicocokkan
+  dengan lampiran tersimpan, unggahan baru lewat `periksaBerkas`, lampiran yang dibuang
+  dihapus SETELAH tersimpan. `maxPoints` ditolak bila di bawah nilai tertinggi yang
+  sudah diberikan. Jenis (pengumuman/tugas) tidak bisa berubah. Kiriman lama tidak
+  disentuh (format/`late` tidak dihitung ulang). Formulir memuat ulang isinya dari
+  props setiap kali dibuka — tanpa itu unggahan yang baru tersimpan hilang di simpanan
+  berikutnya. `pernahDiedit` (> 1 menit) memberi tanda "diedit". `updateAssignment`
+  (khusus tenggat) sudah DIHAPUS — jangan dihidupkan lagi; satu jalur edit saja.
 - **WIB tetap** (`inputWibKeIso`, `isoKeInputWib`, `formatWib`): server App Hosting
   UTC. Komponen klien menerima waktu yang SUDAH diformat server (`waktuKirim`) —
   Intl Node vs browser bisa berbeda tanda baca → hydration mismatch.

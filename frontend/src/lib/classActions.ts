@@ -5,7 +5,15 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { requireClassAccess, requireOwnedClass } from "@/lib/classGuards";
 import { normalizeInviteCode } from "@/lib/inviteCode";
-import { berkasAiKelas, bersihkanKelas, bersihkanPost, getPengaturanAi, periksaBerkas } from "@/lib/classAssignments";
+import {
+  berkasAiKelas,
+  bersihkanKelas,
+  bersihkanPost,
+  getPengaturanAi,
+  listPostSubmissions,
+  periksaBerkas,
+} from "@/lib/classAssignments";
+import { deleteObjects } from "@/lib/storageCleanup";
 import {
   MAX_ASSIGNMENT_TITLE,
   MAX_FILES_PER_POST,
@@ -390,6 +398,93 @@ export async function createAssignment(classId: string, input: unknown): Promise
   });
 
   return { ok: true, message: "Tugas diterbitkan." };
+}
+
+/**
+ * Menyunting postingan yang sudah terbit — pengumuman maupun tugas.
+ *
+ * Masukannya bentuk UTUH (bukan tambalan): formulir edit selalu mengirim
+ * semua isian, jadi validasinya bisa persis sama dengan saat membuat, dan
+ * tidak ada kombinasi setengah-tersimpan.
+ *
+ * Lampiran: `keepAttachments` = path lampiran LAMA yang dipertahankan,
+ * dicocokkan dengan daftar tersimpan (bukan dipercaya dari browser);
+ * `attachments` = unggahan baru, lewat periksaBerkas seperti saat membuat.
+ * Lampiran yang dibuang dihapus dari Storage SETELAH tersimpan.
+ *
+ * Yang sengaja dijaga untuk tugas:
+ *  - nilai maksimal tidak boleh di bawah nilai yang SUDAH diberikan — nilai
+ *    85/100 tidak boleh diam-diam menjadi 85/50;
+ *  - tenggat boleh dimundurkan ke masa lalu (menutup pengumpulan lebih awal);
+ *    status "terlambat" kiriman lama tidak dihitung ulang.
+ *  - jenis postingan tidak bisa diganti (pengumuman ↔ tugas).
+ */
+export async function editPost(classId: string, postId: string, input: unknown): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Anda tidak berhak mengubah postingan ini." };
+
+  const post = await getPost(classId, postId);
+  if (!post) return { ok: false, error: "Postingan tidak ditemukan." };
+
+  const r = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const body = clean(r.body, MAX_POST_BODY);
+
+  const keep = new Set(
+    Array.isArray(r.keepAttachments) ? r.keepAttachments.filter((x): x is string => typeof x === "string") : [],
+  );
+  const dipertahankan = post.attachments.filter((a) => keep.has(a.path));
+
+  const baru = await periksaBerkas(
+    r.attachments,
+    `${CLASS_FILES}/${user.uid}/${classId}/`,
+    MIME_KELAS,
+    MAX_FILES_PER_POST,
+  );
+  if (!baru.ok) return { ok: false, error: baru.error };
+
+  const attachments = [...dipertahankan, ...baru.files.filter((f) => !keep.has(f.path))];
+  if (attachments.length > MAX_FILES_PER_POST) {
+    return { ok: false, error: `Maksimal ${MAX_FILES_PER_POST} lampiran.` };
+  }
+
+  let perubahan: Record<string, unknown>;
+  if (post.kind === "assignment") {
+    const title = clean(r.title, MAX_ASSIGNMENT_TITLE);
+    if (title.length < 3) return { ok: false, error: "Judul tugas minimal 3 karakter." };
+
+    const pengaturan = validasiPengaturan(r, Date.now(), false);
+    if (!pengaturan.ok) return { ok: false, error: pengaturan.error };
+
+    const tertinggi = Math.max(
+      0,
+      ...(await listPostSubmissions(classId, postId)).map((s) => (s.status === "graded" && s.grade !== null ? s.grade : 0)),
+    );
+    if (pengaturan.value.maxPoints < tertinggi) {
+      return {
+        ok: false,
+        error: `Nilai maksimal tidak bisa di bawah ${tertinggi} — sudah ada siswa yang mendapat nilai itu. Ubah nilainya dulu.`,
+      };
+    }
+
+    perubahan = { title, body, attachments, assignment: pengaturan.value };
+  } else {
+    if (!body && attachments.length === 0) return { ok: false, error: "Isi postingan tidak boleh kosong." };
+    perubahan = { body, attachments };
+  }
+
+  await postsRef(classId).doc(postId).update({ ...perubahan, updatedAt: now() });
+
+  const tetap = new Set(attachments.map((a) => a.path));
+  await deleteObjects(post.attachments.map((a) => a.path).filter((x) => !tetap.has(x))).catch(() => 0);
+
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/kelas/${classId}`);
+  revalidatePath(`/educator/classes/${classId}/tugas/${postId}`);
+  revalidatePath(`/kelas/${classId}/tugas/${postId}`);
+  return { ok: true, message: post.kind === "assignment" ? "Tugas diperbarui." : "Pengumuman diperbarui." };
 }
 
 export async function deletePost(classId: string, postId: string): Promise<ClassResult> {

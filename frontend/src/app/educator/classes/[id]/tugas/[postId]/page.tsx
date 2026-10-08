@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
 import AssignmentDetail from "@/components/classes/AssignmentDetail";
-import AssignmentSettingsForm from "@/components/classes/AssignmentSettingsForm";
+import EditPost from "@/components/classes/EditPost";
 import AiGradingSettings from "@/components/classes/AiGradingSettings";
 import ClassGradeForm from "@/components/classes/ClassGradeForm";
 import DeleteButton from "@/components/classes/DeleteButton";
@@ -98,6 +98,7 @@ export default async function TugasPengajarPage({ params }: Props) {
         pengajar={kartu.get(post.authorUid)}
         kembali={`/educator/classes/${id}?tab=tugas`}
         saat={saat}
+        aksi={<EditPost classId={id} post={post} />}
         samping={
           <>
             <div className="rounded-2xl border border-rule bg-paper-card p-6">
@@ -126,13 +127,6 @@ export default async function TugasPengajarPage({ params }: Props) {
               postId={postId}
               awal={ai}
               adaLampiranTugas={post.attachments.length > 0}
-            />
-
-            <AssignmentSettingsForm
-              classId={id}
-              postId={postId}
-              dueAt={p.dueAt}
-              acceptLate={p.acceptLate}
             />
 
             <div className="px-1">

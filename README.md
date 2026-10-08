@@ -223,19 +223,26 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - Educator membuat kelas dan membagikan **kode undangan**.
 - Anggota bergabung dengan kode itu di `/kelas`.
 - Di dalam kelas ada pengumuman/postingan dan balasan. Pengumuman boleh
-  berlampiran berkas (atau berkas saja tanpa teks).
+  berlampiran berkas (atau berkas saja tanpa teks), dan isi serta lampirannya
+  bisa diedit setelah terbit.
 - **Tugas** (mirip Google Classroom), diterbitkan pengajar dari kotak tulis yang
   sama dengan memilih "Tugas":
   - judul, instruksi, dan lampiran berkas (opsional);
-  - format jawaban yang diterima, boleh lebih dari satu: **teks** yang diketik
-    langsung, **PDF & gambar** (PDF/JPG/PNG), **dokumen Office**
-    (DOCX/PPTX/XLSX), **arsip ZIP**;
+  - format jawaban yang diterima, dipilih **per jenis berkas** dan boleh lebih
+    dari satu: **teks** yang diketik langsung, **PDF**, **JPG**, **PNG**,
+    **Word (.docx)**, **PowerPoint (.pptx)**, **Excel (.xlsx)**, **ZIP** —
+    misalnya "hanya .docx". Di formulir dikelompokkan (Teks · PDF & gambar ·
+    Dokumen Office · Arsip) dengan tombol *Pilih semua* per kelompok;
   - **tenggat** opsional (ditulis & ditampilkan dalam WIB) dan pilihan
     **menerima pengumpulan setelah tenggat** (ditandai "Terlambat");
   - nilai maksimal (bawaan 100).
 
-  Tenggat dan izin terlambat masih bisa diubah setelah terbit (mis. untuk
-  memperpanjang atau menutup lebih awal); format dan nilai maksimal tidak.
+  Setelah terbit, tugas tetap bisa **diedit** lewat tombol *Edit tugas* di
+  halaman tugas (atau *Edit* di umpan): judul, instruksi, lampiran (tambah /
+  buang), format, tenggat (termasuk memperpanjang atau menutup lebih awal),
+  izin terlambat, dan nilai maksimal. Kiriman yang sudah masuk tidak berubah,
+  dan nilai maksimal tidak bisa diturunkan di bawah nilai yang sudah
+  diberikan. Postingan yang disunting diberi tanda *diedit*.
 - Siswa melihat semua tugas di tab **Tugas** beserta statusnya (belum
   mengumpulkan / dikumpulkan / terlambat / dinilai), lalu mengumpulkan di
   halaman tugas `/kelas/[id]/tugas/[postId]`. Selama belum dinilai dan
@@ -400,8 +407,7 @@ npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman s
 - Soal kuis selain pilihan tunggal.
 - Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
-- Tugas kelas: menyunting judul/instruksi/lampiran setelah terbit, mengembalikan
-  tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
+- Tugas kelas: mengembalikan tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
   rekap nilai per kelas, dan koreksi AI untuk semua siswa sekaligus.
 - Koreksi AI untuk PDF hasil pindai dan isi arsip ZIP.
 

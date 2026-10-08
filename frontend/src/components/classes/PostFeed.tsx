@@ -7,7 +7,8 @@ import DeleteButton from "@/components/classes/DeleteButton";
 import ReplyForm from "@/components/classes/ReplyForm";
 import Lampiran, { hrefLampiran } from "@/components/classes/Lampiran";
 import { formatDate } from "@/lib/adminUsers";
-import { INFO_FORMAT, formatWib } from "@/lib/classAssignmentRules";
+import EditPost from "@/components/classes/EditPost";
+import { formatWib, pernahDiedit, ringkasFormat } from "@/lib/classAssignmentRules";
 import type { KelasPost, KelasReply } from "@/lib/classTypes";
 import type { UserCard } from "@/lib/userCards";
 
@@ -99,6 +100,7 @@ export default function PostFeed({
 
                   <span className="ml-auto text-[13px] text-ink-muted">
                     {formatDate(post.createdAt)}
+                    {pernahDiedit(post) && <span className="italic"> · diedit</span>}
                   </span>
                 </div>
 
@@ -113,7 +115,7 @@ export default function PostFeed({
                     <span className="mt-1 block text-[13px] text-ink-muted">
                       {post.assignment.dueAt ? `Tenggat ${formatWib(post.assignment.dueAt)}` : "Tanpa tenggat"}
                       {" · "}
-                      {post.assignment.formats.map((f) => INFO_FORMAT[f].label).join(", ")}
+                      {ringkasFormat(post.assignment.formats)}
                     </span>
                     <span className="mt-2 inline-block text-[13px] font-semibold text-blue-700">
                       Buka tugas →
@@ -136,7 +138,8 @@ export default function PostFeed({
                 />
 
                 {canModerate && (
-                  <div className="mt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <EditPost classId={classId} post={post} />
                     <DeleteButton target={{ kind: "post", classId, postId: post.id }} />
                   </div>
                 )}

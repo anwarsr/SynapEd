@@ -36,17 +36,60 @@ export const MAX_POINTS_LIMIT = 1000;
 /** Postingan lama tidak punya field `kind` — dibaca sebagai pengumuman. */
 export type JenisPost = "announcement" | "assignment";
 
-/** Format yang boleh dipakai siswa untuk mengumpulkan; dipilih per tugas. */
-export type FormatTugas = "text" | "pdfImage" | "office" | "zip";
+/**
+ * Format yang boleh dipakai siswa untuk mengumpulkan; dipilih per tugas,
+ * SATU PER JENIS BERKAS — pengajar bisa meminta "hanya .docx" atau "hanya
+ * .pptx", bukan sekadar "dokumen Office".
+ *
+ * Versi pertama berkelompok (`pdfImage`, `office`). Dokumen lama yang masih
+ * menyimpan nama kelompok diterjemahkan `normalisasiFormat` saat dibaca dan
+ * saat diterima dari formulir, jadi tugas lama tetap menerima persis jenis
+ * berkas yang sama seperti sebelumnya.
+ */
+export type FormatTugas = "text" | "pdf" | "jpg" | "png" | "docx" | "pptx" | "xlsx" | "zip";
 
-export const FORMAT_TUGAS: readonly FormatTugas[] = ["text", "pdfImage", "office", "zip"];
+export const FORMAT_TUGAS: readonly FormatTugas[] = ["text", "pdf", "jpg", "png", "docx", "pptx", "xlsx", "zip"];
 
-export const INFO_FORMAT: Record<FormatTugas, { label: string; ket: string }> = {
-  text: { label: "Teks jawaban", ket: "Diketik langsung di halaman tugas" },
-  pdfImage: { label: "PDF & gambar", ket: "PDF, JPG, PNG" },
-  office: { label: "Dokumen Office", ket: "Word, PowerPoint, Excel (.docx, .pptx, .xlsx)" },
-  zip: { label: "Arsip ZIP", ket: "Satu berkas .zip berisi banyak berkas" },
+/** `singkat` untuk ringkasan & pesan galat, `label` + `ket` untuk formulir. */
+export const INFO_FORMAT: Record<FormatTugas, { label: string; singkat: string; ket: string }> = {
+  text: { label: "Teks jawaban", singkat: "Teks jawaban", ket: "Diketik langsung di halaman tugas" },
+  pdf: { label: "PDF", singkat: "PDF", ket: ".pdf" },
+  jpg: { label: "JPG", singkat: "JPG", ket: ".jpg, .jpeg" },
+  png: { label: "PNG", singkat: "PNG", ket: ".png" },
+  docx: { label: "Word", singkat: "DOCX", ket: ".docx" },
+  pptx: { label: "PowerPoint", singkat: "PPTX", ket: ".pptx" },
+  xlsx: { label: "Excel", singkat: "XLSX", ket: ".xlsx" },
+  zip: { label: "Arsip ZIP", singkat: "ZIP", ket: ".zip" },
 };
+
+/** Pengelompokan untuk TAMPILAN formulir saja — yang disimpan tetap per jenis. */
+export const KELOMPOK_FORMAT: readonly { label: string; formats: readonly FormatTugas[] }[] = [
+  { label: "Teks", formats: ["text"] },
+  { label: "PDF & gambar", formats: ["pdf", "jpg", "png"] },
+  { label: "Dokumen Office", formats: ["docx", "pptx", "xlsx"] },
+  { label: "Arsip", formats: ["zip"] },
+];
+
+/** Nama kelompok versi pertama → jenis berkas yang dulu dicakupnya. */
+const FORMAT_LAMA: Readonly<Record<string, readonly FormatTugas[]>> = {
+  pdfImage: ["pdf", "jpg", "png"],
+  office: ["docx", "pptx", "xlsx"],
+};
+
+/** Daftar format yang sah, urut baku, tanpa ganda; nama kelompok lama diterjemahkan. */
+export function normalisasiFormat(raw: unknown): FormatTugas[] {
+  const ada = new Set<string>();
+  for (const x of Array.isArray(raw) ? raw : []) {
+    if (typeof x !== "string") continue;
+    for (const f of FORMAT_LAMA[x] ?? [x]) ada.add(f);
+  }
+  return FORMAT_TUGAS.filter((f) => ada.has(f));
+}
+
+/** "Teks jawaban, PDF, DOCX" — untuk ringkasan di umpan, halaman tugas, dan pesan galat. */
+export function ringkasFormat(formats: readonly FormatTugas[]): string {
+  return formats.map((f) => INFO_FORMAT[f].singkat).join(", ");
+}
 
 /**
  * Ekstensi → MIME baku, dan format tugas pemiliknya.
@@ -61,21 +104,21 @@ export const INFO_FORMAT: Record<FormatTugas, { label: string; ket: string }> = 
  * bisa dieksekusi.
  */
 const BERKAS: Record<string, { mime: string; format: Exclude<FormatTugas, "text"> }> = {
-  ".pdf": { mime: "application/pdf", format: "pdfImage" },
-  ".jpg": { mime: "image/jpeg", format: "pdfImage" },
-  ".jpeg": { mime: "image/jpeg", format: "pdfImage" },
-  ".png": { mime: "image/png", format: "pdfImage" },
+  ".pdf": { mime: "application/pdf", format: "pdf" },
+  ".jpg": { mime: "image/jpeg", format: "jpg" },
+  ".jpeg": { mime: "image/jpeg", format: "jpg" },
+  ".png": { mime: "image/png", format: "png" },
   ".docx": {
     mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    format: "office",
+    format: "docx",
   },
   ".pptx": {
     mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    format: "office",
+    format: "pptx",
   },
   ".xlsx": {
     mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    format: "office",
+    format: "xlsx",
   },
   ".zip": { mime: "application/zip", format: "zip" },
 };
@@ -131,7 +174,7 @@ export function galatBerkas(
   const format = mime ? formatOfMime(mime) : null;
 
   if (!mime || !format || (formats !== null && !formats.includes(format))) {
-    const izin = formats === null ? null : formats.filter((f) => f !== "text").map((f) => INFO_FORMAT[f].label);
+    const izin = formats === null ? null : formats.filter((f) => f !== "text").map((f) => INFO_FORMAT[f].singkat);
     return izin && izin.length > 0
       ? `"${file.name}" tidak diterima. Format yang diminta: ${izin.join(", ")}.`
       : `"${file.name}" tidak diterima. Format yang didukung: PDF, JPG, PNG, DOCX, PPTX, XLSX, ZIP.`;
@@ -200,8 +243,7 @@ export function toBerkasList(raw: unknown): KelasBerkas[] {
 }
 
 function toFormats(raw: unknown): FormatTugas[] {
-  const daftar = Array.isArray(raw) ? raw : [];
-  const sah = FORMAT_TUGAS.filter((f) => daftar.includes(f));
+  const sah = normalisasiFormat(raw);
   // Dokumen rusak tanpa satu format pun: lebih aman menerima teks saja
   // daripada tugas yang tidak bisa dikumpulkan sama sekali.
   return sah.length > 0 ? sah : ["text"];
@@ -243,8 +285,7 @@ export function validasiPengaturan(
 ): Hasil<PengaturanTugas> {
   const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
 
-  const daftar = Array.isArray(r.formats) ? r.formats : [];
-  const formats = FORMAT_TUGAS.filter((f) => daftar.includes(f));
+  const formats = normalisasiFormat(r.formats);
   if (formats.length === 0) return { ok: false, error: "Pilih minimal satu format pengumpulan." };
 
   let dueAt: string | null = null;
@@ -304,6 +345,17 @@ export const LABEL_STATUS: Record<StatusTugas, { label: string; tone: "neutral" 
   dinilai: { label: "Dinilai", tone: "blue" },
 };
 
+/**
+ * Postingan pernah disunting setelah terbit. Selisih satu menit, bukan
+ * sekadar `!==`: dokumen lama bisa punya createdAt & updatedAt yang ditulis
+ * terpisah beberapa milidetik.
+ */
+export function pernahDiedit(p: { createdAt: string; updatedAt: string }): boolean {
+  const a = Date.parse(p.createdAt);
+  const b = Date.parse(p.updatedAt);
+  return Number.isFinite(a) && Number.isFinite(b) && b - a > 60_000;
+}
+
 // ── Koreksi AI ──────────────────────────────────────────────────────────
 //
 // Pengaturan per tugas, disimpan di field `aiGrading` dokumen postingan.
@@ -329,7 +381,7 @@ export const MAX_AI_CONTEXT_FILES = 3;
 export const MIME_AI_KONTEKS: readonly string[] = MIME_KELAS.filter((m) => m !== "application/zip");
 
 /** Format untuk pemilih berkas konteks AI (semua kecuali ZIP). */
-export const FORMAT_AI_KONTEKS: readonly FormatTugas[] = ["pdfImage", "office"];
+export const FORMAT_AI_KONTEKS: readonly FormatTugas[] = ["pdf", "jpg", "png", "docx", "pptx", "xlsx"];
 
 export function toPengaturanAi(raw: unknown): PengaturanAi {
   const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
