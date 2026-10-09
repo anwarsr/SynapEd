@@ -215,6 +215,19 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   (`bg-card-hover`, `bg-header`, `bg-banner`, `bg-chip`, `text-error-text`, `text-warn-text`, `text-paper`),
   dan teks di atas `bg-white` solid = `text-paper`. Logo: `.logo-on-dark`/`.logo-on-light` (dua <Image>).
   Mini ikon "Kursus yang Diikuti" di profil kini memakai gambar kursus (`gambar` dari listCourses()).
+- **Kartu kursus** (`CourseCard`, dipakai beranda & /courses; kartu inline di Courses.tsx sudah dihapus):
+  tingkat kesulitan = teks polos kanan-bawah gambar (tanpa kotak/garis); angka modul & estimasi besar;
+  rating = bintang presisi + nilai + jumlah ulasan. Gambar sampul = `CourseCover` (client): ditekan →
+  membalik 3D menampilkan "DIBUAT OLEH" + USERNAME pembuat (`instructorUsername` dari `getUsernames`, cadangan:
+  nama penyedia; kapital; username berkedip cepat 4x lalu biru — `.cover-kedip`; latar belakang = latar kartu; tanpa
+  garis biru); `z-10` supaya tak tertelan tautan kartu. `untukLevel()` masih ada di courseUi.ts tapi tak dipakai kartu.
+- **Bahasa** (profil → Pengaturan Laman): Indonesia (asli, bawaan) / Inggris. Inggris = widget RESMI Google
+  Website Translation (`translate.google.com/translate_a/element.js`, tanpa kunci API) yang dimuat
+  `TranslateLoader` HANYA bila `synaped_lang=en` / cookie `googtrans=/id/en`; memilih bahasa memuat ulang
+  halaman. Widget membungkus ulang simpul teks sehingga React bisa tersandung — `TranslateLoader` memasang
+  tambalan `removeChild`/`insertBefore` saat Inggris aktif. Bilah bawaan widget disembunyikan di globals.css.
+  Label bahasa memakai `translate="no"`. Terjemahan mesin: jangan harap menggantikan teks Inggris tulisan tangan.
+- **Peran** di profil = teks polos berwarna (bukan `Tag`).
 - **Tanda pisah**: teks tampilan memakai tanda hubung "-", BUKAN em dash "—" (permintaan pemilik; sudah
   diganti di seluruh string/JSX, komentar kode tak disentuh). Jangan menulis "—" di teks yang tampil.
   Tombol/halaman pendapatan bernama "Pendapatan"; kartu "Cari kursus baru"/"Cari kelas" ada di /dashboard.

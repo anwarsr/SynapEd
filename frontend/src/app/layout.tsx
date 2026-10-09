@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import ChatWidget from "@/components/ui/ChatWidget";
 import SplashLoader from "@/components/ui/SplashLoader";
+import TranslateLoader from "@/components/ui/TranslateLoader";
 import { ChatContextProvider } from "@/components/ui/ChatContext";
 import "./globals.css";
 
@@ -52,6 +53,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased font-body bg-paper text-ink-body">
         <SplashLoader />
+        <TranslateLoader />
         <ChatContextProvider>
           {children}
           <ChatWidget />

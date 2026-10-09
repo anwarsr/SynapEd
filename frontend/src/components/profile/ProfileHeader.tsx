@@ -1,14 +1,13 @@
 import Link from "next/link";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ProfileBanner from "@/components/profile/ProfileBanner";
-import Tag from "@/components/ui/Tag";
 import { roleLabel, type Role } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
-const TONE: Record<Role, "blue" | "amber" | "rust"> = {
-  user: "blue",
-  educator: "amber",
-  admin: "rust",
+const PERAN_TEKS: Record<Role, string> = {
+  user: "text-blue-300",
+  educator: "text-warn-text",
+  admin: "text-error-text",
 };
 
 export interface AksiProfil {
@@ -88,7 +87,7 @@ export default function ProfileHeader({
           <div className="min-w-0 flex-1 basis-[460px]">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="t-h1-profile">{name}</h1>
-              <Tag tone={TONE[role]}>{roleLabel[role]}</Tag>
+              <span className={cn("text-[12px] font-semibold uppercase tracking-[0.24em]", PERAN_TEKS[role])}>{roleLabel[role]}</span>
             </div>
 
             {barisMeta && <p className="mt-3 text-[13px] text-ink-muted">{barisMeta}</p>}

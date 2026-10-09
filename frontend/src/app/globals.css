@@ -895,6 +895,36 @@ html[data-theme="light"] .logo-on-light { display: block; }
     .robot-eye { animation: none; }
 }
 
+/* ══ Penerjemah Google (bahasa Inggris) ═════════════════════
+   Widget resmi menambahkan bilah di atas halaman, menggeser body 40px, dan
+   menyorot teks saat di-hover. Semuanya disembunyikan - pilihan bahasa hanya
+   lewat Pengaturan Laman di profil. */
+.goog-te-banner-frame, iframe.skiptranslate, #goog-gt-tt, .goog-te-balloon-frame,
+.goog-tooltip, .goog-te-gadget { display: none !important; }
+body { top: 0 !important; }
+.goog-text-highlight { background: none !important; box-shadow: none !important; }
+font[style*="vertical-align"] { vertical-align: baseline !important; }
+
+/* ══ Username di balik gambar kartu kursus ═════════════════
+   Muncul setelah gambar selesai membalik (±700ms): berkedip cepat 4x lalu
+   menetap berwarna biru. `both` agar tetap menahan keadaan awal (tersembunyi)
+   selama jeda dan keadaan akhir (biru) sesudahnya. */
+@keyframes cover-kedip {
+    0%   { opacity: 0; color: var(--color-white); }
+    6%   { opacity: 1; }
+    16%  { opacity: 0.08; }
+    26%  { opacity: 1; }
+    36%  { opacity: 0.08; }
+    46%  { opacity: 1; }
+    56%  { opacity: 0.08; }
+    66%  { opacity: 1; color: var(--color-white); }
+    100% { opacity: 1; color: var(--color-blue-300); }
+}
+.cover-kedip { animation: cover-kedip 1.5s linear 700ms both; }
+@media (prefers-reduced-motion: reduce) {
+    .cover-kedip { animation: none; color: var(--color-blue-300); }
+}
+
 /* ══ Layar pembuka (SplashLoader) ═══════════════════════════
    Mengikuti alur intro nomu.store: kata pertama naik lalu digantikan kata
    kedua, lapisan terang naik dari bawah menutup layar (teks beralih warna

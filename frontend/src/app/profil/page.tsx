@@ -15,6 +15,7 @@ import {
 import EducatorStatus from "@/components/dashboard/EducatorStatus";
 import LogoutButton from "@/components/dashboard/LogoutButton";
 import ThemeSwitch from "@/components/profile/ThemeSwitch";
+import LanguageSwitch from "@/components/profile/LanguageSwitch";
 import { listCourses } from "@/lib/courses";
 import { listMyEnrollments } from "@/lib/enrollments";
 import { getUsernameInfo } from "@/lib/usernames";
@@ -189,7 +190,10 @@ export default async function ProfilePage() {
 
               <section>
                 <SideHead judul="Pengaturan Laman" />
+                <p className="mb-2 text-[12.5px] text-ink-muted">Tampilan</p>
                 <ThemeSwitch />
+                <p className="mb-2 mt-5 text-[12.5px] text-ink-muted">Bahasa</p>
+                <LanguageSwitch />
               </section>
 
               {/* Aksi akun ditaruh paling bawah: profil dibaca dulu, baru
