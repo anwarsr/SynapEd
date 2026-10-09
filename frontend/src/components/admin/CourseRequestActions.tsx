@@ -54,7 +54,7 @@ export function DeleteRequestButton({ id, title }: { id: string; title: string }
         open={asking}
         title="Hapus catatan pengajuan ini?"
         description={`Riwayat pengajuan untuk "${title}" akan hilang dari daftar ini.`}
-        note="Kursusnya tidak terpengaruh — keputusan yang sudah diambil tetap berlaku."
+        note="Kursusnya tidak terpengaruh - keputusan yang sudah diambil tetap berlaku."
         confirmLabel="Ya, Hapus"
         onConfirm={confirm}
         onCancel={() => setAsking(false)}

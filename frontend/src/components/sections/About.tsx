@@ -22,20 +22,20 @@ const points: Point[] = [
     num: "01",
     title: "Terstruktur",
     desc: "Belajar dari dasar hingga mahir melalui alur yang jelas dan bertahap.",
-    bg: "#0F222E",
+    bg: "var(--color-deep)",
   },
   {
     num: "02",
     title: "Interaktif",
     desc: "Belajar melalui aktivitas dan kuis yang membuat materi lebih mudah dipahami.",
-    bg: "#0B1A24",
+    bg: "var(--color-paper)",
   },
   {
     num: "03",
     title: "Berbasis Riset",
     desc: "Materi dikembangkan berdasarkan literatur dan sumber ilmiah yang relevan.",
     mark: ["literatur", "ilmiah"],
-    bg: "#12293A",
+    bg: "var(--color-paper-card)",
   },
 ];
 
@@ -53,7 +53,7 @@ export default function About() {
   return (
     <section id="about" className="relative flex min-h-screen flex-col overflow-hidden bg-ivory">
       {/* =====================================================
-          PANEL — memenuhi SELURUH section sampai tepi layar, tanpa jarak,
+          PANEL - memenuhi SELURUH section sampai tepi layar, tanpa jarak,
           garis, maupun sudut membulat. Yang dipencet melebar, dua lainnya
           menyempit; lebar dianimasikan lewat flex-grow. Di ponsel susunannya
           vertikal dan yang dianimasikan adalah tinggi.
@@ -73,19 +73,6 @@ export default function About() {
               )}
               style={{ flexGrow: isActive ? GROW_OPEN : GROW_CLOSED, flexBasis: 0, backgroundColor: point.bg }}
             >
-              {/* Cahaya lembut di sudut — hanya menyala di panel terbuka */}
-              <div
-                aria-hidden="true"
-                className={cn(
-                  "pointer-events-none absolute inset-0 transition-opacity duration-[900ms] ease-warm",
-                  isActive ? "opacity-100" : "opacity-0",
-                )}
-                style={{
-                  background:
-                    "radial-gradient(80% 70% at 0% 100%, rgba(76,141,255,0.20), transparent 62%), radial-gradient(60% 50% at 100% 0%, rgba(76,141,255,0.08), transparent 65%)",
-                }}
-              />
-
               {/* Sorotan tipis saat panel yang menyempit di-hover */}
               {!isActive && (
                 <div

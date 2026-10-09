@@ -139,7 +139,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
 
         {/* Selain keputusan pengajuan, panel ini hanya-baca. Mengubah role
             sembarangan dari UI menuntut penjagaan tersendiri; untuk sekarang
-            jalurnya lewat skrip, dan itu urusan pengembang — bukan sesuatu
+            jalurnya lewat skrip, dan itu urusan pengembang - bukan sesuatu
             yang pantas ditempel sebagai perintah terminal di halaman web. */}
         <p className="mt-6 text-xs text-ink-muted">
           Selain keputusan pengajuan, halaman ini hanya menampilkan data.

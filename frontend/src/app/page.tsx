@@ -37,6 +37,7 @@ export default async function Home() {
     courseTitle: r.courseTitle,
     courseSlug: r.courseSlug,
     courseImage: courseImageUrl(r.courseThumbnail),
+    banner: r.bannerURL,
   }));
 
   return (

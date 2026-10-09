@@ -52,6 +52,17 @@
     --color-blue-900: #0B1A24;     /* peredam gelap (overlay foto, dll.) */
     --color-navy: #050505;         /* footer & pita header kelas — hitam */
 
+    /* ── Permukaan & teks khusus (dulu hex tertulis di kelas). Jadi token
+       supaya tema TERANG bisa menggantinya — lihat html[data-theme="light"]. */
+    --color-card-hover: #16324A;   /* kartu saat di-hover */
+    --color-header: #081520;       /* pita kepala /kelas & ruang belajar */
+    --color-banner: #0D2131;       /* banner profil bawaan */
+    --color-chip: #1B3A55;         /* chip/kartu sekunder */
+    --color-deep: #0F222E;         /* panel About pertama */
+    --color-error-text: #F2A892;   /* teks galat di atas latar gelap */
+    --color-warn-text: #F3CF86;    /* teks peringatan di atas latar gelap */
+    --grid-line: rgb(255 255 255 / 0.06);
+
     /* ── Stabilo — kehangatan + sinyal belajar ─────────────── */
     --color-amber-100: #FBEBCB;
     --color-amber-500: #D99A2B;    /* GRAFIS SAJA — 2.3:1, gagal untuk teks */
@@ -672,7 +683,7 @@ section[id] {
    kursus, Features, sertifikat) — isinya memakai warna gelap sendiri. */
 .theme-night {
     background: var(--color-paper);
-    color: #FFFFFF;
+    color: var(--color-ink);
 }
 .theme-day {
     --color-ivory: #FFFFF5;
@@ -690,11 +701,71 @@ section[id] {
     --color-blue-700: #1E4FBF;
 }
 
+/* ══ TEMA TERANG ═══════════════════════════════════════════
+   Bawaan situs = GELAP (token @theme di atas). Tema terang menimpa token yang
+   sama lewat <html data-theme="light"> (dipasang skrip di <head>, diatur dari
+   ThemeSwitch di profil). KUNCI: `--color-white` ikut DIBALIK jadi tinta gelap,
+   sehingga seluruh `text-white`, `bg-white/NN`, `border-white/NN`, … otomatis
+   menjadi tinta dengan opasitas yang sama. Yang harus tetap putih (tombol biru,
+   footer, banner, lencana gelap) mendeklarasikan ulang `--color-white: #fff`
+   di bawah — variabel diwariskan ke anak-anaknya. */
+html[data-theme="light"] {
+    color-scheme: light;
+
+    --color-white: #0B1A24;
+    --color-ivory: #F5F8FD;
+    --color-paper: #F5F8FD;
+    --color-paper-alt: #E9F0FA;
+    --color-paper-card: #FFFFFF;
+    --color-rule: rgb(11 26 36 / 0.10);
+    --color-rule-strong: rgb(11 26 36 / 0.18);
+
+    --color-ink: #0B1A24;
+    --color-ink-body: rgb(11 26 36 / 0.80);
+    --color-ink-muted: rgb(11 26 36 / 0.60);
+    --color-ink-faint: rgb(11 26 36 / 0.35);
+
+    /* Biru terang yang cerah; teks aksen digelapkan supaya terbaca di atas putih. */
+    --color-blue-50: rgb(47 111 237 / 0.10);
+    --color-blue-100: rgb(47 111 237 / 0.18);
+    --color-blue-200: #1E4FBF;
+    --color-blue-300: #2A62D6;
+    --color-blue-400: #2F6FED;
+    --color-blue-500: #2F6FED;
+    --color-blue-600: #2563EB;
+    --color-blue-700: #1D4ED8;
+    --color-blue-800: #1E40AF;
+    --color-navy: #0B1A24;
+
+    --color-card-hover: #EAF2FF;
+    --color-header: #E4EDFA;
+    --color-banner: #D7E4F6;
+    --color-chip: #DDE9FA;
+    --color-deep: #EDF3FB;
+    --color-error-text: #B4442A;
+    --color-warn-text: #8A5C0C;
+    --grid-line: rgb(11 26 36 / 0.07);
+}
+
+/* Tetap PUTIH di atas permukaan berwarna/gelap pada tema terang. */
+html[data-theme="light"] :is(
+    footer, .keep-white, .auth-brand-panel,
+    .bg-navy, .bg-hero-navy, .bg-black, [class*="bg-black/"],
+    .bg-blue-500, .bg-blue-600, .bg-blue-700
+) {
+    --color-white: #fff;
+}
+
+/* Logo: putih di tema gelap, gelap di tema terang. */
+.logo-on-light { display: none; }
+html[data-theme="light"] .logo-on-dark { display: none; }
+html[data-theme="light"] .logo-on-light { display: block; }
+
 /* Kotak-kotak hitam tipis ala hero beranda — dipakai di latar halaman masuk. */
 .bg-grid {
     background-image:
-        linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
-        linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
     background-size: 100px 100px;
 }
 
@@ -803,6 +874,25 @@ section[id] {
 @keyframes egg-scale {
     from { transform: scale(0.2); opacity: 0; }
     to   { transform: scale(1); opacity: 1; }
+}
+
+/* ══ Robot asisten (ChatRobot) ═════════════════════════════
+   Mata berkedip tiap ±4 dtk; gelembung & menu muncul dengan "pop" kecil. */
+@keyframes robot-blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    94% { transform: scaleY(0.1); }
+}
+.robot-eye {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: robot-blink 4.2s infinite;
+}
+@keyframes robot-pop {
+    from { opacity: 0; transform: translateY(6px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .robot-eye { animation: none; }
 }
 
 /* ══ Layar pembuka (SplashLoader) ═══════════════════════════

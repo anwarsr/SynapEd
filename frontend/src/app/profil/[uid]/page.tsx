@@ -61,6 +61,7 @@ export default async function PublicProfilePage({ params }: Props) {
           username={profile.username}
           email=""
           photoURL={profile.photoURL}
+          bannerURL={profile.bannerURL}
           role={profile.role}
           bio={profile.content.bio}
           skills={profile.content.skills}
@@ -113,7 +114,7 @@ export default async function PublicProfilePage({ params }: Props) {
                 <section>
                   <h2 className="t-label text-ink-muted mb-4">Tentang Educator</h2>
 
-                  <dl className="rounded-2xl border border-rule bg-paper-card px-5 py-[18px] text-[13.5px]">
+                  <dl className="bg-paper-card px-5 py-[18px] text-[13.5px]">
                     {[
                       profile.joinedAt ? ["Bergabung", profile.joinedAt] : null,
                       ["Kursus", `${profile.stats.courses}`],

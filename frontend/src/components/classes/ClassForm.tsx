@@ -47,7 +47,7 @@ export default function ClassForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-6">
+    <form onSubmit={onSubmit} className="bg-paper-card p-6">
       <div className="mb-4">
         <Label htmlFor="classname">Nama kelas</Label>
         <input
@@ -77,7 +77,7 @@ export default function ClassForm({
         type="submit"
         disabled={pending}
         className={cn(
-          "mt-5 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white",
+          "mt-5 bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white",
           "transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5",
           "disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed",
         )}

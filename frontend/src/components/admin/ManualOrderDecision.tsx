@@ -36,7 +36,7 @@ export default function ManualOrderDecision({ orderId }: { orderId: string }) {
         onChange={(e) => setNote(e.target.value)}
         rows={2}
         maxLength={500}
-        placeholder="Wajib diisi kalau menolak — pembeli membacanya."
+        placeholder="Wajib diisi kalau menolak - pembeli membacanya."
         className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 resize-y placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
       />
 
@@ -47,7 +47,7 @@ export default function ManualOrderDecision({ orderId }: { orderId: string }) {
           disabled={pending}
           className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
         >
-          {pending ? "Memproses…" : "Uang Sudah Masuk — Buka Akses"}
+          {pending ? "Memproses…" : "Uang Sudah Masuk - Buka Akses"}
         </button>
 
         <button

@@ -91,20 +91,20 @@ export default function SignInMethodsCard({
           <Check on={methods.password} />
           <span className={methods.password ? "text-ink" : "text-ink-muted"}>
             Email dan kata sandi
-            {!methods.password && " — belum ada"}
+            {!methods.password && " - belum ada"}
           </span>
         </li>
         <li className="flex items-center gap-3 text-sm">
           <Check on={methods.google} />
           <span className={methods.google ? "text-ink" : "text-ink-muted"}>
             Akun Google
-            {!methods.google && " — belum ditautkan"}
+            {!methods.google && " - belum ditautkan"}
           </span>
         </li>
       </ul>
 
       {/* Sebab teknisnya (kata sandi pada email yang belum terbukti
-          kepemilikannya dianggap berisiko) sengaja tidak dijelaskan di sini —
+          kepemilikannya dianggap berisiko) sengaja tidak dijelaskan di sini -
           pengguna cukup tahu bahwa ini perlu dilakukan. */}
       {!emailVerified && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-100 px-4 py-3.5 text-sm text-amber-700 mb-6">

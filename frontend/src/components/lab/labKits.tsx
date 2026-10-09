@@ -53,7 +53,7 @@ const ISIAN_INDEKS_1D = /^(indeks|a|b|dari|sampai)$/;
 export const KIT_ARRAY_1D: LabKit<ArrayLabState, ArrayOp, number> = {
   id: "array1d",
   nama: "1D",
-  ringkas: "Satu deret elemen — indeks, penunjuk, dan susun ulang.",
+  ringkas: "Satu deret elemen - indeks, penunjuk, dan susun ulang.",
   kosong: emptyArrayState,
   terapkan: applyArrayOp,
   katalog: Object.values(ARRAY_OP_CATALOG),
@@ -102,7 +102,7 @@ export const KIT_ARRAY_1D: LabKit<ArrayLabState, ArrayOp, number> = {
 export const KIT_ARRAY_2D: LabKit<MatrixLabState, MatrixOp, SelMatriks> = {
   id: "array2d",
   nama: "2D",
-  ringkas: "Kisi baris × kolom — akses arr[i][j], penelusuran, dan transformasi.",
+  ringkas: "Kisi baris × kolom - akses arr[i][j], penelusuran, dan transformasi.",
   kosong: emptyMatrixState,
   terapkan: applyMatrixOp,
   katalog: Object.values(MATRIX_OP_CATALOG),
@@ -174,7 +174,7 @@ const PANAH_3D: Record<string, readonly [0 | 1 | 2, number]> = {
 export const KIT_ARRAY_3D: LabKit<CubeLabState, CubeOp, Koord3> = {
   id: "array3d",
   nama: "3D",
-  ringkas: "Tumpukan lapisan arr[k][i][j] — putar kubusnya, iris, telusuri, dan ubah sudut pandangnya.",
+  ringkas: "Tumpukan lapisan arr[k][i][j] - putar kubusnya, iris, telusuri, dan ubah sudut pandangnya.",
   kosong: emptyCubeState,
   terapkan: applyCubeOp,
   katalog: Object.values(CUBE_OP_CATALOG),
@@ -218,7 +218,7 @@ export const KIT_ARRAY_3D: LabKit<CubeLabState, CubeOp, Koord3> = {
 export const KIT_ARRAY_ND: LabKit<NdLabState, NdOp, number[]> = {
   id: "arrayNd",
   nama: "N-D",
-  ringkas: "Berapa pun dimensinya — alamat memori, langkah alamat, dan bentuk array.",
+  ringkas: "Berapa pun dimensinya - alamat memori, langkah alamat, dan bentuk array.",
   kosong: emptyNdState,
   terapkan: applyNdOp,
   katalog: Object.values(ND_OP_CATALOG),

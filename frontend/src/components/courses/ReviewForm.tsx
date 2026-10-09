@@ -69,23 +69,23 @@ export default function ReviewForm({
   }
 
   return (
-    <form onSubmit={submit} className="bg-paper-card border border-rule rounded-2xl p-7">
+    <form onSubmit={submit} className="bg-paper-card p-7">
       <h3 className="t-h3 text-lg mb-1.5">
         {initial ? "Ulasan Anda" : "Bagaimana kursus ini menurut Anda?"}
       </h3>
       <p className="t-body text-sm text-ink-muted mb-5">
         {initial
-          ? "Anda bisa mengubahnya kapan saja — yang tersimpan hanya versi terakhir."
+          ? "Anda bisa mengubahnya kapan saja - yang tersimpan hanya versi terakhir."
           : "Anda sudah menyelesaikan kursus ini, jadi ulasan Anda akan tampil di halaman ini."}
       </p>
 
       {error && (
-        <div role="alert" className="mb-4 rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700">
+        <div role="alert" className="mb-4 bg-[#E0795A]/15 px-4 py-3 text-sm text-error-text">
           {error}
         </div>
       )}
       {done && (
-        <div role="status" className="mb-4 rounded-lg border border-blue-500/25 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <div role="status" className="mb-4 bg-blue-500/15 px-4 py-3 text-sm text-blue-200">
           {done}
         </div>
       )}
@@ -127,7 +127,7 @@ export default function ReviewForm({
         maxLength={1000}
         disabled={pending}
         placeholder="Ceritakan pengalaman Anda mengikuti kursus ini."
-        className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 resize-y placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:opacity-60"
+        className="w-full bg-white/[0.06] px-4 py-2.5 text-sm text-ink transition-colors duration-200 resize-y placeholder:text-ink-faint focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none disabled:opacity-60"
       />
       <p className="mt-2 text-xs text-ink-muted">Minimal 10 karakter. {comment.length}/1000.</p>
 
@@ -135,7 +135,7 @@ export default function ReviewForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
+          className="bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
         >
           {pending ? "Menyimpan…" : initial ? "Perbarui Ulasan" : "Kirim Ulasan"}
         </button>
@@ -145,7 +145,7 @@ export default function ReviewForm({
             type="button"
             onClick={() => setAsking(true)}
             disabled={pending}
-            className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-rust-700/40 hover:text-rust-700 disabled:opacity-60"
+            className="bg-white/10 px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-rust-700/40 hover:text-rust-700 disabled:opacity-60"
           >
             Hapus Ulasan
           </button>

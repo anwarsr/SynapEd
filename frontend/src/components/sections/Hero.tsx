@@ -299,7 +299,7 @@ export default function Hero() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px), linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px)",
+            "linear-gradient(to right, var(--grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)",
           backgroundSize: "100px 100px",
         }}
       />
@@ -356,11 +356,11 @@ export default function Hero() {
                  Kedua baris judul dikunci whitespace-nowrap supaya
                  pemenggalannya tetap "Platform Terbaik / Kuasai Ilmu
                  Apapun". Karena tidak boleh membungkus, lantai 2.5rem
-                 (40px) membuat baris kedua — yang terpanjang — melebihi
+                 (40px) membuat baris kedua - yang terpanjang - melebihi
                  layar sempit dan terpotong: 15px di 375px, 70px di 320px.
                  Lebar baris itu ~9,15x ukuran font, jadi 1.8rem (28.8px)
                  pas di area konten 320px yang cuma 272px.
-                 Nilai 6.5vw dan batas 5.75rem TIDAK diubah — di layar
+                 Nilai 6.5vw dan batas 5.75rem TIDAK diubah - di layar
                  lebar keduanya tetap menang, jadi desktop tidak bergeser. */
               fontSize: "clamp(1.8rem, 6.5vw, 5.75rem)",
               fontWeight: 800,

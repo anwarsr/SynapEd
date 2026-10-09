@@ -9,6 +9,7 @@ import {
 } from "@/lib/userProfile";
 import { toRole, type Role } from "@/lib/roles";
 import { getUsernameInfo } from "@/lib/usernames";
+import { getBannerURL } from "@/lib/banner";
 import type { EducatorCourseRow } from "@/lib/educatorCourses";
 import type { ProfileContent } from "@/lib/profileTypes";
 
@@ -17,6 +18,7 @@ export interface PublicProfile {
   name: string;
   username: string | null;
   photoURL: string | null;
+  bannerURL: string | null;
   role: Role;
   content: ProfileContent;
   stats: ProfileStats;
@@ -52,11 +54,12 @@ export async function getPublicProfile(uid: string): Promise<PublicProfile | nul
   const role = toRole(akun.customClaims?.role);
   const isEducator = role === "educator" || role === "admin";
 
-  const [content, stats, owned, handle] = await Promise.all([
+  const [content, stats, owned, handle, bannerURL] = await Promise.all([
     getUserProfile(uid),
     getProfileStats(uid, isEducator),
     isEducator ? listOwnedCourses(uid, akun.displayName ?? undefined) : Promise.resolve([]),
     getUsernameInfo(uid),
+    getBannerURL(uid).catch(() => null),
   ]);
 
   return {
@@ -64,6 +67,7 @@ export async function getPublicProfile(uid: string): Promise<PublicProfile | nul
     name: akun.displayName?.trim() || akun.email?.split("@")[0] || "Pengguna",
     username: handle.username,
     photoURL: akun.photoURL ?? null,
+    bannerURL,
     role,
     content,
     stats,

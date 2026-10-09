@@ -60,7 +60,7 @@ export default async function AdminPaymentsPage() {
               <div className="bg-paper-card border border-rust-700/30 rounded-2xl p-7">
                 <h2 className="t-h3 mb-1.5">Kabar gagal setelah lunas</h2>
                 <p className="t-body text-sm text-ink-muted mb-5">
-                  Midtrans mengirim status gagal untuk pesanan yang sudah lunas — biasanya refund atau
+                  Midtrans mengirim status gagal untuk pesanan yang sudah lunas - biasanya refund atau
                   chargeback. Status dan pendapatan kontributor TIDAK diubah otomatis; periksa di
                   dashboard Midtrans lalu tindak lanjuti manual.
                 </p>
@@ -117,7 +117,7 @@ export default async function AdminPaymentsPage() {
               yang benar-benar terlihat di aplikasi Pedagang Bima. */}
           <p className="t-body text-sm text-ink-muted mb-6">
             Cocokkan dengan mutasi di aplikasi Pedagang Bima sebelum menyetujui. Bukti yang
-            diunggah pembeli hanya petunjuk — gambar bisa dipalsukan, mutasi tidak.
+            diunggah pembeli hanya petunjuk - gambar bisa dipalsukan, mutasi tidak.
           </p>
 
           {orders.length === 0 ? (
@@ -172,7 +172,7 @@ export default async function AdminPaymentsPage() {
                         <div className="flex flex-wrap items-baseline justify-between gap-3">
                           <dt className="text-ink-muted">Pembeli</dt>
                           <dd className="text-ink-body text-right break-all">
-                            {o.userName ?? "—"}
+                            {o.userName ?? "-"}
                             {o.userEmail && (
                               <span className="block text-xs text-ink-muted">{o.userEmail}</span>
                             )}

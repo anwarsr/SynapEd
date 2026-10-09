@@ -44,3 +44,51 @@ export async function uploadAvatar(user: User, file: File): Promise<string> {
 
   return url;
 }
+
+/** Lebar maksimum banner setelah dikecilkan (px). */
+const BANNER_MAX_WIDTH = 1600;
+
+/**
+ * Mengecilkan gambar banner di browser menjadi JPEG ≤ 1600px lebar.
+ *
+ * Batas tulis storage.rules untuk folder ini 2 MB, sedangkan foto ponsel bisa
+ * 5–10 MB. Daripada menolak, gambarnya dikecilkan — hasilnya hampir selalu di
+ * bawah 600 KB. Kalau masih ≥ 2 MB, kualitas diturunkan bertahap.
+ */
+export async function compressBanner(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const skala = Math.min(1, BANNER_MAX_WIDTH / bitmap.width);
+  const w = Math.round(bitmap.width * skala);
+  const h = Math.round(bitmap.height * skala);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Peramban tidak mendukung pengolahan gambar.");
+  // JPEG tak punya transparansi — alasnya hitam, sama dengan banner bawaan.
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+
+  for (const q of [0.86, 0.72, 0.58]) {
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", q));
+    if (blob && blob.size < MAX_AVATAR_BYTES) return blob;
+  }
+  throw new Error("Gambar terlalu besar. Pilih gambar yang lebih kecil.");
+}
+
+/**
+ * Unggah banner ke `avatars/{uid}/banner.jpg` (folder & aturan tulis yang sama
+ * dengan foto profil) dan mengembalikan URL-nya. Nama berkas tetap, jadi
+ * unggahan baru menimpa yang lama; `?v=` memutus cache peramban/CDN.
+ */
+export async function uploadBanner(user: User, blob: Blob): Promise<string> {
+  const path = `${AVATARS}/${user.uid}/banner.jpg`;
+  const storageRef = ref(firebaseStorage(), path);
+  await uploadBytes(storageRef, blob, { contentType: "image/jpeg" });
+
+  const url = await getDownloadURL(storageRef);
+  return `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+}

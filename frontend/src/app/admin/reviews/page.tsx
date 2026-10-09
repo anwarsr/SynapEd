@@ -58,7 +58,7 @@ export default async function AdminReviewsPage() {
                       <span className="text-xs text-ink-muted">{formatDate(r.createdAt)}</span>
 
                       {/* Penanda mana yang benar-benar terlihat publik di
-                          halaman depan — itulah yang biasanya jadi alasan
+                          halaman depan - itulah yang biasanya jadi alasan
                           admin membuka halaman ini. */}
                       {r.rating >= FEATURED_MIN_RATING && (
                         <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
@@ -87,7 +87,7 @@ export default async function AdminReviewsPage() {
         )}
 
         <p className="mt-6 text-xs text-ink-muted">
-          Ulasan tampil begitu dikirim, tanpa persetujuan. Hapus yang kasar atau spam —
+          Ulasan tampil begitu dikirim, tanpa persetujuan. Hapus yang kasar atau spam -
           isinya tidak bisa disunting.
         </p>
       </div>

@@ -127,7 +127,7 @@ export default function PaymentSettingsForm({
           hint={
             midtransConfigured
               ? "Akses terbuka sendiri begitu pembayaran masuk, tanpa campur tangan Anda."
-              : "Kunci Midtrans belum terpasang di server — saklar ini belum berpengaruh."
+              : "Kunci Midtrans belum terpasang di server - saklar ini belum berpengaruh."
           }
         />
 
@@ -147,7 +147,7 @@ export default function PaymentSettingsForm({
               <img
                 src={preview}
                 alt="Kode QRIS yang sedang dipakai"
-                className="w-32 h-32 object-contain rounded-lg border border-rule bg-white shrink-0"
+                className="keep-white w-32 h-32 object-contain bg-white shrink-0"
               />
             ) : (
               <div className="w-32 h-32 shrink-0 rounded-lg border border-dashed border-rule bg-paper-alt flex items-center justify-center text-center text-xs text-ink-faint px-2">
@@ -175,7 +175,7 @@ export default function PaymentSettingsForm({
                 {uploading ? "Mengunggah…" : preview ? "Ganti Gambar" : "Unggah Gambar"}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
-                JPG, PNG, atau WebP. Maksimal 5 MB. Gambar ini terbuka untuk umum — memang
+                JPG, PNG, atau WebP. Maksimal 5 MB. Gambar ini terbuka untuk umum - memang
                 harus bisa dipindai calon pembeli.
               </p>
             </div>

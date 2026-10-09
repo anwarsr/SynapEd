@@ -62,20 +62,20 @@ export default function PengembalianDanaPage() {
         <Bullets
           items={[
             <>
-              <strong>Pembayaran ganda</strong> — dana terpotong lebih dari sekali untuk kursus yang
+              <strong>Pembayaran ganda</strong> - dana terpotong lebih dari sekali untuk kursus yang
               sama. Kelebihannya kami kembalikan seluruhnya.
             </>,
             <>
-              <strong>Akses tidak terbuka</strong> — pembayaran berhasil, tetapi kursus tetap
+              <strong>Akses tidak terbuka</strong> - pembayaran berhasil, tetapi kursus tetap
               terkunci dan kendalanya tidak dapat kami selesaikan dalam 7 hari kerja sejak Anda
               melapor.
             </>,
             <>
-              <strong>Kursus ditarik</strong> — kursus dihapus atau tidak lagi tersedia sebelum Anda
+              <strong>Kursus ditarik</strong> - kursus dihapus atau tidak lagi tersedia sebelum Anda
               sempat mengaksesnya sama sekali.
             </>,
             <>
-              <strong>Materi tidak sesuai secara mendasar</strong> — isi kursus berbeda jauh dari
+              <strong>Materi tidak sesuai secara mendasar</strong> - isi kursus berbeda jauh dari
               yang dijanjikan pada halaman detail, misalnya modul yang dijanjikan tidak pernah ada.
             </>,
           ]}

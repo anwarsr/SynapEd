@@ -16,7 +16,7 @@ import { cn } from "@/lib/cn";
  */
 
 const inputClass =
-  "w-full rounded-lg border border-rule bg-paper px-3 py-2 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25";
+  "w-full bg-white/[0.06] px-3 py-2 text-sm text-white transition-[background-color,box-shadow] duration-200 placeholder:text-white/35 focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none focus:ring-2 focus:ring-blue-500/25";
 
 interface Pemilihan {
   /** Nilai isian dari sel terpilih, atau null kalau isian itu tidak berkaitan. */
@@ -80,7 +80,7 @@ function Field({
           <button
             type="button"
             onClick={() => onChange(dariSel)}
-            className="rounded-full bg-paper-alt px-2 py-0.5 text-[11px] text-ink-body transition-colors hover:bg-blue-50 hover:text-blue-700"
+            className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/80 transition-colors hover:bg-white/15 hover:text-white"
             title="Isi dari sel yang sedang dipilih di papan"
           >
             pakai {pilihan?.label}
@@ -174,9 +174,9 @@ function OperasiKartu<K extends string, Op>({
     <form
       onSubmit={kirim}
       className={cn(
-        "lab-fade-up rounded-2xl border border-rule bg-paper-card px-4 py-3.5",
-        "transition-[border-color,box-shadow] duration-200 ease-out-soft",
-        "hover:border-blue-300 hover:shadow-soft focus-within:border-blue-300 focus-within:shadow-soft",
+        "lab-fade-up bg-paper-card px-4 py-4",
+        "transition-colors duration-200 ease-out-soft",
+        "hover:bg-card-hover focus-within:bg-card-hover",
       )}
       style={{ "--d": `${urutan * 45}ms` } as React.CSSProperties}
     >
@@ -218,7 +218,7 @@ function JalankanTombol({ kunci }: { kunci: number }) {
     <button
       type="submit"
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white",
+        "inline-flex shrink-0 items-center gap-1.5 bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white",
         "transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-soft active:translate-y-0",
       )}
     >
@@ -277,11 +277,11 @@ export default function LabControls<K extends string, Op>({
                 aria-selected={dipilih}
                 onClick={() => setAktif(g.id)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium",
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium",
                   "transition-all duration-200 ease-out-soft",
                   dipilih
-                    ? "border-blue-600 bg-blue-600 text-white shadow-soft"
-                    : "border-rule bg-paper-card text-ink-body hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700",
+                    ? "bg-blue-600 text-white"
+                    : "bg-white/10 text-white/80 hover:bg-white/15 hover:text-white",
                 )}
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">

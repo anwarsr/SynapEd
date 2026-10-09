@@ -37,7 +37,7 @@ export default function PostComposer({
   const sisa = MAX_POST_BODY - body.length;
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border border-rule bg-paper-card p-6">
+    <form onSubmit={onSubmit} className="bg-paper-card p-6">
       <div className="flex items-start gap-3">
         <span className="shrink-0">
           <UserAvatar name={meName} photoURL={mePhoto} />
@@ -56,9 +56,9 @@ export default function PostComposer({
             rows={3}
             placeholder="Pengumuman, materi singkat, atau pengantar diskusi."
             className={cn(
-              "w-full resize-y rounded-xl border border-rule bg-paper px-4 py-3 text-[15px] leading-[1.7] text-ink",
+              "w-full resize-y bg-white/[0.06] px-4 py-3 text-[15px] leading-[1.7] text-ink",
               "transition-colors duration-200 placeholder:text-ink-faint",
-              "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25",
+              "focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none",
             )}
           />
 
@@ -71,7 +71,7 @@ export default function PostComposer({
               type="submit"
               disabled={pending || body.trim().length === 0}
               className={cn(
-                "rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white",
+                "bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white",
                 "transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5",
                 "disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed",
               )}

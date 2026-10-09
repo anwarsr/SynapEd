@@ -29,7 +29,7 @@ export default function UserAvatar({
   return (
     <span
       className={cn(
-        "rounded-full overflow-hidden bg-blue-50 border border-rule flex items-center justify-center shrink-0",
+        "rounded-full overflow-hidden bg-black flex items-center justify-center shrink-0",
         sizes[size],
         className,
       )}
@@ -40,7 +40,7 @@ export default function UserAvatar({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={photoURL} alt="" className="w-full h-full object-cover" />
       ) : (
-        <span className="t-numeral text-blue-700">{initials(name)}</span>
+        <span className="t-numeral text-white">{initials(name)}</span>
       )}
     </span>
   );

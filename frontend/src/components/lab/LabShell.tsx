@@ -39,19 +39,18 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
     <header className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
-          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
-            <span aria-hidden="true" className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-60 motion-reduce:hidden" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
-            </span>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
             Lab 01 · Array {lab.nama}
           </p>
-          <h1 className="t-h3 mt-1 text-2xl lg:text-[1.75rem]">
-            Synap<span className="text-blue-600">Lab</span>
+          <h1 className="mt-2">
+            <span className="sr-only">SynapLab</span>
+            {/* 157×30 — gambar logo, bukan tulisan; tinggi dipatok, lebar mengikuti rasio */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/SynapLab.png" alt="" width={157} height={30} className="h-8 w-auto lg:h-9" />
           </h1>
         </div>
 
-        <div role="tablist" aria-label="Dimensi array" className="flex rounded-full border border-rule bg-paper-card p-1 shadow-soft">
+        <div role="tablist" aria-label="Dimensi array" className="flex rounded-full bg-white/[0.08] p-1">
           {URUTAN.map((l) => {
             const dipilih = l.id === aktif;
             return (
@@ -63,7 +62,7 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
                 onClick={() => pilih(l.id)}
                 className={cn(
                   "rounded-full px-4 py-1.5 text-sm font-semibold tabular-nums transition-all duration-200 ease-out-soft",
-                  dipilih ? "bg-blue-600 text-white shadow-soft" : "text-ink-body hover:bg-blue-50 hover:text-blue-700",
+                  dipilih ? "bg-blue-600 text-white shadow-soft" : "text-white/70 hover:bg-white/10 hover:text-white",
                 )}
               >
                 {/* Kunci = pilihan: label yang baru dipilih berdenyut sekali. */}
@@ -81,7 +80,7 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
       </p>
 
       {beritahuRusak && (
-        <p role="status" className="lab-fade-up rounded-xl border border-amber-500/30 bg-amber-100 px-4 py-3 text-sm text-amber-700">
+        <p role="status" className="lab-fade-up bg-amber-500/15 px-4 py-3 text-sm text-warn-text">
           Tautan papan tidak dapat dibaca, jadi lab dibuka kosong.
         </p>
       )}

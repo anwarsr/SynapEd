@@ -14,7 +14,7 @@ import type { Certificate } from "@/lib/certificates";
 export default function CertificateList({ items }: { items: readonly Certificate[] }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-rule px-5 py-6 text-center text-[13px] text-ink-muted">
+      <p className="bg-white/5 px-5 py-6 text-center text-[13px] text-ink-muted">
         Sertifikat muncul di sini setelah Anda menyelesaikan sebuah kursus.
       </p>
     );
@@ -26,7 +26,7 @@ export default function CertificateList({ items }: { items: readonly Certificate
         <li key={c.id}>
           <Link
             href={`/dashboard/certificates/${c.id}`}
-            className="block rounded-[14px] border border-rule border-t-[3px] border-t-amber-500 bg-paper-card px-5 py-[18px] transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft"
+            className="block bg-paper-card px-5 py-[18px] transition-colors duration-200 ease-out-soft hover:bg-card-hover"
           >
             <p className="text-sm font-medium text-ink break-words">{c.courseTitle}</p>
 

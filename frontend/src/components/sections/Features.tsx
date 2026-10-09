@@ -17,11 +17,11 @@ const STAGE_CARDS = [0, 1, 3, 4].map((i) => ({
 }));
 
 /* =============================================================
-   EASTER EGG — angka kartu dipencet → warna kartu berganti dengan
+   EASTER EGG - angka kartu dipencet → warna kartu berganti dengan
    gelombang "sisik ikan" dari pojok kiri atas. Tanpa petunjuk visual.
 ============================================================= */
 
-const EGG_COLORS = ["#12293A", "#2F6FED", "#0E7C86", "#5B4BC4", "#1F8A5B"];
+const EGG_COLORS = ["var(--color-paper-card)", "#2F6FED", "#0E7C86", "#5B4BC4", "#1F8A5B"];
 /** Lama gelombang (ms) — sedikit di atas jeda terjauh (≈890) + durasi satu sisik (600). */
 const WAVE_MS = 1550;
 /** Lama sisik memudar setelah warna dasar kartu diganti (ms) — inilah yang
@@ -689,7 +689,7 @@ export default function Features() {
                         "410px",
 
                       /* Kotak solid, tanpa garis, bayangan, kaca, atau
-                         lapisan holo — kesannya datang dari tipografi. */
+                         lapisan holo - kesannya datang dari tipografi. */
                       backgroundColor:
                         EGG_COLORS[bases[index]],
 

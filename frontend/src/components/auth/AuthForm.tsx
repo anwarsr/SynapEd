@@ -294,7 +294,7 @@ export default function AuthForm({
 
           {/* Persetujuan ketentuan.
               Ditulis sebagai pernyataan, bukan kotak centang, karena
-              pendaftaran bisa lewat email MAUPUN Google — kotak centang
+              pendaftaran bisa lewat email MAUPUN Google - kotak centang
               harus mengunci kedua jalur itu sekaligus, dan tombol Google
               berada di atas formulir ini. Kalimatnya sengaja menyebut
               tindakan yang memicu persetujuan, dan kedua tautannya
@@ -359,14 +359,21 @@ export default function AuthForm({
   return (
     <main className="min-h-screen bg-ivory bg-grid flex items-center justify-center px-4 py-12 sm:px-6 sm:py-16">
       <div className="w-full max-w-4xl">
-        <Link href="/" className="flex justify-center mb-8" aria-label="SynapEd — beranda">
+        <Link href="/" className="flex justify-center mb-8" aria-label="SynapEd - beranda">
           <Image
             src="/images/logotextwhite.png"
             alt="SynapEd"
             width={667}
             height={667}
-            className="w-32 h-auto -my-10"
+            className="logo-on-dark w-32 h-auto -my-10"
             priority
+          />
+          <Image
+            src="/images/logotext.png"
+            alt="SynapEd"
+            width={667}
+            height={667}
+            className="logo-on-light w-32 h-auto -my-10"
           />
         </Link>
 

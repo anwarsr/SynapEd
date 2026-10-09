@@ -88,8 +88,8 @@ export default function ArrayBoard({
         // ia pusat perhatian halaman, bukan satu kartu kecil di antara kartu
         // lain — dan ruang kosong di sekeliling deret sel membuat penunjuk
         // serta sorotannya mudah dibaca dari jauh.
-        "lab-board relative flex flex-col border border-rule bg-paper-card",
-        presentasi ? "min-h-[55vh] rounded-none border-0 px-6 py-10" : "rounded-3xl px-5 pt-5 pb-6 shadow-soft lg:min-h-[40vh]",
+        "lab-board relative flex flex-col   bg-paper-card",
+        presentasi ? "min-h-[55vh] rounded-none  px-6 py-10" : "px-5 pt-5 pb-6  lg:min-h-[40vh]",
       )}
       style={presentasi ? ({ "--lab-cell": "5.5rem" } as React.CSSProperties) : undefined}
     >
@@ -115,7 +115,7 @@ export default function ArrayBoard({
         <div className="lab-scroller overflow-x-auto scrollbar-hide">
           {/* `w-max` + `mx-auto`: dipusatkan selama muat, dan saat deretnya lebih
               panjang dari papan, margin otomatis jatuh ke 0 sehingga guliran
-              dimulai dari indeks 0 — bukan dari tengah yang memotong kedua ujung. */}
+              dimulai dari indeks 0 - bukan dari tengah yang memotong kedua ujung. */}
           <div className="mx-auto w-max px-2">
             {/* ── Lajur variabel algoritma (hanya selama pengurutan) ── */}
             {peran && (
@@ -126,7 +126,7 @@ export default function ArrayBoard({
                     className="lab-pointer absolute top-0 flex w-[var(--lab-cell)] flex-col items-center"
                     style={{ "--i": i } as React.CSSProperties}
                   >
-                    <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-500">
+                    <span className="bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-500">
                       {teks}
                     </span>
                     <span className="mt-0.5 text-[10px] leading-none text-amber-700">▼</span>
@@ -145,11 +145,11 @@ export default function ArrayBoard({
                 >
                   {/* Kunci berganti setiap indeks berganti, jadi chip ini
                       dipasang ulang dan memantul sekali saat mendarat. Pembungkus
-                      luarnya tetap — dialah yang meluncur dengan translateX. */}
+                      luarnya tetap - dialah yang meluncur dengan translateX. */}
                   <span
                     key={p.index}
                     className={cn(
-                      "lab-land rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums shadow-soft",
+                      "lab-land rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums ",
                       LAB_POINTER_CLASS[p.tone],
                     )}
                   >
@@ -168,12 +168,12 @@ export default function ArrayBoard({
                   aria-hidden="true"
                   className={cn(
                     "t-numeral flex h-6 w-[var(--lab-cell)] shrink-0 items-center justify-center",
-                    "rounded-md text-[11px] tabular-nums transition-colors duration-200",
+                    "text-[11px] tabular-nums transition-colors duration-200",
                     i === n
                       ? "text-ink-faint"
                       : i === terpilih
                         ? "bg-ink text-paper"
-                        : "bg-paper-alt text-ink-muted",
+                        : "bg-white/15 text-white-muted",
                   )}
                 >
                   {i}
@@ -222,14 +222,14 @@ export default function ArrayBoard({
                       onClick={() => onPilih(i)}
                       className={cn(
                         "lab-cell lab-posisi lab-enter t-numeral absolute left-0 top-0 flex h-[var(--lab-cell)] w-[var(--lab-cell)]",
-                        "items-center justify-center rounded-xl border-2 text-lg tabular-nums lg:text-xl",
+                        "items-center justify-center  text-lg tabular-nums lg:text-xl",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
                         "focus-visible:ring-offset-2 focus-visible:ring-offset-paper-card",
                         kelasPeran(peran, item.id) ??
                           kelasKelompok(kelompok, item.id) ??
                           (rentang ? LAB_TONE_CLASS[rentang.tone] : LAB_CELL_NETRAL),
                         difokus && kelasFokus(fokus.length),
-                        i === terpilih && !difokus && !r && "border-ink",
+                        i === terpilih && !difokus && !r && "shadow-[inset_0_-3px_0_0_var(--color-white)]",
                       )}
                       // Masuk bertingkat saat papan pertama kali terisi; sel yang
                       // ditambah belakangan hanya satu, jadi jedanya tak terasa.
@@ -246,12 +246,12 @@ export default function ArrayBoard({
               )}
 
               {/* Slot "lepas" di indeks n. Justru posisi inilah yang menjelaskan
-                  kenapa `i < n` berhenti di sana — jadi ia digambar. */}
+                  kenapa `i < n` berhenti di sana - jadi ia digambar. */}
               <span
                 aria-hidden="true"
                 className={cn(
                   "lab-posisi absolute left-0 top-0 flex h-[var(--lab-cell)] w-[var(--lab-cell)] items-center justify-center",
-                  "rounded-xl border-2 border-dashed border-rule-strong text-xs italic text-ink-faint",
+                  "bg-white/[0.06] text-xs italic text-ink-faint",
                 )}
                 style={{ translate: posisi(n) }}
               >
@@ -289,8 +289,8 @@ export default function ArrayBoard({
                   type="button"
                   onClick={() => onMulai(m.op())}
                   className={cn(
-                    "lab-fade-up rounded-full border border-blue-300 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700",
-                    "transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-soft",
+                    "lab-fade-up rounded-full   bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700",
+                    "transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:",
                   )}
                   style={{ "--d": `${120 + i * 70}ms` } as React.CSSProperties}
                 >

@@ -89,7 +89,7 @@ export async function decideApplication(
   if (decision === "accept") {
     // Menaikkan admin menjadi educator justru menurunkan wewenangnya.
     if (currentRole === "admin") {
-      return { ok: false, error: "Akun ini admin — role-nya tidak diubah." };
+      return { ok: false, error: "Akun ini admin - role-nya tidak diubah." };
     }
 
     await adminAuth().setCustomUserClaims(uid, { ...target.customClaims, role: "educator" });

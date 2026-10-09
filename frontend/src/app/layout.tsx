@@ -46,7 +46,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              'try{if(sessionStorage.getItem("synaped_intro_seen_v2")==="1")document.documentElement.classList.add("intro-skip")}catch(e){}',
+              'try{var d=document.documentElement;if(sessionStorage.getItem("synaped_intro_seen_v2")==="1")d.classList.add("intro-skip");if(localStorage.getItem("synaped_theme")==="light")d.dataset.theme="light"}catch(e){}',
           }}
         />
       </head>

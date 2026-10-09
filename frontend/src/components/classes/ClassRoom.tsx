@@ -124,27 +124,8 @@ export default function ClassRoom({
   return (
     <>
       <section
-        data-dark-hero
-        className={cn("bg-navy relative overflow-hidden pb-0", overlayNav ? "-mt-14 pt-40" : "-mt-12 pt-10")}
+        className={cn("relative overflow-hidden bg-header pb-0", overlayNav ? "-mt-14 pt-40" : "-mt-12 pt-10")}
       >
-        {/* Dua kilau radial, murni dekoratif. */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 -top-24 h-[520px] w-[520px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, var(--color-blue-500) 55%, transparent), transparent 62%)",
-          }}
-        />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-32 -left-24 h-[460px] w-[460px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, var(--color-amber-500) 18%, transparent), transparent 62%)",
-          }}
-        />
-
         <div className="container-page relative">
           <Link
             href={kembali.href}
@@ -174,7 +155,7 @@ export default function ClassRoom({
                     } as React.CSSProperties
                   }
                 >
-                  <span className="mark-on-dark">{kelas.name}</span>
+                  {kelas.name}
                 </h1>
 
                 {kelas.description && (
@@ -189,7 +170,7 @@ export default function ClassRoom({
             </div>
 
             <div
-              className="rise-in flex items-center gap-3 rounded-xl border border-white/28 bg-white/12 px-4 py-3"
+              className="rise-in flex items-center gap-3 bg-white/10 px-4 py-3"
               style={{ "--rise-delay": "420ms" } as React.CSSProperties}
             >
               <UserAvatar name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
@@ -216,9 +197,9 @@ export default function ClassRoom({
                   href={t.id === "pengumuman" ? basePath : `${basePath}?tab=${t.id}`}
                   aria-current={aktif ? "page" : undefined}
                   className={cn(
-                    "rounded-t-xl px-[22px] py-3 text-sm font-semibold transition-colors duration-200",
+                    "px-[22px] py-3 text-sm font-semibold transition-colors duration-200",
                     aktif
-                      ? "bg-paper text-blue-700"
+                      ? "bg-paper text-white"
                       : "bg-white/10 text-white/72 hover:bg-white/20 hover:text-white",
                   )}
                 >
@@ -260,7 +241,7 @@ export default function ClassRoom({
             )}
 
             {tab === "anggota" && (
-              <div className="overflow-hidden rounded-2xl border border-rule bg-paper-card">
+              <div className="overflow-hidden bg-paper-card">
                 <ul className="divide-y divide-rule">
                   <li className="flex flex-wrap items-center gap-3 bg-paper px-6 py-4">
                     <ProfileLink
@@ -318,7 +299,7 @@ export default function ClassRoom({
             )}
 
             {tab === "tentang" && (
-              <div className="rounded-2xl border border-rule bg-paper-card p-6">
+              <div className="bg-paper-card p-6">
                 <h2 className="text-[20px] text-ink mb-4" style={DISPLAY_SEKSI}>
                   Tentang kelas ini
                 </h2>
@@ -327,7 +308,7 @@ export default function ClassRoom({
                   {kelas.description || "Pengajar belum menuliskan deskripsi untuk kelas ini."}
                 </p>
 
-                <dl className="mt-6 divide-y divide-rule border-t border-rule">
+                <dl className="mt-6 divide-y divide-white/10">
                   <div className="flex items-center justify-between py-3">
                     <dt className="text-sm text-ink-muted">Pengajar</dt>
                     <dd className="text-sm font-medium text-ink">{namaPengajar}</dd>
@@ -343,14 +324,14 @@ export default function ClassRoom({
                     ujung daftar pengumuman terbaca seperti bagian dari
                     percakapannya. */}
                 {pengaturan && (
-                  <div className="mt-8 border-t border-rule pt-6">{pengaturan}</div>
+                  <div className="mt-8 pt-6">{pengaturan}</div>
                 )}
               </div>
             )}
           </div>
 
           <aside className="w-full lg:w-80 lg:sticky lg:top-24 lg:self-start space-y-4">
-            <div className="rounded-2xl border border-rule bg-paper-card p-6">
+            <div className="bg-paper-card p-6">
               <p className="t-label text-ink-muted mb-4">Ringkasan</p>
 
               <dl className="divide-y divide-rule">

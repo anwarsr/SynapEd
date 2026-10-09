@@ -128,13 +128,13 @@ export default function ContributorEditor({
   const hargaPratinjau = price > 0 ? price : CONTOH_HARGA;
   const pratinjau = dibentuk.ok ? splitSale(hargaPratinjau, feePercent, dibentuk.contributors) : null;
   const namaDari = (uid: string) =>
-    uid === owner.uid ? (ownerIsViewer ? "Anda" : owner.name) : (rows.find((r) => r.uid === uid)?.name ?? "—");
+    uid === owner.uid ? (ownerIsViewer ? "Anda" : owner.name) : (rows.find((r) => r.uid === uid)?.name ?? "-");
 
   return (
     <section className="bg-paper-card border border-rule rounded-2xl p-7">
       <h2 className="t-h3 mb-1.5">Kontributor &amp; bagi hasil</h2>
       <p className="t-body text-sm mb-6">
-        Orang lain yang ikut menyusun isi kursus ini — modul, video, kuis — dan persentase yang
+        Orang lain yang ikut menyusun isi kursus ini - modul, video, kuis - dan persentase yang
         mereka terima dari setiap penjualan, setelah potongan platform {feePercent}%. Bagian pemilik
         adalah sisanya, minimal {OWNER_MIN_SHARE}%.
       </p>
@@ -147,7 +147,7 @@ export default function ContributorEditor({
               {ownerIsViewer ? `${owner.name} (Anda)` : owner.name}
             </span>
             <span className="block text-xs text-ink-muted">
-              {owner.username ? `@${owner.username} · ` : ""}Pemilik — sisa otomatis
+              {owner.username ? `@${owner.username} · ` : ""}Pemilik - sisa otomatis
             </span>
           </span>
           <span className="t-numeral text-lg tabular-nums text-ink" aria-live="polite">
@@ -276,7 +276,7 @@ export default function ContributorEditor({
       {!dibentuk.ok && <p className="mt-3 text-sm text-rust-700">{dibentuk.error}</p>}
 
       <p className="mt-3 text-xs text-ink-muted">
-        Perubahan pembagian hanya berlaku untuk penjualan setelah disetujui — penjualan yang sudah
+        Perubahan pembagian hanya berlaku untuk penjualan setelah disetujui - penjualan yang sudah
         terjadi tidak berubah.
       </p>
     </section>

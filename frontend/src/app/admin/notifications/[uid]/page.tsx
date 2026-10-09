@@ -103,7 +103,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
               <>
                 <Row label="Diputuskan pada">{formatDate(application.decidedAt)}</Row>
                 <Row label="Diputuskan oleh">
-                  {application.decidedByName ?? <span className="text-ink-faint">—</span>}
+                  {application.decidedByName ?? <span className="text-ink-faint">-</span>}
                 </Row>
               </>
             )}
@@ -113,7 +113,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
         {application.status === "pending" && !user ? (
           /* Terkunci: masih menunggu, tetapi akun pelamarnya sudah dihapus.
              Menampilkan tombol Terima/Tolak di sini hanya menyodorkan aksi
-             yang PASTI gagal — tidak ada akun yang role-nya bisa diubah.
+             yang PASTI gagal - tidak ada akun yang role-nya bisa diubah.
              Yang tersisa dan masuk akal hanyalah membersihkan catatannya. */
           <div className="mt-8">
             <h2 className="t-h3 text-base mb-2">Tidak dapat diputuskan</h2>

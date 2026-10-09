@@ -51,7 +51,7 @@ export function DeleteNotificationButton({ uid, name }: { uid: string; name: str
         open={asking}
         title="Hapus catatan pengajuan ini?"
         description={`Catatan pengajuan ${name} akan hilang dari daftar ini.`}
-        note="Role pengguna tidak berubah — yang dihapus hanya catatannya."
+        note="Role pengguna tidak berubah - yang dihapus hanya catatannya."
         confirmLabel="Ya, Hapus"
         onConfirm={confirm}
         onCancel={() => setAsking(false)}

@@ -37,6 +37,10 @@ const NAV_LINKS: readonly { label: string; id: string; href?: string; sempit?: b
 // pernah ada, dan penanda aktifnya diam-diam berhenti bekerja.
 const SECTION_IDS = NAV_LINKS.filter((l) => !l.href).map((l) => l.id);
 
+/** Tombol sekunder berbentuk pil: latar kaca tipis, tanpa garis tepi. */
+const PIL =
+  "rounded-full bg-white/10 px-4 py-2 text-sm font-medium whitespace-nowrap text-white transition-colors duration-200 ease-out-soft hover:bg-white/15";
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -45,11 +49,6 @@ export default function Navbar() {
 
   const isHome = pathname === "/";
   const activeId = useActiveSection(SECTION_IDS, isHome);
-
-  // Seluruh situs bertema gelap (lihat @theme di globals.css): navbar selalu
-  // bergaya gelap dengan logo putih — tidak ada lagi latar terang yang perlu
-  // dideteksi di belakangnya.
-  const light = false;
 
   useEffect(() => {
     const onScroll = () => {
@@ -62,38 +61,43 @@ export default function Navbar() {
   }, []);
 
   return (
-    // Kapsul mengambang, bukan bilah penuh — memberi navbar bentuk sendiri
-    // sekaligus mengangkat logo dari latar navy supaya "Ed" biru terbaca.
-    <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-3 sm:pt-4">
+    // Kapsul kaca mengambang. Seluruh situs gelap, jadi navbar selalu gelap
+    // dengan logo putih. Tanpa garis tepi: kedalaman datang dari kaca buram
+    // (makin pekat saat di-scroll) dan bayangan lembut.
+    <nav className="fixed left-0 right-0 top-0 z-50 px-4 pt-3 sm:px-6 sm:pt-4">
       <div
         className={cn(
-          "container-nav rounded-3xl border px-4 sm:px-5 py-2.5",
-          "flex items-center justify-between gap-4",
-          "transition-[background-color,border-color,box-shadow] duration-300 ease-out-soft",
+          "container-nav flex items-center justify-between gap-4 rounded-full px-5 py-2 sm:px-6",
+          "transition-[background-color,box-shadow] duration-500 ease-out-soft",
           scrolled
-            ? "bg-paper/10 backdrop-blur-xl border-0 shadow-soft"
-            : light
-              ? "bg-paper-card/0 backdrop-blur-md border-0"
-              : "bg-white/10 backdrop-blur-md border-white/15",
+            ? "bg-white/[0.14] shadow-[0_14px_44px_-20px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+            : "bg-white/[0.08] backdrop-blur-md",
         )}
       >
         {/* Aset logo berukuran 667x667 (persegi) dengan margin transparan tebal.
             width/height WAJIB sesuai rasio asli, kalau tidak gambarnya dipipihkan.
             Ukuran optis diatur lewat lebar CSS, lalu -my menetralkan tinggi
             kanvas kosong supaya baris navbar tidak ikut membesar. */}
-        <Link href="/" className="flex items-center shrink-0" aria-label="SynapEd — beranda">
+        <Link href="/" className="flex shrink-0 items-center" aria-label="SynapEd - beranda">
           <Image
-            src={light ? "/images/logotext.png" : "/images/logotextwhite.png"}
+            src="/images/logotextwhite.png"
             alt="SynapEd"
             width={667}
             height={667}
-            className="w-24 sm:w-28 h-auto -my-8"
+            className="logo-on-dark -my-8 h-auto w-24 sm:w-28"
             priority
+          />
+          <Image
+            src="/images/logotext.png"
+            alt="SynapEd"
+            width={667}
+            height={667}
+            className="logo-on-light -my-8 h-auto w-24 sm:w-28"
           />
         </Link>
 
-        {/* Link + penanda section aktif */}
-        <div className="hidden md:flex items-center gap-1">
+        {/* Tautan + penanda section aktif: garis kecil di bawah kata, bukan keping berlatar */}
+        <div className="hidden items-center gap-1 md:flex">
           {NAV_LINKS.map((link) => {
             const rute = link.href;
             const href = rute ?? (isHome ? `#${link.id}` : `/#${link.id}`);
@@ -112,20 +116,20 @@ export default function Navbar() {
                 href={href}
                 aria-current={isActive ? "true" : undefined}
                 className={cn(
-                  "relative px-3.5 py-2 rounded-full text-sm",
-                  "transition-colors duration-200 ease-out-soft",
+                  "group relative px-3.5 py-2 text-sm font-medium",
+                  "transition-colors duration-300 ease-out-soft",
                   link.sempit && "hidden lg:block",
-                  // Keping section aktif sama di kedua latar: teks biru tua di
-                  // atas keping biru muda cukup kontras baik di kertas maupun
-                  // di atas navy. Hanya keadaan tidak-aktif yang berbeda.
-                  isActive
-                    ? "text-blue-700 bg-blue-50"
-                    : light
-                      ? "text-ink-body hover:text-blue-700 hover:bg-blue-50/60"
-                      : "text-white hover:text-blue-700 hover:bg-blue-50/60",
+                  isActive ? "text-white" : "text-white/60 hover:text-white",
                 )}
               >
                 {link.label}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute bottom-0.5 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-blue-400 transition-[width,opacity] duration-300 ease-out-soft",
+                    isActive ? "w-4 opacity-100" : "w-0 opacity-0 group-hover:w-2 group-hover:opacity-70",
+                  )}
+                />
               </Tag>
             );
           })}
@@ -133,25 +137,17 @@ export default function Navbar() {
 
         {/* Slot lebar tetap: status auth baru diketahui setelah Firebase
             menjawab, dan tanpa ini kapsul akan bergeser saat datanya masuk. */}
-        <div className="hidden md:flex items-center justify-end gap-2 shrink-0 min-w-[13rem]">
+        <div className="hidden min-w-[13rem] shrink-0 items-center justify-end gap-2 md:flex">
           {status === "loading" ? (
-            <span aria-hidden="true" className="h-9 w-36 rounded-full bg-current opacity-[0.07]" />
+            <span aria-hidden="true" className="h-9 w-36 rounded-full bg-white/10" />
           ) : status === "authenticated" ? (
             <>
               {user.role === "admin" && (
                 <Link
                   href="/admin"
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-full",
-                    "transition-colors duration-200 ease-out-soft",
-                    // amber-500 hanya boleh dipakai sebagai teks di atas navy
-                    // (5.8:1); di atas kertas ia gagal, jadi di sana amber-700.
-                    light
-                      ? "text-amber-700 hover:bg-amber-100"
-                      : "text-amber-500 hover:text-white hover:bg-white/8",
-                  )}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-warn-text transition-colors duration-200 ease-out-soft hover:bg-white/10 hover:text-white"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -165,51 +161,25 @@ export default function Navbar() {
               {/* Hanya pengguna biasa yang ditawari: admin meninjau pengajuan,
                   educator sudah menjadi educator. */}
               {user.role === "user" && (
-                <Link
-                  href="/educator"
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-full border",
-                    "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-                    light
-                      ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
-                      : "border-white/25 text-white hover:bg-white/10",
-                  )}
-                >
+                <Link href="/educator" className={PIL}>
                   Jadi Educator
                 </Link>
               )}
 
               {/* Dua pintu ke panel educator, ditulis sekali lewat map.
 
-                  Sebelumnya hanya "Kursus Saya" dan ia ditulis tangan. Menambah
-                  tujuan kedua dengan cara yang sama berarti gaya tombolnya harus
-                  dijaga sama di dua tempat — dan yang tertinggal baru terlihat
-                  saat keduanya kebetulan tampil bersebelahan. */}
+                  Di lebar tablet kapsul navbar sudah penuh oleh lima tautan
+                  bagian; tombol kedua mendorong foto profil ke luar layar.
+                  Diukur, bukan ditebak: pada 820px dengan dua tombol, avatarnya
+                  benar-benar terpotong. Yang disembunyikan tetap terjangkau -
+                  panel educator punya kedua tab, dan menu lipat di bawah md
+                  memuat keduanya. */}
               {user.role === "educator" &&
                 [
                   { href: "/educator/courses", label: "Kursus Saya", sempit: true },
                   { href: "/educator/classes", label: "Kelas Saya", sempit: false },
                 ].map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "px-4 py-2 text-sm font-medium rounded-full border whitespace-nowrap",
-                      "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-                      // Di lebar tablet kapsul navbar sudah penuh oleh lima
-                      // tautan bagian; tombol kedua mendorong foto profil ke
-                      // luar layar. Diukur, bukan ditebak: pada 820px dengan
-                      // dua tombol, avatarnya benar-benar terpotong.
-                      //
-                      // Yang disembunyikan tetap terjangkau — panel educator
-                      // punya kedua tab, dan menu lipat di bawah md memuat
-                      // keduanya.
-                      item.sempit ? "" : "hidden lg:block",
-                      light
-                        ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
-                        : "border-white/25 text-white hover:bg-white/10",
-                    )}
-                  >
+                  <Link key={item.href} href={item.href} className={cn(PIL, !item.sempit && "hidden lg:block")}>
                     {item.label}
                   </Link>
                 ))}
@@ -218,16 +188,7 @@ export default function Navbar() {
                   educator. Baru tampil di xl: di bawahnya kapsul navbar sudah
                   penuh, dan dashboard tetap terjangkau dari halaman profil
                   serta menu lipat. */}
-              <Link
-                href="/dashboard"
-                className={cn(
-                  "hidden xl:block px-4 py-2 text-sm font-medium rounded-full border whitespace-nowrap",
-                  "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-                  light
-                    ? "border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
-                    : "border-white/25 text-white hover:bg-white/10",
-                )}
-              >
+              <Link href="/dashboard" className={cn(PIL, "hidden xl:block")}>
                 Dashboard
               </Link>
 
@@ -236,15 +197,9 @@ export default function Navbar() {
                   navbar tidak menaruh aksi merusak di sebelah tautan biasa. */}
               <Link
                 href="/profil"
-                title={`${user.email} — buka profil`}
+                title={`${user.email} - buka profil`}
                 aria-label="Buka profil"
-                className={cn(
-                  "rounded-full transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-                  "focus:outline-none focus-visible:ring-2",
-                  light
-                    ? "hover:ring-2 hover:ring-blue-500/30 focus-visible:ring-blue-500/40"
-                    : "ring-offset-0 hover:ring-2 hover:ring-white/40 focus-visible:ring-white/60",
-                )}
+                className="rounded-full ring-2 ring-white/15 transition-[box-shadow,transform] duration-200 ease-out-soft hover:-translate-y-0.5 hover:ring-white/50 focus:outline-none focus-visible:ring-white/70"
               >
                 <UserAvatar name={user.name} photoURL={user.photoURL} size="sm" />
               </Link>
@@ -253,33 +208,21 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ease-out-soft",
-                  light
-                    ? "text-ink-body hover:text-blue-700 hover:bg-blue-50/60"
-                    : "text-white hover:text-blue-700 hover:bg-blue-50/60",
-                )}
+                className="rounded-full px-4 py-2 text-sm font-medium text-white/75 transition-colors duration-200 ease-out-soft hover:text-white"
               >
                 Masuk
               </Link>
               <Link
                 href="/register"
-                className={cn(
-                  "group inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold rounded-full",
-                  "transition-all duration-200 ease-out-soft hover:-translate-y-0.5",
-                  // Kedua keadaan hover sengaja tetap kontras: sebelumnya versi
-                  // terang menuju bg-white padahal teksnya putih, dan versi
-                  // gelap menuju bg-blue-700 padahal teksnya biru — dua-duanya
-                  // membuat tombolnya hilang tepat saat kursor menyentuhnya.
-                  light
-                    ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lift"
-                    : "bg-white text-blue-600 hover:bg-blue-50 hover:shadow-soft",
-                )}
+                className="group inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2 text-sm font-semibold text-paper transition-[background-color,transform] duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-white/90"
               >
                 Daftar Gratis
                 <svg
-                  className="w-3.5 h-3.5 -mr-0.5 transition-transform duration-200 ease-out-soft group-hover:translate-x-0.5"
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25}
+                  className="-mr-0.5 h-3.5 w-3.5 transition-transform duration-200 ease-out-soft group-hover:translate-x-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.25}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -289,15 +232,12 @@ export default function Navbar() {
         </div>
 
         <button
-          className={cn(
-            "md:hidden p-1.5 rounded-full transition-colors",
-            light ? "text-ink hover:bg-blue-50" : "text-paper hover:bg-white/10",
-          )}
+          className="rounded-full p-1.5 text-white transition-colors hover:bg-white/10 md:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
           aria-expanded={mobileOpen}
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
             {mobileOpen ? (
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             ) : (
@@ -307,10 +247,10 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Menu mobile — kartu terpisah di bawah kapsul */}
+      {/* Menu mobile — kartu kaca terpisah di bawah kapsul */}
       {mobileOpen && (
-        <div className="md:hidden max-w-7xl mx-auto mt-2 bg-paper-card border border-rule rounded-3xl shadow-lift overflow-hidden">
-          <div className="px-5 py-4 space-y-0.5">
+        <div className="mx-auto mt-2 max-w-7xl overflow-hidden rounded-3xl bg-card-hover/85 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl md:hidden">
+          <div className="space-y-0.5 px-5 py-4">
             {NAV_LINKS.map((link, i) => {
               const Tag = link.href ? Link : "a";
               const href = link.href ?? (isHome ? `#${link.id}` : `/#${link.id}`);
@@ -319,7 +259,7 @@ export default function Navbar() {
                 <Tag
                   key={link.id}
                   href={href}
-                  className="rise-in block text-sm text-ink-body hover:text-blue-700 hover:bg-blue-50/60 rounded-xl px-3 py-2.5 transition-colors"
+                  className="rise-in block rounded-xl px-3 py-2.5 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
                   style={{ "--rise-delay": `${i * 40}ms` } as React.CSSProperties}
                   onClick={() => setMobileOpen(false)}
                 >
@@ -327,15 +267,15 @@ export default function Navbar() {
                 </Tag>
               );
             })}
-            <hr className="rule-line my-3" />
+            <div aria-hidden="true" className="my-3 h-px bg-white/10" />
             <div className="flex flex-col gap-2">
               {status === "authenticated" ? (
                 <>
                   <span className="flex items-center gap-3 px-3 pb-2">
                     <UserAvatar name={user.name} photoURL={user.photoURL} size="sm" />
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium text-ink truncate">{user.name}</span>
-                      <span className="block text-xs text-ink-muted truncate">{user.email}</span>
+                      <span className="block truncate text-sm font-medium text-white">{user.name}</span>
+                      <span className="block truncate text-xs text-white/55">{user.email}</span>
                     </span>
                   </span>
 
@@ -343,7 +283,7 @@ export default function Navbar() {
                     <Link
                       href="/admin"
                       onClick={() => setMobileOpen(false)}
-                      className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-amber-500/40 text-amber-700 hover:bg-amber-100 transition-colors"
+                      className="rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-medium text-warn-text transition-colors hover:bg-white/15"
                     >
                       Panel Admin
                     </Link>
@@ -353,7 +293,7 @@ export default function Navbar() {
                     <Link
                       href="/educator"
                       onClick={() => setMobileOpen(false)}
-                      className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                      className="rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-white/15"
                     >
                       Jadi Educator
                     </Link>
@@ -368,7 +308,7 @@ export default function Navbar() {
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
-                        className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                        className="rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-white/15"
                       >
                         {item.label}
                       </Link>
@@ -377,7 +317,7 @@ export default function Navbar() {
                   <Link
                     href="/dashboard"
                     onClick={() => setMobileOpen(false)}
-                    className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                    className="rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-white/15"
                   >
                     Dashboard
                   </Link>
@@ -387,7 +327,7 @@ export default function Navbar() {
                   <Link
                     href="/profil"
                     onClick={() => setMobileOpen(false)}
-                    className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    className="rounded-xl bg-blue-600 px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-700"
                   >
                     Profil Saya
                   </Link>
@@ -396,13 +336,13 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/login"
-                    className="px-6 py-3 text-sm font-medium rounded-xl text-center border border-rule text-ink hover:border-blue-500 hover:text-blue-700 transition-colors"
+                    className="rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-white/15"
                   >
                     Masuk
                   </Link>
                   <Link
                     href="/register"
-                    className="px-6 py-3 text-sm font-semibold rounded-xl text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    className="rounded-xl bg-blue-600 px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-700"
                   >
                     Daftar Gratis
                   </Link>

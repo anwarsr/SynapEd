@@ -21,7 +21,7 @@ import { cn } from "@/lib/cn";
  * Sel netral sedikit tembus pandang: di tampilan kubus, lapisan di belakang
  * samar terlihat menembus lapisan depan — petunjuk kedalaman yang paling murah.
  */
-const SEL_NETRAL = "border-rule-strong bg-paper-card/90 text-ink";
+const SEL_NETRAL = " bg-white/[0.1] text-white";
 
 const SUDUT_AWAL = { x: -20, y: 38 };
 const BATAS_X = 60;
@@ -141,12 +141,12 @@ export default function CubeBoard({
         className={cn(
           "lab-cell lab-posisi lab-enter t-numeral absolute flex h-[var(--kubus-sel)] w-[var(--kubus-sel)] items-center justify-center",
           datar ? "left-0 top-0" : "left-1/2 top-1/2",
-          "rounded-lg border-2 tabular-nums",
+          " tabular-nums",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
           // Warna asal mengalahkan sorotan selama transformasi.
           kelasPeran(peran, sel.id) ?? warnaAsal ?? (kotak ? LAB_TONE_CLASS[kotak.tone] : SEL_NETRAL),
           difokus && kelasFokus(fokus.length),
-          dipilih && !difokus && "border-ink",
+          dipilih && !difokus && "shadow-[inset_0_-3px_0_0_var(--color-white)]",
         )}
         style={
           {
@@ -168,7 +168,7 @@ export default function CubeBoard({
         {penunjuk.length > 0 && (
           <span className="absolute -top-2 -right-2 flex gap-0.5">
             {penunjuk.map((p) => (
-              <span key={p.name} className={cn("lab-land rounded-full px-1 py-px text-[9px] font-semibold shadow-soft", LAB_POINTER_CLASS[p.tone])}>
+              <span key={p.name} className={cn("lab-land rounded-full px-1 py-px text-[9px] font-semibold ", LAB_POINTER_CLASS[p.tone])}>
                 {p.name}
               </span>
             ))}
@@ -240,7 +240,7 @@ export default function CubeBoard({
   }
 
   const tombolKecil =
-    "inline-flex h-8 items-center justify-center rounded-lg border border-rule bg-paper-card px-2.5 text-xs font-medium text-ink-body transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700";
+    "inline-flex h-8 items-center justify-center   bg-paper-card px-2.5 text-xs font-medium text-ink-body transition-all duration-200 ease-out-soft hover:-translate-y-0.5  hover:text-blue-700";
   const kelasPita = (aktifFokus: boolean, aktifPilih: boolean) =>
     cn(
       "lab-posisi t-numeral absolute flex items-center justify-center rounded text-[10px] tabular-nums",
@@ -251,8 +251,8 @@ export default function CubeBoard({
     <div
       ref={akarRef}
       className={cn(
-        "lab-board lab-kubus relative flex flex-col border border-rule bg-paper-card",
-        presentasi ? "min-h-[55vh] rounded-none border-0 px-6 py-10" : "rounded-3xl px-5 pt-5 pb-6 shadow-soft lg:min-h-[40vh]",
+        "lab-board lab-kubus relative flex flex-col   bg-paper-card",
+        presentasi ? "min-h-[55vh] rounded-none  px-6 py-10" : "px-5 pt-5 pb-6  lg:min-h-[40vh]",
       )}
       style={presentasi ? ({ "--kubus-sel": "3.4rem", "--kubus-maks": "4.5rem" } as React.CSSProperties) : undefined}
     >
@@ -273,7 +273,7 @@ export default function CubeBoard({
                 arr{cubeLabel(terpilih)} = {state.cells[offsetTerpilih].value}
               </span>
             )}
-            <span role="group" aria-label="Cara melihat" className="ml-auto flex rounded-full border border-rule bg-paper p-0.5">
+            <span role="group" aria-label="Cara melihat" className="ml-auto flex rounded-full   bg-white/10 p-0.5">
               {(["kubus", "lapisan"] as const).map((t) => (
                 <button
                   key={t}
@@ -282,7 +282,7 @@ export default function CubeBoard({
                   onClick={() => setTampilan(t)}
                   className={cn(
                     "rounded-full px-3 py-1 text-xs font-semibold capitalize transition-all duration-200",
-                    tampilan === t ? "bg-blue-600 text-white shadow-soft" : "text-ink-body hover:text-blue-700",
+                    tampilan === t ? "bg-blue-600 text-white " : "text-ink-body hover:text-blue-700",
                   )}
                 >
                   {t}
@@ -314,7 +314,7 @@ export default function CubeBoard({
           >
             <div
               ref={adeganRef}
-              className="lab-kubus-adegan relative overflow-hidden rounded-2xl select-none"
+              className="lab-kubus-adegan relative overflow-hidden select-none"
               style={{
                 height: `calc(${R} * (var(--kubus-sel) + var(--kubus-gap)) + ${D} * var(--kubus-sel) * ${(renggang * 0.3).toFixed(2)} + 6.5rem)`,
                 touchAction: "pan-y",
@@ -347,8 +347,8 @@ export default function CubeBoard({
                     <div
                       key={`l${k}`}
                       className={cn(
-                        "lab-bingkai absolute left-1/2 top-1/2 rounded-xl border-2",
-                        aktif ? "border-blue-500 bg-blue-50/50" : "border-rule-strong/70 bg-paper/50",
+                        "lab-bingkai absolute left-1/2 top-1/2 ",
+                        aktif ? "bg-blue-500/15" : "bg-white/[0.05]",
                       )}
                       style={{
                         width: `calc${lebar}`,
@@ -360,8 +360,8 @@ export default function CubeBoard({
                     >
                       <span
                         className={cn(
-                          "t-numeral absolute -top-2.5 left-2 rounded-full border px-1.5 py-px text-[10px] tabular-nums",
-                          aktif ? "border-blue-500 bg-blue-600 text-white" : "border-rule bg-paper-card text-ink-muted",
+                          "t-numeral absolute -top-2.5 left-2 rounded-full  px-1.5 py-px text-[10px] tabular-nums",
+                          aktif ? " bg-blue-600 text-white" : " bg-chip text-white/70",
                         )}
                         title={`lapisan ${k}`}
                       >
@@ -467,15 +467,15 @@ export default function CubeBoard({
                   <div
                     key={`l${k}`}
                     className={cn(
-                      "lab-bingkai absolute left-0 top-0 rounded-2xl border-2",
-                      aktif ? "border-blue-500 bg-blue-50/40 shadow-soft" : "border-rule bg-paper/60",
+                      "lab-bingkai absolute left-0 top-0 ",
+                      aktif ? "bg-blue-500/15" : "bg-white/[0.05]",
                     )}
                     style={{ width: `calc${lebarBlok}`, height: `calc${tinggiBlok}`, translate: `calc${b.x} calc${b.y}` }}
                   >
                     <span
                       className={cn(
-                        "t-numeral absolute -top-2.5 left-3 rounded-full border px-2 py-0.5 text-[10px] tabular-nums",
-                        aktif ? "border-blue-500 bg-blue-600 text-white" : "border-rule bg-paper-card text-ink-muted",
+                        "t-numeral absolute -top-2.5 left-3 rounded-full  px-2 py-0.5 text-[10px] tabular-nums",
+                        aktif ? " bg-blue-600 text-white" : " bg-chip text-white/70",
                       )}
                     >
                       arr[{k}]
@@ -532,7 +532,7 @@ export default function CubeBoard({
 
         {/* ── Pita memori ──────────────────────────────────── */}
         {!kosong && (
-          <div className="mt-5 border-t border-dashed border-rule pt-4">
+          <div className="mt-5    pt-4">
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-ink-muted">
               <span className="t-label text-ink">Memori</span>
               <span>
@@ -557,10 +557,10 @@ export default function CubeBoard({
                   >
                     <span
                       className={cn(
-                        "t-numeral flex h-7 w-7 items-center justify-center rounded-md border text-[11px] tabular-nums transition-colors duration-200",
-                        kelasPeran(peran, sel.id) ?? warnaAsal ?? (kotak ? LAB_TONE_CLASS[kotak.tone] : "border-rule bg-paper-card text-ink"),
+                        "t-numeral flex h-7 w-7 items-center justify-center  text-[11px] tabular-nums transition-colors duration-200",
+                        kelasPeran(peran, sel.id) ?? warnaAsal ?? (kotak ? LAB_TONE_CLASS[kotak.tone] : " bg-white/[0.08] text-white"),
                         difokus && kelasFokus(fokus.length),
-                        o === offsetTerpilih && !difokus && "border-ink",
+                        o === offsetTerpilih && !difokus && "shadow-[inset_0_-3px_0_0_var(--color-white)]",
                       )}
                     >
                       {sel.value}
@@ -579,13 +579,13 @@ export default function CubeBoard({
               {[0, 1, 2].map((k) => (
                 <span
                   key={k}
-                  className="absolute h-14 w-14 rounded-xl border-2 border-dashed border-rule-strong bg-paper-card/60"
+                  className="absolute h-14 w-14 bg-white/[0.06]"
                   style={{ left: `${k * 14}px`, top: `${k * 8}px` }}
                 />
               ))}
             </div>
             <p className="max-w-[46ch] text-sm text-ink-muted">
-              Kubus masih kosong. Array 3D adalah tumpukan lapisan — mulai dengan salah satu contoh ini:
+              Kubus masih kosong. Array 3D adalah tumpukan lapisan - mulai dengan salah satu contoh ini:
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {MULAI_CEPAT.map((m, i) => (
@@ -593,7 +593,7 @@ export default function CubeBoard({
                   key={m.label}
                   type="button"
                   onClick={() => onMulai(m.op())}
-                  className="lab-fade-up rounded-full border border-blue-300 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-soft"
+                  className="lab-fade-up rounded-full   bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:"
                   style={{ "--d": `${120 + i * 70}ms` } as React.CSSProperties}
                 >
                   {m.label}

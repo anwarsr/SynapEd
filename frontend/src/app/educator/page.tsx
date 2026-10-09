@@ -32,7 +32,7 @@ const benefits = [
 ];
 
 function Panel({ children }: { children: React.ReactNode }) {
-  return <div className="bg-paper-card border border-rule rounded-2xl p-8">{children}</div>;
+  return <div className="bg-paper-card p-8 sm:p-10">{children}</div>;
 }
 
 export default async function EducatorPage() {
@@ -45,27 +45,22 @@ export default async function EducatorPage() {
 
       <main className="bg-paper min-h-screen pt-36 pb-24">
         <div className="container-reading">
-          <p className="chapter-mark mb-5">
-            <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-            <span>Program Educator</span>
-          </p>
-
-          <h1 className="t-h2 mb-4">
-            Bagikan yang Anda kuasai, <span className="mark">jadilah educator</span>
+          <h1 className="mb-6 text-[clamp(2.2rem,5vw,3.6rem)] font-extrabold leading-[1.06] tracking-[-0.04em] text-white">
+            Bagikan yang Anda kuasai, jadilah educator
           </h1>
 
-          <p className="t-body text-lg text-ink-body mb-12 max-w-2xl">
-            Educator adalah penyedia kursus di SynapEd — seperti lembaga atau pengajar
+          <p className="t-body mb-14 max-w-2xl text-lg text-ink-body">
+            Educator adalah penyedia kursus di SynapEd - seperti lembaga atau pengajar
             yang membuka kelasnya sendiri. Anda menyusun kursus, SynapEd yang
             menyediakan tempat dan pelajarnya.
           </p>
 
-          <div className="grid sm:grid-cols-3 gap-4 mb-12">
+          <div className="grid sm:grid-cols-3 gap-1 mb-14">
             {benefits.map((b) => (
-              <div key={b.title} className="bg-paper-card border border-rule rounded-2xl p-6">
-                <span className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
+              <div key={b.title} className="bg-paper-card p-6">
+                <span className="w-11 h-11 bg-white/10 flex items-center justify-center mb-5">
                   <svg
-                    className="w-5 h-5 text-blue-700"
+                    className="w-5 h-5 text-blue-300"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -81,14 +76,14 @@ export default async function EducatorPage() {
             ))}
           </div>
 
-          <h2 className="t-h3 mb-4">Persyaratan</h2>
+          <h2 className="t-h3 mb-3">Persyaratan</h2>
           <p className="t-body text-ink-body mb-10">
             Belum ada persyaratan khusus. Pengajuan Anda ditinjau admin SynapEd, dan
             hasilnya muncul di halaman ini.
           </p>
 
           {/* Bagian yang berubah menurut keadaan akun. Semua cabang dijelaskan
-              apa adanya — pengguna berhak tahu di mana pengajuannya berada. */}
+              apa adanya - pengguna berhak tahu di mana pengajuannya berada. */}
           {user.role === "educator" ? (
             <Panel>
               <div className="flex items-center gap-3 mb-3">
@@ -101,7 +96,7 @@ export default async function EducatorPage() {
               </p>
               <Link
                 href="/educator/courses"
-                className="inline-block rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
+                className="inline-block bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
               >
                 Kelola Kursus Saya
               </Link>

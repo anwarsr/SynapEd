@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { cleanProfile, validatePhone, type ProfileContent } from "@/lib/profileTypes";
+import { AVATARS } from "@/lib/storagePaths";
+import { deleteObjects } from "@/lib/storageCleanup";
 
 export type ProfileResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -67,4 +69,49 @@ export async function updateMyPhone(raw: unknown): Promise<ProfileResult> {
   revalidatePath("/pengaturan");
 
   return { ok: true, message: phone === null ? "Nomor HP dihapus." : "Nomor HP disimpan." };
+}
+
+/**
+ * Menyimpan (atau menghapus, bila `null`) banner profil milik SENDIRI.
+ *
+ * URL datang dari browser, jadi diperiksa: harus URL Firebase Storage DAN
+ * menunjuk berkas banner milik uid SESI (`avatars/{uid}/banner.jpg`). Tanpa
+ * itu, tindakan ini bisa dipakai menautkan gambar sembarang (atau banner orang
+ * lain) ke profil sendiri — dan ke kartu komentar di beranda.
+ */
+export async function updateMyBanner(raw: unknown): Promise<ProfileResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const path = `${AVATARS}/${user.uid}/banner.jpg`;
+
+  if (raw === null) {
+    await adminDb()
+      .collection("users")
+      .doc(user.uid)
+      .set({ bannerURL: null, updatedAt: new Date().toISOString() }, { merge: true });
+    await deleteObjects([path]).catch(() => 0);
+    revalidatePath("/profil");
+    revalidatePath("/");
+    return { ok: true, message: "Banner dihapus." };
+  }
+
+  if (
+    typeof raw !== "string" ||
+    raw.length > 900 ||
+    !raw.startsWith("https://firebasestorage.googleapis.com/v0/b/") ||
+    !raw.includes(`/o/${encodeURIComponent(path)}`)
+  ) {
+    return { ok: false, error: "Banner tidak valid." };
+  }
+
+  await adminDb()
+    .collection("users")
+    .doc(user.uid)
+    .set({ bannerURL: raw, updatedAt: new Date().toISOString() }, { merge: true });
+
+  revalidatePath("/profil");
+  revalidatePath("/");
+
+  return { ok: true, message: "Banner diperbarui." };
 }

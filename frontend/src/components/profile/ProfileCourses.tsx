@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Tag from "@/components/ui/Tag";
+import CourseThumb from "@/components/ui/CourseThumb";
 import { iconPaths, levelTone } from "@/lib/courseUi";
 import { progressFromSnapshot, type Enrollment } from "@/lib/enrollments";
 import type { EducatorCourseRow } from "@/lib/educatorCourses";
@@ -8,7 +9,7 @@ import type { KelasPublik } from "@/lib/classTypes";
 
 export function Kosong({ pesan, aksi }: { pesan: string; aksi?: { href: string; label: string } }) {
   return (
-    <div className="rounded-2xl border border-rule bg-paper-alt px-6 py-10 text-center">
+    <div className="bg-paper-card px-6 py-10 text-center">
       <p className="text-sm text-ink-muted">{pesan}</p>
       {aksi && (
         <Link
@@ -40,7 +41,14 @@ function Ikon({ icon, tint }: { icon: string; tint: string }) {
  * Menghapusnya di sini akan membuat `/dashboard/certificates/[id]` menjadi
  * halaman yatim yang hanya bisa dicapai dengan mengetik alamatnya.
  */
-export function EnrolledCourses({ enrollments }: { enrollments: readonly Enrollment[] }) {
+export function EnrolledCourses({
+  enrollments,
+  gambar,
+}: {
+  enrollments: readonly Enrollment[];
+  /** slug → gambar kursus (sama dengan kartu di katalog); kosong → ikon bawaan. */
+  gambar?: Readonly<Record<string, string | null>>;
+}) {
   if (enrollments.length === 0) {
     return (
       <Kosong
@@ -58,14 +66,26 @@ export function EnrolledCourses({ enrollments }: { enrollments: readonly Enrollm
         return (
           <div
             key={e.courseSlug}
-            className="group bg-paper-card border border-rule rounded-2xl px-[22px] py-5 transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft hover:-translate-y-0.5"
+            className="group bg-paper-card px-[22px] py-5 transition-[transform,background-color] duration-200 ease-out-soft hover:bg-card-hover hover:-translate-y-0.5"
           >
             <Link
               href={`/courses/${e.courseSlug}/learn${e.lastLessonSlug ? `/${e.lastLessonSlug}` : ""}`}
               className="block"
             >
               <span className="flex items-center gap-4">
-                <Ikon icon={e.courseIcon} tint={e.courseTint} />
+                <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-paper-alt">
+                  <CourseThumb
+                    thumbnail={gambar?.[e.courseSlug] ?? null}
+                    className="absolute inset-0 h-full w-full"
+                    fallback={
+                      <span className={cn("flex h-full w-full items-center justify-center", e.courseTint)}>
+                        <svg className="h-5 w-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[e.courseIcon] ?? iconPaths.reading} />
+                        </svg>
+                      </span>
+                    }
+                  />
+                </span>
 
                 <span className="flex-1 min-w-0">
                   <span className="block text-sm font-medium text-ink truncate">
@@ -140,7 +160,7 @@ export function OwnedCourses({
         <Link
           key={c.slug}
           href={`/courses/${c.slug}`}
-          className="group flex items-center gap-[18px] bg-paper-card border border-rule rounded-2xl px-[22px] py-5 transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft"
+          className="group flex items-center gap-[18px] bg-paper-card px-[22px] py-5 transition-colors duration-200 ease-out-soft hover:bg-card-hover"
         >
           <span className="flex flex-1 min-w-0 items-center gap-[18px]">
             <Ikon icon={c.icon} tint={c.tint} />
@@ -173,7 +193,7 @@ export function OwnedCourses({
 export function JoinedClasses({ kelas }: { kelas: readonly KelasPublik[] }) {
   if (kelas.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-rule px-5 py-6 text-center text-[13px] text-ink-muted">
+      <p className="bg-white/5 px-5 py-6 text-center text-[13px] text-ink-muted">
         Belum mengikuti kelas. Masukkan kode undangan dari pengajar Anda.
       </p>
     );
@@ -185,7 +205,7 @@ export function JoinedClasses({ kelas }: { kelas: readonly KelasPublik[] }) {
         <li key={k.id}>
           <Link
             href={`/kelas/${k.id}`}
-            className="block rounded-[14px] border border-rule bg-paper-card px-[18px] py-4 transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft"
+            className="block bg-paper-card px-[18px] py-4 transition-colors duration-200 ease-out-soft hover:bg-card-hover"
           >
             <p className="text-sm font-medium text-ink break-words">{k.name}</p>
             <p className="mt-1 text-[12.5px] text-ink-muted">

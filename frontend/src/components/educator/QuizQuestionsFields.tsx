@@ -163,7 +163,7 @@ export default function QuizQuestionsFields({
               value={q.explanation}
               onChange={(e) => updateQuestion(qi, { explanation: e.target.value })}
               rows={2}
-              placeholder="Penjelasan (opsional) — tampil ke peserta setelah lulus atau kehabisan percobaan."
+              placeholder="Penjelasan (opsional) - tampil ke peserta setelah lulus atau kehabisan percobaan."
               className={cn(inputClass, "resize-y text-xs")}
             />
           </div>

@@ -44,7 +44,7 @@ export default function FAQ() {
   return (
     <section id="faq" className="relative flex min-h-screen flex-col overflow-hidden bg-ivory">
       {/* =====================================================
-          JUDUL — baris tersendiri di atas ubin, jadi tak pernah tertutup
+          JUDUL - baris tersendiri di atas ubin, jadi tak pernah tertutup
           ubin dan tak mengganggu susunannya.
       ====================================================== */}
 
@@ -55,7 +55,7 @@ export default function FAQ() {
       </div>
 
       {/* =====================================================
-          UBIN — memenuhi sisa section sampai tepi layar. Ditekan →
+          UBIN - memenuhi sisa section sampai tepi layar. Ditekan →
           terbalik (rotateY) dan menampilkan jawabannya.
       ====================================================== */}
 
@@ -80,7 +80,7 @@ export default function FAQ() {
                   {/* ── Depan: nomor + pertanyaan ── */}
                   <span
                     aria-hidden={open}
-                    className="absolute inset-0 flex flex-col justify-between bg-paper-card p-7 transition-colors duration-500 group-hover:bg-[#16324A] sm:p-9"
+                    className="absolute inset-0 flex flex-col justify-between bg-paper-card p-7 transition-colors duration-500 group-hover:bg-card-hover sm:p-9"
                     style={FACE}
                   >
                     <span className="flex items-start justify-between">

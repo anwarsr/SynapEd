@@ -1,5 +1,6 @@
 import Link from "next/link";
 import UserAvatar from "@/components/ui/UserAvatar";
+import ProfileBanner from "@/components/profile/ProfileBanner";
 import Tag from "@/components/ui/Tag";
 import { roleLabel, type Role } from "@/lib/roles";
 import { cn } from "@/lib/cn";
@@ -27,6 +28,8 @@ export default function ProfileHeader({
   username = null,
   email,
   photoURL,
+  bannerURL = null,
+  bannerEditable = false,
   role,
   bio,
   skills,
@@ -40,6 +43,10 @@ export default function ProfileHeader({
   username?: string | null;
   email: string;
   photoURL: string | null;
+  /** Gambar sampul; null = hitam bawaan. */
+  bannerURL?: string | null;
+  /** Hanya profil sendiri: tampilkan tombol ganti banner. */
+  bannerEditable?: boolean;
   role: Role;
   bio: string;
   skills: readonly string[];
@@ -63,34 +70,12 @@ export default function ProfileHeader({
 
   return (
     <header>
-      {/* ── Sampul ───────────────────────────────────────────────── */}
-      <div className="bg-hero-navy relative mt-24 overflow-hidden pt-6 pb-[132px]">
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(120% 100% at 15% 0%, rgba(255,255,255,.16), transparent 60%), radial-gradient(80% 80% at 100% 100%, color-mix(in srgb, var(--color-amber-500) 22%, transparent), transparent 65%)",
-          }}
-        />
-
-        {/* Motif titik, dipotong miring supaya tidak terbaca sebagai kisi. */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-50"
-          style={{
-            backgroundImage:
-              "radial-gradient(rgba(255,255,255,.34) 1.15px, transparent 1.15px)",
-            backgroundSize: "26px 26px",
-            maskImage: "linear-gradient(100deg, transparent 8%, #000 45%, transparent 92%)",
-            WebkitMaskImage: "linear-gradient(100deg, transparent 8%, #000 45%, transparent 92%)",
-          }}
-        />
-      </div>
+      {/* ── Sampul (banner; hitam bila belum diisi) ───────────────── */}
+      <ProfileBanner bannerURL={bannerURL} editable={bannerEditable} />
 
       {/* ── Identitas, menumpang sampul ──────────────────────────── */}
       <div className="container-reading relative -mt-24">
-        <span className="inline-block rounded-full border border-rule bg-paper-card p-[7px] shadow-lift">
+        <span className="inline-block rounded-full bg-paper p-[7px]">
           <UserAvatar
             name={name}
             photoURL={photoURL}
@@ -137,7 +122,7 @@ export default function ProfileHeader({
               {utama && (
                 <Link
                   href={utama.href}
-                  className="rounded-lg bg-blue-600 px-[26px] py-[13px] text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
+                  className="bg-blue-600 px-[26px] py-[13px] text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
                 >
                   {utama.label}
                 </Link>
@@ -146,7 +131,7 @@ export default function ProfileHeader({
               {sekunder && (
                 <Link
                   href={sekunder.href}
-                  className="rounded-lg border border-rule bg-paper-card px-6 py-[13px] text-sm font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+                  className="bg-white/10 px-6 py-[13px] text-sm font-medium text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
                 >
                   {sekunder.label}
                 </Link>

@@ -154,7 +154,7 @@ async function ujiServer(owner: TestUser, admin: TestUser) {
       const kosong = await bacaDurasi();
       check(
         'POST langsung "Tugas" tersimpan sebagai "—", bukan apa adanya',
-        kosong === "—",
+        kosong === "-",
         `Firestore: "${kosong}"`,
       );
 
@@ -193,7 +193,7 @@ async function ujiServer(owner: TestUser, admin: TestUser) {
       }[];
       const durasi = sections?.[0]?.lessons?.map((l) => l.duration) ?? [];
 
-      check('pelajaran: "Video" -> "—"', durasi[0] === "—", `dapat "${durasi[0]}"`);
+      check('pelajaran: "Video" -> "—"', durasi[0] === "-", `dapat "${durasi[0]}"`);
       check('pelajaran: "2 jam" -> "2 Jam"', durasi[1] === "2 Jam", `dapat "${durasi[1]}"`);
       check('pelajaran: "2 Hari" -> "48 Jam", bukan "2 Menit"', durasi[2] === "48 Jam", `dapat "${durasi[2]}"`);
     }
@@ -241,7 +241,7 @@ async function ujiServer(owner: TestUser, admin: TestUser) {
       );
       check(
         'pengajuan: after pelajaran "Bacaan" -> "—"',
-        after?.sections?.[0]?.lessons?.[0]?.duration === "—",
+        after?.sections?.[0]?.lessons?.[0]?.duration === "-",
         `dapat "${after?.sections?.[0]?.lessons?.[0]?.duration}"`,
       );
 
@@ -295,7 +295,7 @@ async function ujiServer(owner: TestUser, admin: TestUser) {
       );
       check(
         'createCourse: pelajaran "Tugas" -> "—"',
-        data?.sections?.[0]?.lessons?.[0]?.duration === "—",
+        data?.sections?.[0]?.lessons?.[0]?.duration === "-",
         `dapat "${data?.sections?.[0]?.lessons?.[0]?.duration}"`,
       );
 

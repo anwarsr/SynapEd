@@ -24,7 +24,7 @@ export default function ReviewList({
 }) {
   if (reviews.length === 0) {
     return (
-      <div className="bg-paper-card border border-rule rounded-2xl p-8 text-center">
+      <div className="bg-paper-card p-8 text-center">
         <p className="t-body text-ink-muted">
           Belum ada ulasan untuk kursus ini. Ulasan hanya bisa ditulis peserta yang sudah
           menyelesaikan seluruh pelajarannya.
@@ -34,8 +34,8 @@ export default function ReviewList({
   }
 
   return (
-    <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-7 py-5 border-b border-rule">
+    <div className="bg-paper-card overflow-hidden">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white/5 px-7 py-5">
         <span className="t-numeral text-2xl">{rating.toFixed(1)}</span>
         <Stars value={rating} size="md" />
         <span className="text-sm text-ink-muted">

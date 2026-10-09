@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { getBannerURLs } from "@/lib/banner";
 
 export const REVIEWS = "reviews";
 
@@ -32,6 +33,12 @@ export interface Review {
   uid: string;
   name: string;
   photoURL: string | null;
+  /**
+   * Banner profil penulis — TIDAK disalin ke dokumen ulasan (beda dengan nama &
+   * foto): diambil dari `users/{uid}` saat dibaca, jadi ganti banner langsung
+   * tampil di semua komentar lamanya. Hanya diisi oleh listFeaturedReviews.
+   */
+  bannerURL: string | null;
 
   /** Bilangan bulat 1..5. */
   rating: number;
@@ -66,6 +73,7 @@ function toReview(id: string, d: FirebaseFirestore.DocumentData): Review {
     uid: (d.uid as string | undefined) ?? "",
     name: (d.name as string | undefined) ?? "Peserta",
     photoURL: (d.photoURL as string | null | undefined) ?? null,
+    bannerURL: null,
     rating: typeof d.rating === "number" ? d.rating : 0,
     comment: (d.comment as string | undefined) ?? "",
     createdAt: (d.createdAt as string | undefined) ?? "",
@@ -110,9 +118,12 @@ export const FEATURED_MIN_RATING = 4;
 export async function listFeaturedReviews(max = 12): Promise<Review[]> {
   const snap = await adminDb().collection(REVIEWS).get();
 
-  return snap.docs
+  const terpilih = snap.docs
     .map((d) => toReview(d.id, d.data()))
     .filter((r) => r.rating >= FEATURED_MIN_RATING && r.comment.trim() !== "")
     .sort(terbaruDiAtas)
     .slice(0, max);
+
+  const banner = await getBannerURLs(terpilih.map((r) => r.uid)).catch(() => ({}) as Record<string, string | null>);
+  return terpilih.map((r) => ({ ...r, bannerURL: banner[r.uid] ?? null }));
 }

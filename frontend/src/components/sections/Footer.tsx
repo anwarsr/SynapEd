@@ -100,7 +100,7 @@ export default function Footer() {
           {/* Dulu kolom "Materi" berisi lima kategori yang dipatok di kode dan
               semuanya href="#". Kategori sekarang dikelola admin lewat panel,
               jadi daftar tetap di sini pasti melenceng dari isi katalog. Diganti
-              dokumen legal — yang justru dicari peninjau pembayaran. */}
+              dokumen legal - yang justru dicari peninjau pembayaran. */}
           <div>
             <h2 className="t-label text-white mb-5">Informasi</h2>
             <ul className="flex flex-col gap-3">
@@ -123,7 +123,7 @@ export default function Footer() {
             merchant: siapa yang bertanggung jawab, dan di mana. */}
         <div className="mb-10 text-sm text-white/70 leading-relaxed max-w-2xl">
           <p className="text-white font-medium mb-1">
-            {COMPANY.name} — {COMPANY.legalName}
+            {COMPANY.name} - {COMPANY.legalName}
           </p>
           <p>{COMPANY.address}</p>
           <p className="mt-2">

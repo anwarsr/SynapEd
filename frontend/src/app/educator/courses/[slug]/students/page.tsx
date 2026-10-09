@@ -154,7 +154,7 @@ export default async function CourseStudentsPage({ params }: Props) {
                           </p>
 
                           {/* Berkasnya SELALU diunduh, tidak pernah dibuka di
-                              tab — jenisnya bebas, dan membiarkan browser
+                              tab - jenisnya bebas, dan membiarkan browser
                               merendernya berarti mengizinkan kiriman peserta
                               dieksekusi di domain ini. */}
                           <a

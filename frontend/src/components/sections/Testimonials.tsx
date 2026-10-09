@@ -40,6 +40,8 @@ export interface TestimonialItem {
   courseSlug: string;
   /** URL siap pakai, sudah lewat courseImageUrl(). */
   courseImage: string | null;
+  /** Banner profil penulis; null = hitam bawaan. */
+  banner: string | null;
 }
 
 /** Di bawah ini kartunya ditata diam, tanpa pita berjalan. */
@@ -233,28 +235,40 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
                 aria-hidden={isClone || undefined}
                 tabIndex={isClone ? -1 : undefined}
                 aria-label={`Baca ulasan lengkap dari ${t.name}`}
-                className="group flex min-h-80 w-72 shrink-0 flex-col bg-paper-card p-7 text-left transition-[transform,background-color] duration-500 ease-warm hover:-translate-y-1.5 hover:bg-[#16324A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="group flex min-h-96 w-72 shrink-0 flex-col overflow-hidden bg-paper-card text-left transition-[transform,background-color] duration-500 ease-warm hover:-translate-y-1.5 hover:bg-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
-                {/* Pemberi ulasan: foto profil besar + nama + bintang */}
-                <div className="flex items-center gap-4">
-                  <UserAvatar name={t.name} photoURL={t.avatar} size="lg" />
+                {/* Banner penulis (hitam bila belum punya) — foto profil, nama, dan
+                    bintang duduk DI TENGAH banner, sedikit ke atas dari titik tengah */}
+                <span className="keep-white relative flex h-44 w-full shrink-0 flex-col items-center justify-center overflow-hidden bg-banner pb-5">
+                  {t.banner && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t.banner} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+                  )}
+                  {/* Peredam supaya teks tetap terbaca di atas foto apa pun */}
+                  {t.banner && <span aria-hidden="true" className="absolute inset-0 bg-black/45" />}
 
-                  <div className="min-w-0">
-                    <p className="truncate text-base text-white" style={NAME}>
-                      {t.name}
-                    </p>
-                    <Stars value={t.rating} size="xs" className="mt-2" />
-                  </div>
-                </div>
+                  <UserAvatar
+                    name={t.name}
+                    photoURL={t.avatar}
+                    size="md"
+                    className="relative h-[60px] w-[60px] text-base ring-2 ring-white/25"
+                  />
+                  <span className="relative mt-3 block max-w-[85%] truncate text-base text-white" style={NAME}>
+                    {t.name}
+                  </span>
+                  <Stars value={t.rating} size="xs" className="relative mt-1.5" />
+                </span>
 
-                {/* Kursus yang diulas — dulu tertulis di atas gambar */}
-                <p className="mt-7 truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300">
-                  {t.courseTitle}
-                </p>
+                <span className="flex flex-1 flex-col px-6 pb-7 pt-5 text-center">
+                  {/* Kursus yang diulas */}
+                  <span className="block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300">
+                    {t.courseTitle}
+                  </span>
 
-                <p className="mt-3 line-clamp-5 text-sm text-ink-body" style={QUOTE}>
-                  &ldquo;{t.content}&rdquo;
-                </p>
+                  <span className="mt-3 line-clamp-4 block text-sm text-ink-body" style={QUOTE}>
+                    &ldquo;{t.content}&rdquo;
+                  </span>
+                </span>
               </button>
             );
           })}
@@ -274,36 +288,48 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
             if (e.target === e.currentTarget) setActive(null);
           }}
         >
-          <div className="relative w-[min(34rem,calc(100vw-2rem))] bg-paper-card p-8 shadow-lift sm:p-10">
+          <div className="relative w-[min(34rem,calc(100vw-2rem))] overflow-hidden bg-paper-card shadow-lift">
+            {/* Banner: foto profil, nama, dan bintang di tengahnya */}
+            <div className="keep-white relative flex h-48 w-full flex-col items-center justify-center overflow-hidden bg-banner pb-5 sm:h-52">
+              {current.banner && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={current.banner} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+              )}
+              {current.banner && <span aria-hidden="true" className="absolute inset-0 bg-black/45" />}
+
+              <ProfileLink uid={current.uid} name={current.name} secondary className="relative">
+                <UserAvatar
+                  name={current.name}
+                  photoURL={current.avatar}
+                  size="lg"
+                  className="h-[68px] w-[68px] text-lg ring-2 ring-white/25"
+                />
+              </ProfileLink>
+              <div className="relative mt-3 max-w-[85%] text-center">
+                <ProfileLink uid={current.uid} name={current.name}>
+                  <p id="ulasan-nama" className="truncate text-lg text-white" style={NAME}>
+                    {current.name}
+                  </p>
+                </ProfileLink>
+                <Stars value={current.rating} size="sm" className="mx-auto mt-1.5" />
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => setActive(null)}
               aria-label="Tutup"
-              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center text-white/60 transition-colors duration-200 ease-out-soft hover:bg-white/10 hover:text-white"
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center bg-black/50 text-white/80 backdrop-blur-sm transition-colors duration-200 ease-out-soft hover:bg-black/70 hover:text-white"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
-            <div className="flex items-center gap-5 pr-10">
-              <ProfileLink uid={current.uid} name={current.name} secondary className="shrink-0">
-                <UserAvatar name={current.name} photoURL={current.avatar} size="lg" />
-              </ProfileLink>
-
-              <div className="min-w-0">
-                <ProfileLink uid={current.uid} name={current.name}>
-                  <p id="ulasan-nama" className="truncate text-lg text-white" style={NAME}>
-                    {current.name}
-                  </p>
-                </ProfileLink>
-                <Stars value={current.rating} size="sm" className="mt-2" />
-              </div>
-            </div>
-
+            <div className="px-8 pb-8 pt-6 text-center sm:px-10 sm:pb-10">
             <Link
               href={`/courses/${current.courseSlug}`}
-              className="mt-8 block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300 transition-colors hover:text-white"
+              className="block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300 transition-colors hover:text-white"
             >
               {current.courseTitle}
             </Link>
@@ -318,6 +344,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
               )}
               {selesaiMengetik && "”"}
             </p>
+            </div>
           </div>
         </div>
       )}

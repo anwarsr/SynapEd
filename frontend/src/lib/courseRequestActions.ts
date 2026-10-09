@@ -297,7 +297,7 @@ export async function requestCourseEdit(
     level: level.value,
     levelColor: level.color,
     category,
-    duration: canonicalDuration(input.duration, "course") || "—",
+    duration: canonicalDuration(input.duration, "course") || "-",
     price,
     passingGrade: clampGrade(input.passingGrade),
     thumbnail,

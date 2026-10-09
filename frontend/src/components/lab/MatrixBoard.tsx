@@ -83,15 +83,15 @@ export default function MatrixBoard({
 
   const kelasLabel = (aktifFokus: boolean, aktifPilih: boolean) =>
     cn(
-      "lab-posisi t-numeral absolute left-0 top-0 flex items-center justify-center rounded-md text-[11px] tabular-nums",
-      aktifFokus ? "bg-blue-600 font-semibold text-white" : aktifPilih ? "bg-ink text-paper" : "bg-paper-alt text-ink-muted",
+      "lab-posisi t-numeral absolute left-0 top-0 flex items-center justify-center text-[11px] tabular-nums",
+      aktifFokus ? "bg-blue-600 font-semibold text-white" : aktifPilih ? "bg-ink text-paper" : "bg-white/15 text-white-muted",
     );
 
   return (
     <div
       className={cn(
-        "lab-board relative flex flex-col border border-rule bg-paper-card",
-        presentasi ? "min-h-[55vh] rounded-none border-0 px-6 py-10" : "rounded-3xl px-5 pt-5 pb-6 shadow-soft lg:min-h-[40vh]",
+        "lab-board relative flex flex-col   bg-paper-card",
+        presentasi ? "min-h-[55vh] rounded-none  px-6 py-10" : "px-5 pt-5 pb-6  lg:min-h-[40vh]",
       )}
       style={presentasi ? ({ "--lab-cell": "4.75rem" } as React.CSSProperties) : undefined}
     >
@@ -184,13 +184,13 @@ export default function MatrixBoard({
                       onClick={() => onPilih({ baris: r, kolom: c })}
                       className={cn(
                         "lab-cell lab-posisi lab-enter t-numeral absolute left-0 top-0 flex h-[var(--lab-cell)] w-[var(--lab-cell)]",
-                        "items-center justify-center rounded-xl border-2 text-lg tabular-nums",
+                        "items-center justify-center  text-lg tabular-nums",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper-card",
                         // Warna asal mengalahkan sorotan: selama transformasi,
                         // yang perlu diikuti mata adalah ASAL setiap sel.
                         kelasPeran(peran, sel.id) ?? warnaAsal ?? (sorot ? LAB_TONE_CLASS[sorot.tone] : LAB_CELL_NETRAL),
                         difokus && kelasFokus(fokus.length),
-                        dipilih && !difokus && "border-ink",
+                        dipilih && !difokus && "shadow-[inset_0_-3px_0_0_var(--color-white)]",
                         difokus && "z-10",
                       )}
                       style={
@@ -209,7 +209,7 @@ export default function MatrixBoard({
                           {penunjuk.map((p) => (
                             <span
                               key={p.name}
-                              className={cn("lab-land rounded-full px-1.5 py-px text-[10px] font-semibold shadow-soft", LAB_POINTER_CLASS[p.tone])}
+                              className={cn("lab-land rounded-full px-1.5 py-px text-[10px] font-semibold ", LAB_POINTER_CLASS[p.tone])}
                             >
                               {p.name}
                             </span>
@@ -239,7 +239,7 @@ export default function MatrixBoard({
           <div className="lab-fade-up flex flex-col items-center gap-3 text-center">
             <div aria-hidden="true" className="grid grid-cols-3 gap-1.5 opacity-60">
               {Array.from({ length: 9 }, (_, i) => (
-                <span key={i} className="h-8 w-8 rounded-lg border-2 border-dashed border-rule-strong" />
+                <span key={i} className="h-8 w-8 bg-white/[0.06]" />
               ))}
             </div>
             <p className="text-sm text-ink-muted">Kisi masih kosong. Mulai dengan salah satu contoh ini:</p>
@@ -249,7 +249,7 @@ export default function MatrixBoard({
                   key={m.label}
                   type="button"
                   onClick={() => onMulai(m.op())}
-                  className="lab-fade-up rounded-full border border-blue-300 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-soft"
+                  className="lab-fade-up rounded-full   bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:"
                   style={{ "--d": `${120 + i * 70}ms` } as React.CSSProperties}
                 >
                   {m.label}

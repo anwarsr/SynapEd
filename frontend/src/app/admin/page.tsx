@@ -75,7 +75,7 @@ export default async function AdminPage() {
                   </span>
 
                   <span className="text-sm text-ink-body lg:w-32">
-                    {u.phone ?? <span className="text-ink-faint">—</span>}
+                    {u.phone ?? <span className="text-ink-faint">-</span>}
                   </span>
 
                   <span className="flex items-center gap-2 lg:w-40">

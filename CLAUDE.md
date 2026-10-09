@@ -159,6 +159,72 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   Pita ulasan (`.testimonial-scroller`) bisa digeser: seret mouse (>5px, klik kartu
   ditahan setelah seret) / usap sentuh, tetap jalan pelan sendiri (rAF + scrollLeft),
   berhenti saat hover/seret/dialog; isi digandakan & posisi dibungkus di separuh lebar.
+- **Banner profil** (`ProfileBanner.tsx`, `lib/banner.ts`): sampul di atas profil; pemilik
+  mengganti lewat tombol "Ganti banner" di /profil. Gambar dikecilkan di browser
+  (`compressBanner`: ≤1600px, JPEG, selalu < 2 MB) lalu diunggah ke
+  `avatars/{uid}/banner.jpg` — SENGAJA memakai folder avatar agar aturan tulis
+  storage.rules yang sudah ter-deploy berlaku (tak perlu deploy rules baru). URL (dengan
+  `?v=` pemutus cache) disimpan ke `users/{uid}.bannerURL` lewat `updateMyBanner`, yang
+  memeriksa URL = Storage + menunjuk banner milik uid SESI. `pruneAvatarFolder` tidak
+  boleh menghapus `banner.jpg` saat sinkron foto profil (hanya saat folder dikosongkan).
+  Tanpa banner = hitam polos; foto profil bawaan (`UserAvatar`) juga hitam + inisial putih.
+  Banner TIDAK disalin ke dokumen ulasan: `listFeaturedReviews` meng-join-nya dari `users`
+  (`getBannerURLs`, satu getAll) sehingga ganti banner langsung tampil di komentar lama.
+  Kartu komentar & dialog: banner di atas, foto profil menumpang tepi bawahnya.
+- **Navbar**: kapsul kaca pil (`bg-[#0B1A24]/35` → `/85` + bayangan saat scroll), tanpa garis tepi;
+  penanda tautan aktif = garis kecil biru di bawah kata (bukan keping berlatar); tombol
+  sekunder = pil `bg-white/10`. Seluruh situs gelap, jadi tak ada varian terang.
+- **Edit profil** (form di `/profil/edit`): kartu persegi `bg-paper-card` tanpa border, kolom isian
+  `bg-white/[0.06]` dengan garis biru di bawah saat fokus, tombol persegi. Kartu komentar: foto profil (60px),
+  nama, dan bintang berada DI TENGAH banner (sedikit di atas titik tengah, di atas peredam
+  hitam 45%); nama kursus + isi komentar di bawah banner, rata tengah.
+- **Banner bawaan** = `#0D2131` (senada kartu komentar `#12293A` tapi lebih tua); peredam hitam hanya dipasang bila ada gambar.
+- **/kelas & ruang kelas**: kepala `#081520` (sedikit lebih tua dari latar `#0B1A24`), judul "Kelas saya" putih penuh tanpa garis kuning (`mark-on-dark` tak dipakai lagi di sini), TANPA PNG (`ClassHeroProps` dihapus), kartu/isian persegi tanpa border, font Plus Jakarta Sans (bukan `font-mono`).
+- **/dashboard** (pendapatan): tanpa label "Akun Saya"; kartu/tabel persegi tanpa border, statistik dipisah celah 4px.
+- **Halaman profil** tanpa border/radius (kartu `bg-paper-card`, hover `#16324A`); `Tag`
+  amber/rust kini tint transparan + teks terang (bukan kotak krem/oranye pucat).
+- **Katalog /courses**: `CourseCatalog` (client) — bilah cari pil (judul, deskripsi, kategori,
+  pengajar) + tombol Filter (jenis kursus + batas rating) yang membuka panel; penyaringan di
+  browser terhadap daftar yang sudah dimuat server. Kartu = `CourseCard` (kotak tanpa border,
+  gaya sama dengan kartu beranda). Beranda punya tombol "Lihat semua kursus" ke sini.
+  `Button` global kini persegi (tanpa `rounded-lg`), varian outline = `bg-white/10`.
+  Navbar lebih transparan: `/10` (diam) dan `/50` (scroll).
+- **Halaman belajar** (`LearnShell`) & **SynapLab**: gaya sama dengan halaman lain — persegi tanpa
+  border, kartu `paper-card`/hover `#16324A`, kepala belajar `#081520`. "Daftar Materi" kini judul
+  tegas tanpa garis hias (chapter-mark dihapus). Papan sel lab (`*Board.tsx`) sengaja tak disentuh —
+  warna nada sel punya makna. Navbar: kaca TERANG (`bg-white/[0.08]` diam, `/[0.14]` scroll), bukan gelap.
+- **Kartu kursus diikuti** di /dashboard = `EnrolledCourseCard` (gaya sama dengan `CourseCard` katalog; hanya
+  gambar, pembuat, judul, deskripsi, bar kemajuan; seluruh kartu = tautan lanjut belajar). Gambar/pembuat/deskripsi
+  diambil dari `listCourses()` (bukan snapshot enrollment); kursus yang sudah dihapus tetap tampil dari snapshot.
+- **Robot asisten** (`ui/ChatRobot.tsx`, dipasang di `ChatWidget`): peluncur chat = kepala robot 64px TANPA
+  lingkaran latar; satu-satunya animasi bawaannya mata berkedip (tak ada naik-turun). BAWAAN mode "diam".
+  Seret = pindah (localStorage `synaped_chat_pos`, pecahan layar); tahan ±0,55 dtk / klik kanan = menu
+  Diam/Bergerak (`synaped_chat_mode`); klik singkat = buka/tutup chat (lewat pointer-up; `onClick` hanya untuk
+  papan ketik, `detail === 0`). Mode bergerak = hanyut KONTINU lewat rAF (arah & kecepatan diperhalus, radius jelajah 64px dari titik asal — TIDAK menarik ke tengah layar,
+  kadang berhenti, dibelokkan ke tengah dekat tepi, selalu dijepit di layar), BUKAN lompat ke titik tujuan —
+  posisi ditulis langsung ke `transform` (tanpa render React per bingkai); gelembung & menu anak dari pembungkus
+  yang bergerak itu. Panel chat dihitung dari posisi robot (`anchor`), yang dilaporkan lewat `onPos` hanya saat
+  robot mengendap. Hemat gerak memaksa "diam".
+- **Tema GELAP (bawaan) / TERANG**: dipilih di profil → "Pengaturan Laman" (`ThemeSwitch`), disimpan di localStorage
+  `synaped_theme`, diterapkan sebagai `<html data-theme="light">` oleh skrip di `<head>` (layout.tsx) sebelum cat
+  pertama. Tema terang = blok `html[data-theme="light"]` di globals.css yang menimpa token yang sama. KUNCI: ia
+  MEMBALIK `--color-white` jadi tinta gelap, sehingga semua `text-white`, `bg-white/NN`, `border-white/NN` ikut
+  berbalik dengan opasitas yang sama. Yang harus tetap putih (tombol `bg-blue-*`, footer, `bg-black/*`,
+  `.bg-navy/.bg-hero-navy`, `.auth-brand-panel`, dan elemen berkelas `keep-white` seperti banner komentar/QR)
+  mendeklarasikan ulang `--color-white:#fff`. ATURAN: jangan menulis hex di kelas Tailwind — pakai token
+  (`bg-card-hover`, `bg-header`, `bg-banner`, `bg-chip`, `text-error-text`, `text-warn-text`, `text-paper`),
+  dan teks di atas `bg-white` solid = `text-paper`. Logo: `.logo-on-dark`/`.logo-on-light` (dua <Image>).
+  Mini ikon "Kursus yang Diikuti" di profil kini memakai gambar kursus (`gambar` dari listCourses()).
+- **Tanda pisah**: teks tampilan memakai tanda hubung "-", BUKAN em dash "—" (permintaan pemilik; sudah
+  diganti di seluruh string/JSX, komentar kode tak disentuh). Jangan menulis "—" di teks yang tampil.
+  Tombol/halaman pendapatan bernama "Pendapatan"; kartu "Cari kursus baru"/"Cari kelas" ada di /dashboard.
+- **/dashboard** = kursus & kelas yang DIIKUTI + tombol khusus ke **/dashboard/pendapatan** (royalti,
+  referral, kontribusi, penjualan — isi lama dashboard). Tautan lama `#referral`, tab "Penjualan" educator,
+  dan tombol di profil sudah menunjuk ke /dashboard/pendapatan.
+- **SynapLab tanpa border**: pembatas diganti isian (`bg-white/[…]`), bilah bawah inset (`shadow-[inset_0_-3px_0_…]`)
+  untuk sel terpilih / kelompok bergaris-bawah, dan bingkai bersarang berisian samar. Judul menu lab = gambar
+  `public/images/SynapLab.png` (157×30), titik biru berdenyut dihapus. Jangan kembalikan `border-*` di papan.
+- **/educator**: tanpa label "Program Educator"; kartu persegi tanpa border.
 - **Judul section landing** (About, Courses, Features, Learning Path,
   Comments, FAQ) memakai `sections/SectionTitle.tsx`: kata besar kapital di
   tengah, tanpa label/deskripsi (sengaja dihapus atas permintaan pemilik). Ukuran huruf dihitung dari panjang
@@ -255,14 +321,14 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `educatorApplications/{uid}` | Pengajuan jadi educator. |
 | `categories/{slug}` | Dikelola admin; slug tidak berubah saat label diganti. |
 | `classes/{id}` (+ `posts/{id}/replies/{id}`), `classMembers/{uid}_{classId}` | Kelas educator; `joinCode` rahasia (jangan dikirim ke anggota biasa). |
-| `users/{uid}` | `bio`, `education`, `skills`, `phone`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
+| `users/{uid}` | `bio`, `education`, `skills`, `phone`, `bannerURL`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
 | `usernames/{username}` | Reservasi `{uid}`. |
 | `orders/{orderId}` | Pesanan. `method` midtrans/manual, `status`, `royalty` (syarat dibekukan), `postPaidStatus`. |
 | `settings/payments` | Saklar metode, QRIS, `platformFeePercent` (bawaan 30), `referralPercent` (bawaan 10). |
 | `royaltySales/{orderId}`, `royaltyEarnings/{…}` | Buku royalti. Tanpa data pembeli. |
 | `referralCodes/{KODE}` | Pemilik kode `{uid}`. |
 
-Storage: `avatars/{uid}`, `course-assets/{uid}` (PDF, dilayani lewat
+Storage: `avatars/{uid}` (juga `banner.jpg` — banner profil, lihat bawah), `course-assets/{uid}` (PDF, dilayani lewat
 `/api/courses/[slug]/asset`), `course-thumbnails/{uid}` (publik), `payment-qris`
 (publik), `payment-proofs/{uid}` (lewat `/api/payments/proof`, admin),
 `submissions/{uid}` (lewat `/api/submissions/file`). Materi terkunci selalu

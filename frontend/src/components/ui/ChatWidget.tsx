@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { extractChatOptions, renderChatText } from "@/lib/chatMarkdown";
 import { useChatLessonContext } from "./ChatContext";
+import ChatRobot, { type RobotPos } from "./ChatRobot";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -32,6 +33,9 @@ export default function ChatWidget() {
   const pathname = usePathname();
   const { lessonContext } = useChatLessonContext();
   const [open, setOpen] = useState(false);
+  // Posisi robot (null sampai ia dimuat); panel chat menempel di dekatnya.
+  const [anchor, setAnchor] = useState<RobotPos | null>(null);
+  const onPos = useCallback((p: RobotPos) => setAnchor(p), []);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -102,32 +106,32 @@ export default function ChatWidget() {
 
   const isTyping = isStreaming && messages.at(-1)?.content === "";
 
+  // Panel dibuka di sisi robot yang lapang: sejajar tepi robot (kiri/kanan) dan
+  // di atas atau di bawahnya menurut separuh layar tempat robot berada.
+  let panelStyle: React.CSSProperties | undefined;
+  if (anchor) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const W = Math.min(400, vw - 32);
+    const H = Math.min(560, vh * 0.7);
+    const kanan = anchor.x + 32 > vw / 2;
+    const bawah = anchor.y + 32 > vh / 2;
+    const left = Math.min(vw - W - 16, Math.max(16, kanan ? anchor.x + 64 - W : anchor.x));
+    const top = Math.min(vh - H - 16, Math.max(16, bawah ? anchor.y - H - 12 : anchor.y + 64 + 12));
+    panelStyle = { left, top };
+  }
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={open ? "Tutup Asisten SynapEd" : "Buka Asisten SynapEd"}
-        className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lift transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
-      >
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-          {open ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.05 0-2.06-.16-3-.455L3 21l1.5-4.5C3.55 15.207 3 13.657 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          )}
-        </svg>
-      </button>
+      <ChatRobot open={open} onToggle={() => setOpen((o) => !o)} onPos={onPos} />
 
       <div
         role="dialog"
         aria-label="Asisten SynapEd"
+        style={panelStyle}
         className={cn(
-          "fixed bottom-24 right-6 z-[60] flex h-[min(560px,70vh)] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-rule bg-paper-card shadow-lift transition-all duration-200 ease-out-soft",
+          "fixed z-[60] flex h-[min(560px,70vh)] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-rule bg-paper-card shadow-lift transition-all duration-200 ease-out-soft",
+          !anchor && "bottom-24 right-6",
           open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
         )}
       >
@@ -145,7 +149,7 @@ export default function ChatWidget() {
 
         {lessonContext && (
           <p className="border-b border-rule bg-blue-50 px-5 py-2 text-xs text-blue-700">
-            Mode materi kursus aktif — tanya apa saja soal pelajaran yang sedang dibuka.
+            Mode materi kursus aktif - tanya apa saja soal pelajaran yang sedang dibuka.
           </p>
         )}
 

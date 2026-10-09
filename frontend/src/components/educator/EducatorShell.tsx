@@ -31,7 +31,7 @@ const NAV = [
   { href: "/educator/classes", label: "Kelas Saya" },
   // Keluar dari panel educator — dashboard melayani semua akun, bukan hanya
   // educator — tapi penjualan kursus educator tinggal di sana.
-  { href: "/dashboard", label: "Penjualan" },
+  { href: "/dashboard/pendapatan", label: "Penjualan" },
 ] as const;
 
 export default function EducatorShell({

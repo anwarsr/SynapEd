@@ -16,6 +16,7 @@ export async function createMyReferralCode(raw: unknown): Promise<CreateResult> 
   if (!hasil.ok) return hasil;
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/pendapatan");
   return { ok: true, code: hasil.code, message: `Kode referral ${hasil.code} aktif.` };
 }
 

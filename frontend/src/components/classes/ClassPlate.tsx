@@ -80,7 +80,7 @@ export function ClassPlate({ nama, className }: { nama: string; className?: stri
       aria-hidden="true"
       className={cn(
         "drift relative shrink-0 w-[92px] h-[92px] rounded-[20px] overflow-hidden",
-        "flex items-center justify-center border border-blue-300/55 shadow-lift",
+        "flex items-center justify-center shadow-lift",
         className,
       )}
       style={{

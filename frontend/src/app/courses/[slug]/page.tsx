@@ -146,8 +146,8 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
                 Grid item bawaannya `min-width: auto`, jadi ia menolak
                 menyusut di bawah lebar min-content anaknya. Judul modul di
-                kurikulum memakai `truncate` — yang berarti `white-space:
-                nowrap` — sehingga lebar min-content-nya sama dengan panjang
+                kurikulum memakai `truncate` - yang berarti `white-space:
+                nowrap` - sehingga lebar min-content-nya sama dengan panjang
                 penuh judulnya. Tanpa min-w-0, judul terpanjang memaksa
                 seluruh halaman melebar melewati layar ponsel, dan isinya
                 terpotong tanpa satu pun galat.
@@ -155,13 +155,13 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                 Bagian dalamnya sudah diberi min-w-0; yang terlewat justru
                 item grid paling luar ini. */}
             <div className="lg:col-span-2 min-w-0 space-y-6">
-              <div className="bg-paper-card border border-rule rounded-2xl p-8">
+              <div className="bg-paper-card p-8 sm:p-10">
                 <div className="flex items-center gap-3 mb-5">
                   <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
                   <span className="t-label text-ink-faint">{course.category}</span>
                 </div>
 
-                <h1 className="t-h2 mb-5">{course.title}</h1>
+                <h1 className="mb-5 text-[clamp(1.9rem,3.6vw,2.9rem)] font-extrabold leading-[1.08] tracking-[-0.035em] text-white">{course.title}</h1>
                 <p className="t-body">{course.longDesc}</p>
 
                 {/* Nama tampilan, bukan username, dan TANPA persentase:
@@ -184,7 +184,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                   </p>
                 )}
 
-                <div className="flex flex-wrap gap-x-8 gap-y-3 mt-8 pt-6 border-t border-rule text-sm text-ink-muted">
+                <div className="flex flex-wrap gap-x-8 gap-y-3 mt-8 pt-6 text-sm text-ink-muted">
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths.reading} />
@@ -224,7 +224,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                   bagian tanpa satu pun isi di bawahnya terbaca seperti halaman
                   yang rusak, bukan seperti bagian yang memang belum diisi. */}
               {course.whatYouLearn.length > 0 && (
-              <div className="bg-paper-card border border-rule rounded-2xl p-8">
+              <div className="bg-paper-card p-8">
                 <h2 className="t-h3 mb-6">Yang Akan Anda Pelajari</h2>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3.5">
                   {course.whatYouLearn.map((item, i) => (
@@ -239,7 +239,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
               </div>
               )}
 
-              <div className="bg-paper-card border border-rule rounded-2xl p-8">
+              <div className="bg-paper-card p-8">
                 <h2 className="t-h3 mb-6">Kurikulum</h2>
                 <CurriculumList
                   slug={slug}
@@ -270,12 +270,12 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
             </div>
 
             <aside id={ENROLL_ANCHOR} className="min-w-0">
-              <div className="bg-paper-card border border-rule rounded-2xl p-6 sticky top-28">
+              <div className="bg-paper-card p-6 sticky top-28">
                 <CourseThumb
                   thumbnail={course.thumbnail}
-                  className="h-36 w-full rounded-2xl mb-6"
+                  className="h-36 w-full mb-6"
                   fallback={
-                    <div className={cn("h-36 rounded-2xl flex items-center justify-center mb-6", course.tint)}>
+                    <div className={cn("h-36 flex items-center justify-center mb-6", course.tint)}>
                       <svg className="w-16 h-16 text-blue-600/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.8} aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d={iconPaths[course.icon] ?? iconPaths.reading} />
                       </svg>
@@ -348,7 +348,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                       )}
 
                       {/* Kunci Midtrans belum terpasang, atau saklarnya dimatikan
-                          admin, berarti tombolnya pasti gagal — jadi tidak
+                          admin, berarti tombolnya pasti gagal - jadi tidak
                           dirender sama sekali. */}
                       {midtransUsable && (
                         <BuyButton
@@ -379,7 +379,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                       {/* Kedua metode mati. Dikatakan apa adanya, bukan
                           disodori tombol yang tidak menuju ke mana-mana. */}
                       {!midtransUsable && !manualUsable && (
-                        <span className="w-full rounded-lg border border-rule bg-paper-alt px-6 py-3 text-center text-sm text-ink-muted">
+                        <span className="w-full bg-white/10 px-6 py-3 text-center text-sm text-ink-muted">
                           Pembayaran sedang tidak tersedia
                         </span>
                       )}
@@ -430,7 +430,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                 </div>
 
                 {course.requirements.length > 0 && (
-                <div className="mt-7 pt-6 border-t border-rule">
+                <div className="mt-7 pt-6">
                   <h3 className="t-label text-ink-muted mb-4">Persyaratan</h3>
                   <ul className="space-y-2.5">
                     {course.requirements.map((req, i) => (
@@ -444,7 +444,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                 )}
 
                 {course.lastUpdated && (
-                  <p className="mt-6 pt-5 border-t border-rule text-xs text-ink-muted">
+                  <p className="mt-6 pt-5 text-xs text-ink-muted">
                     Terakhir diperbarui {course.lastUpdated}
                   </p>
                 )}

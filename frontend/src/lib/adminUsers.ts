@@ -108,7 +108,7 @@ export async function getUser(uid: string): Promise<AdminUserRow | null> {
 }
 
 export function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "long",
     timeStyle: "short",
@@ -123,6 +123,6 @@ export function formatDate(iso: string | null): string {
  * tidak pernah menjadi informasi yang dicari di sana.
  */
 export function formatDateOnly(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date(iso));
 }

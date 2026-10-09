@@ -63,7 +63,7 @@ export default function ShareCourseButton({
       ) : (
         loggedIn && (
           <p className="mt-1.5 text-xs text-ink-muted">
-            <Link href="/dashboard#referral" className="text-blue-700 hover:underline underline-offset-4">
+            <Link href="/dashboard/pendapatan#referral" className="text-blue-700 hover:underline underline-offset-4">
               Buat kode referral
             </Link>{" "}
             dan dapatkan {referralPercent}% dari setiap pembelian lewat tautan Anda.

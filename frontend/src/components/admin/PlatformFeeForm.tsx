@@ -82,7 +82,7 @@ export default function PlatformFeeForm({ initialFee, initialReferral }: { initi
       <h2 className="t-h3 mb-1.5">Potongan platform &amp; referral</h2>
       <p className="t-body text-sm text-ink-muted mb-6">
         Potongan platform diambil dari setiap penjualan; sisanya dibagi ke kontributor. Bila pembeli
-        memakai kode referral, bagian perujuk dibayar DARI potongan itu — jadi tidak boleh lebih
+        memakai kode referral, bagian perujuk dibayar DARI potongan itu - jadi tidak boleh lebih
         besar. Perubahan hanya berlaku untuk pesanan yang dibuat setelah disimpan.
       </p>
 

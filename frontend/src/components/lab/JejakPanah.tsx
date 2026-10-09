@@ -139,8 +139,8 @@ export function NomorKunjungan({ jalur, id }: { jalur: readonly number[] | undef
       aria-hidden="true"
       className={
         terbaru
-          ? "t-numeral absolute -bottom-1.5 -left-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-semibold tabular-nums text-white shadow-soft"
-          : "t-numeral absolute -bottom-1.5 -left-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full border border-blue-300 bg-blue-50 px-1 text-[9px] tabular-nums text-blue-700"
+          ? "t-numeral absolute -bottom-1.5 -left-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-semibold tabular-nums text-white "
+          : "t-numeral absolute -bottom-1.5 -left-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full   bg-blue-50 px-1 text-[9px] tabular-nums text-blue-700"
       }
     >
       {i + 1}
@@ -160,7 +160,7 @@ export function LabelSel({ labelSel, id }: { labelSel: Record<number, string> | 
     <span
       key={teks}
       aria-hidden="true"
-      className="lab-land pointer-events-none absolute -top-3.5 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-1.5 py-px text-[10px] font-semibold leading-tight text-paper shadow-soft"
+      className="lab-land pointer-events-none absolute -top-3.5 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-1.5 py-px text-[10px] font-semibold leading-tight text-paper "
     >
       {teks}
     </span>

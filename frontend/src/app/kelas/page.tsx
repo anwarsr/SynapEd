@@ -3,7 +3,6 @@ import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Reveal from "@/components/ui/Reveal";
 import ClassCard from "@/components/classes/ClassCard";
-import ClassHeroProps from "@/components/classes/ClassHeroProps";
 import JoinClassForm from "@/components/classes/JoinClassForm";
 import { listMyClasses, listOwnedClasses } from "@/lib/classes";
 import { requireUser } from "@/lib/firebase/session";
@@ -13,8 +12,6 @@ export const metadata: Metadata = { title: "Kelas Saya – SynapEd" };
 
 // Sesi ada di cookie, jadi halaman ini tidak boleh di-prerender.
 export const dynamic = "force-dynamic";
-
-const HERO_ID = "kelas-hero";
 
 const DISPLAY_SEKSI = {
   fontFamily: "var(--font-sans)",
@@ -46,41 +43,25 @@ export default async function MyClassesPage() {
       <Navbar />
 
       <main>
-        {/*
-          `data-dark-hero` dibaca Navbar untuk menyalakan mode terang di atas
-          latar gelap. -mt-14 menaikkan hero ke belakang navbar supaya navbar
-          mengambang, bukan duduk di atas pita warna.
-        */}
-        <section
-          id={HERO_ID}
-          data-dark-hero
-          className="bg-hero-navy relative overflow-hidden -mt-14 pt-44 pb-20"
-        >
-          <ClassHeroProps heroId={HERO_ID} />
-
+        {/* Kepala: sedikit lebih tua dari latar halaman. -mt-14 menaikkannya ke
+            belakang navbar supaya navbar mengambang, bukan duduk di atas pita. */}
+        <section className="relative -mt-14 overflow-hidden bg-header pb-20 pt-44">
           <div className="container-page relative">
-            <p
-              className="rise-in text-[13px] uppercase tracking-[0.2em] text-white/70 mb-5"
-              style={{ "--rise-delay": "60ms" } as React.CSSProperties}
-            >
-              Kelas
-            </p>
-
             <h1
-              className="rise-in text-white font-extrabold leading-[1.03] tracking-[-0.04em] max-w-[16ch]"
+              className="rise-in max-w-[16ch] font-extrabold leading-[1.03] tracking-[-0.04em] text-white"
               style={
                 {
                   fontSize: "clamp(2.4rem, 6.5vw, 5rem)",
-                  "--rise-delay": "170ms",
+                  "--rise-delay": "120ms",
                 } as React.CSSProperties
               }
             >
-              Kelas <span className="mark-on-dark">saya</span>
+              Kelas saya
             </h1>
 
             <p
-              className="rise-in mt-5 max-w-[52ch] text-white/80 text-base leading-relaxed"
-              style={{ "--rise-delay": "300ms" } as React.CSSProperties}
+              className="rise-in mt-5 max-w-[52ch] text-base leading-relaxed text-white/75"
+              style={{ "--rise-delay": "260ms" } as React.CSSProperties}
             >
               {diikuti.length === 0
                 ? "Belum mengikuti kelas apa pun. Masukkan kode undangan dari pengajar Anda untuk mulai."
@@ -89,19 +70,19 @@ export default async function MyClassesPage() {
 
             <div
               className="rise-in mt-8 flex flex-wrap gap-3"
-              style={{ "--rise-delay": "400ms" } as React.CSSProperties}
+              style={{ "--rise-delay": "380ms" } as React.CSSProperties}
             >
               <a
                 href="#gabung"
-                className="rounded-lg bg-white px-7 py-3.5 text-sm font-semibold text-black transition-all duration-200 ease-out-soft hover:bg-white/90 hover:-translate-y-0.5 hover:shadow-lift"
+                className="bg-blue-600 px-7 py-3.5 text-sm font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-blue-700"
               >
-                Gabung kelas baru →
+                Gabung kelas baru
               </a>
 
               {terakhir && (
                 <Link
                   href={`/kelas/${terakhir.id}`}
-                  className="rounded-lg border border-white/25 px-7 py-3.5 text-sm font-semibold text-white whitespace-nowrap transition-all duration-200 ease-out-soft hover:bg-white/10 hover:border-white/50"
+                  className="whitespace-nowrap bg-white/10 px-7 py-3.5 text-sm font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
                 >
                   Lanjutkan kelas terakhir
                 </Link>
@@ -119,7 +100,7 @@ export default async function MyClassesPage() {
 
               {dimiliki.length > 0 && (
                 <p className="t-body text-ink-muted mb-6">
-                  Anda juga mengelola {dimiliki.length} kelas —{" "}
+                  Anda juga mengelola {dimiliki.length} kelas -{" "}
                   <Link
                     href="/educator/classes"
                     className="text-blue-700 hover:underline underline-offset-4"
@@ -131,10 +112,10 @@ export default async function MyClassesPage() {
               )}
 
               {diikuti.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-rule-strong bg-paper-card/55 px-8 py-14 text-center">
+                <div className="bg-white/5 px-8 py-16 text-center">
                   <span
                     aria-hidden="true"
-                    className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[18px] border border-rule bg-paper-alt"
+                    className="mx-auto mb-5 flex h-16 w-16 items-center justify-center bg-white/10"
                   >
                     <svg
                       className="h-7 w-7 text-ink-muted"

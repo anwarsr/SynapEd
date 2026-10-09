@@ -190,7 +190,7 @@ export default function Courses({ courses, categories }: Props) {
                 ================================================= */}
 
                 <p className="courses-glitch-description t-body mx-auto max-w-md text-sm text-ink/65">
-                  Materi untuk kategori ini sedang disiapkan — coba lihat
+                  Materi untuk kategori ini sedang disiapkan - coba lihat
                   kategori lain, atau kembali lagi sebentar.
                 </p>
 
@@ -734,7 +734,7 @@ export default function Courses({ courses, categories }: Props) {
                     duration-500
                     ease-warm
                     hover:-translate-y-1
-                    hover:bg-[#16324A]
+                    hover:bg-card-hover
                   "
                 >
                   {/* =================================================
@@ -950,6 +950,19 @@ export default function Courses({ courses, categories }: Props) {
             ))}
           </div>
         )}
+
+        {/* Pintu ke katalog lengkap: seluruh kursus + pencarian + filter */}
+        <div className="mt-14 flex justify-center">
+          <Link
+            href="/courses"
+            className="group inline-flex items-center gap-2.5 bg-white/10 px-8 py-4 text-sm font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-blue-600"
+          >
+            Lihat semua kursus
+            <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1">
+              →
+            </span>
+          </Link>
+        </div>
       </div>
     </section>
   );

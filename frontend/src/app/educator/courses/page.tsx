@@ -123,7 +123,7 @@ export default async function MyCoursesPage() {
                   </Link>
                   {/* Tombol hapus langsung dicabut dari sini. Penghapusan kini
                       melewati persetujuan admin, dan formulir alasannya ada di
-                      halaman sunting — bukan di daftar. */}
+                      halaman sunting - bukan di daftar. */}
                 </span>
               </li>
             ))}

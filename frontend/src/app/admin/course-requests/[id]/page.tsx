@@ -127,9 +127,9 @@ export default async function CourseRequestDetailPage({ params }: Props) {
             {request.status !== "pending" && (
               <>
                 <Row label="Diputuskan pada">{formatDate(request.decidedAt)}</Row>
-                <Row label="Diputuskan oleh">{request.decidedByName ?? "—"}</Row>
+                <Row label="Diputuskan oleh">{request.decidedByName ?? "-"}</Row>
                 <Row label="Catatan admin">
-                  {request.decisionNote ?? <span className="text-ink-faint">—</span>}
+                  {request.decisionNote ?? <span className="text-ink-faint">-</span>}
                 </Row>
               </>
             )}

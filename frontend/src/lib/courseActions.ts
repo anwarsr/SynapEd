@@ -113,7 +113,7 @@ export async function createCourse(input: NewCourseInput): Promise<CourseResult>
   // lewat POST langsung — persis alasan harga selalu dibaca ulang dari server.
   // Tanpa ini, satu panggilan mentah cukup untuk mengembalikan "Tugas" atau
   // "1 Tahun" ke basis data dan membatalkan konversi yang sudah dijalankan.
-  const duration = canonicalDuration(input.duration, "course") || "—";
+  const duration = canonicalDuration(input.duration, "course") || "-";
   const price = Number.isFinite(input.price) && input.price >= 0 ? Math.round(input.price) : 0;
 
   if (title.length < 4) return { ok: false, error: "Judul kursus minimal 4 karakter." };

@@ -23,7 +23,7 @@ export default function ProfileStatsRow({
   isPublic?: boolean;
 }) {
   const angka = (n: number) => n.toLocaleString("id-ID");
-  const rerata = (n: number) => (n > 0 ? n.toFixed(1).replace(".", ",") : "—");
+  const rerata = (n: number) => (n > 0 ? n.toFixed(1).replace(".", ",") : "-");
 
   // Rata-rata TIDAK dianimasikan CountUp.
   //
@@ -55,7 +55,7 @@ export default function ProfileStatsRow({
         ];
 
   return (
-    <dl className="mt-11 grid gap-px overflow-hidden rounded-2xl border border-rule bg-rule [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
+    <dl className="mt-11 grid gap-1 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
       {kartu.map((k) => (
         <div key={k.label} className="bg-paper-card px-7 py-[26px]">
           <dd className="t-numeral text-[38px] tabular-nums">

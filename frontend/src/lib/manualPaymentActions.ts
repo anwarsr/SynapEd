@@ -67,7 +67,7 @@ export async function createManualOrder(slug: string, referralCode?: unknown): P
   // Kursus gratis punya jalurnya sendiri. Membiarkannya lewat sini berarti
   // membuat pesanan Rp 0 yang menunggu ditinjau admin tanpa guna.
   if (course.price <= 0) {
-    return { ok: false, error: "Kursus ini gratis — cukup tekan Daftar Kursus Ini." };
+    return { ok: false, error: "Kursus ini gratis - cukup tekan Daftar Kursus Ini." };
   }
 
   const existing = await getEnrollment(user.uid, slug);
@@ -270,7 +270,7 @@ export async function decideManualOrder(
     await realiseOrderSale(order, { paidAt: now, source: "manual", courseOwnerUid: course.ownerUid });
   } catch (err) {
     console.error(`[royalty] gagal mencatat penjualan ${order.orderId}:`, err);
-    return { ok: false, error: "Pencatatan penjualan gagal. Pesanan belum disetujui — coba lagi." };
+    return { ok: false, error: "Pencatatan penjualan gagal. Pesanan belum disetujui - coba lagi." };
   }
 
   await orderRef(orderId).update({
