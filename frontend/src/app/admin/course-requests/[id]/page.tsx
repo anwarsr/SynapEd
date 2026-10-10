@@ -102,7 +102,7 @@ export default async function CourseRequestDetailPage({ params }: Props) {
           <span className="text-ink truncate">{request.courseTitle}</span>
         </nav>
 
-        <div className="bg-paper-card border border-rule rounded-2xl p-8 mb-8">
+        <div className="bg-paper-card p-8 mb-8">
           <div className="flex flex-wrap items-center gap-3 pb-6 mb-2 border-b border-rule">
             <h1 className="t-h3 text-xl">{request.courseTitle}</h1>
             <Tag tone={tone[request.status]}>{requestStatusLabel[request.status]}</Tag>
@@ -138,7 +138,7 @@ export default async function CourseRequestDetailPage({ params }: Props) {
 
         {/* ── Pembagian hasil saat tayang ─────────────────────────────── */}
         {pembagian.length > 0 && (
-          <div className="bg-paper-card border border-rule rounded-2xl p-8 mb-8">
+          <div className="bg-paper-card p-8 mb-8">
             <h2 className="t-h3 text-base mb-1.5">Pembagian hasil</h2>
             <p className="text-sm text-ink-muted mb-6">
               Setelah potongan platform, setiap penjualan dibagi sesuai persentase ini.
@@ -159,7 +159,7 @@ export default async function CourseRequestDetailPage({ params }: Props) {
 
         {/* ── Perbandingan versi ─────────────────────────────────────── */}
         {request.type === "edit" && (
-          <div className="bg-paper-card border border-rule rounded-2xl p-8 mb-8">
+          <div className="bg-paper-card p-8 mb-8">
             <h2 className="t-h3 text-base mb-1.5">Yang diubah</h2>
             <p className="text-sm text-ink-muted mb-6">
               {changes.length === 0
@@ -172,7 +172,7 @@ export default async function CourseRequestDetailPage({ params }: Props) {
                 {changes.map((c, i) => (
                   <li key={i} className="py-3 flex flex-wrap items-start gap-3">
                     <span
-                      className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${kindTone[c.kind]}`}
+                      className={`shrink-0  px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${kindTone[c.kind]}`}
                     >
                       {changeKindLabel[c.kind]}
                     </span>
@@ -183,13 +183,13 @@ export default async function CourseRequestDetailPage({ params }: Props) {
                       {(c.before !== undefined || c.after !== undefined) && (
                         <div className="mt-1.5 grid sm:grid-cols-2 gap-2 text-sm">
                           {c.before !== undefined && (
-                            <p className="rounded-lg bg-rust-100/60 px-3 py-2 text-rust-700 break-words">
+                            <p className=" bg-rust-100/60 px-3 py-2 text-rust-700 break-words">
                               <span className="t-label block text-[10px] mb-0.5 opacity-70">Sebelum</span>
                               {c.before}
                             </p>
                           )}
                           {c.after !== undefined && (
-                            <p className="rounded-lg bg-blue-50 px-3 py-2 text-blue-700 break-words">
+                            <p className=" bg-blue-50 px-3 py-2 text-blue-700 break-words">
                               <span className="t-label block text-[10px] mb-0.5 opacity-70">Sesudah</span>
                               {c.after}
                             </p>
@@ -205,7 +205,7 @@ export default async function CourseRequestDetailPage({ params }: Props) {
         )}
 
         {request.status === "pending" ? (
-          <div className="bg-paper-card border border-rule rounded-2xl p-8">
+          <div className="bg-paper-card p-8">
             <h2 className="t-h3 text-base mb-5">Keputusan</h2>
             <CourseRequestDecision
               id={request.id}

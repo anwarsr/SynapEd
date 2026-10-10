@@ -33,7 +33,7 @@ export default function DeleteReviewButton({ id, name }: { id: string; name: str
         onClick={() => setAsking(true)}
         disabled={pending}
         aria-label={`Hapus ulasan dari ${name}`}
-        className="shrink-0 rounded-lg p-2 text-ink-faint transition-colors duration-200 hover:bg-rust-100 hover:text-rust-700 disabled:opacity-40"
+        className="shrink-0  p-2 text-ink-faint transition-colors duration-200 hover:bg-rust-100 hover:text-rust-700 disabled:opacity-40"
       >
         {pending ? (
           <span className="text-xs">…</span>

@@ -237,8 +237,13 @@ function moved<T>(arr: T[], index: number, dir: -1 | 1): T[] {
   return copy;
 }
 
+/** Tombol kotak kecil seragam (naik/turun). */
 const iconButton =
-  "p-2 rounded-lg text-ink-muted transition-colors hover:bg-paper-alt disabled:opacity-30 disabled:hover:bg-transparent";
+  "flex h-9 w-9 items-center justify-center bg-white/[0.06] text-sm text-white/70 transition-colors duration-200 hover:bg-white/15 hover:text-white disabled:opacity-30 disabled:hover:bg-white/[0.06] disabled:hover:text-white/70";
+
+/** Tombol hapus: tinggi sama dengan tombol kotak, teks merah. */
+const hapusButton =
+  "flex h-9 items-center justify-center px-3 text-xs font-semibold text-error-text transition-colors duration-200 hover:bg-rust-100 disabled:opacity-30 disabled:hover:bg-transparent";
 
 export default function SectionList({
   sections,
@@ -346,11 +351,15 @@ export default function SectionList({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {sections.map((s, si) => (
-        <section key={s.key} className="bg-paper-card border border-rule rounded-2xl p-6">
-          <div className="flex items-start gap-3 mb-5">
-            <span className="t-numeral-ghost text-xl text-ink-faint pt-2" aria-hidden="true">
+        <section key={s.key} className="bg-paper-card p-6 sm:p-8">
+          <div className="mb-7 flex items-start gap-5">
+            <span
+              className="select-none pt-5 text-[2.8rem] font-extralight leading-none tracking-[-0.05em] tabular-nums text-white/20"
+              style={{ fontFamily: "var(--font-sans)" }}
+              aria-hidden="true"
+            >
               {String(si + 1).padStart(2, "0")}
             </span>
             <div className="flex-1">
@@ -364,7 +373,7 @@ export default function SectionList({
                 required
               />
             </div>
-            <div className="flex items-center gap-1 pt-7">
+            <div className="flex items-center gap-1 pt-[1.65rem]">
               <button
                 type="button"
                 onClick={() => setSections((prev) => moved(prev, si, -1))}
@@ -387,7 +396,7 @@ export default function SectionList({
                 type="button"
                 onClick={() => setSections((prev) => prev.filter((_, i) => i !== si))}
                 disabled={sections.length === 1}
-                className="p-2 rounded-lg text-rust-700 transition-colors hover:bg-rust-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                className={hapusButton}
                 aria-label="Hapus bagian"
               >
                 Hapus
@@ -395,10 +404,10 @@ export default function SectionList({
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {s.lessons.map((l, li) => (
-              <div key={l.key} className="rounded-xl border border-rule p-4">
-                <div className="flex items-start gap-3 mb-3">
+              <div key={l.key} className="bg-white/[0.04] p-4 sm:p-5">
+                <div className="mb-4 flex items-start gap-3">
                   <span className="flex-1 grid sm:grid-cols-[1fr_auto] gap-3">
                     <input
                       value={l.title}
@@ -428,7 +437,7 @@ export default function SectionList({
                     </select>
                   </span>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex shrink-0 items-center gap-1">
                     <button
                       type="button"
                       onClick={() => moveLesson(si, li, -1)}
@@ -451,7 +460,7 @@ export default function SectionList({
                       type="button"
                       onClick={() => removeLesson(si, li, l.attachment)}
                       disabled={s.lessons.length === 1}
-                      className="p-2 rounded-lg text-rust-700 transition-colors hover:bg-rust-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                      className={hapusButton}
                       aria-label="Hapus pelajaran"
                     >
                       Hapus
@@ -459,7 +468,7 @@ export default function SectionList({
                   </div>
                 </div>
 
-                <div className="mb-3 sm:max-w-md">
+                <div className="mb-4 sm:max-w-md">
                   <Label htmlFor={`durasi-${l.key}`}>Durasi</Label>
                   {/* Satuan pelajaran berhenti di Jam — sebuah pelajaran yang
                       diukur berhari-hari sebenarnya beberapa pelajaran. */}
@@ -479,7 +488,7 @@ export default function SectionList({
                       placeholder="https://www.youtube.com/watch?v=..."
                       className={cn(
                         inputClass,
-                        l.videoUrl.trim() !== "" && !toEmbedUrl(l.videoUrl) && "border-rust-700/50",
+                        l.videoUrl.trim() !== "" && !toEmbedUrl(l.videoUrl) && "shadow-[inset_0_-2px_0_var(--color-rust-700)]",
                       )}
                     />
                     {l.videoUrl.trim() !== "" && !toEmbedUrl(l.videoUrl) && (
@@ -569,14 +578,14 @@ export default function SectionList({
 
           {/* Jenis dipilih saat menambah, bukan sesudahnya — educator tahu apa
               yang ingin ditambahkan, dan ini menghemat satu langkah. */}
-          <div className="flex flex-wrap items-center gap-2 mt-4">
-            <span className="text-sm text-ink-muted">Tambah:</span>
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">Tambah</span>
             {(Object.keys(TYPE_LABEL) as LessonType[]).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => addLesson(si, t)}
-                className="rounded-lg border border-rule px-3.5 py-1.5 text-sm text-ink-body transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+                className="bg-white/10 px-3.5 py-2 text-[13px] font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
               >
                 + {TYPE_LABEL[t]}
               </button>
@@ -588,9 +597,9 @@ export default function SectionList({
       <button
         type="button"
         onClick={() => setSections((prev) => [...prev, newSection()])}
-        className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+        className="w-full bg-white/[0.06] px-5 py-5 text-sm font-semibold text-white/80 transition-colors duration-200 ease-out-soft hover:bg-white/10 hover:text-white"
       >
-        + Tambah Bagian
+        + Tambah bagian
       </button>
     </div>
   );

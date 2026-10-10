@@ -47,6 +47,14 @@ export interface Review {
 
   createdAt: string;
   updatedAt: string;
+
+  /**
+   * Balasan admin (satu per ulasan), tampil di kartu komentar beranda dan di
+   * halaman kursus. Null = belum dibalas. Dihapus otomatis bila penulisnya
+   * menulis ulang ulasannya (submitReview menimpa dokumen), karena balasan atas
+   * kata-kata lama bisa menyesatkan terhadap yang baru.
+   */
+  reply: { body: string; at: string; by: string } | null;
 }
 
 /**
@@ -79,6 +87,14 @@ function toReview(id: string, d: FirebaseFirestore.DocumentData): Review {
     comment: (d.comment as string | undefined) ?? "",
     createdAt: (d.createdAt as string | undefined) ?? "",
     updatedAt: (d.updatedAt as string | undefined) ?? "",
+    reply:
+      typeof d.adminReply === "string" && d.adminReply.trim()
+        ? {
+            body: d.adminReply,
+            at: (d.adminReplyAt as string | undefined) ?? "",
+            by: (d.adminReplyBy as string | undefined) ?? "Admin",
+          }
+        : null,
   };
 }
 

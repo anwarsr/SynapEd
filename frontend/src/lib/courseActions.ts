@@ -65,7 +65,7 @@ export interface NewCourseInput {
  */
 async function requireEducator() {
   const user = await getCurrentUser();
-  return user?.role === "educator" ? user : null;
+  return user?.role === "educator" || user?.role === "admin" ? user : null;
 }
 
 function clean(value: unknown, max: number): string {

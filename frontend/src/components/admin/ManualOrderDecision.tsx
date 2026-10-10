@@ -37,7 +37,7 @@ export default function ManualOrderDecision({ orderId }: { orderId: string }) {
         rows={2}
         maxLength={500}
         placeholder="Wajib diisi kalau menolak - pembeli membacanya."
-        className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 resize-y placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+        className="w-full bg-white/[0.06] shadow-[inset_0_-1px_0_var(--color-rule)] px-4 py-2.5 text-sm text-ink transition-colors duration-200 resize-y placeholder:text-ink-faint focus:shadow-[inset_0_-2px_0_var(--color-blue-400)] focus:outline-none"
       />
 
       <div className="mt-3 flex flex-wrap gap-3">
@@ -45,7 +45,7 @@ export default function ManualOrderDecision({ orderId }: { orderId: string }) {
           type="button"
           onClick={() => decide("approve")}
           disabled={pending}
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
+          className=" bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
         >
           {pending ? "Memproses…" : "Uang Sudah Masuk - Buka Akses"}
         </button>
@@ -54,7 +54,7 @@ export default function ManualOrderDecision({ orderId }: { orderId: string }) {
           type="button"
           onClick={() => decide("reject")}
           disabled={pending}
-          className="rounded-lg border border-rust-700/30 px-6 py-2.5 text-sm font-semibold text-rust-700 transition-colors duration-200 ease-out-soft hover:bg-rust-100 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="bg-rust-100 px-6 py-2.5 text-sm font-semibold text-rust-700 transition-colors duration-200 ease-out-soft hover:bg-rust-100 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Tolak
         </button>

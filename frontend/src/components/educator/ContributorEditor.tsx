@@ -37,6 +37,7 @@ export default function ContributorEditor({
   feePercent,
   price,
   onChange,
+  tanpaJudul = false,
 }: {
   owner: EditorPerson;
   /** Pemilik adalah orang yang sedang menyunting — labelnya "Anda". */
@@ -45,6 +46,8 @@ export default function ContributorEditor({
   feePercent: number;
   price: number;
   onChange: (others: { uid: string; share: number }[]) => void;
+  /** Judul bagian sudah ditulis pemanggil (mis. kepala bab di form buat kursus). */
+  tanpaJudul?: boolean;
 }) {
   const [rows, setRows] = useState<EditorRow[]>(() => initial.map((r) => ({ ...r })));
   const [query, setQuery] = useState("");
@@ -130,27 +133,53 @@ export default function ContributorEditor({
   const namaDari = (uid: string) =>
     uid === owner.uid ? (ownerIsViewer ? "Anda" : owner.name) : (rows.find((r) => r.uid === uid)?.name ?? "-");
 
+  const SANS = { fontFamily: "var(--font-sans)" } as const;
+  const bagianBersih = 100 - feePercent;
+
   return (
-    <section className="bg-paper-card border border-rule rounded-2xl p-7">
-      <h2 className="t-h3 mb-1.5">Kontributor &amp; bagi hasil</h2>
-      <p className="t-body text-sm mb-6">
+    <section className="bg-paper-card p-7 sm:p-9">
+      {!tanpaJudul && (
+        <h2 className="mb-1.5 text-[1.3rem] font-bold tracking-[-0.02em] text-white" style={SANS}>
+          Kontributor &amp; bagi hasil
+        </h2>
+      )}
+      <p className="mb-8 max-w-[62ch] text-sm leading-[1.75] text-ink-muted">
         Orang lain yang ikut menyusun isi kursus ini - modul, video, kuis - dan persentase yang
         mereka terima dari setiap penjualan, setelah potongan platform {feePercent}%. Bagian pemilik
         adalah sisanya, minimal {OWNER_MIN_SHARE}%.
       </p>
 
-      <ul className="divide-y divide-rule border-y border-rule">
-        <li className="flex flex-wrap items-center gap-3 py-3">
+      {/* Bilah pembagian: potongan platform, pemilik, lalu tiap kontributor */}
+      <div className="mb-9">
+        <div className="flex h-2 w-full gap-[2px]" role="img" aria-label="Pembagian hasil penjualan">
+          <span style={{ flex: `${feePercent} 1 0` }} className="bg-white/20" />
+          <span style={{ flex: `${(jatahPemilik * bagianBersih) / 100} 1 0` }} className="bg-blue-500 transition-[flex] duration-500 ease-warm" />
+          {rows.map((r) => (
+            <span
+              key={r.uid}
+              style={{ flex: `${(r.share * bagianBersih) / 100} 1 0` }}
+              className="bg-blue-300/60 transition-[flex] duration-500 ease-warm"
+            />
+          ))}
+        </div>
+        <div className="mt-2.5 flex justify-between text-[10.5px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
+          <span>SynapEd {feePercent}%</span>
+          <span>Penerima {bagianBersih}%</span>
+        </div>
+      </div>
+
+      <ul className="divide-y divide-white/10 border-y border-white/10">
+        <li className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 py-5">
           <UserAvatar name={owner.name} photoURL={owner.photoURL} size="sm" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-medium text-ink break-words">
+          <span className="min-w-0">
+            <span className="block break-words text-sm font-semibold text-white">
               {ownerIsViewer ? `${owner.name} (Anda)` : owner.name}
             </span>
-            <span className="block text-xs text-ink-muted">
+            <span className="mt-0.5 block text-xs text-ink-muted">
               {owner.username ? `@${owner.username} · ` : ""}Pemilik - sisa otomatis
             </span>
           </span>
-          <span className="t-numeral text-lg tabular-nums text-ink" aria-live="polite">
+          <span className="text-[1.7rem] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-white" style={SANS} aria-live="polite">
             {jatahPemilik}%
           </span>
         </li>
@@ -158,22 +187,25 @@ export default function ContributorEditor({
         {rows.map((r) => {
           const max = r.share + tersedia;
           return (
-            <li key={r.uid} className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2 py-3">
-              <UserAvatar name={r.name} photoURL={r.photoURL} size="sm" />
-              <span className="min-w-0">
-                <span className="block text-sm font-medium text-ink break-words">{r.name}</span>
-                {r.username && <span className="block text-xs text-ink-muted">@{r.username}</span>}
-              </span>
-              <button
-                type="button"
-                onClick={() => ubah(rows.filter((x) => x.uid !== r.uid))}
-                className="rounded-md px-2 py-1 text-xs font-medium text-rust-700 hover:bg-rust-100 transition-colors"
-                aria-label={`Hapus ${r.name} dari kontributor`}
-              >
-                Hapus
-              </button>
+            <li key={r.uid} className="py-5">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4">
+                <UserAvatar name={r.name} photoURL={r.photoURL} size="sm" />
+                <span className="min-w-0">
+                  <span className="block break-words text-sm font-semibold text-white">{r.name}</span>
+                  {r.username && <span className="mt-0.5 block text-xs text-ink-muted">@{r.username}</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => ubah(rows.filter((x) => x.uid !== r.uid))}
+                  className="px-3 py-2 text-xs font-semibold text-error-text transition-colors hover:bg-rust-100"
+                  aria-label={`Hapus ${r.name} dari kontributor`}
+                >
+                  Hapus
+                </button>
+              </div>
 
-              <div className="col-span-3 flex items-center gap-3">
+              {/* Sejajar dengan nama (lebar avatar 36px + jarak 16px) */}
+              <div className="mt-4 flex items-center gap-4 pl-[3.25rem]">
                 <input
                   type="range"
                   min={MIN_SHARE}
@@ -182,9 +214,9 @@ export default function ContributorEditor({
                   value={r.share}
                   onChange={(e) => setShare(r.uid, Number(e.target.value))}
                   aria-label={`Persentase ${r.name}`}
-                  className="min-w-0 flex-1 accent-blue-600"
+                  className="range-tipis min-w-0 flex-1"
                 />
-                <span className="flex items-center rounded-lg border border-rule bg-paper focus-within:border-blue-500">
+                <span className="flex items-center bg-white/[0.06] shadow-[inset_0_-1px_0_var(--color-rule)] focus-within:shadow-[inset_0_-2px_0_var(--color-blue-400)]">
                   <input
                     type="number"
                     min={MIN_SHARE}
@@ -194,9 +226,9 @@ export default function ContributorEditor({
                     value={r.share}
                     onChange={(e) => setShare(r.uid, Number(e.target.value))}
                     aria-label={`Persentase ${r.name} (angka)`}
-                    className="w-14 bg-transparent py-1.5 pl-2 text-right text-sm tabular-nums text-ink focus:outline-none"
+                    className="w-14 bg-transparent py-2 pl-2 text-right text-sm tabular-nums text-ink focus:outline-none"
                   />
-                  <span className="pr-2 text-sm text-ink-muted">%</span>
+                  <span className="pr-3 text-sm text-ink-muted">%</span>
                 </span>
               </div>
             </li>
@@ -205,7 +237,7 @@ export default function ContributorEditor({
       </ul>
 
       {/* ── Menambah kontributor ─────────────────────────────── */}
-      <div className="relative mt-5">
+      <div className="relative mt-7">
         <label htmlFor="contributor-search" className="block t-label text-ink-muted mb-2">
           Tambah kontributor
         </label>
@@ -229,7 +261,7 @@ export default function ContributorEditor({
         />
 
         {(pilihan.length > 0 || searching || searchError || (query.trim().length >= 2 && hits.length === 0)) && (
-          <div className="mt-2 rounded-lg border border-rule bg-paper-card shadow-lift">
+          <div className="mt-2 bg-card-hover shadow-lift">
             {searching && <p className="px-4 py-3 text-sm text-ink-muted">Mencari…</p>}
             {!searching && searchError && <p className="px-4 py-3 text-sm text-rust-700">{searchError}</p>}
             {!searching && !searchError && pilihan.length === 0 && (
@@ -244,7 +276,7 @@ export default function ContributorEditor({
                     <button
                       type="button"
                       onClick={() => tambah(h)}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-paper-alt transition-colors"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/10"
                     >
                       <UserAvatar name={h.name} photoURL={h.photoURL} size="sm" />
                       <span className="min-w-0">
@@ -262,7 +294,7 @@ export default function ContributorEditor({
 
       {/* ── Pratinjau uang ───────────────────────────────────── */}
       {pratinjau && (
-        <p className="mt-5 rounded-lg bg-paper-alt px-4 py-3 text-sm text-ink-body">
+        <p className="mt-6 bg-white/[0.05] px-5 py-4 text-sm leading-[1.7] text-ink-body">
           {price > 0 ? "Dari setiap penjualan" : "Contoh dari penjualan"} {formatPrice(hargaPratinjau)}: SynapEd{" "}
           {formatPrice(pratinjau.feeAmount)}
           {pratinjau.lines.map((l) => (

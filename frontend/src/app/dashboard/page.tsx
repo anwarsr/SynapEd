@@ -2,10 +2,12 @@ import Link from "next/link";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Reveal from "@/components/ui/Reveal";
-import { EnrolledCourses, JoinedClasses } from "@/components/profile/ProfileCourses";
+import { EnrolledCourses, JoinedClasses, CreatedCourses } from "@/components/profile/ProfileCourses";
+import ClassCard from "@/components/classes/ClassCard";
 import EnrolledCourseCard from "@/components/dashboard/EnrolledCourseCard";
 import { listMyEnrollments } from "@/lib/enrollments";
-import { listMyClasses } from "@/lib/classes";
+import { listMyClasses, listOwnedClasses } from "@/lib/classes";
+import { listOwnedCourses } from "@/lib/educatorCourses";
 import { listCourses } from "@/lib/courses";
 import { requireUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
@@ -15,7 +17,8 @@ export const metadata: Metadata = { title: "Dashboard – SynapEd" };
 export const dynamic = "force-dynamic";
 
 /**
- * Dashboard: kursus dan kelas yang SEDANG diikuti.
+ * Dashboard: kursus dan kelas yang SEDANG diikuti - dan, untuk educator/admin,
+ * juga yang DIBUAT (kursus + kelas), supaya satu halaman cukup untuk dua peran.
  *
  * Pendapatan royalti (dulu isi halaman ini) pindah ke /dashboard/pendapatan dan
  * dijangkau lewat tombol khusus di kanan atas — tidak semua akun punya
@@ -24,10 +27,14 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
 
-  const [enrollments, kelas, katalog] = await Promise.all([
+  const pengajar = user.role === "educator" || user.role === "admin";
+
+  const [enrollments, kelas, katalog, kursusDibuat, kelasDibuat] = await Promise.all([
     listMyEnrollments(user.uid),
     listMyClasses(user.uid),
     listCourses(),
+    pengajar ? listOwnedCourses(user.uid, user.name) : Promise.resolve([]),
+    pengajar ? listOwnedClasses(user.uid) : Promise.resolve([]),
   ]);
 
   // Gambar, pembuat, dan deskripsi ada di katalog, bukan di snapshot enrollment.
@@ -39,6 +46,12 @@ export default async function DashboardPage() {
     { nilai: enrollments.length, label: "Kursus diikuti" },
     { nilai: selesai, label: "Kursus selesai" },
     { nilai: kelas.length, label: "Kelas diikuti" },
+    ...(pengajar
+      ? [
+          { nilai: kursusDibuat.length, label: "Kursus dibuat" },
+          { nilai: kelasDibuat.length, label: "Kelas dibuat" },
+        ]
+      : []),
   ];
 
   return (
@@ -53,7 +66,9 @@ export default async function DashboardPage() {
                 Dashboard
               </h1>
               <p className="t-body max-w-[56ch] text-ink-muted">
-                Kursus dan kelas yang sedang Anda ikuti, dalam satu tempat.
+                {pengajar
+                  ? "Yang Anda ikuti dan yang Anda buat - kursus maupun kelas - dalam satu tempat."
+                  : "Kursus dan kelas yang sedang Anda ikuti, dalam satu tempat."}
               </p>
             </div>
 
@@ -113,6 +128,50 @@ export default async function DashboardPage() {
               </section>
             </Reveal>
           </div>
+
+          {/* Khusus educator/admin: yang DIBUAT, bukan hanya yang diikuti */}
+          {pengajar && (
+            <div className="mt-20 grid gap-14 lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)] lg:gap-14">
+              <Reveal>
+                <section>
+                  <div className="mb-5 flex flex-wrap items-baseline justify-between gap-4">
+                    <h2 className="t-h3">Kursus yang Dibuat</h2>
+                    <div className="flex flex-wrap gap-2">
+                      <Link href="/educator/courses" className="bg-white/10 px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-white/15">
+                        Kelola
+                      </Link>
+                      <Link href="/educator/courses/new" className="bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-blue-700">
+                        Buat kursus
+                      </Link>
+                    </div>
+                  </div>
+                  <CreatedCourses courses={kursusDibuat} own kelola />
+                </section>
+              </Reveal>
+
+              <Reveal delay={90}>
+                <section>
+                  <div className="mb-5 flex flex-wrap items-baseline justify-between gap-4">
+                    <h2 className="t-h3">Kelas yang Dibuat</h2>
+                    <Link href="/educator/classes" className="bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-blue-700">
+                      Kelola kelas
+                    </Link>
+                  </div>
+                  {kelasDibuat.length === 0 ? (
+                    <p className="bg-white/5 px-5 py-6 text-center text-[13px] text-ink-muted">
+                      Belum membuat kelas. Buat satu, lalu bagikan kode undangannya kepada peserta.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {kelasDibuat.map((k) => (
+                        <ClassCard key={k.id} kelas={k} href={`/educator/classes/${k.id}`} peran="Pengajar" />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </Reveal>
+            </div>
+          )}
         </div>
       </main>
 

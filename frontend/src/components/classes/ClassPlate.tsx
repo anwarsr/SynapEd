@@ -34,10 +34,13 @@ const DISPLAY_PLATE = {
 export function ClassSpine({
   nama,
   variant = "tebal",
+  gambar = null,
   className,
 }: {
   nama: string;
   variant?: "tebal" | "tipis";
+  /** Foto profil kelas; bila ada, mengisi pita (varian tebal). */
+  gambar?: string | null;
   className?: string;
 }) {
   const nada = nadaKelas(nama);
@@ -50,14 +53,18 @@ export function ClassSpine({
         // Selalu tipis di ponsel: 88px pita berwarna memakan lebar yang
         // dibutuhkan judulnya, dan inisial bukan informasi yang layak dibayar
         // semahal itu.
-        "shrink-0 w-3.5 border-r flex items-center justify-center",
+        "relative shrink-0 w-3.5 border-r flex items-center justify-center overflow-hidden",
         tebal && "sm:w-[88px]",
         nada.tint,
         nada.garis,
         className,
       )}
     >
-      {tebal && (
+      {tebal && gambar && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={gambar} alt="" className="absolute inset-0 hidden h-full w-full object-cover sm:block" />
+      )}
+      {tebal && !gambar && (
         <span
           className={cn("hidden sm:block text-[34px] leading-none", nada.deep)}
           style={DISPLAY_SPINE}
@@ -70,30 +77,36 @@ export function ClassSpine({
 }
 
 /**
- * Plat kaca di hero. Cincin holo-nya salinan perilaku .feature-card__holo yang
- * sudah ada — ikut mati sendiri saat prefers-reduced-motion, karena aturan itu
- * hidup di globals.css, bukan di sini.
+ * Plat identitas kelas di hero: foto profil kelas bila ada, kalau tidak inisial.
+ *
+ * DIAM (permintaan pemilik): dulu mengambang (`drift`) dan bercincin holo yang
+ * berputar. Kini kotak persegi polos tanpa gerak, bayangan, atau kaca buram.
  */
-export function ClassPlate({ nama, className }: { nama: string; className?: string }) {
+export function ClassPlate({
+  nama,
+  gambar = null,
+  className,
+}: {
+  nama: string;
+  gambar?: string | null;
+  className?: string;
+}) {
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "drift relative shrink-0 w-[92px] h-[92px] rounded-[20px] overflow-hidden",
-        "flex items-center justify-center shadow-lift",
+        "relative flex h-[104px] w-[104px] shrink-0 items-center justify-center overflow-hidden bg-white/10",
         className,
       )}
-      style={{
-        background:
-          "linear-gradient(155deg, color-mix(in srgb, var(--color-blue-100) 55%, transparent), color-mix(in srgb, var(--color-blue-300) 30%, transparent))",
-        backdropFilter: "blur(22px) saturate(180%)",
-        boxShadow: "0 0 46px -18px color-mix(in srgb, var(--color-blue-500) 55%, transparent)",
-      }}
     >
-      <span className="feature-card__holo" />
-      <span className="relative text-[36px] leading-none text-white" style={DISPLAY_PLATE}>
-        {inisialKelas(nama)}
-      </span>
+      {gambar ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={gambar} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
+        <span className="relative text-[38px] leading-none text-white" style={DISPLAY_PLATE}>
+          {inisialKelas(nama)}
+        </span>
+      )}
     </span>
   );
 }

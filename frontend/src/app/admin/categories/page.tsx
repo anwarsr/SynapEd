@@ -27,8 +27,8 @@ export default async function AdminCategoriesPage() {
   return (
     <AdminShell user={admin} badges={badges}>
       <div className="container-reading">
-        <h1 className="t-h2 mb-3">
-          Kategori <span className="mark">kursus</span>
+        <h1 className="mb-4 text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-white">
+          Kategori <span>kursus</span>
         </h1>
         <p className="t-body text-ink-muted mb-10">
           {rows.length} kategori. Educator memilih dari daftar ini saat membuat kursus.

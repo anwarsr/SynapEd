@@ -67,7 +67,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
           <span className="text-ink">{application.name}</span>
         </nav>
 
-        <div className="bg-paper-card border border-rule rounded-2xl p-8">
+        <div className="bg-paper-card p-8">
           <div className="flex items-center gap-5 pb-7 mb-2 border-b border-rule">
             <UserAvatar name={application.name} photoURL={application.photoURL} size="lg" />
             <div className="min-w-0">

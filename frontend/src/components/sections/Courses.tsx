@@ -105,7 +105,7 @@ export default function Courses({ courses, categories }: Props) {
 
         {filtered.length === 0 ? (
           <Reveal className="mt-12">
-            <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-[2rem] theme-day bg-white/90 px-8 py-20 text-center">
+            <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden bg-paper-card px-8 py-20 text-center">
               {/* =================================================
                   AUTOMATIC GLITCH BACKGROUND
               ================================================= */}
@@ -130,21 +130,8 @@ export default function Courses({ courses, categories }: Props) {
               ================================================= */}
 
               <div className="courses-glitch-content relative z-10">
-                {/* =================================================
-                    ICON
-                ================================================= */}
-
-                <div className="courses-glitch-icon relative mx-auto mb-6 h-16 w-16">
-                  {/* Ghost */}
-                  <div className="courses-glitch-icon-ghost absolute inset-0 flex items-center justify-center rounded-2xl bg-black/[0.025]">
-                    <ErrorIcon />
-                  </div>
-
-                  {/* Main */}
-                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/[0.035]">
-                    <ErrorIcon />
-                  </div>
-                </div>
+                {/* Garis tipis penanda, menggantikan ikon */}
+                <span aria-hidden="true" className="courses-glitch-icon mx-auto mb-9 block h-px w-14 bg-white/35" />
 
                 {/* =================================================
                     TITLE
@@ -154,7 +141,7 @@ export default function Courses({ courses, categories }: Props) {
                   {/* Glitch layer 1 */}
                   <p
                     aria-hidden="true"
-                    className="courses-glitch-title-1 pointer-events-none absolute inset-0 text-2xl text-black"
+                    className="courses-glitch-title-1 pointer-events-none absolute inset-0 text-[clamp(1.75rem,4vw,2.6rem)] text-[#ff2e63]"
                     style={CARD_TITLE}
                   >
                     Belum ada materi di sini.
@@ -163,7 +150,7 @@ export default function Courses({ courses, categories }: Props) {
                   {/* Glitch layer 2 */}
                   <p
                     aria-hidden="true"
-                    className="courses-glitch-title-2 pointer-events-none absolute inset-0 text-2xl text-black"
+                    className="courses-glitch-title-2 pointer-events-none absolute inset-0 text-[clamp(1.75rem,4vw,2.6rem)] text-[#08f7fe]"
                     style={CARD_TITLE}
                   >
                     Belum ada materi di sini.
@@ -171,7 +158,7 @@ export default function Courses({ courses, categories }: Props) {
 
                   {/* Main */}
                   <p
-                    className="courses-glitch-title relative mb-3 text-2xl text-black"
+                    className="courses-glitch-title relative mb-4 text-[clamp(1.75rem,4vw,2.6rem)] text-white"
                     style={CARD_TITLE}
                   >
                     Belum ada materi di sini.
@@ -182,7 +169,7 @@ export default function Courses({ courses, categories }: Props) {
                     DESCRIPTION
                 ================================================= */}
 
-                <p className="courses-glitch-description t-body mx-auto max-w-md text-sm text-ink/65">
+                <p className="courses-glitch-description t-body mx-auto max-w-md text-sm text-ink-muted">
                   Materi untuk kategori ini sedang disiapkan - coba lihat
                   kategori lain, atau kembali lagi sebentar.
                 </p>
@@ -192,9 +179,9 @@ export default function Courses({ courses, categories }: Props) {
                 ================================================= */}
 
                 <div className="courses-glitch-indicator mx-auto mt-7 flex items-center justify-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-black/30" />
-                  <span className="h-1.5 w-6 rounded-full bg-black/10" />
-                  <span className="h-1.5 w-3 rounded-full bg-black/20" />
+                  <span className="h-1.5 w-1.5 bg-white/40" />
+                  <span className="h-1.5 w-6 bg-white/15" />
+                  <span className="h-1.5 w-3 bg-white/25" />
                 </div>
               </div>
 
@@ -483,7 +470,7 @@ export default function Courses({ courses, categories }: Props) {
                       0deg,
                       transparent 0px,
                       transparent 3px,
-                      #000 4px
+                      #fff 4px
                     );
                   animation: coursesScanlines 0.12s steps(2) infinite;
                 }
@@ -516,21 +503,21 @@ export default function Courses({ courses, categories }: Props) {
                 .courses-glitch-bar-1 {
                   top: 27%;
                   height: 2px;
-                  background: rgba(0, 0, 0, 0.08);
+                  background: rgba(255, 255, 255, 0.08);
                   animation: coursesBarOne 2.4s steps(1) infinite;
                 }
 
                 .courses-glitch-bar-2 {
                   top: 52%;
                   height: 1px;
-                  background: rgba(0, 0, 0, 0.1);
+                  background: rgba(255, 255, 255, 0.1);
                   animation: coursesBarTwo 1.8s steps(1) infinite;
                 }
 
                 .courses-glitch-bar-3 {
                   top: 73%;
                   height: 2px;
-                  background: rgba(0, 0, 0, 0.06);
+                  background: rgba(255, 255, 255, 0.06);
                   animation: coursesBarThree 2.9s steps(1) infinite;
                 }
 
@@ -599,7 +586,7 @@ export default function Courses({ courses, categories }: Props) {
                   position: absolute;
                   height: 3px;
                   opacity: 0;
-                  background: rgba(0, 0, 0, 0.06);
+                  background: rgba(255, 255, 255, 0.06);
                 }
 
                 .courses-glitch-fragment-1 {
@@ -740,33 +727,3 @@ export default function Courses({ courses, categories }: Props) {
 /* =========================================================
    ERROR ICON
 ========================================================= */
-
-function ErrorIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-7 w-7 text-black"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 3.5 21 19H3L12 3.5Z"
-      />
-
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 9v4"
-      />
-
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 16.5h.01"
-      />
-    </svg>
-  );
-}

@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import UserAvatar from "@/components/ui/UserAvatar";
+import AvatarMini from "@/components/profile/AvatarMini";
 import ProfileLink from "@/components/ui/ProfileLink";
-import Tag from "@/components/ui/Tag";
 import CountUp from "@/components/ui/CountUp";
 import PostFeed from "@/components/classes/PostFeed";
 import PostComposer from "@/components/classes/PostComposer";
@@ -48,6 +47,7 @@ interface Props {
     name: string;
     description: string;
     ownerUid: string;
+    imageURL?: string | null;
     memberCount: number;
     postCount: number;
     createdAt: string;
@@ -127,21 +127,23 @@ export default function ClassRoom({
         className={cn("relative overflow-hidden bg-header pb-0", overlayNav ? "-mt-14 pt-40" : "-mt-12 pt-10")}
       >
         <div className="container-page relative">
+          {/* Tautan kembali: garis penunjuk yang memanjang saat di-hover */}
           <Link
             href={kembali.href}
-            className="rise-in inline-block text-[13px] text-white/70 transition-colors duration-200 hover:text-white"
+            className="rise-in group inline-flex items-center gap-3 text-[11.5px] font-semibold uppercase tracking-[0.3em] text-white/65 transition-colors duration-300 hover:text-white"
             style={{ "--rise-delay": "0ms" } as React.CSSProperties}
           >
-            ← {kembali.label}
+            <span aria-hidden="true" className="h-px w-7 bg-white/40 transition-all duration-500 ease-warm group-hover:w-12 group-hover:bg-white" />
+            {kembali.label}
           </Link>
 
           <div className="mt-6 flex flex-wrap items-start justify-between gap-8">
-            <div className="flex min-w-0 flex-1 flex-wrap items-start gap-6">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-6">
               <span
                 className="rise-in"
                 style={{ "--rise-delay": "120ms" } as React.CSSProperties}
               >
-                <ClassPlate nama={kelas.name} />
+                <ClassPlate nama={kelas.name} gambar={kelas.imageURL ?? null} />
               </span>
 
               <div className="min-w-0 flex-1">
@@ -169,16 +171,26 @@ export default function ClassRoom({
               </div>
             </div>
 
+            {/* Pengajar: garis tegak tipis + foto (dipencet = mini-profil) + nama */}
             <div
-              className="rise-in flex items-center gap-3 bg-white/10 px-4 py-3"
+              className="rise-in flex items-center gap-4 border-l border-white/25 pl-6"
               style={{ "--rise-delay": "420ms" } as React.CSSProperties}
             >
-              <UserAvatar name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
+              <AvatarMini
+                uid={kelas.ownerUid}
+                name={namaPengajar}
+                photoURL={ownerCard?.photoURL ?? null}
+                size="lg"
+                className="h-14 w-14 text-base ring-2 ring-white/20"
+              />
               <span className="min-w-0">
-                <span className="block text-[11px] uppercase tracking-[0.14em] text-white/60">
+                <span className="block text-[10.5px] font-semibold uppercase tracking-[0.32em] text-white/55">
                   Pengajar
                 </span>
-                <span className="block truncate text-sm font-medium text-white">
+                <span
+                  className="mt-1 block max-w-[16rem] truncate text-[1.2rem] font-bold leading-tight tracking-[-0.025em] text-white"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
                   {namaPengajar}
                 </span>
               </span>
@@ -244,14 +256,7 @@ export default function ClassRoom({
               <div className="overflow-hidden bg-paper-card">
                 <ul className="divide-y divide-rule">
                   <li className="flex flex-wrap items-center gap-3 bg-paper px-6 py-4">
-                    <ProfileLink
-                      uid={kelas.ownerUid}
-                      name={namaPengajar}
-                      secondary
-                      className="shrink-0"
-                    >
-                      <UserAvatar name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
-                    </ProfileLink>
+                    <AvatarMini uid={kelas.ownerUid} name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
                     <ProfileLink
                       uid={kelas.ownerUid}
                       name={namaPengajar}
@@ -259,7 +264,7 @@ export default function ClassRoom({
                     >
                       {namaPengajar}
                     </ProfileLink>
-                    <Tag tone="blue">Pengajar</Tag>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-300">Pengajar</span>
                   </li>
 
                   {members.map((m) => {
@@ -270,9 +275,7 @@ export default function ClassRoom({
                         key={m.id}
                         className="flex flex-wrap items-center gap-3 px-6 py-4 transition-colors duration-200 hover:bg-paper"
                       >
-                        <ProfileLink uid={m.uid} name={nama} secondary className="shrink-0">
-                          <UserAvatar name={nama} photoURL={kartu?.photoURL ?? null} />
-                        </ProfileLink>
+                        <AvatarMini uid={m.uid} name={nama} photoURL={kartu?.photoURL ?? null} />
                         <div className="min-w-0 flex-1">
                           <ProfileLink
                             uid={m.uid}
@@ -363,11 +366,7 @@ export default function ClassRoom({
                             i > 0 && "-ml-[9px]",
                           )}
                         >
-                          <UserAvatar
-                            name={nama}
-                            photoURL={kartu?.photoURL ?? null}
-                            size="sm"
-                          />
+                          <AvatarMini uid={m.uid} name={nama} photoURL={kartu?.photoURL ?? null} size="sm" />
                         </span>
                       );
                     })}

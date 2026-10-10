@@ -70,8 +70,10 @@ export default function ProfileBanner({
     }
   }
 
+  // Tanpa margin atas: sampul menempel ke tepi atas layar dan navbar mengambang di
+  // atasnya (dulu ada jeda 96px). Tingginya sudah memasukkan area di balik navbar.
   return (
-    <div className="relative mt-24 h-[200px] overflow-hidden bg-banner sm:h-[250px]">
+    <div className="relative h-[290px] overflow-hidden bg-banner sm:h-[340px]">
       {bannerURL && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={bannerURL} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -83,7 +85,7 @@ export default function ProfileBanner({
       )}
 
       {editable && (
-        <div className="absolute right-4 top-4 flex items-center gap-2 sm:right-6 sm:top-5">
+        <div className="absolute right-4 top-24 flex items-center gap-2 sm:right-6 sm:top-28">
           <input ref={inputRef} type="file" accept="image/*" onChange={onPick} className="hidden" id="banner-input" />
           <label
             htmlFor="banner-input"

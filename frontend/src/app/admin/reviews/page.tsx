@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminShell from "@/components/admin/AdminShell";
 import DeleteReviewButton from "@/components/admin/ReviewActions";
+import ReviewReply from "@/components/admin/ReviewReply";
 import Stars from "@/components/ui/Stars";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ProfileLink from "@/components/ui/ProfileLink";
@@ -23,8 +24,8 @@ export default async function AdminReviewsPage() {
   return (
     <AdminShell user={admin} badges={badges}>
       <div className="container-page">
-        <h1 className="t-h2 mb-3">
-          Ulasan <span className="mark">peserta</span>
+        <h1 className="mb-4 text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-white">
+          Ulasan <span>peserta</span>
         </h1>
         <p className="t-body text-ink-muted mb-10">
           {reviews.length === 0
@@ -33,13 +34,13 @@ export default async function AdminReviewsPage() {
         </p>
 
         {reviews.length === 0 ? (
-          <div className="bg-paper-card border border-rule rounded-2xl p-12 text-center">
+          <div className="bg-paper-card p-12 text-center">
             <p className="t-body text-ink-muted">
               Ulasan akan muncul di sini begitu ada peserta yang menyelesaikan kursusnya.
             </p>
           </div>
         ) : (
-          <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden">
+          <div className="bg-paper-card overflow-hidden">
             <ul className="divide-y divide-rule">
               {reviews.map((r) => (
                 <li key={r.id} className="flex items-start gap-3 px-6 py-5">
@@ -61,7 +62,7 @@ export default async function AdminReviewsPage() {
                           halaman depan - itulah yang biasanya jadi alasan
                           admin membuka halaman ini. */}
                       {r.rating >= FEATURED_MIN_RATING && (
-                        <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
+                        <span className=" bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
                           Tampil di beranda
                         </span>
                       )}
@@ -77,6 +78,8 @@ export default async function AdminReviewsPage() {
                     <p className="mt-2 text-sm text-ink-body whitespace-pre-line break-words">
                       {r.comment}
                     </p>
+
+                    <ReviewReply id={r.id} initial={r.reply?.body ?? null} by={r.reply?.by ?? null} />
                   </div>
 
                   <DeleteReviewButton id={r.id} name={r.name} />
@@ -88,7 +91,7 @@ export default async function AdminReviewsPage() {
 
         <p className="mt-6 text-xs text-ink-muted">
           Ulasan tampil begitu dikirim, tanpa persetujuan. Hapus yang kasar atau spam -
-          isinya tidak bisa disunting.
+          isinya tidak bisa disunting. Admin dapat membalas ulasan; balasannya tampil di kartu komentar beranda.
         </p>
       </div>
     </AdminShell>

@@ -21,6 +21,27 @@ interface Option {
   readonly label?: string;
 }
 
+/** Kepala bab: nomor tipis-besar di kiri, judul & keterangan di sampingnya. */
+function BabHead({ no, judul, sub }: { no: string; judul: string; sub: string }) {
+  return (
+    <header className="mb-7 flex items-end gap-5">
+      <span
+        aria-hidden="true"
+        className="select-none text-[4.5rem] font-extralight leading-[0.8] tracking-[-0.06em] tabular-nums text-white/20"
+        style={{ fontFamily: "var(--font-sans)" }}
+      >
+        {no}
+      </span>
+      <div className="pb-1">
+        <h2 className="text-[1.6rem] font-bold leading-tight tracking-[-0.03em] text-white" style={{ fontFamily: "var(--font-sans)" }}>
+          {judul}
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">{sub}</p>
+      </div>
+    </header>
+  );
+}
+
 export default function CourseForm({
   levels,
   categories,
@@ -124,22 +145,21 @@ export default function CourseForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-16">
       {error && (
         <div
           role="alert"
-          className="rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700"
+          className="bg-rust-100 px-4 py-3 text-sm text-rust-700"
         >
           {error}
         </div>
       )}
 
       {/* ── Keterangan kursus ───────────────────────────────── */}
-      <section className="bg-paper-card border border-rule rounded-2xl p-7">
-        <h2 className="t-h3 mb-1.5">Tentang Kursus</h2>
-        <p className="t-body text-sm mb-6">Yang dilihat calon peserta di katalog.</p>
+      <section id="tentang" className="scroll-mt-32">
+        <BabHead no="01" judul="Tentang kursus" sub="Yang dilihat calon peserta di katalog." />
 
-        <div className="space-y-4">
+        <div className="space-y-5 bg-paper-card p-7 sm:p-9">
           <div>
             <Label htmlFor="title">Judul kursus</Label>
             <input
@@ -280,40 +300,46 @@ export default function CourseForm({
         </div>
       </section>
 
-      <ContributorEditor
-        owner={owner}
-        ownerIsViewer
-        initial={[]}
-        feePercent={feePercent}
-        price={Number(price) || 0}
-        onChange={setContributors}
-      />
+      <section id="kontributor" className="scroll-mt-32">
+        <BabHead no="02" judul="Kontributor" sub="Siapa saja yang berbagi hasil penjualan kursus ini." />
+        <ContributorEditor
+          owner={owner}
+          ownerIsViewer
+          initial={[]}
+          feePercent={feePercent}
+          price={Number(price) || 0}
+          onChange={setContributors}
+          tanpaJudul
+        />
+      </section>
 
       {/* ── Kurikulum ───────────────────────────────────────── */}
-      <div>
-        <h2 className="t-h3 mb-1.5">Isi Kursus</h2>
-        <p className="t-body text-sm mb-5">
-          Tambahkan sebanyak yang Anda perlukan, dalam urutan mana pun. Tanda panah
-          memindahkan posisinya.
-        </p>
+      <section id="isi" className="scroll-mt-32">
+        <BabHead
+          no="03"
+          judul="Isi kursus"
+          sub="Tambahkan sebanyak yang Anda perlukan, dalam urutan mana pun. Tanda panah memindahkan posisinya."
+        />
 
         <SectionList sections={sections} setSections={setSections} uploadPrefix={draftId} />
-      </div>
+      </section>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-lg bg-blue-600 px-7 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
-        >
-          {pending ? "Menerbitkan…" : "Terbitkan Kursus"}
-        </button>
-      </div>
-
-      <p className="text-xs text-ink-muted">
-        Soal kuis yang Anda isi di atas ikut tersimpan otomatis. Belum sempat diisi? Bisa
-        ditambahkan belakangan dari halaman sunting.
-      </p>
+      <section id="terbit" className="scroll-mt-32">
+        <BabHead no="04" judul="Terbitkan" sub="Setelah disimpan, Anda diantar ke halaman sunting." />
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-5 bg-paper-card px-7 py-8 sm:px-9">
+          <button
+            type="submit"
+            disabled={pending}
+            className="bg-blue-600 px-9 py-4 text-sm font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {pending ? "Menerbitkan…" : "Terbitkan kursus"}
+          </button>
+          <p className="max-w-[46ch] text-xs leading-[1.7] text-ink-muted">
+            Soal kuis yang Anda isi di atas ikut tersimpan otomatis. Belum sempat diisi? Bisa
+            ditambahkan belakangan dari halaman sunting.
+          </p>
+        </div>
+      </section>
     </form>
   );
 }

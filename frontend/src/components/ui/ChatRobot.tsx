@@ -90,6 +90,10 @@ export default function ChatRobot({
   const [menu, setMenu] = useState<Sisi | null>(null);
   const [dragging, setDragging] = useState(false);
   const [bubble, setBubble] = useState<{ teks: string; sisi: Sisi } | null>(null);
+  // Kejutan: ketuk 3x cepat memunculkan gelembung ajakan follow Instagram.
+  const [salam, setSalam] = useState<{ sisi: Sisi } | null>(null);
+  const ketukRef = useRef<number[]>([]);
+  const salamTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -244,6 +248,15 @@ export default function ChatRobot({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aktifBergerak]);
 
+  useEffect(() => () => clearTimeout(salamTimer.current), []);
+
+  function tampilSalam() {
+    setBubble(null);
+    setSalam({ sisi: sisiSekarang() });
+    clearTimeout(salamTimer.current);
+    salamTimer.current = setTimeout(() => setSalam(null), 6000);
+  }
+
   // ── Gelembung ajakan ngobrol, kalimat acak ──────────────────────────────────
   useEffect(() => {
     if (!aktifBergerak) return;
@@ -350,7 +363,17 @@ export default function ChatRobot({
       simpanPos(posRef.current);
       onPos(posRef.current);
     } else if (!d.long && !batal) {
-      onToggle();
+      // Tiga ketukan dalam 1 detik = kejutan; ketukan ketiga TIDAK membuka/menutup
+      // chat (dua ketukan sebelumnya sudah saling membatalkan, jadi keadaan chat
+      // kembali seperti semula).
+      const now = performance.now();
+      ketukRef.current = [...ketukRef.current.filter((t) => now - t < 1000), now];
+      if (ketukRef.current.length >= 3) {
+        ketukRef.current = [];
+        tampilSalam();
+      } else {
+        onToggle();
+      }
     }
   }
 
@@ -358,7 +381,36 @@ export default function ChatRobot({
   // di bawahnya bila di atas; rata kanan/kiri menurut separuh layar robot.
   const kelasSisi = (s: Sisi) => cn(s.kanan ? "right-0" : "left-0", s.bawah ? "bottom-full mb-2" : "top-full mt-2");
 
-  const tampilBubble = bubble !== null && aktifBergerak;
+  // Gelembung bicara: sedikit digeser menjauhi tepi robot (right-3 = ke kiri bila
+  // robot di kanan), sudut yang menghadap robot dibuat lancip, dan ekor segitiga
+  // kecil menempel di sudut itu - supaya terbaca sebagai balon bicara sungguhan.
+  const kelasBalon = (sd: Sisi) =>
+    cn(
+      "bg-white px-4 py-2.5 text-left text-sm font-medium leading-snug text-paper shadow-lift",
+      sd.kanan ? "right-3" : "left-3",
+      sd.bawah ? "bottom-full mb-3" : "top-full mt-3",
+      "rounded-2xl",
+      sd.bawah ? (sd.kanan ? "rounded-br-none" : "rounded-bl-none") : sd.kanan ? "rounded-tr-none" : "rounded-tl-none",
+    );
+  const ekor = (sd: Sisi) => (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "absolute h-3 w-3 bg-white",
+        sd.kanan ? "right-0" : "left-0",
+        sd.bawah ? "top-full" : "bottom-full",
+        sd.bawah
+          ? sd.kanan
+            ? "[clip-path:polygon(0_0,100%_0,100%_100%)]"
+            : "[clip-path:polygon(0_0,100%_0,0_100%)]"
+          : sd.kanan
+            ? "[clip-path:polygon(0_100%,100%_100%,100%_0)]"
+            : "[clip-path:polygon(0_100%,100%_100%,0_0)]",
+      )}
+    />
+  );
+
+  const tampilBubble = bubble !== null && aktifBergerak && !salam;
 
   return (
     <div
@@ -401,12 +453,30 @@ export default function ChatRobot({
             onToggle();
           }}
           className={cn(
-            "absolute w-max max-w-[min(230px,calc(100vw-1rem))] rounded-2xl bg-white px-4 py-2.5 text-left text-sm font-medium leading-snug text-paper shadow-lift animate-[robot-pop_320ms_cubic-bezier(0.34,1.56,0.64,1)]",
-            kelasSisi(bubble.sisi),
+            "absolute w-max max-w-[min(230px,calc(100vw-1rem))] animate-[robot-pop_320ms_cubic-bezier(0.34,1.56,0.64,1)]",
+            kelasBalon(bubble.sisi),
           )}
         >
           {bubble.teks}
+          {ekor(bubble.sisi)}
         </button>
+      )}
+
+      {/* Kejutan ketuk 3x: ajakan follow Instagram (bisa diketuk, membuka profilnya) */}
+      {salam && (
+        <a
+          href="https://www.instagram.com/nndulgha_/"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setSalam(null)}
+          className={cn(
+            "absolute w-max max-w-[min(230px,calc(100vw-1rem))] animate-[robot-pop_320ms_cubic-bezier(0.34,1.56,0.64,1)]",
+            kelasBalon(salam.sisi),
+          )}
+        >
+          Jangan lupa follow instagram @nndulgha_ ya
+          {ekor(salam.sisi)}
+        </a>
       )}
 
       {/* Menu pilihan gerakan */}

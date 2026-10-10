@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
-import Tag from "@/components/ui/Tag";
 import EnrollButton from "@/components/courses/EnrollButton";
 import BuyButton from "@/components/courses/BuyButton";
 import ManualQrisPanel from "@/components/courses/ManualQrisPanel";
@@ -45,6 +44,13 @@ interface Props {
 
 // Tombol aksinya bergantung pada sesi dan status pendaftaran, jadi halaman
 // ini tidak boleh di-prerender.
+/** Warna teks tingkat kesulitan - sama dengan kartu kursus di katalog. */
+const LEVEL_TEKS = {
+  blue: "text-blue-300",
+  amber: "text-warn-text",
+  rust: "text-error-text",
+} as const;
+
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -133,12 +139,25 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
       <main className="bg-paper min-h-screen pt-32 pb-24">
         <div className="container-reading">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
-            <Link href="/" className="hover:text-blue-700 transition-colors">Beranda</Link>
-            <span aria-hidden="true">/</span>
-            <Link href="/courses" className="hover:text-blue-700 transition-colors">Kursus</Link>
-            <span aria-hidden="true">/</span>
-            <span className="text-ink">{course.title}</span>
+          {/* Jejak halaman: huruf kapital kecil berjarak lebar, pemisah garis tipis,
+              garis bawah biru menyapu saat di-hover, halaman aktif putih. */}
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-10 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-ink-muted"
+          >
+            <Link href="/" className="group relative py-1.5 transition-colors duration-300 hover:text-white">
+              Beranda
+              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-blue-400 transition-transform duration-500 ease-warm group-hover:scale-x-100" />
+            </Link>
+            <span aria-hidden="true" className="h-px w-5 bg-white/25" />
+            <Link href="/courses" className="group relative py-1.5 transition-colors duration-300 hover:text-white">
+              Kursus
+              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-blue-400 transition-transform duration-500 ease-warm group-hover:scale-x-100" />
+            </Link>
+            <span aria-hidden="true" className="h-px w-5 bg-white/25" />
+            <span aria-current="page" className="max-w-[40ch] truncate py-1.5 text-white">
+              {course.title}
+            </span>
           </nav>
 
           <div className="grid lg:grid-cols-3 gap-8">
@@ -157,7 +176,12 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
             <div className="lg:col-span-2 min-w-0 space-y-6">
               <div className="bg-paper-card p-8 sm:p-10">
                 <div className="flex items-center gap-3 mb-5">
-                  <Tag tone={levelTone(course.levelColor)}>{course.level}</Tag>
+                  {/* Teks polos: tanpa kotak & garis (permintaan pemilik) */}
+                  <span
+                    className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${LEVEL_TEKS[levelTone(course.levelColor)]}`}
+                  >
+                    {course.level}
+                  </span>
                   <span className="t-label text-ink-faint">{course.category}</span>
                 </div>
 

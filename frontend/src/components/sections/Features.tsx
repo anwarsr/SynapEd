@@ -135,7 +135,7 @@ function DetailFitur({ idx, warna, onClose }: { idx: number; warna: string; onCl
         aria-label={fitur.title}
         onClick={(e) => e.stopPropagation()}
         onPointerMove={gerak}
-        className="fitur-lembar relative max-h-[92vh] w-full max-w-4xl overflow-hidden text-white"
+        className="fitur-lembar relative max-h-[96vh] w-full max-w-4xl overflow-hidden text-white"
         data-keluar={keluar}
         style={{ backgroundColor: warna }}
       >
@@ -163,7 +163,8 @@ function DetailFitur({ idx, warna, onClose }: { idx: number; warna: string; onCl
           </svg>
         </button>
 
-        <div className="relative max-h-[92vh] overflow-y-auto px-7 py-9 sm:px-14 sm:py-14">
+        {/* Tanpa gulir: semua ukuran (judul, jarak, teks) memakai clamp berbasis TINGGI layar */}
+        <div className="relative px-[clamp(1.25rem,5vw,3.5rem)] py-[clamp(1.1rem,4.2vh,3.25rem)]">
           {/* Label + garis + penanda halaman */}
           <div className="flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/65" style={SANS}>
             <span className="fitur-geser" style={d(380)}>
@@ -177,7 +178,7 @@ function DetailFitur({ idx, warna, onClose }: { idx: number; warna: string; onCl
 
           {/* Judul bertingkat: tiap baris naik dari balik topeng & menjorok bergantian */}
           <h3
-            className="mt-9 text-[clamp(2.6rem,7.2vw,5.2rem)] leading-[0.94] tracking-[-0.05em]"
+            className="mt-[clamp(0.9rem,3.2vh,2.2rem)] text-[clamp(1.9rem,min(6.4vw,8vh),4.4rem)] leading-[0.94] tracking-[-0.05em]"
             style={{ ...SANS, fontWeight: 800 }}
           >
             {kata.map((w, i) => (
@@ -189,12 +190,12 @@ function DetailFitur({ idx, warna, onClose }: { idx: number; warna: string; onCl
             ))}
           </h3>
 
-          <div className="mt-12 grid gap-10 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-14">
+          <div className="mt-[clamp(1rem,4vh,3rem)] grid gap-[clamp(1rem,3.5vh,2.5rem)] sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-[clamp(1.5rem,4vw,3.5rem)]">
             {/* Kalimat pembuka berpagar garis tegak */}
             <div className="relative pl-6">
               <span className="fitur-garis-y absolute bottom-0 left-0 top-1 w-px bg-white/40" style={d(900)} />
               <p
-                className="fitur-geser text-[1.08rem] leading-[1.8] text-white/90"
+                className="fitur-geser text-[clamp(0.85rem,min(1.6vw,2.2vh),1.05rem)] leading-[1.65] text-white/90"
                 style={{ ...SANS, ...d(960) }}
               >
                 {isi.lead}
@@ -204,15 +205,15 @@ function DetailFitur({ idx, warna, onClose }: { idx: number; warna: string; onCl
             {/* Poin: nomor besar-tipis + garis rambut yang menggambar diri */}
             <ol>
               {isi.poin.map((p, i) => (
-                <li key={i} className="relative grid grid-cols-[3.4rem_minmax(0,1fr)] items-baseline gap-x-4 py-[1.05rem]">
+                <li key={i} className="relative grid grid-cols-[2.8rem_minmax(0,1fr)] items-baseline gap-x-4 py-[clamp(0.5rem,1.9vh,1.05rem)]">
                   <span className="fitur-garis-x absolute inset-x-0 top-0 h-px bg-white/25" style={d(1000 + i * 120)} />
                   <span
-                    className="fitur-geser text-[2.1rem] leading-none tracking-[-0.04em] tabular-nums text-white/55"
+                    className="fitur-geser text-[clamp(1.4rem,3.6vh,2.1rem)] leading-none tracking-[-0.04em] tabular-nums text-white/55"
                     style={{ ...SANS, fontWeight: 200, ...d(1060 + i * 120) }}
                   >
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="fitur-geser text-[0.97rem] leading-[1.7] text-white/80" style={{ ...SANS, ...d(1100 + i * 120) }}>
+                  <span className="fitur-geser text-[clamp(0.8rem,min(1.5vw,2vh),0.95rem)] leading-[1.55] text-white/80" style={{ ...SANS, ...d(1100 + i * 120) }}>
                     {p}
                   </span>
                 </li>
@@ -242,19 +243,21 @@ export default function Features() {
   };
 
   // ============================
-  // DUA GESTUR GESER di section ini:
-  //  1) menggeser KARTU  → cincin 3D berputar (perilaku asli, tak berubah);
-  //  2) menggeser JUDUL "Features" → BERGANTIAN cincin ↔ barisan lurus (kartu
-  //     tengah paling besar & tajam, tetangganya lebih kecil & sedikit buram) dan
-  //     acak alfabet judul diputar ulang. Judulnya sendiri TIDAK bergeser.
-  //     `flat` (0 = cincin, 1 = barisan) berbalik tiap geseran judul yang cukup jauh.
+  // DUA TAMPILAN, DUA GESTUR di section ini:
+  //  - BAWAAN = BARISAN lurus (`flat` = 1): kartu tengah paling besar & tajam,
+  //    tetangganya mengecil bertahap & sedikit buram. Menggeser KARTU menggeser barisan.
+  //  - Menggeser JUDUL "Features" (>40px) BERGANTIAN barisan ↔ cincin 3D (`flat` 0)
+  //    dan memutar ulang acak alfabet judul. Judulnya sendiri TIDAK bergeser, dan
+  //    KARTU YANG DISOROT TIDAK BERUBAH: geseran judul hanya mengganti bentuk
+  //    (dulu ikut memajukan kartu satu langkah, sehingga 01 jadi 02 dst).
   // ============================
 
-  const flatTargetRef = useRef(0);
-  const flatRef = useRef(0);
+  const flatTargetRef = useRef(1);
+  const flatRef = useRef(1);
+  const flatVelRef = useRef(0);
 
   const [judulKe, setJudulKe] = useState(0);
-  const tarikRef = useRef<{ id: number; x0: number; rot0: number; dx: number; flat0: number } | null>(null);
+  const tarikRef = useRef<{ id: number; x0: number; dx: number; flat0: number; sudah: boolean } | null>(null);
   const lastSwapRef = useRef(0);
 
   /** Memasang ulang judul (key berganti) → acak alfabetnya mulai dari awal. */
@@ -269,7 +272,7 @@ export default function Features() {
   // --- Menggeser JUDUL ---------------------------------------------------
   const judulTurun = (e: React.PointerEvent<HTMLDivElement>) => {
     if (reducedMotion) return;
-    tarikRef.current = { id: e.pointerId, x0: e.clientX, rot0: rotationTargetRef.current, dx: 0, flat0: flatTargetRef.current };
+    tarikRef.current = { id: e.pointerId, x0: e.clientX, dx: 0, flat0: flatTargetRef.current, sudah: false };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
@@ -278,9 +281,14 @@ export default function Features() {
     if (!t || e.pointerId !== t.id) return;
     const dx = e.clientX - t.x0;
     t.dx = dx;
-    // Geseran judul membalik bentuk (cincin ↔ barisan); pratinjaunya langsung terlihat.
-    if (Math.abs(dx) > 10) flatTargetRef.current = t.flat0 === 1 ? 0 : 1;
-    rotationTargetRef.current = t.rot0 - dx / 220;
+    // Geseran judul membalik bentuk (barisan ↔ cincin); pratinjaunya langsung terlihat.
+    // Posisi putar dibulatkan ke kartu terdekat SEKALI di awal supaya kartu yang
+    // disorot sama di kedua bentuk dan peralihannya mulus; setelah itu tak diubah.
+    if (Math.abs(dx) > 10 && !t.sudah) {
+      t.sudah = true;
+      flatTargetRef.current = t.flat0 === 1 ? 0 : 1;
+      rotationTargetRef.current = Math.round(rotationTargetRef.current);
+    }
   };
 
   const judulLepas = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -295,16 +303,12 @@ export default function Features() {
 
     const dx = t.dx;
     if (Math.abs(dx) <= 40) {
-      // Geseran terlalu pendek: bentuk & kartu kembali seperti semula.
+      // Geseran terlalu pendek: bentuk kembali seperti semula.
       flatTargetRef.current = t.flat0;
-      rotationTargetRef.current = t.flat0 === 1 ? Math.round(rotationTargetRef.current) : t.rot0;
       return;
     }
 
-    // Berhenti tepat di satu kartu; geseran yang cukup jauh selalu maju sekurangnya satu.
-    let target = Math.round(t.rot0 - dx / 220);
-    if (target === Math.round(t.rot0)) target += dx < 0 ? 1 : -1;
-    rotationTargetRef.current = target;
+    // Bentuk sudah berbalik; kartu yang disorot TETAP (rotasi sudah bulat di atas).
     resetJudul();
   };
 
@@ -372,8 +376,15 @@ export default function Features() {
       );
 
       // Cincin → barisan (dan sebaliknya) meluncur halus
-      flatRef.current = lerp(flatRef.current, flatTargetRef.current, 0.075);
+      // Pegas yang diredam hampir kritis (kekakuan 0,010; redaman 0,80): mulai
+      // pelan, melaju, lalu mendarat tanpa memantul - lebih lembut daripada lerp
+      // eksponensial yang selalu mulai dengan lonjakan terbesar.
+      flatVelRef.current += (flatTargetRef.current - flatRef.current) * 0.01;
+      flatVelRef.current *= 0.8;
+      flatRef.current = clamp(flatRef.current + flatVelRef.current, 0, 1);
       const f = flatRef.current;
+      // Pencampuran memakai smootherstep (6f⁵-15f⁴+10f³): turunan awal & akhir nol.
+      const fe = f * f * f * (f * (f * 6 - 15) + 10);
 
       // Smooth cursor wobble
       wobbleCurrent.current.x = lerp(
@@ -488,6 +499,8 @@ export default function Features() {
         const absD = Math.abs(d);
 
         const isFront = f < 0.5 ? index === frontIndex : absD < 0.5;
+        // Penanda untuk ketuk(): hanya kartu yang DISOROT yang membuka penjelasan lengkap.
+        card.dataset.sorot = isFront ? "1" : "0";
 
         const wobbleRotX = isFront
           ? wobbleCurrent.current.y * -8
@@ -509,13 +522,13 @@ export default function Features() {
         xr += (absD - lantai) * jarakKe(lantai);
         const xRow = Math.sign(d) * xr;
 
-        const xm = lerp(x, xRow, f);
-        const ym = lerp(y, 0, f);
-        const zm = lerp(z, -absD * 40, f);
-        const rotateYm = lerp(rotateY, 0, f);
-        const sm = lerp(scale, skala(absD), f);
-        const blurm = lerp(blur, Math.min(absD, 2) * 1.8, f);
-        const depthm = lerp(depth, Math.max(0, 1 - absD * 0.5), f);
+        const xm = lerp(x, xRow, fe);
+        const ym = lerp(y, 0, fe);
+        const zm = lerp(z, -absD * 40, fe);
+        const rotateYm = lerp(rotateY, 0, fe);
+        const sm = lerp(scale, skala(absD), fe);
+        const blurm = lerp(blur, Math.min(absD, 2) * 1.8, fe);
+        const depthm = lerp(depth, Math.max(0, 1 - absD * 0.5), fe);
 
         card.style.transform = `
           translate3d(
@@ -531,9 +544,13 @@ export default function Features() {
         `;
 
         // Card tidak pernah transparan
-        card.style.opacity =
-          (ghost ? Math.min(1, f * 2.5) : opacity).toFixed(3);
-        card.style.visibility = ghost && f < 0.02 ? "hidden" : "visible";
+        // Kartu bayangan HANYA terlihat saat barisan hampir terbentuk; saat kembali
+        // ke cincin ia sudah lenyap lebih dulu. Dulu ia memudar bersamaan dengan
+        // kartu asli sehingga tampak bertumpuk setengah transparan.
+        const gh = Math.min(1, Math.max(0, (f - 0.55) / 0.4));
+        const ghOp = gh * gh * (3 - 2 * gh);
+        card.style.opacity = (ghost ? ghOp : opacity).toFixed(3);
+        card.style.visibility = ghost && ghOp < 0.01 ? "hidden" : "visible";
 
         card.style.filter = blurm
           ? `blur(${blurm.toFixed(2)}px)`
@@ -704,7 +721,8 @@ export default function Features() {
         }
       }
 
-      setDetail(Number(terbaik.dataset.fitur));
+      // Penjelasan lengkap HANYA untuk kartu yang disorot; kartu lain diabaikan.
+      if (terbaik.dataset.sorot === "1") setDetail(Number(terbaik.dataset.fitur));
     };
 
     // ========================================

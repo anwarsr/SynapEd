@@ -41,14 +41,14 @@ export default function DecisionButtons({ uid, name }: { uid: string; name: stri
         <button
           onClick={() => setAsking("accept")}
           disabled={pending}
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
+          className=" bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
         >
           {pending ? "Memproses…" : "Terima"}
         </button>
         <button
           onClick={() => setAsking("reject")}
           disabled={pending}
-          className="rounded-lg border border-rust-700/30 px-6 py-2.5 text-sm font-semibold text-rust-700 transition-colors duration-200 ease-out-soft hover:bg-rust-100 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="bg-rust-100 px-6 py-2.5 text-sm font-semibold text-rust-700 transition-colors duration-200 ease-out-soft hover:bg-rust-100 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Tolak
         </button>
@@ -78,10 +78,10 @@ export default function DecisionButtons({ uid, name }: { uid: string; name: stri
         <p
           role="status"
           className={cn(
-            "mt-4 rounded-lg px-4 py-3 text-sm border",
+            "mt-4  px-4 py-3 text-sm",
             result.ok
-              ? "bg-blue-50 text-blue-700 border-blue-100"
-              : "bg-rust-100 text-rust-700 border-rust-700/25",
+              ? "bg-blue-50 text-blue-700"
+              : "bg-rust-100 text-rust-700",
           )}
         >
           {result.ok ? result.message : result.error}

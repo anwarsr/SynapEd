@@ -77,16 +77,10 @@ export default function JoinCodePanel({
         </button>
       </div>
 
-      <p className="mt-4 flex gap-2.5 text-xs leading-[1.6] text-ink-muted">
-        <span
-          aria-hidden="true"
-          className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full bg-amber-500"
-        />
-        <span>
-          Siapa pun yang memegang kode ini bisa bergabung dan membaca seluruh isi kelas.
-          Bagikan hanya kepada peserta Anda. Ganti kodenya untuk menutup pendaftaran -
-          anggota yang sudah masuk tidak terpengaruh.
-        </span>
+      <p className="mt-5 text-justify text-xs leading-[1.75] text-ink-muted [hyphens:auto]" lang="id">
+        Siapa pun yang memegang kode ini bisa bergabung dan membaca seluruh isi kelas.
+        Bagikan hanya kepada peserta Anda. Ganti kodenya untuk menutup pendaftaran -
+        anggota yang sudah masuk tidak terpengaruh.
       </p>
 
       <ConfirmDialog

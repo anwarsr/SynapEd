@@ -37,8 +37,8 @@ export default async function AdminNotificationsPage() {
   return (
     <AdminShell user={admin} badges={badges}>
       <div className="container-page">
-        <h1 className="t-h2 mb-3">
-          Pengajuan <span className="mark">menjadi educator</span>
+        <h1 className="mb-4 text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-white">
+          Pengajuan <span>menjadi educator</span>
         </h1>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
           <p className="t-body text-ink-muted">
@@ -51,13 +51,13 @@ export default async function AdminNotificationsPage() {
         </div>
 
         {applications.length === 0 ? (
-          <div className="bg-paper-card border border-rule rounded-2xl p-12 text-center">
+          <div className="bg-paper-card p-12 text-center">
             <p className="t-body text-ink-muted">
               Belum ada pengajuan. Permintaan educator akan muncul di sini.
             </p>
           </div>
         ) : (
-          <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden">
+          <div className="bg-paper-card overflow-hidden">
             <ul className="divide-y divide-rule">
               {/* Tombol hapus berdiri di SEBELAH Link, bukan di dalamnya:
                   <button> bersarang di <a> bukan HTML yang sah, dan pembaca

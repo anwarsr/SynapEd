@@ -31,8 +31,8 @@ export default async function AdminPaymentsPage() {
     <AdminShell user={admin} badges={badges}>
       <div className="container-page space-y-8">
         <div>
-          <h1 className="t-h2 mb-3">
-            Pembayaran <span className="mark">kursus</span>
+          <h1 className="mb-4 text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-white">
+            Pembayaran <span>kursus</span>
           </h1>
           <p className="t-body text-ink-muted">
             {orders.length > 0
@@ -57,7 +57,7 @@ export default async function AdminPaymentsPage() {
         {(unallocated.length > 0 || postPaid.length > 0) && (
           <section className="space-y-6">
             {postPaid.length > 0 && (
-              <div className="bg-paper-card border border-rust-700/30 rounded-2xl p-7">
+              <div className="bg-paper-card shadow-[inset_3px_0_0_var(--color-rust-700)] p-7">
                 <h2 className="t-h3 mb-1.5">Kabar gagal setelah lunas</h2>
                 <p className="t-body text-sm text-ink-muted mb-5">
                   Midtrans mengirim status gagal untuk pesanan yang sudah lunas - biasanya refund atau
@@ -82,7 +82,7 @@ export default async function AdminPaymentsPage() {
             )}
 
             {unallocated.length > 0 && (
-              <div className="bg-paper-card border border-amber-500/40 rounded-2xl p-7">
+              <div className="bg-paper-card shadow-[inset_3px_0_0_var(--color-amber-500)] p-7">
                 <h2 className="t-h3 mb-1.5">Penjualan belum teralokasi</h2>
                 <p className="t-body text-sm text-ink-muted mb-5">
                   Sebagian uang penjualan ini tidak punya penerima: kursusnya tanpa pemilik, atau
@@ -121,7 +121,7 @@ export default async function AdminPaymentsPage() {
           </p>
 
           {orders.length === 0 ? (
-            <div className="bg-paper-card border border-rule rounded-2xl p-12 text-center">
+            <div className="bg-paper-card p-12 text-center">
               <p className="t-body text-ink-muted">
                 Belum ada bukti bayar yang masuk.
               </p>
@@ -129,7 +129,7 @@ export default async function AdminPaymentsPage() {
           ) : (
             <ul className="space-y-4">
               {orders.map((o) => (
-                <li key={o.orderId} className="bg-paper-card border border-rule rounded-2xl p-6">
+                <li key={o.orderId} className="bg-paper-card p-6">
                   <div className="grid lg:grid-cols-[16rem_1fr] gap-6">
                     <div>
                       {/* Bukti disajikan lewat route yang memeriksa peran —
@@ -144,7 +144,7 @@ export default async function AdminPaymentsPage() {
                         <img
                           src={`/api/payments/proof?orderId=${encodeURIComponent(o.orderId)}`}
                           alt={`Bukti bayar ${o.orderId}`}
-                          className="w-full rounded-lg border border-rule bg-paper-alt object-contain max-h-72"
+                          className="w-full bg-paper-alt object-contain max-h-72"
                         />
                       </a>
                       <p className="mt-2 text-xs text-ink-muted text-center">
@@ -191,7 +191,7 @@ export default async function AdminPaymentsPage() {
                       </dl>
 
                       {o.payerNote && (
-                        <div className="mt-4 rounded-lg bg-paper-alt px-4 py-3">
+                        <div className="mt-4  bg-paper-alt px-4 py-3">
                           <p className="t-label text-ink-muted mb-1">Catatan pembeli</p>
                           <p className="text-sm text-ink-body whitespace-pre-line break-words">
                             {o.payerNote}

@@ -1,6 +1,5 @@
-import UserAvatar from "@/components/ui/UserAvatar";
+import AvatarMini from "@/components/profile/AvatarMini";
 import ProfileLink from "@/components/ui/ProfileLink";
-import Tag from "@/components/ui/Tag";
 import Reveal from "@/components/ui/Reveal";
 import DeleteButton from "@/components/classes/DeleteButton";
 import ReplyForm from "@/components/classes/ReplyForm";
@@ -76,9 +75,7 @@ export default function PostFeed({
             <Reveal delay={i * 90}>
               <article className="bg-paper-card p-6 transition-all duration-200 ease-out-soft hover:bg-card-hover">
                 <div className="flex flex-wrap items-center gap-3">
-                  <ProfileLink uid={post.authorUid} name={nama} secondary className="shrink-0">
-                    <UserAvatar name={nama} photoURL={penulis?.photoURL ?? null} />
-                  </ProfileLink>
+                  <AvatarMini uid={post.authorUid} name={nama} photoURL={penulis?.photoURL ?? null} />
 
                   <ProfileLink
                     uid={post.authorUid}
@@ -88,7 +85,7 @@ export default function PostFeed({
                     {nama}
                   </ProfileLink>
 
-                  <Tag tone="blue">Pengajar</Tag>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-300">Pengajar</span>
 
                   <span className="ml-auto text-[13px] text-ink-muted">
                     {formatDate(post.createdAt)}
@@ -122,18 +119,12 @@ export default function PostFeed({
 
                           return (
                             <li key={r.id} className="flex flex-wrap items-start gap-3">
-                              <ProfileLink
+                              <AvatarMini
                                 uid={r.authorUid}
                                 name={namaBalasan}
-                                secondary
-                                className="shrink-0"
-                              >
-                                <UserAvatar
-                                  name={namaBalasan}
-                                  photoURL={kartu?.photoURL ?? null}
-                                  size="sm"
-                                />
-                              </ProfileLink>
+                                photoURL={kartu?.photoURL ?? null}
+                                size="sm"
+                              />
 
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-baseline gap-2">

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
 import Stars from "@/components/ui/Stars";
-import ProfileLink from "@/components/ui/ProfileLink";
+import MiniProfile from "@/components/profile/MiniProfile";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { cn } from "@/lib/cn";
@@ -42,10 +42,14 @@ export interface TestimonialItem {
   courseImage: string | null;
   /** Banner profil penulis; null = hitam bawaan. */
   banner: string | null;
+  /** Balasan admin; null = belum dibalas. */
+  reply: { body: string; by: string } | null;
 }
 
 /** Di bawah ini kartunya ditata diam, tanpa pita berjalan. */
 const MARQUEE_MIN = 4;
+/** Berapa kali daftar kartu digandakan di pita berjalan. */
+const SALINAN = 4;
 
 const NAME: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
@@ -63,6 +67,8 @@ const QUOTE: React.CSSProperties = {
 export default function Testimonials({ items }: { items: readonly TestimonialItem[] }) {
   const [active, setActive] = useState<number | null>(null);
   const [charCount, setCharCount] = useState(0);
+  // Kartu mini-profil penulis (terbuka di atas dialog komentar).
+  const [mini, setMini] = useState(false);
 
   const reducedMotion = useReducedMotion();
 
@@ -93,12 +99,16 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
   function open(index: number) {
     setActive(index);
     setCharCount(0);
+    setMini(false);
   }
 
   // ── Pita kartu: bisa digeser (seret dengan mouse, usap di layar sentuh) dan
   //    tetap berjalan pelan sendiri; berhenti saat kursor di atasnya, saat
-  //    diseret, atau saat dialog terbuka. Isinya digandakan dan posisinya
-  //    "dibungkus" di separuh lebar, jadi bisa digeser tanpa ujung.
+  //    diseret, atau saat dialog terbuka. Isinya digandakan EMPAT kali
+  //    (SALINAN kali) dan posisinya dijaga di salinan kedua-ketiga: begitu
+  //    melewati satu salinan, posisi dibungkus mundur/maju selebar satu salinan.
+  //    Dulu hanya dua salinan dan posisi awal 0, sehingga menyeret ke KANAN
+  //    langsung membentur scrollLeft = 0 sebelum sempat dibungkus.
   const berjalan = items.length >= MARQUEE_MIN;
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
@@ -113,12 +123,18 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
     const el = scrollerRef.current;
     if (!el || !berjalan) return;
 
+    // Lebar satu salinan; dijaga posisi di [satu, dua] salinan.
+    const lebarSalinan = () => el.scrollWidth / SALINAN;
+
     const bungkus = () => {
-      const half = el.scrollWidth / 2;
-      if (half <= 0) return;
-      if (el.scrollLeft >= half) el.scrollLeft -= half;
-      else if (el.scrollLeft <= 0.5) el.scrollLeft += half;
+      const w = lebarSalinan();
+      if (w <= 0) return;
+      if (el.scrollLeft >= 2 * w) el.scrollLeft -= w;
+      else if (el.scrollLeft < w) el.scrollLeft += w;
     };
+
+    // Mulai di salinan kedua: ada ruang penuh ke kiri maupun ke kanan.
+    el.scrollLeft = lebarSalinan();
 
     let raf = 0;
     let last = performance.now();
@@ -165,7 +181,23 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
       el.setPointerCapture(e.pointerId);
       el.style.cursor = "grabbing";
     }
-    if (d.captured) el.scrollLeft = d.startLeft - dx;
+    if (d.captured) {
+      // Posisi dibungkus SAAT diseret juga, dan titik awal seretan ikut
+      // digeser selebar satu salinan, supaya seretan tak pernah membentur ujung.
+      const w = el.scrollWidth / SALINAN;
+      let v = d.startLeft - dx;
+      if (w > 0) {
+        while (v >= 2 * w) {
+          v -= w;
+          d.startLeft -= w;
+        }
+        while (v < w) {
+          v += w;
+          d.startLeft += w;
+        }
+      }
+      el.scrollLeft = v;
+    }
   }
 
   function endDrag(e: React.PointerEvent<HTMLDivElement>) {
@@ -189,7 +221,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
   // Belum ada ulasan sama sekali — bagian ini tidak usah ada.
   if (items.length === 0) return null;
 
-  const kartu = berjalan ? [...items, ...items] : items;
+  const kartu = berjalan ? Array.from({ length: SALINAN }, () => items).flat() : items;
 
   return (
     <section id="testimonials" className="py-28 bg-ivory overflow-hidden">
@@ -268,6 +300,20 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
                   <span className="mt-3 line-clamp-4 block text-sm text-ink-body" style={QUOTE}>
                     &ldquo;{t.content}&rdquo;
                   </span>
+
+                  {/* Balasan admin: kutipan kecil bergaris biru di dasar kartu */}
+                  {t.reply && (
+                    <span className="mt-auto block pt-5 text-left">
+                      <span className="block bg-white/[0.04] px-4 py-3 shadow-[inset_3px_0_0_var(--color-blue-500)]">
+                        <span className="block text-[10px] font-semibold uppercase tracking-[0.26em] text-blue-300">
+                          Balasan {t.reply.by}
+                        </span>
+                        <span className="mt-1.5 line-clamp-2 block text-[12.5px] leading-[1.6] text-ink-muted">
+                          {t.reply.body}
+                        </span>
+                      </span>
+                    </span>
+                  )}
                 </span>
               </button>
             );
@@ -297,20 +343,30 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
               )}
               {current.banner && <span aria-hidden="true" className="absolute inset-0 bg-black/45" />}
 
-              <ProfileLink uid={current.uid} name={current.name} secondary className="relative">
+              {/* Foto & nama membuka kartu mini-profil, bukan berpindah halaman */}
+              <button
+                type="button"
+                onClick={() => setMini(true)}
+                aria-label={`Lihat profil ${current.name}`}
+                className="relative rounded-full transition-transform duration-300 ease-warm hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+              >
                 <UserAvatar
                   name={current.name}
                   photoURL={current.avatar}
                   size="lg"
                   className="h-[68px] w-[68px] text-lg ring-2 ring-white/25"
                 />
-              </ProfileLink>
+              </button>
               <div className="relative mt-3 max-w-[85%] text-center">
-                <ProfileLink uid={current.uid} name={current.name}>
-                  <p id="ulasan-nama" className="truncate text-lg text-white" style={NAME}>
+                <button
+                  type="button"
+                  onClick={() => setMini(true)}
+                  className="block max-w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                >
+                  <p id="ulasan-nama" className="truncate text-lg text-white underline-offset-4 hover:underline" style={NAME}>
                     {current.name}
                   </p>
-                </ProfileLink>
+                </button>
                 <Stars value={current.rating} size="sm" className="mx-auto mt-1.5" />
               </div>
             </div>
@@ -344,9 +400,27 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
               )}
               {selesaiMengetik && "”"}
             </p>
+
+            {current.reply && selesaiMengetik && (
+              <div className="mini-masuk mt-6 bg-white/[0.04] px-5 py-4 text-left shadow-[inset_3px_0_0_var(--color-blue-500)]">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan {current.reply.by}</p>
+                <p className="mt-2 whitespace-pre-line break-words text-sm leading-[1.7] text-ink-body">{current.reply.body}</p>
+              </div>
+            )}
             </div>
           </div>
         </div>
+      )}
+
+      {current && mini && (
+        <MiniProfile
+          key={current.uid}
+          uid={current.uid}
+          name={current.name}
+          avatar={current.avatar}
+          banner={current.banner}
+          onClose={() => setMini(false)}
+        />
       )}
     </section>
   );

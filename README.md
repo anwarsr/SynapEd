@@ -113,7 +113,15 @@ penyusun kursus tidak pernah berkurang.
   tautan tersebut (sampai 30 hari kemudian) otomatis memakai kodenya.
 - Kode milik sendiri tidak bisa dipakai untuk pembelian sendiri.
 
-### Dashboard pendapatan (`/dashboard`)
+### Dashboard (`/dashboard`)
+
+- **Semua akun:** kursus dan kelas yang diikuti beserta kemajuannya.
+- **Educator & admin:** tambahan *Kursus yang Dibuat* dan *Kelas yang Dibuat*
+  (peserta, ulasan, tombol kelola/buat baru).
+- Pendapatan ada di halaman tersendiri, `/dashboard/pendapatan`
+  (tombol "Pendapatan" di dashboard).
+
+### Pendapatan (`/dashboard/pendapatan`)
 
 - **Semua akun:** total pendapatan (royalti + referral), riwayat per
   penjualan, kode referral, dan daftar kursus tempat ia berkontribusi
@@ -200,16 +208,25 @@ dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
 
 Ruang belajar kelompok milik educator, terpisah dari kursus.
 
-- Educator membuat kelas dan membagikan **kode undangan**.
+- Educator (dan admin) membuat kelas, memberinya **foto profil** (tampil di kotak
+  identitas kelas), dan membagikan **kode undangan**.
 - Anggota bergabung dengan kode itu di `/kelas`.
 - Di dalam kelas ada pengumuman/postingan dan balasan.
+- Foto pengajar, peserta, dan penulis di ruang kelas bisa dipencet untuk melihat
+  mini-profil orangnya.
 
 ### Profil & akun
 
 - **Profil** (`/profil`): foto, perkenalan, riwayat pendidikan, keahlian,
   statistik belajar/mengajar, sertifikat.
 - **Profil publik** (`/profil/[uid]`): versi yang dilihat orang lain, tanpa
-  email, nomor HP, atau kursus yang sedang diikuti.
+  email dan nomor HP. Menampilkan kursus yang diikuti (beserta kemajuannya)
+  dan, untuk educator, kursus yang dibuat. Kursus yang diikuti hanya tampil
+  untuk educator dan pengguna yang pernah menulis komentar publik; tidak
+  pernah untuk admin.
+- **Mini-profil di komentar**: memencet foto/nama penulis komentar di beranda
+  membuka kartu berisi banner, kursus yang diikuti (+ kemajuan), dan kursus
+  yang dibuat bila educator. Akun admin menampilkan tulisan "FORBIDDEN".
 - **Pengaturan** (`/pengaturan`):
   - **Username** unik ala Instagram. Dibuat otomatis dari email saat pertama
     masuk dan bisa diganti sekali setiap 14 hari.
@@ -226,6 +243,9 @@ yang sedang dikerjakan.
 
 ### Panel admin (`/admin`)
 
+Admin juga bisa membuat kursus dan kelas seperti educator (menu "Kursus Saya" dan
+"Kelas Saya" di navbar), ditambah fitur admin di bawah.
+
 | Menu | Isi |
 |---|---|
 | Notifikasi | Pengajuan menjadi educator |
@@ -233,8 +253,8 @@ yang sedang dikerjakan.
 | Pembayaran | Saklar metode bayar, gambar QRIS, **potongan platform & persentase referral**, bukti bayar yang menunggu, penjualan yang perlu ditindaklanjuti |
 | Kategori | Kategori kursus |
 | Kelas | Seluruh kelas |
-| Ulasan | Moderasi ulasan |
-| Akun | Seluruh akun dan rolenya |
+| Ulasan | Moderasi ulasan dan **balasan admin** (tampil di kartu komentar beranda dan halaman kursus) |
+| Akun | Seluruh akun dan rolenya, dengan **pencarian** (nama, email, nomor HP) dan saringan peran |
 
 ---
 

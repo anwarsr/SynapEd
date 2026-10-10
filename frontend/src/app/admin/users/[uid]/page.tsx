@@ -61,7 +61,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
           <span className="text-ink">{user.name}</span>
         </nav>
 
-        <div className="bg-paper-card border border-rule rounded-2xl p-8">
+        <div className="bg-paper-card p-8">
           <div className="flex items-center gap-5 pb-7 mb-2 border-b border-rule">
             <UserAvatar name={user.name} photoURL={user.photoURL} size="lg" />
             <div className="min-w-0">
@@ -120,7 +120,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
             <Row label="Terakhir masuk">{formatDate(user.lastSignInAt)}</Row>
 
             <Row label="User ID">
-              <code className="text-xs bg-paper-alt px-2 py-1 rounded-md">{user.uid}</code>
+              <code className="text-xs bg-paper-alt px-2 py-1 ">{user.uid}</code>
             </Row>
           </dl>
         </div>

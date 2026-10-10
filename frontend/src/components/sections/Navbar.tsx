@@ -145,16 +145,9 @@ export default function Navbar() {
               {user.role === "admin" && (
                 <Link
                   href="/admin"
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-warn-text transition-colors duration-200 ease-out-soft hover:bg-white/10 hover:text-white"
+                  className="inline-flex items-center rounded-full px-3.5 py-2 text-sm font-bold transition-colors duration-200 ease-out-soft hover:bg-white/10"
                 >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3l7 3v6c0 4-3 7.5-7 9-4-1.5-7-5-7-9V6l7-3z"
-                    />
-                  </svg>
-                  Admin
+                  <span className="admin-kilau">Admin</span>
                 </Link>
               )}
 
@@ -174,7 +167,7 @@ export default function Navbar() {
                   benar-benar terpotong. Yang disembunyikan tetap terjangkau -
                   panel educator punya kedua tab, dan menu lipat di bawah md
                   memuat keduanya. */}
-              {user.role === "educator" &&
+              {(user.role === "educator" || user.role === "admin") &&
                 [
                   { href: "/educator/courses", label: "Kursus Saya", sempit: true },
                   { href: "/educator/classes", label: "Kelas Saya", sempit: false },
@@ -283,9 +276,9 @@ export default function Navbar() {
                     <Link
                       href="/admin"
                       onClick={() => setMobileOpen(false)}
-                      className="rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-medium text-warn-text transition-colors hover:bg-white/15"
+                      className="rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-bold transition-colors hover:bg-white/15"
                     >
-                      Panel Admin
+                      <span className="admin-kilau">Panel Admin</span>
                     </Link>
                   )}
 
@@ -299,7 +292,7 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {user.role === "educator" &&
+                  {(user.role === "educator" || user.role === "admin") &&
                     [
                       { href: "/educator/courses", label: "Kursus Saya" },
                       { href: "/educator/classes", label: "Kelas Saya" },
