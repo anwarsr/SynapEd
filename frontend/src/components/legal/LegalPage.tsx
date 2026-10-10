@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import { COMPANY, LEGAL_EFFECTIVE_DATE } from "@/lib/company";
@@ -37,13 +38,7 @@ export function LegalPage({
 
       <main className="bg-paper min-h-screen pt-32 pb-24">
         <div className="container-reading">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-8">
-            <Link href="/" className="hover:text-blue-700 transition-colors">
-              Beranda
-            </Link>
-            <span aria-hidden="true">/</span>
-            <span className="text-ink">{title}</span>
-          </nav>
+          <Breadcrumb items={[{ label: "Beranda", href: "/" }, { label: title }]} className="mb-8" />
 
           <h1 className="t-display mb-6">{title}</h1>
 

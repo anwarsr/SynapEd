@@ -1,4 +1,4 @@
-import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import ProfileEditForm from "@/components/profile/ProfileEditForm";
@@ -34,12 +34,7 @@ export default async function EditProfilePage() {
             <h1 className="t-h2">
               Edit <span className="mark">profil</span>
             </h1>
-            <Link
-              href="/profil"
-              className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-white/15"
-            >
-              Kembali
-            </Link>
+            <BackLink href="/profil">Kembali ke profil</BackLink>
           </div>
           <p className="t-body text-ink-muted mb-10">
             Yang Anda isi di sini akan terlihat orang lain saat profil dibuka untuk umum.

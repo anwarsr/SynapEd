@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Tag from "@/components/ui/Tag";
@@ -52,9 +53,7 @@ export default async function EarningsDashboardPage() {
 
       <main className="bg-paper min-h-screen pt-36 pb-24">
         <div className="container-page">
-          <Link href="/dashboard" className="mb-8 inline-block text-sm text-white/60 transition-colors hover:text-white">
-            Kembali ke dashboard
-          </Link>
+          <BackLink href="/dashboard" className="mb-8">Kembali ke dashboard</BackLink>
           <h1 className="mb-4 text-[clamp(2.2rem,5vw,3.75rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-white">
             Pendapatan
           </h1>

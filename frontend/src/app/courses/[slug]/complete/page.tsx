@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
@@ -55,11 +55,7 @@ export default async function CourseCompletePage({ params }: Props) {
             </Button>
           </div>
 
-          <p className="mt-10 text-sm text-ink-muted">
-            <Link href="/dashboard" className="text-blue-700 hover:underline underline-offset-4">
-              Kembali ke Dashboard
-            </Link>
-          </p>
+          <BackLink href="/dashboard" className="mt-10">Kembali ke dashboard</BackLink>
         </div>
       </main>
 

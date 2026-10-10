@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
 import CourseChangePanel from "@/components/educator/CourseChangePanel";
@@ -56,13 +56,7 @@ export default async function EditCoursePage({ params }: Props) {
   return (
     <EducatorShell user={user}>
       <div className="container-reading space-y-10">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted">
-          <Link href="/educator/courses" className="hover:text-blue-700 transition-colors">
-            Kursus Saya
-          </Link>
-          <span aria-hidden="true">/</span>
-          <span className="text-ink">Sunting</span>
-        </nav>
+        <Breadcrumb items={[{ label: "Kursus Saya", href: "/educator/courses" }, { label: "Sunting" }]} className="mb-8" />
 
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="t-h2">

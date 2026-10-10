@@ -254,7 +254,7 @@ Admin juga bisa membuat kursus dan kelas seperti educator (menu "Kursus Saya" da
 | Kategori | Kategori kursus |
 | Kelas | Seluruh kelas |
 | Ulasan | Moderasi ulasan dan **balasan admin** (tampil di kartu komentar beranda dan halaman kursus) |
-| Akun | Seluruh akun dan rolenya, dengan **pencarian** (nama, email, nomor HP) dan saringan peran |
+| Akun | Seluruh akun dan rolenya, dengan **pencarian** dan saringan peran; admin dapat **membuat akun**, **mengubah role**, dan **mengganti kata sandi** (sandi lama tidak bisa dilihat, hanya diganti) |
 
 ---
 

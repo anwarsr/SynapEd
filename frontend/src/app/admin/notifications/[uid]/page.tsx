@@ -1,4 +1,6 @@
 import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
 import DecisionButtons from "@/components/admin/DecisionButtons";
@@ -59,13 +61,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
   return (
     <AdminShell user={admin} badges={badges}>
       <div className="container-reading">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
-          <Link href="/admin/notifications" className="hover:text-blue-700 transition-colors">
-            Pengajuan Edukator
-          </Link>
-          <span aria-hidden="true">/</span>
-          <span className="text-ink">{application.name}</span>
-        </nav>
+        <Breadcrumb items={[{ label: "Pengajuan Edukator", href: "/admin/notifications" }, { label: application.name }]} />
 
         <div className="bg-paper-card p-8">
           <div className="flex items-center gap-5 pb-7 mb-2 border-b border-rule">
@@ -138,15 +134,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
           </p>
         )}
 
-        <Link
-          href="/admin/notifications"
-          className="inline-flex items-center gap-2 mt-8 text-sm text-blue-700 hover:underline underline-offset-4"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Kembali ke Pengajuan Edukator
-        </Link>
+        <BackLink href="/admin/notifications" className="mt-12">Kembali ke pengajuan edukator</BackLink>
       </div>
     </AdminShell>
   );

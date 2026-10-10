@@ -1,4 +1,6 @@
 import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
 import CourseRequestDecision from "@/components/admin/CourseRequestDecision";
@@ -94,13 +96,7 @@ export default async function CourseRequestDetailPage({ params }: Props) {
   return (
     <AdminShell user={admin} badges={badges}>
       <div className="container-reading">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
-          <Link href="/admin/course-requests" className="hover:text-blue-700 transition-colors">
-            Pengajuan Kursus
-          </Link>
-          <span aria-hidden="true">/</span>
-          <span className="text-ink truncate">{request.courseTitle}</span>
-        </nav>
+        <Breadcrumb items={[{ label: "Pengajuan Kursus", href: "/admin/course-requests" }, { label: request.courseTitle }]} />
 
         <div className="bg-paper-card p-8 mb-8">
           <div className="flex flex-wrap items-center gap-3 pb-6 mb-2 border-b border-rule">
@@ -219,15 +215,7 @@ export default async function CourseRequestDetailPage({ params }: Props) {
           </p>
         )}
 
-        <Link
-          href="/admin/course-requests"
-          className="inline-flex items-center gap-2 mt-8 text-sm text-blue-700 hover:underline underline-offset-4"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Kembali ke daftar pengajuan
-        </Link>
+        <BackLink href="/admin/course-requests" className="mt-12">Kembali ke daftar pengajuan</BackLink>
       </div>
     </AdminShell>
   );

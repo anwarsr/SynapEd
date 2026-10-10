@@ -1106,6 +1106,16 @@ html[data-theme="light"] .theme-day { --color-paper-card: #E9EFF8; }
     .chat-masuk, .chat-titik i { animation: none; }
 }
 
+/* ══ Daftar pilihan <select> ═══════════════════════════════
+   Peramban menggambar <option> dengan latar bawaan (putih) tetapi mewarisi teks
+   putih dari kolomnya, sehingga pilihan tak terbaca di tema gelap. Latar & teks
+   dipatok ke token (ikut berbalik di tema terang). */
+select option,
+select optgroup {
+    background-color: var(--color-paper-card);
+    color: var(--color-ink);
+}
+
 /* ══ Robot asisten (ChatRobot) ═════════════════════════════
    Mata berkedip tiap ±4 dtk; gelembung & menu muncul dengan "pop" kecil. */
 @keyframes robot-blink {
