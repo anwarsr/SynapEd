@@ -1,6 +1,7 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
 import { getBannerURLs } from "@/lib/banner";
+import { getUserCards } from "@/lib/userCards";
 
 export const REVIEWS = "reviews";
 
@@ -89,16 +90,33 @@ export async function getReview(uid: string, courseSlug: string): Promise<Review
 
 const terbaruDiAtas = (a: Review, b: Review) => b.createdAt.localeCompare(a.createdAt);
 
+/**
+ * Nama & foto penulis yang SEKARANG, bukan salinan saat ulasan ditulis.
+ *
+ * Salinan di dokumen ulasan membuat komentar lama tetap menampilkan nama lama
+ * setelah pemiliknya mengganti nama akun. Di sini keduanya dibaca dari Auth
+ * (SATU getUsers untuk seluruh daftar). Akun yang sudah dihapus tak punya kartu,
+ * jadi jatuh ke salinan tersimpan - komentarnya tetap utuh.
+ */
+async function withLiveAuthors(rows: Review[]): Promise<Review[]> {
+  if (rows.length === 0) return rows;
+  const kartu = await getUserCards(rows.map((r) => r.uid)).catch(() => new Map());
+  return rows.map((r) => {
+    const k = kartu.get(r.uid);
+    return k ? { ...r, name: k.name || r.name, photoURL: k.photoURL } : r;
+  });
+}
+
 /** Ulasan sebuah kursus, terbaru di atas. Dipakai halaman detail kursus. */
 export async function listCourseReviews(courseSlug: string): Promise<Review[]> {
   const snap = await adminDb().collection(REVIEWS).where("courseSlug", "==", courseSlug).get();
-  return snap.docs.map((d) => toReview(d.id, d.data())).sort(terbaruDiAtas);
+  return withLiveAuthors(snap.docs.map((d) => toReview(d.id, d.data())).sort(terbaruDiAtas));
 }
 
 /** Seluruh ulasan, terbaru di atas. Dipakai panel admin. */
 export async function listAllReviews(): Promise<Review[]> {
   const snap = await adminDb().collection(REVIEWS).get();
-  return snap.docs.map((d) => toReview(d.id, d.data())).sort(terbaruDiAtas);
+  return withLiveAuthors(snap.docs.map((d) => toReview(d.id, d.data())).sort(terbaruDiAtas));
 }
 
 /** Batas bawah bintang yang boleh tampil di beranda. */
@@ -124,6 +142,9 @@ export async function listFeaturedReviews(max = 12): Promise<Review[]> {
     .sort(terbaruDiAtas)
     .slice(0, max);
 
-  const banner = await getBannerURLs(terpilih.map((r) => r.uid)).catch(() => ({}) as Record<string, string | null>);
-  return terpilih.map((r) => ({ ...r, bannerURL: banner[r.uid] ?? null }));
+  const [hidup, banner] = await Promise.all([
+    withLiveAuthors(terpilih),
+    getBannerURLs(terpilih.map((r) => r.uid)).catch(() => ({}) as Record<string, string | null>),
+  ]);
+  return hidup.map((r) => ({ ...r, bannerURL: banner[r.uid] ?? null }));
 }

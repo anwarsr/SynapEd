@@ -228,6 +228,10 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   tambalan `removeChild`/`insertBefore` saat Inggris aktif. Bilah bawaan widget disembunyikan di globals.css.
   Label bahasa memakai `translate="no"`. Terjemahan mesin: jangan harap menggantikan teks Inggris tulisan tangan.
 - **Peran** di profil = teks polos berwarna (bukan `Tag`).
+- **Komentar**: nama & foto penulis dibaca HIDUP dari Auth (`withLiveAuthors` di reviews.ts, satu `getUsers`),
+  bukan salinan di dokumen ulasan - ganti nama akun langsung tampil di komentar lama; akun terhapus → salinan.
+- **Learning Path** (ilustrasi per langkah) dan **Features** (siluet di belakang kartu) pernah dicoba lalu
+  DIHAPUS atas permintaan pemilik - jangan dikembalikan tanpa diminta.
 - **Tanda pisah**: teks tampilan memakai tanda hubung "-", BUKAN em dash "—" (permintaan pemilik; sudah
   diganti di seluruh string/JSX, komentar kode tak disentuh). Jangan menulis "—" di teks yang tampil.
   Tombol/halaman pendapatan bernama "Pendapatan"; kartu "Cari kursus baru"/"Cari kelas" ada di /dashboard.
