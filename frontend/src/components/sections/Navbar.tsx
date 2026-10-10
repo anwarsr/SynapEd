@@ -145,9 +145,10 @@ export default function Navbar() {
               {user.role === "admin" && (
                 <Link
                   href="/admin"
-                  className="inline-flex items-center rounded-full px-3.5 py-2 text-sm font-bold transition-colors duration-200 ease-out-soft hover:bg-white/10"
+                  className="group inline-flex items-center rounded-full px-3.5 py-2 text-sm font-bold"
                 >
-                  <span className="admin-kilau">Admin</span>
+                  {/* Hover: hanya tulisannya yang membesar; latar tombol tidak berubah */}
+                  <span className="admin-kilau inline-block origin-center transition-transform duration-300 ease-warm group-hover:scale-[1.18]">Admin</span>
                 </Link>
               )}
 
@@ -276,9 +277,9 @@ export default function Navbar() {
                     <Link
                       href="/admin"
                       onClick={() => setMobileOpen(false)}
-                      className="rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-bold transition-colors hover:bg-white/15"
+                      className="group rounded-xl bg-white/10 px-6 py-3 text-center text-sm font-bold"
                     >
-                      <span className="admin-kilau">Panel Admin</span>
+                      <span className="admin-kilau inline-block origin-center transition-transform duration-300 ease-warm group-hover:scale-[1.12]">Panel Admin</span>
                     </Link>
                   )}
 
