@@ -644,25 +644,57 @@ section[id] {
     }
 }
 
-/* ══ Panel Masuk/Daftar — kartu terbelah (md:+): panel "merek" (navy) dan
-   sisi formulir bertukar tempat dengan meluncur (transform di AuthForm.tsx;
-   Daftar = panel kiri, Masuk = panel kanan). Isinya juga bergeser + memudar
-   lewat .auth-fade; arah dari --auth-fade-from (dari kanan saat menuju
-   Daftar, dari kiri saat menuju Masuk), dipakai di kartu ponsel juga. */
+/* ══ Panel Masuk/Daftar — kartu terbelah (md:+): panel "merek" (navy, POLOS -
+   tanpa gradasi) dan sisi formulir bertukar tempat dengan meluncur (transform
+   di AuthForm.tsx). Isi TIDAK dilepas-pasang: .auth-isi hanya memudar keluar,
+   teksnya ditukar saat transparan, lalu memudar masuk (data-tampil). Arah
+   geser dari --auth-fade-from; dipakai juga di kartu ponsel. */
 .auth-brand-panel {
-    background:
-        radial-gradient(130% 120% at 14% 10%, color-mix(in srgb, var(--color-blue-300) 38%, transparent), transparent 60%),
-        radial-gradient(90% 90% at 100% 100%, color-mix(in srgb, var(--color-amber-500) 20%, transparent), transparent 55%),
-        var(--color-navy);
+    /* Sama dengan banner profil bawaan (gelap). Dipatok, bukan var(--color-banner):
+       di tema terang token itu biru muda sedangkan teks panel tetap putih. */
+    background: #0D2131;
 }
 
-@keyframes auth-fade-in {
-    from { opacity: 0; transform: translateX(var(--auth-fade-from, 18px)); }
-    to   { opacity: 1; transform: translateX(0); }
+/* Huruf panel: masuk dengan ayunan - mulai tertinggal di sisi berlawanan arah
+   geser panel (--grav-dx), melampaui titik tujuan lalu mendarat (kurva dengan
+   overshoot), berurutan per huruf. */
+.grav-h {
+    display: inline-block;
+    animation: grav-masuk 1250ms cubic-bezier(0.22, 1.25, 0.36, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 16ms + 180ms);
+}
+@keyframes grav-masuk {
+    from { opacity: 0; transform: translate(var(--grav-dx, 0px), -8px) rotate(calc(var(--grav-dx, 0px) * 0.12)); }
+    35%  { opacity: 1; }
+    to   { opacity: 1; transform: none; }
+}
+/* Setelah fisika menyala, gerak sepenuhnya dipegang JS (transform inline). */
+.grav-h[data-fisika="true"] {
+    animation: none;
+    position: relative;
+    z-index: 5;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    will-change: transform;
+}
+.grav-h[data-fisika="true"]:active { cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) {
+    .grav-h { animation: none; }
 }
 
-.auth-fade {
-    animation: auth-fade-in 420ms var(--ease-warm);
+.auth-isi {
+    transition:
+        opacity 380ms var(--ease-warm),
+        transform 520ms var(--ease-warm);
+}
+.auth-isi[data-tampil="false"] {
+    opacity: 0;
+    transform: translateX(calc(var(--auth-fade-from, 14px) * -1));
+    transition-duration: 220ms, 220ms;
+}
+@media (prefers-reduced-motion: reduce) {
+    .auth-isi, .auth-isi[data-tampil="false"] { transition: none; transform: none; }
 }
 
 /* ══ Entrance hero (saat halaman dimuat) ════════════════════ */
@@ -856,24 +888,47 @@ html[data-theme="light"] .logo-on-light { display: block; }
     .about-note { animation: none; }
 }
 
-/* ══ Easter egg kartu Features — gelombang sisik ikan ═══════
-   Tiap sisik = lingkaran yang membesar dari nol dengan sedikit lentur;
-   jeda per sisik diisi inline (baris × 38ms + kolom × 16ms) sehingga
-   gelombang menyapu diagonal. Tepi bawah gelap tipis memberi kesan sisik
-   yang bertumpuk. backwards: sisik menunggu gilirannya dalam keadaan nol. */
-.egg-scale {
-    position: absolute;
-    border-radius: 50%;
-    box-shadow:
-        inset 0 -3px 0 rgb(0 0 0 / 0.22),
-        inset 0 1px 0 rgb(255 255 255 / 0.2);
-    /* Tanpa overshoot (cubic-bezier > 1) — membal itu yang membuat tiap sisik
-       terlihat "muncul tiba-tiba"; ease-out murni lebih mulus. */
-    animation: egg-scale 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+/* ══ Penjelasan lengkap fitur (DetailFitur di Features.tsx) ═════════
+   Lembar membuka seperti tirai dari garis tengahnya (clip-path), kata judul
+   naik dari balik topeng, garis menggambar dirinya, teks menyelinap dari kanan,
+   angka raksasa naik sambil sedikit berputar lalu mengikuti kursor lewat --px/--py
+   (lapisan terpisah dari animasi masuknya agar transform tak saling menimpa).
+   Penutupan: data-keluar membalik tirai & latar (420ms). */
+@keyframes fitur-latar { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fitur-latar-tutup { to { opacity: 0; } }
+@keyframes fitur-tirai {
+    from { clip-path: inset(50% 0 50% 0); }
+    to   { clip-path: inset(0 0 0 0); }
 }
-@keyframes egg-scale {
-    from { transform: scale(0.2); opacity: 0; }
-    to   { transform: scale(1); opacity: 1; }
+@keyframes fitur-tirai-tutup {
+    from { clip-path: inset(0 0 0 0); }
+    to   { clip-path: inset(50% 0 50% 0); }
+}
+@keyframes fitur-naik { from { transform: translateY(108%); } to { transform: translateY(0); } }
+@keyframes fitur-garis { from { transform: scale(0, 1); } to { transform: scale(1, 1); } }
+@keyframes fitur-garis-tegak { from { transform: scale(1, 0); } to { transform: scale(1, 1); } }
+@keyframes fitur-geser { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fitur-angka-masuk {
+    from { opacity: 0; transform: translateY(18%) rotate(5deg); }
+    to   { opacity: 1; transform: translateY(0) rotate(0deg); }
+}
+
+.fitur-latar { animation: fitur-latar 320ms ease both; }
+.fitur-latar[data-keluar="true"] { animation: fitur-latar-tutup 420ms ease 60ms both; }
+.fitur-lembar { animation: fitur-tirai 760ms cubic-bezier(0.76, 0, 0.18, 1) both; }
+.fitur-lembar[data-keluar="true"] { animation: fitur-tirai-tutup 420ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+.fitur-naik { animation: fitur-naik 900ms cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: var(--d, 0ms); }
+.fitur-garis-x { transform-origin: left center; animation: fitur-garis 1000ms cubic-bezier(0.65, 0, 0.35, 1) both; animation-delay: var(--d, 0ms); }
+.fitur-garis-y { transform-origin: center top; animation: fitur-garis-tegak 1000ms cubic-bezier(0.65, 0, 0.35, 1) both; animation-delay: var(--d, 0ms); }
+.fitur-geser { animation: fitur-geser 800ms cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: var(--d, 0ms); }
+.fitur-angka-besar { animation: fitur-angka-masuk 1300ms cubic-bezier(0.16, 1, 0.3, 1) 450ms both; }
+.fitur-sejajar {
+    transform: translate(calc(var(--px, 0) * -16px), calc(var(--py, 0) * -10px));
+    transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+    .fitur-latar, .fitur-lembar, .fitur-naik, .fitur-garis-x, .fitur-garis-y, .fitur-geser, .fitur-angka-besar { animation: none; }
+    .fitur-sejajar { transition: none; }
 }
 
 /* ══ Robot asisten (ChatRobot) ═════════════════════════════
@@ -920,7 +975,7 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
     66%  { opacity: 1; color: var(--color-white); }
     100% { opacity: 1; color: var(--color-blue-300); }
 }
-.cover-kedip { animation: cover-kedip 1.5s linear 700ms both; }
+.cover-kedip { animation: cover-kedip 1.5s linear 900ms both; }
 @media (prefers-reduced-motion: reduce) {
     .cover-kedip { animation: none; color: var(--color-blue-300); }
 }

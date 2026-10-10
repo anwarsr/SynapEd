@@ -10,6 +10,7 @@ import FAQ from "@/components/sections/FAQ";
 import Footer from "@/components/sections/Footer";
 import { listCourseCategories, listCourses } from "@/lib/courses";
 import { listFeaturedReviews } from "@/lib/reviews";
+import { buildHeroPrompts } from "@/lib/heroPrompts";
 import { courseImageUrl } from "@/lib/videoEmbed";
 import type { TestimonialItem } from "@/components/sections/Testimonials";
 
@@ -46,7 +47,7 @@ export default async function Home() {
         <Navbar />
         <SectionDots />
         <main>
-          <Hero />
+          <Hero prompts={buildHeroPrompts(courses, categories)} />
           <About />
           <Courses courses={courses} categories={categories} />
           <Features />

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -20,13 +20,15 @@ import {
   signInWithGoogle,
 } from "@/lib/authActions";
 import GoogleButton from "@/components/auth/GoogleButton";
+import { mulaiFisika } from "@/components/auth/hurufFisika";
 import { cn } from "@/lib/cn";
 
 type Mode = "login" | "register";
 
-// Lamanya crossfade saat berpindah Masuk <-> Daftar — dipakai juga untuk
-// menunda sinkronisasi URL (lihat switchMode).
-const FADE_MS = 420;
+// Isi memudar keluar (OUT_MS), teks ditukar saat tak terlihat, lalu memudar
+// masuk. Panel meluncur serentak (700ms) jadi isi baru tiba tepat saat panel
+// hampir mendarat. URL baru disinkronkan sesudahnya (lihat switchMode).
+const OUT_MS = 240;
 
 const copy = {
   login: {
@@ -49,6 +51,56 @@ function other(mode: Mode): Mode {
   return mode === "login" ? "register" : "login";
 }
 
+/**
+ * Bagian formulir yang hanya ada di satu mode. Dirender SELALU dan dilipat
+ * lewat grid-rows 0fr↔1fr: tingginya mengalir halus, bukan lenyap seketika
+ * seperti saat dilepas dari pohon. `inert` mencegah fokus/pembaca layar
+ * masuk ke bagian yang sedang terlipat.
+ */
+function Lipat({ buka, children }: { buka: boolean; children: ReactNode }) {
+  return (
+    <div
+      className={cn(
+        "grid transition-[grid-template-rows,opacity] duration-500 ease-warm motion-reduce:transition-none",
+        buka ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+      )}
+      aria-hidden={!buka}
+    >
+      <div className="min-h-0 overflow-hidden" inert={!buka}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Teks yang dipecah per huruf: masuk dengan ayunan (tertinggal lalu melampaui
+ * sebelum mendarat). Setelah `fisika` menyala, tiap huruf jadi benda yang
+ * jatuh, bergelinding, dan bisa dilempar (lihat hurufFisika.ts). Kata dibungkus
+ * nowrap agar baris tidak patah di tengah kata. Pembaca layar membaca teks utuh
+ * dari aria-label, bukan huruf-hurufnya.
+ */
+function Huruf({ teks, fisika, mulai = 0 }: { teks: string; fisika: boolean; mulai?: number }) {
+  let i = mulai;
+  return (
+    <span aria-label={teks}>
+      {teks.split(" ").map((kata, k, semua) => (
+        <span key={k} aria-hidden="true" className="inline-block whitespace-nowrap">
+          {[...kata].map((h) => {
+            const n = i++;
+            return (
+              <span key={n} className="grav-h" data-fisika={fisika} style={{ "--i": n } as CSSProperties}>
+                {h}
+              </span>
+            );
+          })}
+          {k < semua.length - 1 ? "\u00A0" : ""}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default function AuthForm({
   mode: initialMode,
   redirectTo = "/",
@@ -59,24 +111,29 @@ export default function AuthForm({
 }) {
   const router = useRouter();
 
-  // Mode tampilan dikendalikan state lokal (bukan langsung props) supaya
-  // berpindah Masuk <-> Daftar bisa dianimasikan tanpa menunggu navigasi
-  // Next selesai. `initialMode` tetap sumber kebenaran saat halaman dibuka
-  // langsung atau pengguna menekan tombol kembali/maju — disinkronkan saat
-  // render (pola resmi React untuk "adjusting state when a prop changes"),
-  // bukan lewat efek, supaya tidak memicu render susulan.
+  // `mode` = tujuan (menggerakkan panel); `shown` = mode yang isinya sedang
+  // TERLIHAT (tertinggal OUT_MS di belakang `mode` supaya pertukaran teks
+  // terjadi saat isi transparan). `initialMode` tetap sumber kebenaran saat
+  // halaman dibuka langsung atau tombol kembali/maju ditekan - disinkronkan
+  // saat render (pola resmi React untuk "adjusting state when a prop changes").
   const [mode, setMode] = useState<Mode>(initialMode);
+  const [shown, setShown] = useState<Mode>(initialMode);
+  const [tampil, setTampil] = useState(true);
   const [syncedInitialMode, setSyncedInitialMode] = useState(initialMode);
   if (initialMode !== syncedInitialMode) {
     setSyncedInitialMode(initialMode);
     setMode(initialMode);
+    setShown(initialMode);
+    setTampil(true);
   }
 
-  const t = copy[mode];
+  const t = copy[shown];
 
-  // Arah animasi .auth-fade: masuk dari kanan saat menuju Daftar, dari
-  // kiri saat menuju Masuk — untuk isi yang memudar di atas panel yang meluncur.
-  const fadeFromStyle = { "--auth-fade-from": mode === "register" ? "18px" : "-18px" } as React.CSSProperties;
+  // Arah isi: masuk dari kanan saat menuju Daftar, dari kiri saat menuju Masuk.
+  // Teks panel tertinggal sedikit di arah berlawanan dengan geser panel, lalu
+  // mengayun mendarat (lihat .grav-h).
+  const ayunStyle = { "--grav-dx": mode === "login" ? "-70px" : "70px" } as CSSProperties;
+  const isiStyle = { "--auth-fade-from": mode === "register" ? "14px" : "-14px" } as React.CSSProperties;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -85,6 +142,48 @@ export default function AuthForm({
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
+
+  // Tombol panel "digesek" 3 kali (kiri-kanan-kiri) → seluruh huruf panel jatuh
+  // ke dasar kotaknya dan jadi benda fisika sampai halaman dimuat ulang. `beku`
+  // menyimpan mode saat itu: teks panel dibekukan agar huruf-hurufnya (elemen
+  // yang sama) tidak diganti saat mode berpindah.
+  const [beku, setBeku] = useState<Mode | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const tombolRef = useRef<HTMLButtonElement>(null);
+  const ketukRef = useRef<() => void>(() => undefined);
+  const gesek = useRef({ x: 0, arah: 0, jarak: 0, hitung: 0, sudah: false, t0: 0 });
+
+  function onGesek(e: React.PointerEvent) {
+    if (beku || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const g = gesek.current;
+    const now = performance.now();
+    // Gesekan yang terlalu lambat (tak berurutan) dihitung dari awal lagi.
+    if (now - g.t0 > 3000) Object.assign(g, { hitung: 0, arah: 0, jarak: 0, sudah: false, t0: now });
+    const dx = e.clientX - g.x;
+    g.x = e.clientX;
+    if (Math.abs(dx) < 2) return;
+    const arah = Math.sign(dx);
+    if (arah !== g.arah) {
+      g.arah = arah;
+      g.jarak = 0;
+      g.sudah = false;
+    }
+    g.jarak += Math.abs(dx);
+    if (g.jarak >= 28 && !g.sudah) {
+      g.sudah = true;
+      g.hitung += 1;
+      if (g.hitung >= 3) setBeku(shown);
+    }
+  }
+
+  // Fisika hidup selama `beku` terisi; ketukan pada huruf tombol = menekan tombol.
+  useEffect(() => {
+    ketukRef.current = () => switchMode(other(mode));
+  });
+  useEffect(() => {
+    if (!beku || !panelRef.current) return;
+    return mulaiFisika(panelRef.current, tombolRef.current, () => ketukRef.current());
+  }, [beku]);
 
   const switchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(switchTimer.current), []);
@@ -98,12 +197,18 @@ export default function AuthForm({
   function switchMode(next: Mode) {
     if (next === mode) return;
     setMode(next);
+    setTampil(false);
     setError(null);
     setNotice(null);
     clearTimeout(switchTimer.current);
     switchTimer.current = setTimeout(() => {
+      setShown(next);
+      // Huruf yang berjatuhan ikut direset: wadah dipasang ulang (key berganti)
+      // dengan teks mode baru dan animasi masuk normal.
+      setBeku(null);
+      setTampil(true);
       window.history.replaceState(null, "", next === "login" ? "/login" : "/register");
-    }, FADE_MS);
+    }, OUT_MS);
   }
 
   /**
@@ -135,11 +240,11 @@ export default function AuthForm({
       const auth = firebaseAuth();
 
       const credential =
-        mode === "register"
+        shown === "register"
           ? await createUserWithEmailAndPassword(auth, email, password)
           : await signInWithEmailAndPassword(auth, email, password);
 
-      if (mode === "register") {
+      if (shown === "register") {
         if (name.trim()) await updateProfile(credential.user, { displayName: name.trim() });
 
         // Email yang belum diverifikasi adalah sebab kata sandi terlepas
@@ -194,27 +299,21 @@ export default function AuthForm({
     setNotice(`Kalau ${email.trim()} terdaftar, tautan atur ulang kata sandi sudah dikirim.`);
   }
 
-  /** Isi formulir untuk mode AKTIF saat ini. `scope` hanya dipakai sebagai
-   *  awalan id — kartu ponsel & kartu desktop sama-sama bisa ter-mount
-   *  sekaligus di DOM (disembunyikan lewat CSS per breakpoint, bukan
-   *  dilepas), jadi tanpa awalan id="email" akan dobel. */
+  /** Isi formulir. `scope` hanya dipakai sebagai awalan id — kartu ponsel &
+   *  kartu desktop sama-sama ter-mount di DOM (disembunyikan lewat CSS per
+   *  breakpoint), jadi tanpa awalan id="email" akan dobel. */
   function renderFields(scope: "mobile" | "desktop") {
+    const daftar = shown === "register";
     return (
       <>
         {error && (
-          <div
-            role="alert"
-            className="mb-4 rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700"
-          >
+          <div role="alert" className="mb-4 bg-rust-100 px-4 py-3 text-sm text-rust-700">
             {error}
           </div>
         )}
 
         {notice && (
-          <div
-            role="status"
-            className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700"
-          >
+          <div role="status" className="mb-4 bg-blue-50 px-4 py-3 text-sm text-blue-700">
             {notice}
           </div>
         )}
@@ -225,37 +324,41 @@ export default function AuthForm({
           onClick={onGoogle}
           pending={googlePending}
           disabled={pending}
-          label={mode === "register" ? "Daftar dengan Google" : "Masuk dengan Google"}
+          label={daftar ? "Daftar dengan Google" : "Masuk dengan Google"}
         />
 
         <div className="flex items-center gap-3 my-6" aria-hidden="true">
           <span className="flex-1 h-px bg-rule" />
-          <span className="text-xs uppercase tracking-wider text-ink-faint">atau</span>
+          <span className="text-[11px] uppercase tracking-[0.2em] text-ink-faint">atau</span>
           <span className="flex-1 h-px bg-rule" />
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
-          {mode === "register" && (
+        <form onSubmit={onSubmit} noValidate>
+          <Lipat buka={daftar}>
+            <div className="pb-4">
+              <Field
+                id={`${scope}-name`}
+                label="Nama lengkap"
+                type="text"
+                value={name}
+                onChange={setName}
+                autoComplete="name"
+                required={daftar}
+              />
+            </div>
+          </Lipat>
+
+          <div className="mb-4">
             <Field
-              id={`${scope}-name`}
-              label="Nama lengkap"
-              type="text"
-              value={name}
-              onChange={setName}
-              autoComplete="name"
+              id={`${scope}-email`}
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
               required
             />
-          )}
-
-          <Field
-            id={`${scope}-email`}
-            label="Email"
-            type="email"
-            value={email}
-            onChange={setEmail}
-            autoComplete="email"
-            required
-          />
+          </div>
 
           <Field
             id={`${scope}-password`}
@@ -263,13 +366,13 @@ export default function AuthForm({
             type="password"
             value={password}
             onChange={setPassword}
-            autoComplete={mode === "register" ? "new-password" : "current-password"}
-            hint={mode === "register" ? "Minimal 6 karakter." : undefined}
+            autoComplete={daftar ? "new-password" : "current-password"}
+            hint={daftar ? "Minimal 6 karakter." : undefined}
             required
           />
 
-          {mode === "login" && (
-            <p className="text-right -mt-1">
+          <Lipat buka={!daftar}>
+            <p className="pt-3 text-right">
               <button
                 type="button"
                 onClick={onForgotPassword}
@@ -278,15 +381,15 @@ export default function AuthForm({
                 Lupa kata sandi?
               </button>
             </p>
-          )}
+          </Lipat>
 
           <button
             type="submit"
             disabled={pending || googlePending}
             className={cn(
-              "w-full rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 ease-out-soft",
-              "bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-0.5",
-              "disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0",
+              "mt-6 w-full px-6 py-3.5 text-sm font-semibold transition-colors duration-300 ease-out-soft",
+              "bg-blue-600 text-white hover:bg-blue-700",
+              "disabled:opacity-60 disabled:cursor-not-allowed",
             )}
           >
             {pending ? "Memproses…" : t.submit}
@@ -299,8 +402,8 @@ export default function AuthForm({
               berada di atas formulir ini. Kalimatnya sengaja menyebut
               tindakan yang memicu persetujuan, dan kedua tautannya
               benar-benar bisa dibuka sebelum akun dibuat. */}
-          {mode === "register" && (
-            <p className="text-xs text-ink-muted leading-relaxed text-center">
+          <Lipat buka={daftar}>
+            <p className="pt-4 text-xs text-ink-muted leading-relaxed text-center">
               Dengan mendaftar, Anda menyetujui{" "}
               <Link
                 href="/syarat-ketentuan"
@@ -317,16 +420,16 @@ export default function AuthForm({
               </Link>{" "}
               SynapEd.
             </p>
-          )}
+          </Lipat>
         </form>
 
         <p className="mt-7 pt-6 border-t border-rule text-center text-sm text-ink-muted md:hidden">
           {t.altText}{" "}
           <Link
-            href={mode === "login" ? "/register" : "/login"}
+            href={shown === "login" ? "/register" : "/login"}
             onClick={(e) => {
               e.preventDefault();
-              switchMode(other(mode));
+              switchMode(other(shown));
             }}
             className="text-blue-700 font-medium hover:underline underline-offset-4"
           >
@@ -338,19 +441,34 @@ export default function AuthForm({
   }
 
   /** Panel "merek" navy (desktop) — isinya selalu ajakan ke mode LAWAN dari
-   *  yang sedang aktif; panel meluncur kiri/kanan mengikuti mode. */
+   *  yang sedang tampil; panel meluncur kiri/kanan mengikuti mode. */
   function renderInvite() {
-    const c = copy[other(mode)];
+    const basis = beku ?? shown;
+    const c = copy[other(basis)];
     return (
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-10 py-12 text-center text-white lg:px-14">
-        <h2 className="t-h3 text-[1.7rem] text-white mb-3">{c.heading}</h2>
-        <p className="t-body text-sm text-white/80 mb-8 max-w-[26ch]">{c.sub}</p>
+        <h2 className="t-h3 mb-3 text-[1.7rem] text-white">
+          <Huruf teks={c.heading} fisika={beku !== null} />
+        </h2>
+        <p className="t-body mb-9 max-w-[26ch] text-sm text-white/75">
+          <Huruf teks={c.sub} fisika={beku !== null} mulai={c.heading.length} />
+        </p>
         <button
+          ref={tombolRef}
           type="button"
           onClick={() => switchMode(other(mode))}
-          className="rounded-full border border-white/60 px-8 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition-all duration-200 ease-out-soft hover:bg-white hover:text-navy hover:-translate-y-0.5"
+          onPointerMove={onGesek}
+          onPointerEnter={(e) => {
+            gesek.current.x = e.clientX;
+            gesek.current.t0 = performance.now();
+          }}
+          className="rounded-full border border-white/50 px-9 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors duration-300 ease-out-soft hover:bg-white hover:text-navy"
         >
-          {other(mode) === "login" ? "Masuk" : "Daftar"}
+          <Huruf
+            teks={other(basis) === "login" ? "Masuk" : "Daftar"}
+            fisika={beku !== null}
+            mulai={c.heading.length + c.sub.length}
+          />
         </button>
       </div>
     );
@@ -377,12 +495,11 @@ export default function AuthForm({
           />
         </Link>
 
-        <div className="rise-in relative overflow-hidden rounded-3xl border border-rule bg-paper-card shadow-lift md:min-h-160">
+        <div className="rise-in relative overflow-hidden bg-paper-card">
           {/* ══ Ponsel/tablet kecil — satu kartu, tanpa ruang untuk sisi
-              "merek" terpisah. Perpindahan mode ditandai geser + memudar
-              singkat (.auth-fade). ══ */}
+              "merek" terpisah. ══ */}
           <div className="p-6 sm:p-8 md:hidden">
-            <div key={mode} className="auth-fade" style={fadeFromStyle}>
+            <div className="auth-isi" data-tampil={tampil} style={isiStyle}>
               <h1 className="t-h2 text-center text-[1.9rem] mb-3">{t.heading}</h1>
               <p className="t-body text-sm text-center text-ink-muted mb-8">{t.sub}</p>
 
@@ -392,28 +509,39 @@ export default function AuthForm({
 
           {/* ══ Desktop — kartu terbelah: panel merek (navy, berisi tombol
               Masuk/Daftar) dan sisi formulir BERTUKAR tempat dengan
-              meluncur (translate-x, 700ms) saat mode berpindah: Daftar =
-              panel di kiri, Masuk = panel di kanan. Isinya juga memudar
-              (.auth-fade). Atas permintaan pemilik (sesuai gambar acuan). ══ */}
-          <div className="hidden md:block relative md:min-h-160">
+              meluncur saat mode berpindah: Daftar = panel di kiri, Masuk =
+              panel di kanan. Isinya memudar bergantian (.auth-isi), TIDAK
+              dilepas-pasang, jadi kolom tidak pernah lenyap mendadak. ══ */}
+          {/* Daftar punya lebih banyak isi (nama + ketentuan), jadi kartunya lebih tinggi
+              supaya formulir tidak terhimpit; tinggi ikut beranimasi bersama panel. */}
+          <div
+            className="relative hidden transition-[min-height] duration-[900ms] ease-warm motion-reduce:transition-none md:block"
+            style={{ minHeight: mode === "register" ? 800 : 640 }}
+          >
             <div
+              ref={panelRef}
               className={cn(
-                "auth-brand-panel absolute inset-y-0 left-0 z-10 w-1/2 overflow-hidden transition-transform duration-700 ease-out-soft motion-reduce:transition-none",
+                "auth-brand-panel absolute inset-y-0 left-0 z-10 w-1/2 overflow-hidden transition-transform duration-[900ms] ease-warm motion-reduce:transition-none",
                 mode === "register" ? "translate-x-0" : "translate-x-full",
               )}
             >
-              <div key={mode} className="auth-fade h-full" style={fadeFromStyle}>
+              <div
+                key={beku ?? shown}
+                className="auth-isi h-full"
+                data-tampil={tampil}
+                style={{ ...isiStyle, ...ayunStyle }}
+              >
                 {renderInvite()}
               </div>
             </div>
 
             <div
               className={cn(
-                "absolute inset-y-0 left-0 flex w-1/2 items-center justify-center px-10 py-12 transition-transform duration-700 ease-out-soft motion-reduce:transition-none lg:px-14",
+                "absolute inset-y-0 left-0 flex w-1/2 items-center justify-center px-10 py-14 transition-transform duration-[900ms] ease-warm motion-reduce:transition-none lg:px-14",
                 mode === "register" ? "translate-x-full" : "translate-x-0",
               )}
             >
-              <div key={mode} className="auth-fade w-full max-w-sm" style={fadeFromStyle}>
+              <div className="auth-isi w-full max-w-sm" data-tampil={tampil} style={isiStyle}>
                 <h1 className="t-h2 text-[1.9rem] mb-3">{t.heading}</h1>
                 <p className="t-body text-sm text-ink-muted mb-8">{t.sub}</p>
                 {renderFields("desktop")}
@@ -421,12 +549,6 @@ export default function AuthForm({
             </div>
           </div>
         </div>
-
-        <p className="text-center mt-6">
-          <Link href="/" className="text-sm text-ink-muted hover:text-blue-600 transition-colors">
-            ← Kembali ke beranda
-          </Link>
-        </p>
       </div>
     </main>
   );
@@ -465,7 +587,7 @@ function Field({
         autoComplete={autoComplete}
         required={required}
         aria-describedby={hint ? `${id}-hint` : undefined}
-        className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+        className="w-full bg-white/[0.06] px-4 py-3 text-sm text-ink shadow-[inset_0_-1px_0_var(--color-rule)] transition-[background-color,box-shadow] duration-300 placeholder:text-ink-faint hover:bg-white/[0.09] focus:bg-white/[0.09] focus:shadow-[inset_0_-2px_0_var(--color-blue-400)] focus:outline-none"
       />
       {hint && (
         <p id={`${id}-hint`} className="mt-1.5 text-xs text-ink-muted">

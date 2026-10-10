@@ -141,12 +141,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   besar di atas, judul (tiap kata satu baris) +
   deskripsi di bawah, SEMUA putih penuh (tanpa warna selang-seling), tanpa garis.
   TANPA efek hover. EASTER EGG: memencet ANGKA kartu mengganti warna kartu
-  (siklus `EGG_COLORS`) dengan gelombang sisik ikan (`FishScales`, `.egg-scale`).
-  Klik asli diarahkan ke stage karena `setPointerCapture` untuk drag, jadi egg
-  dipicu dari `pointerup` (tanpa geser > 6px) yang memanggil `.click()` tombol
-  `[data-egg]`; `animatingRef` mencegah pemicu ganda. Dua tahap penutup: warna
-  dasar diganti lalu lapisan sisik MEMUDAR (`FADE_MS`) sebelum dilepas — melepasnya
-  langsung membuat tepi gelap sisik lenyap sekaligus (terlihat terpotong). Jangan beri petunjuk visual. Lapisan holo (foil/rainbow/gloss/grain) sudah dihapus dari JSX.
+  (siklus `EGG_COLORS`) LANGSUNG ke warna berikutnya lewat transisi `background-color` 650ms pada kartunya sendiri (tanpa lapisan perantara). Efek sisik ikan, air naik, dan air menyebar pernah dicoba lalu DIBUANG atas permintaan pemilik (tepinya terbaca "terpotong" / warna antara terang lalu gelap) - jangan dikembalikan tanpa diminta. Jangan beri petunjuk visual. Lapisan holo (foil/rainbow/gloss/grain) sudah dihapus dari JSX.
+  DUA GESTUR GESER: (1) menggeser KARTU = cincin 3D berputar bebas (perilaku asli); (2) menggeser JUDUL "Features" (handler pointer di pembungkus judul, `touch-action: pan-y`; judulnya SENDIRI tidak bergeser - versi yang meluncur keluar/masuk dibuang karena dua judul bertumpuk) = bila >40px bentuk BERBALIK cincin ↔ barisan (`flatTargetRef` 0/1, lerp 0,075/bingkai; barisan: `scale` 1,1 di tengah lalu ×0,76 tiap langkah menjauh - ukurannya berurutan - dan `blur` min(|d|,2)×1,8px), kartu maju sekurangnya satu langkah dan berhenti tepat di satu kartu, dan judul dipasang ulang (`key`) sehingga acak alfabetnya mulai dari awal. Geseran pendek = semua kembali. Barisan memakai 8 SLOT (`SLOTS`: 4 asli + 4 bayangan/`ghost`, fitur berulang; posisi `d` melingkar mod 8, -4 ≤ d < 4) agar tak berlubang; jarak tiap pasangan kartu barisan = `lebar×(skala(k)+skala(k+1))/2 + 28` (kumulatif, interpolasi linear untuk d pecahan) supaya celahnya sama (28px) di mana pun. Cincin hanya memakai 4 kartu asli (bayangan `visibility:hidden` saat `flat` ≈ 0, `aria-hidden`, warna egg dibagi lewat `bases[index]`). SEMUA kartu terlihat menerima penunjuk (`pointer-events:auto`); kartu yang diketuk ditentukan lewat GEOMETRI di `ketuk()` (kotak pembatas `getBoundingClientRect` - sudah memperhitungkan transform 3D - diperluas 28px; bila beberapa kena, z-index tertinggi menang; angka diperluas 14px; ambang ketuk-vs-seret 10px), BUKAN hit-test peramban, karena kartu yang berputar/miring/buram sering meleset. Hemat gerak menonaktifkan gestur judul.
+  KETUK kartu (di luar angka) membuka `DetailFitur`; ketuk ANGKA tetap ganti warna (easter egg), juga di barisan. Lembar penjelasan bergaya editorial & tak simetris: label+garis, judul bertingkat (menjorok bergantian) yang naik dari balik topeng, kalimat pembuka berpagar garis tegak, poin bernomor besar-tipis (SEMUA angka Plus Jakarta Sans, bukan mono), angka raksasa samar terpotong di pojok yang ikut kursor (`--px/--py`); masuk = tirai clip-path dari garis tengah, tutup = tirai menutup balik 420ms (`data-keluar`). Isi `DETAIL_FITUR` hanya klaim yang benar-benar ada di aplikasi.
 - **FAQ** (`sections/FAQ.tsx`): ubin kotak yang memenuhi sisa section sampai tepi
   layar (jarak 4px, tanpa border/radius); desktop 6 kolom — 3 ubin `col-span-2` di
   atas, 2 ubin `col-span-3` di bawah (`spanOf`), jadi tak ada sisa kosong. Ditekan →
@@ -218,9 +215,10 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 - **Kartu kursus** (`CourseCard`, dipakai beranda & /courses; kartu inline di Courses.tsx sudah dihapus):
   tingkat kesulitan = teks polos kanan-bawah gambar (tanpa kotak/garis); angka modul & estimasi besar;
   rating = bintang presisi + nilai + jumlah ulasan. Gambar sampul = `CourseCover` (client): ditekan →
-  membalik 3D menampilkan "DIBUAT OLEH" + USERNAME pembuat (`instructorUsername` dari `getUsernames`, cadangan:
-  nama penyedia; kapital; username berkedip cepat 4x lalu biru — `.cover-kedip`; latar belakang = latar kartu; tanpa
-  garis biru); `z-10` supaya tak tertelan tautan kartu. `untukLevel()` masih ada di courseUi.ts tapi tak dipakai kartu.
+  tergulung KE ATAS seperti pintu garasi (`translateY(-100%)`, 900ms, bersekat tipis; ditekan lagi = turun menutup) menyingkap "DIBUAT OLEH" + USERNAME pembuat (`instructorUsername` dari `getUsernames`, cadangan:
+  nama penyedia; kapital; username berkedip cepat 4x lalu biru, mulai setelah pintu terbuka — `.cover-kedip`; latar di baliknya = latar kartu); `z-10` supaya tak tertelan tautan kartu. `untukLevel()` masih ada di courseUi.ts tapi tak dipakai kartu.
+- Animasi bagian bawah kartu kursus di landing (info terlipat, berputar/terayun saat hover) pernah dicoba dua kali lalu
+  DIHAPUS atas permintaan pemilik - kartu beranda sama dengan kartu /courses; jangan dikembalikan tanpa diminta.
 - **Bahasa** (profil → Pengaturan Laman): Indonesia (asli, bawaan) / Inggris. Inggris = widget RESMI Google
   Website Translation (`translate.google.com/translate_a/element.js`, tanpa kunci API) yang dimuat
   `TranslateLoader` HANYA bila `synaped_lang=en` / cookie `googtrans=/id/en`; memilih bahasa memuat ulang
@@ -248,10 +246,18 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   judul (`88 / (panjang × 0.64)` vw, maks 11rem) supaya judul panjang tetap
   muat — jangan diberi `whitespace-nowrap` tanpa menghitung ulang.
   Judul kini CLIENT component: animasi ACAK ALFABET saat masuk layar (huruf berganti A–Z lalu mengunci kiri→kanan, 350ms + 80ms/huruf); lebar tiap huruf dikunci pada huruf asli yang tak terlihat supaya baris tidak bergetar; hemat gerak = langsung tampil.
-- **Hero bilah**: kalimat di bilah dipilih ACAK dari `PROMPTS` (indeks diundi sekali
-  setelah mount agar HTML server = klien; diundi ulang saat pengunjung kembali ke atas).
-  Fitur bilah → panel rekomendasi kursus sudah DIHAPUS atas permintaan pemilik — jangan
-  dikembalikan tanpa diminta; `Hero` kembali tanpa props.
+- Bilah hero yang melebar jadi panel "mencari" setelah diam 5 dtk pernah dicoba lalu DIHAPUS atas permintaan
+  pemilik - jangan dikembalikan tanpa diminta.
+- **Hero bilah**: kalimat yang diketik DIBANGUN dari katalog (`lib/heroPrompts.ts`, modul netral; `app/page.tsx` meneruskan
+  `buildHeroPrompts(courses, categories)` ke `Hero`): templat tetap per kursus (dipilih lewat hash slug) + satu kalimat
+  per kategori yang punya kursus, maks 36; kursus baru otomatis menambah kalimat. SENGAJA bukan panggilan AI (tampil di
+  beranda tiap kunjungan: harus instan & tak bergantung kuota model gratis). Tiap kalimat membawa `q` (judul/kategori
+  kursusnya); anak panah di bilah menuju `/courses?q=<q>` (`heroHref`), dan `/courses` meneruskan `?q` ke
+  `CourseCatalog` sebagai `initialQuery`. Indeks diundi sekali setelah mount (HTML server = klien), tidak pernah sama
+  dengan kalimat sebelumnya (`sessionStorage` `synaped_hero_prompt`, jadi muat ulang selalu berganti), dan diundi
+  ulang saat pengunjung kembali ke atas. Tombol wajah "Mulai Belajar" tetap ke /register. Fitur bilah → panel
+  rekomendasi kursus dan bilah yang melebar sendiri sudah DIHAPUS atas permintaan pemilik - jangan dikembalikan tanpa
+  diminta; `Hero` kini hanya menerima `prompts`.
 - **Latar section landing** semuanya `bg-ivory` (alias `paper`, kini gelap).
 - **Layar pembuka** `ui/SplashLoader.tsx` (dipasang di `layout.tsx`), alurnya
   meniru intro nomu.store (CSS `.intro-*` di `globals.css`: kata TAHU. → BISA.,
@@ -275,8 +281,13 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   tombol "Masuk"/"Daftar" bisa berpindah tanpa menunggu navigasi Next. Di
   layar md:+ kartunya terbelah dan kedua sisi (panel navy berisi tombol
   ajakan + sisi formulir) BERTUKAR tempat dengan meluncur (`translate-x`,
-  700ms; Daftar = panel kiri, Masuk = panel kanan), sementara isinya memudar
-  (`.auth-fade`, arah dari `--auth-fade-from`). Sempat dibatalkan
+  900ms; Daftar = panel kiri, Masuk = panel kanan). Isi TIDAK dilepas-pasang
+  (dulu `key={mode}` membuat kolom lenyap & berkedip): state `mode` = tujuan
+  (menggerakkan panel), `shown` = mode yang isinya terlihat, tertinggal
+  `OUT_MS` supaya teks ditukar saat `.auth-isi` transparan (`data-tampil`).
+  Bagian khusus satu mode (kolom nama, "Lupa kata sandi", ketentuan) dirender
+  selalu dan dilipat halus lewat `Lipat` (grid-rows 0fr↔1fr + `inert`). Tampilan
+  persegi tanpa border/bayangan, tanpa tautan "Kembali ke beranda". Panel samping berwarna `#0D2131` (= banner profil bawaan, dipatok karena teksnya tetap putih di tema terang), polos tanpa gradasi. Teksnya dipecah per huruf (`Huruf`, `.grav-h`): masuk dengan ayunan tertinggal+overshoot searah geser panel; bila tombol panel "digesek" 3 kali (`onGesek`: 3 sapuan ≥28px bolak-balik dalam 3 dtk) `beku` terisi dan `hurufFisika.ts` (mesin fisika kecil: lingkaran + gravitasi + tumbukan, rAF menulis `transform` langsung) mengambil alih: huruf judul/kalimat jatuh ke dasar panel (tombol jadi pijakan), huruf tombol ke tepi bawah tombol; panel yang meluncur memberi gaya semu (dari percepatan posisinya) sehingga tumpukan bergelinding; huruf bisa diseret & dilempar (ketukan singkat pada huruf tombol = menekan tombol). Teks panel dibekukan (`beku` = mode saat itu, `key` wadah tetap) supaya elemen huruf tak diganti; Huruf direset (`setBeku(null)` + wadah dipasang ulang) saat pertukaran teks di akhir `switchMode`, atau saat halaman dimuat ulang; tidak disimpan. Tinggi kartu desktop 640px (Masuk) / 800px (Daftar), beranimasi. Sempat dibatalkan
   (terlihat seperti "slider/toggle"), lalu diminta pemilik lagi sesuai
   gambar acuan — jangan dihapus. URL disinkronkan lewat `window.history.replaceState`
   langsung, **bukan** `router.replace` — `router.replace` membuat Next

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { heroHref, type HeroPrompt } from "@/lib/heroPrompts";
 
 type LetterPosition = {
   x: number;
@@ -13,26 +14,22 @@ const LETTER_STAGGER_MS = 45;
 /** Judul mulai muncul sedikit setelah halaman terbuka. */
 const LETTER_START_MS = 150;
 
-/**
- * Kalimat yang "diketik" di bilah saat tombol berubah bentuk lewat scroll —
- * dipilih ACAK tiap kunjungan (dan tiap kali pengunjung kembali ke atas).
- */
-const PROMPTS = [
-  "Saya ingin belajar analisis data dari nol",
-  "Carikan kursus neuroscience untuk pemula",
-  "Bagaimana cara memulai pemrograman?",
-  "Saya mau belajar membaca sinyal EEG",
-  "Rekomendasi kursus gratis untuk mahasiswa",
-  "Ingin dapat sertifikat dari kursus berbasis riset",
-];
-
 /** Ukuran tombol awal & bilah akhir (px). */
 const BTN_W = 200;
 const BTN_H = 52;
 const BAR_H = 76;
 const BAR_MAX_W = 520;
 
-export default function Hero() {
+/** Kunci sessionStorage: kalimat terakhir, agar muat ulang selalu berganti kalimat. */
+const KUNCI_TERAKHIR = "synaped_hero_prompt";
+
+/**
+ * `prompts` dibangun server dari katalog (lib/heroPrompts.ts), jadi kursus baru
+ * otomatis menambah kalimat. Dipilih ACAK tiap kunjungan, tiap muat ulang
+ * (tidak pernah sama dengan yang sebelumnya), dan tiap kali pengunjung kembali
+ * ke atas. Anak panah membawa ke /courses?q=… sesuai kalimat yang tampil.
+ */
+export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
   // =========================================================
   // SCROLL → TOMBOL BERUBAH JADI BILAH
   // Progres scroll (0..1) ditulis ke variabel CSS --p langsung di DOM, bukan
@@ -47,6 +44,7 @@ export default function Hero() {
   // Prompt acak (indeks baru dipilih setelah mount supaya HTML server = klien)
   const [promptIdx, setPromptIdx] = useState(0);
   const promptRef = useRef(0);
+
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -74,7 +72,7 @@ export default function Hero() {
 
       // Mengetik baru dimulai saat bilah sudah hampir selesai melebar.
       const t = Math.min(1, Math.max(0, (p - 0.4) / 0.4));
-      setTyped(Math.round(t * PROMPTS[promptRef.current].length));
+      setTyped(Math.round(t * (prompts[promptRef.current]?.text.length ?? 0)));
       setBar(p > 0.3);
 
       if (t >= 1) sudahPenuh = true;
@@ -83,7 +81,7 @@ export default function Hero() {
       if (p < 0.05 && sudahPenuh) {
         sudahPenuh = false;
         let n = promptRef.current;
-        while (PROMPTS.length > 1 && n === promptRef.current) n = Math.floor(Math.random() * PROMPTS.length);
+        while (prompts.length > 1 && n === promptRef.current) n = Math.floor(Math.random() * prompts.length);
         promptRef.current = n;
         setPromptIdx(n);
       }
@@ -94,7 +92,15 @@ export default function Hero() {
 
     raf = requestAnimationFrame(() => {
       // Pilih kalimat acak SEKALI setelah mount, lalu mulai pembaruan.
-      const n = Math.floor(Math.random() * PROMPTS.length);
+      let n = Math.floor(Math.random() * prompts.length);
+      try {
+        // Muat ulang tidak boleh mengulang kalimat yang baru saja tampil.
+        const lalu = Number(sessionStorage.getItem(KUNCI_TERAKHIR));
+        while (prompts.length > 1 && n === lalu) n = Math.floor(Math.random() * prompts.length);
+        sessionStorage.setItem(KUNCI_TERAKHIR, String(n));
+      } catch {
+        // Penyimpanan diblokir: acak biasa sudah cukup.
+      }
       promptRef.current = n;
       setPromptIdx(n);
       update();
@@ -106,7 +112,7 @@ export default function Hero() {
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [prompts]);
 
   // =========================================================
   // LETTER DRAG POSITION
@@ -507,12 +513,12 @@ export default function Hero() {
           >
             <div className="flex h-full items-center gap-3 rounded-full bg-white/10 pl-6 pr-1.5">
               <p className="min-w-0 flex-1 truncate text-left text-base text-white">
-                {PROMPTS[promptIdx].slice(0, typed)}
+                {(prompts[promptIdx]?.text ?? "").slice(0, typed)}
                 <span aria-hidden="true" className="ml-px inline-block h-5 w-0.5 translate-y-1 bg-white" />
               </p>
               <Link
-                href="/register"
-                aria-label="Mulai belajar"
+                href={heroHref(prompts[promptIdx] ?? { text: "", q: "" })}
+                aria-label="Cari kursus sesuai kalimat ini"
                 tabIndex={bar ? 0 : -1}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition-transform duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-700"
               >

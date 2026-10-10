@@ -1,9 +1,46 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { features } from "@/data/landing";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import SectionTitle from "@/components/sections/SectionTitle";
+
+/** Penjelasan lengkap tiap fitur (urutan = STAGE_CARDS). Dibuka dengan mengetuk kartu. */
+const DETAIL_FITUR: { lead: string; poin: string[] }[] = [
+  {
+    lead: "Setiap kursus di SynapEd disusun oleh educator yang menguasai bidangnya, lalu ditinjau admin sebelum tampil di katalog. Hasilnya, materi yang Anda pelajari sudah melewati penyaringan, bukan sekadar unggahan.",
+    poin: [
+      "Kursus baru dan setiap perubahan besarnya diajukan dulu, lalu disetujui admin sebelum terbit.",
+      "Materi tersusun bertahap dari dasar hingga lanjut, dalam bagian dan pelajaran yang berurutan.",
+      "Nilai kelulusan ditetapkan pembuat kursus; sertifikat terbit setelah semua pelajaran selesai dan nilainya tercapai.",
+    ],
+  },
+  {
+    lead: "Pelajaran video menjelaskan konsep lewat rekaman dan animasi yang terstruktur, jadi ide yang rumit dapat dipahami langkah demi langkah dan diputar ulang sebanyak yang Anda perlukan.",
+    poin: [
+      "Video tampil langsung di halaman belajar, tanpa perlu berpindah aplikasi.",
+      "Dipadukan dengan pelajaran bacaan, kuis, dan penugasan dalam satu alur kursus.",
+      "Kemajuan tiap pelajaran tersimpan, sehingga Anda bisa melanjutkan dari tempat terakhir.",
+    ],
+  },
+  {
+    lead: "Teori baru terasa setelah dipakai. Studi kasus dan penugasan di SynapEd melatih keterampilan secara langsung, dengan umpan balik dari educator kursusnya.",
+    poin: [
+      "Penugasan dikumpulkan sebagai berkas PDF atau gambar langsung dari halaman belajar.",
+      "Educator menilai dan menulis umpan balik; nilai akhir selalu keputusan educator, bukan mesin.",
+      "Kuis di sela pelajaran menguji pemahaman Anda sebelum melangkah ke materi berikutnya.",
+    ],
+  },
+  {
+    lead: "Belajar tidak harus di depan satu perangkat. Halaman SynapEd menyesuaikan diri dengan laptop, tablet, maupun ponsel, dan kemajuan Anda ikut ke mana pun Anda masuk.",
+    poin: [
+      "Tampilan responsif: nyaman dibaca dan dipakai di layar kecil maupun besar.",
+      "Lanjutkan dari pelajaran terakhir kapan saja; tidak ada batas waktu belajar.",
+      "Pilih tema terang atau gelap dan bahasa Indonesia atau Inggris lewat pengaturan profil.",
+      "Asisten AI di dalam kursus siap membantu menjawab pertanyaan tentang pelajaran yang sedang dibuka.",
+    ],
+  },
+];
 
 const clamp = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, v));
@@ -16,93 +53,259 @@ const STAGE_CARDS = [0, 1, 3, 4].map((i) => ({
   desc: features[i].desc,
 }));
 
+/** 8 slot: 4 kartu asli + 4 bayangan (fitur berulang) untuk barisan tanpa lubang. */
+const SLOTS = [...STAGE_CARDS, ...STAGE_CARDS].map((f, slot) => ({
+  ...f,
+  slot,
+  index: slot % STAGE_CARDS.length,
+  ghost: slot >= STAGE_CARDS.length,
+}));
+
 /* =============================================================
-   EASTER EGG - angka kartu dipencet → warna kartu berganti dengan
-   gelombang "sisik ikan" dari pojok kiri atas. Tanpa petunjuk visual.
+   EASTER EGG - angka kartu dipencet → warna kartu langsung berganti ke warna
+   berikutnya. Tanpa petunjuk visual.
 ============================================================= */
 
 const EGG_COLORS = ["var(--color-paper-card)", "#2F6FED", "#0E7C86", "#5B4BC4", "#1F8A5B"];
-/** Lama gelombang (ms) — sedikit di atas jeda terjauh (≈890) + durasi satu sisik (600). */
-const WAVE_MS = 1550;
-/** Lama sisik memudar setelah warna dasar kartu diganti (ms) — inilah yang
- *  menghilangkan kesan "terpotong" di ujung animasi. */
-const FADE_MS = 550;
-const SCALE = 46;
-const SCALE_COLS = 11;
-const SCALE_ROWS = 26;
 
-/** Lapisan sisik: lingkaran bertumpuk, baris selang-seling bergeser setengah,
- *  muncul berurutan menyapu diagonal dan menutupi warna lama. */
-function FishScales({ color, fading }: { color: string; fading: boolean }) {
-  const cells: React.ReactNode[] = [];
+/**
+ * Penjelasan lengkap satu fitur - lembar persegi bergaya editorial.
+ *
+ * Tata letak sengaja tidak simetris: label & garis di atas, judul bertingkat
+ * (tiap baris menjorok sedikit), kalimat pembuka di kolom kiri berpagar garis
+ * tegak, poin-poin bernomor besar-tipis di kolom kanan, dan angka raksasa samar
+ * terpotong di pojok kanan bawah yang ikut bergeser mengikuti kursor.
+ * Gerak: lembar membuka seperti tirai dari garis tengah, kata judul naik dari
+ * balik topeng satu per satu, garis menggambar dirinya, poin menyelinap dari
+ * kanan. Semua angka memakai Plus Jakarta Sans (bukan mono). Menutup =
+ * tirai menutup balik (420ms) baru dilepas dari pohon.
+ */
+function DetailFitur({ idx, warna, onClose }: { idx: number; warna: string; onClose: () => void }) {
+  const fitur = STAGE_CARDS[idx];
+  const isi = DETAIL_FITUR[idx];
+  const nomor = String(idx + 1).padStart(2, "0");
+  const tutupRef = useRef<HTMLButtonElement>(null);
+  const lembarRef = useRef<HTMLDivElement>(null);
+  const [keluar, setKeluar] = useState(false);
+  const tutup = useCallback(() => setKeluar(true), []);
 
-  for (let r = 0; r < SCALE_ROWS; r++) {
-    for (let c = 0; c < SCALE_COLS; c++) {
-      cells.push(
-        <span
-          key={`${r}-${c}`}
-          className="egg-scale"
-          style={{
-            left: c * SCALE + (r % 2 ? SCALE / 2 : 0) - SCALE / 2,
-            top: r * (SCALE / 2) - SCALE / 2,
-            width: SCALE,
-            height: SCALE,
-            background: color,
-            animationDelay: `${r * 30 + c * 14}ms`,
-          }}
-        />,
-      );
-    }
-  }
+  useEffect(() => {
+    if (!keluar) return;
+    const t = setTimeout(onClose, 420);
+    return () => clearTimeout(t);
+  }, [keluar, onClose]);
+
+  useEffect(() => {
+    tutupRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") tutup();
+    };
+    window.addEventListener("keydown", onKey);
+    const lama = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = lama;
+    };
+  }, [tutup]);
+
+  // Angka raksasa bergeser tipis mengikuti kursor (tanpa render React).
+  const gerak = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = lembarRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--px", String(((e.clientX - r.left) / r.width) * 2 - 1));
+    el.style.setProperty("--py", String(((e.clientY - r.top) / r.height) * 2 - 1));
+  };
+
+  const kata = fitur.title.split(" ");
+  const SANS = { fontFamily: "var(--font-sans)" } as const;
+  const d = (ms: number) => ({ ["--d" as string]: `${ms}ms` });
 
   return (
     <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-0 overflow-hidden transition-opacity ease-out"
-      style={{ opacity: fading ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
+      className="fitur-latar fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
+      data-keluar={keluar}
+      onClick={tutup}
     >
-      {cells}
+      <div
+        ref={lembarRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={fitur.title}
+        onClick={(e) => e.stopPropagation()}
+        onPointerMove={gerak}
+        className="fitur-lembar relative max-h-[92vh] w-full max-w-4xl overflow-hidden text-white"
+        data-keluar={keluar}
+        style={{ backgroundColor: warna }}
+      >
+        {/* Angka raksasa samar, terpotong di pojok kanan bawah */}
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-[7%] -right-[2%] select-none">
+          <div className="fitur-angka-besar">
+            <p
+              className="fitur-sejajar text-[clamp(11rem,34vw,24rem)] leading-[0.8] tracking-[-0.08em] text-white/[0.07]"
+              style={{ ...SANS, fontWeight: 900 }}
+            >
+              {nomor}
+            </p>
+          </div>
+        </div>
+
+        <button
+          ref={tutupRef}
+          type="button"
+          onClick={tutup}
+          aria-label="Tutup penjelasan"
+          className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center text-white/70 transition-[color,transform] duration-300 hover:rotate-90 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="relative max-h-[92vh] overflow-y-auto px-7 py-9 sm:px-14 sm:py-14">
+          {/* Label + garis + penanda halaman */}
+          <div className="flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/65" style={SANS}>
+            <span className="fitur-geser" style={d(380)}>
+              Fitur
+            </span>
+            <span className="fitur-garis-x h-px flex-1 bg-white/30" style={d(460)} />
+            <span className="fitur-geser pr-10 tabular-nums" style={d(420)}>
+              {nomor} / {String(STAGE_CARDS.length).padStart(2, "0")}
+            </span>
+          </div>
+
+          {/* Judul bertingkat: tiap baris naik dari balik topeng & menjorok bergantian */}
+          <h3
+            className="mt-9 text-[clamp(2.6rem,7.2vw,5.2rem)] leading-[0.94] tracking-[-0.05em]"
+            style={{ ...SANS, fontWeight: 800 }}
+          >
+            {kata.map((w, i) => (
+              <span key={i} className="block overflow-hidden pb-[0.06em]" style={{ paddingLeft: i % 2 ? "clamp(1.25rem, 6vw, 5rem)" : 0 }}>
+                <span className="fitur-naik block" style={d(520 + i * 110)}>
+                  {w}
+                </span>
+              </span>
+            ))}
+          </h3>
+
+          <div className="mt-12 grid gap-10 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-14">
+            {/* Kalimat pembuka berpagar garis tegak */}
+            <div className="relative pl-6">
+              <span className="fitur-garis-y absolute bottom-0 left-0 top-1 w-px bg-white/40" style={d(900)} />
+              <p
+                className="fitur-geser text-[1.08rem] leading-[1.8] text-white/90"
+                style={{ ...SANS, ...d(960) }}
+              >
+                {isi.lead}
+              </p>
+            </div>
+
+            {/* Poin: nomor besar-tipis + garis rambut yang menggambar diri */}
+            <ol>
+              {isi.poin.map((p, i) => (
+                <li key={i} className="relative grid grid-cols-[3.4rem_minmax(0,1fr)] items-baseline gap-x-4 py-[1.05rem]">
+                  <span className="fitur-garis-x absolute inset-x-0 top-0 h-px bg-white/25" style={d(1000 + i * 120)} />
+                  <span
+                    className="fitur-geser text-[2.1rem] leading-none tracking-[-0.04em] tabular-nums text-white/55"
+                    style={{ ...SANS, fontWeight: 200, ...d(1060 + i * 120) }}
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="fitur-geser text-[0.97rem] leading-[1.7] text-white/80" style={{ ...SANS, ...d(1100 + i * 120) }}>
+                    {p}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function Features() {
-  // Warna dasar tiap kartu (indeks ke EGG_COLORS) + gelombang yang sedang jalan.
+  // Warna tiap kartu (indeks ke EGG_COLORS).
   const reducedMotion = useReducedMotion();
   const [bases, setBases] = useState<number[]>([0, 0, 0, 0]);
-  const [wave, setWave] = useState<{ card: number; to: number; fading: boolean } | null>(null);
-  const animatingRef = useRef(false);
-  const eggTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const downTargetRef = useRef<EventTarget | null>(null);
+  // Fitur yang penjelasan lengkapnya sedang dibuka (indeks ke STAGE_CARDS).
+  const [detail, setDetail] = useState<number | null>(null);
+  const tutupDetail = useCallback(() => setDetail(null), []);
 
-  useEffect(() => () => clearTimeout(eggTimer.current), []);
-
+  // Satu langkah, satu warna: kartu langsung menuju warna berikutnya lewat
+  // transisi background-color pada kartunya (tanpa lapisan perantara yang bisa
+  // menampilkan warna antara yang lebih terang atau lebih gelap dari keduanya).
   const triggerEgg = (card: number) => {
-    // Pointerup dan klik asli bisa sama-sama sampai di sini — abaikan yang kedua.
-    if (animatingRef.current) return;
-    const to = (bases[card] + 1) % EGG_COLORS.length;
+    setBases((b) => b.map((v, i) => (i === card ? (v + 1) % EGG_COLORS.length : v)));
+  };
 
-    if (reducedMotion) {
-      setBases((b) => b.map((v, i) => (i === card ? to : v)));
+  // ============================
+  // DUA GESTUR GESER di section ini:
+  //  1) menggeser KARTU  → cincin 3D berputar (perilaku asli, tak berubah);
+  //  2) menggeser JUDUL "Features" → BERGANTIAN cincin ↔ barisan lurus (kartu
+  //     tengah paling besar & tajam, tetangganya lebih kecil & sedikit buram) dan
+  //     acak alfabet judul diputar ulang. Judulnya sendiri TIDAK bergeser.
+  //     `flat` (0 = cincin, 1 = barisan) berbalik tiap geseran judul yang cukup jauh.
+  // ============================
+
+  const flatTargetRef = useRef(0);
+  const flatRef = useRef(0);
+
+  const [judulKe, setJudulKe] = useState(0);
+  const tarikRef = useRef<{ id: number; x0: number; rot0: number; dx: number; flat0: number } | null>(null);
+  const lastSwapRef = useRef(0);
+
+  /** Memasang ulang judul (key berganti) → acak alfabetnya mulai dari awal. */
+  const resetJudul = useCallback(() => {
+    const now = performance.now();
+    // Geseran cepat melewati beberapa langkah tak perlu mengulang berkali-kali.
+    if (now - lastSwapRef.current < 450) return;
+    lastSwapRef.current = now;
+    setJudulKe((k) => k + 1);
+  }, []);
+
+  // --- Menggeser JUDUL ---------------------------------------------------
+  const judulTurun = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (reducedMotion) return;
+    tarikRef.current = { id: e.pointerId, x0: e.clientX, rot0: rotationTargetRef.current, dx: 0, flat0: flatTargetRef.current };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const judulGerak = (e: React.PointerEvent<HTMLDivElement>) => {
+    const t = tarikRef.current;
+    if (!t || e.pointerId !== t.id) return;
+    const dx = e.clientX - t.x0;
+    t.dx = dx;
+    // Geseran judul membalik bentuk (cincin ↔ barisan); pratinjaunya langsung terlihat.
+    if (Math.abs(dx) > 10) flatTargetRef.current = t.flat0 === 1 ? 0 : 1;
+    rotationTargetRef.current = t.rot0 - dx / 220;
+  };
+
+  const judulLepas = (e: React.PointerEvent<HTMLDivElement>) => {
+    const t = tarikRef.current;
+    if (!t || e.pointerId !== t.id) return;
+    tarikRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Pointer capture sudah dilepas.
+    }
+
+    const dx = t.dx;
+    if (Math.abs(dx) <= 40) {
+      // Geseran terlalu pendek: bentuk & kartu kembali seperti semula.
+      flatTargetRef.current = t.flat0;
+      rotationTargetRef.current = t.flat0 === 1 ? Math.round(rotationTargetRef.current) : t.rot0;
       return;
     }
 
-    animatingRef.current = true;
-    setWave({ card, to, fading: false });
-
-    // 1) gelombang selesai: warna dasar kartu diganti (sama dengan warna sisik,
-    //    jadi tak terlihat berubah) dan lapisan sisik mulai memudar;
-    // 2) setelah memudar, lapisan dilepas. Tanpa tahap pemudaran, tepi gelap
-    //    tiap sisik lenyap sekaligus dan terlihat seperti terpotong.
-    eggTimer.current = setTimeout(() => {
-      setBases((b) => b.map((v, i) => (i === card ? to : v)));
-      setWave((w) => (w ? { ...w, fading: true } : w));
-
-      eggTimer.current = setTimeout(() => {
-        setWave(null);
-        animatingRef.current = false;
-      }, FADE_MS);
-    }, WAVE_MS);
+    // Berhenti tepat di satu kartu; geseran yang cukup jauh selalu maju sekurangnya satu.
+    let target = Math.round(t.rot0 - dx / 220);
+    if (target === Math.round(t.rot0)) target += dx < 0 ? 1 : -1;
+    rotationTargetRef.current = target;
+    resetJudul();
   };
 
   const stageRef = useRef<HTMLDivElement>(null);
@@ -122,6 +325,7 @@ export default function Features() {
 
   const dragging = useRef(false);
   const dragStartX = useRef(0);
+  const dragStartY = useRef(0);
   const dragStartRotation = useRef(0);
 
   // ============================
@@ -167,6 +371,10 @@ export default function Features() {
         0.12
       );
 
+      // Cincin → barisan (dan sebaliknya) meluncur halus
+      flatRef.current = lerp(flatRef.current, flatTargetRef.current, 0.075);
+      const f = flatRef.current;
+
       // Smooth cursor wobble
       wobbleCurrent.current.x = lerp(
         wobbleCurrent.current.x,
@@ -195,7 +403,11 @@ export default function Features() {
         ? Math.min(vw * 0.24, 130)
         : Math.min(vw * 0.15, 200);
 
-      const step = (Math.PI * 2) / count;
+      // Cincin memakai 4 kartu asli. Di barisan dipakai 8 slot (4 asli + 4
+      // bayangan, fitur berulang) supaya sisi kanan/kiri tak berlubang dan kartu
+      // yang melompat ke sisi seberang selalu berada jauh di luar layar.
+      const base = STAGE_CARDS.length;
+      const step = (Math.PI * 2) / base;
 
       // ========================================
       // FIND FRONT CARD
@@ -205,7 +417,7 @@ export default function Features() {
       let frontDepth = -1;
 
       cards.forEach((card, index) => {
-        if (!card) return;
+        if (!card || index >= base) return;
 
         const angle =
           (index - rotationRef.current) * step;
@@ -228,8 +440,10 @@ export default function Features() {
       cards.forEach((card, index) => {
         if (!card) return;
 
+        const ghost = index >= base;
+        // Posisi cincin: kartu bayangan menyalin kartu aslinya.
         const angle =
-          (index - rotationRef.current) * step;
+          ((index % base) - rotationRef.current) * step;
 
         const sin = Math.sin(angle);
         const cos = Math.cos(angle);
@@ -268,8 +482,12 @@ export default function Features() {
             ? -(depth - 0.7) * 10
             : 0;
 
-        const isFront =
-          index === frontIndex;
+        // d = jarak bertanda dari tengah barisan (melingkar 8 slot, -4 ≤ d < 4).
+        let d = (((index - rotationRef.current) % count) + count) % count;
+        if (d >= count / 2) d -= count;
+        const absD = Math.abs(d);
+
+        const isFront = f < 0.5 ? index === frontIndex : absD < 0.5;
 
         const wobbleRotX = isFront
           ? wobbleCurrent.current.y * -8
@@ -279,34 +497,55 @@ export default function Features() {
           ? wobbleCurrent.current.x * 8
           : 0;
 
+        // Posisi sebagai BARISAN lurus. Ukuran MENGECIL BERTAHAP menjauhi tengah
+        // (skala 1,1 → ×0,76 tiap langkah) supaya kartu tampak berurutan, dan
+        // jarak tiap pasangan kartu mengikuti lebar keduanya: celahnya selalu 28px.
+        const lebar = card.offsetWidth || 410;
+        const skala = (k: number) => 1.1 * Math.pow(0.76, k);
+        const jarakKe = (k: number) => (lebar * (skala(k) + skala(k + 1))) / 2 + 28;
+        const lantai = Math.floor(absD);
+        let xr = 0;
+        for (let k = 0; k < lantai; k++) xr += jarakKe(k);
+        xr += (absD - lantai) * jarakKe(lantai);
+        const xRow = Math.sign(d) * xr;
+
+        const xm = lerp(x, xRow, f);
+        const ym = lerp(y, 0, f);
+        const zm = lerp(z, -absD * 40, f);
+        const rotateYm = lerp(rotateY, 0, f);
+        const sm = lerp(scale, skala(absD), f);
+        const blurm = lerp(blur, Math.min(absD, 2) * 1.8, f);
+        const depthm = lerp(depth, Math.max(0, 1 - absD * 0.5), f);
+
         card.style.transform = `
           translate3d(
-            ${x.toFixed(2)}px,
-            ${y.toFixed(2)}px,
-            ${z.toFixed(2)}px
+            ${xm.toFixed(2)}px,
+            ${ym.toFixed(2)}px,
+            ${zm.toFixed(2)}px
           )
           rotateX(${wobbleRotX.toFixed(2)}deg)
           rotateY(
-            ${(rotateY + wobbleRotY).toFixed(2)}deg
+            ${(rotateYm + wobbleRotY).toFixed(2)}deg
           )
-          scale(${scale.toFixed(3)})
+          scale(${sm.toFixed(3)})
         `;
 
         // Card tidak pernah transparan
         card.style.opacity =
-          opacity.toFixed(3);
+          (ghost ? Math.min(1, f * 2.5) : opacity).toFixed(3);
+        card.style.visibility = ghost && f < 0.02 ? "hidden" : "visible";
 
-        card.style.filter = blur
-          ? `blur(${blur.toFixed(2)}px)`
+        card.style.filter = blurm
+          ? `blur(${blurm.toFixed(2)}px)`
           : "";
 
         card.style.zIndex =
-          String(Math.round(depth * 1000));
+          String(Math.round(depthm * 1000));
 
-        card.style.pointerEvents =
-          depth > 0.72
-            ? "auto"
-            : "none";
+        // Semua kartu menerima penunjuk (kartu bayangan yang tersembunyi tidak, karena
+        // visibility:hidden). Kartu mana yang diketuk ditentukan lewat geometri di
+        // pointerup (lihat ketuk), bukan lewat hit-test peramban.
+        card.style.pointerEvents = "auto";
 
         // ========================================
         // HOLOGRAM VARIABLES
@@ -316,7 +555,7 @@ export default function Features() {
           "--holo-strength",
           (
             0.35 +
-            depth * 0.65
+            depthm * 0.65
           ).toFixed(3)
         );
 
@@ -415,6 +654,60 @@ export default function Features() {
     };
 
     // ========================================
+    // KETUK KARTU
+    // Kartu yang dituju dicari lewat GEOMETRI (kotak pembatas yang sudah
+    // memperhitungkan transform 3D) diperluas KETUK_PAD di tiap sisi, bukan lewat
+    // elemen di bawah penunjuk. Kartu yang sedang bergerak/berputar, miring, atau
+    // buram jadi jauh lebih mudah dikenai; bila beberapa kartu terkena, yang paling
+    // depan (z-index tertinggi) menang. Angka = ganti warna, bagian lain = penjelasan.
+    // ========================================
+
+    const KETUK_PAD = 28;
+    const EGG_PAD = 14;
+
+    const ketuk = (x: number, y: number) => {
+      let terbaik: HTMLElement | null = null;
+      let zTerbaik = -1;
+
+      for (const card of cardRefs.current) {
+        if (!card || card.style.visibility === "hidden") continue;
+        const r = card.getBoundingClientRect();
+        if (
+          x < r.left - KETUK_PAD ||
+          x > r.right + KETUK_PAD ||
+          y < r.top - KETUK_PAD ||
+          y > r.bottom + KETUK_PAD
+        ) {
+          continue;
+        }
+        const z = Number(card.style.zIndex) || 0;
+        if (z > zTerbaik) {
+          zTerbaik = z;
+          terbaik = card;
+        }
+      }
+
+      if (!terbaik) return;
+
+      const egg = terbaik.querySelector<HTMLElement>("[data-egg]");
+      if (egg) {
+        const er = egg.getBoundingClientRect();
+        if (
+          x >= er.left - EGG_PAD &&
+          x <= er.right + EGG_PAD &&
+          y >= er.top - EGG_PAD &&
+          y <= er.bottom + EGG_PAD
+        ) {
+          // .click() memanggil onClick React pada tombol angka.
+          egg.click();
+          return;
+        }
+      }
+
+      setDetail(Number(terbaik.dataset.fitur));
+    };
+
+    // ========================================
     // POINTER DOWN
     // ========================================
 
@@ -427,6 +720,8 @@ export default function Features() {
 
       dragStartX.current =
         e.clientX;
+      dragStartY.current =
+        e.clientY;
 
       dragStartRotation.current =
         rotationTargetRef.current;
@@ -491,18 +786,18 @@ export default function Features() {
       stage.style.cursor =
         "grab";
 
-      const down = downTargetRef.current;
+      // Mode barisan: berhenti tepat pada satu kartu (yang disorot). Cincin tetap bebas.
+      if (flatTargetRef.current === 1 && Math.abs(e.clientX - dragStartX.current) >= 6) {
+        rotationTargetRef.current = Math.round(rotationTargetRef.current);
+      }
+
       downTargetRef.current = null;
 
       if (
         e.type === "pointerup" &&
-        Math.abs(e.clientX - dragStartX.current) < 6 &&
-        down instanceof Element
+        Math.hypot(e.clientX - dragStartX.current, e.clientY - dragStartY.current) < 10
       ) {
-        const egg = down.closest<HTMLElement>("[data-egg]");
-
-        // .click() memanggil onClick React pada tombol angka.
-        egg?.click();
+        ketuk(e.clientX, e.clientY);
       }
     };
 
@@ -631,10 +926,18 @@ export default function Features() {
             HEADING
         ====================================== */}
 
-        <div className="flex flex-col items-center text-center">
-
-          <SectionTitle as="h1" title="Features" />
-
+        <div
+          className="flex cursor-grab touch-pan-y select-none flex-col items-center text-center active:cursor-grabbing"
+          style={{ touchAction: "pan-y" }}
+          onPointerDown={judulTurun}
+          onPointerMove={judulGerak}
+          onPointerUp={judulLepas}
+          onPointerCancel={judulLepas}
+        >
+          {/* key berganti → SectionTitle dipasang ulang → acak alfabet mulai dari awal */}
+          <div key={`judul-${judulKe}`}>
+            <SectionTitle as="h1" title="Features" />
+          </div>
         </div>
 
         {/* ======================================
@@ -665,16 +968,18 @@ export default function Features() {
 
             <div className="cards-stack">
 
-              {STAGE_CARDS.map(
-                (feat, index) => (
+              {SLOTS.map(
+                ({ index, slot, ghost, ...feat }) => (
 
                   <div
-                    key={feat.title}
+                    key={slot}
                     ref={(el) => {
                       cardRefs.current[
-                        index
+                        slot
                       ] = el;
                     }}
+                    data-fitur={index}
+                    aria-hidden={ghost || undefined}
                     className="
                       feature-card
                       group
@@ -692,6 +997,7 @@ export default function Features() {
                          lapisan holo - kesannya datang dari tipografi. */
                       backgroundColor:
                         EGG_COLORS[bases[index]],
+                      transition: reducedMotion ? "none" : "background-color 650ms cubic-bezier(0.4, 0, 0.2, 1)",
 
                       borderRadius: 0,
                       opacity: 1,
@@ -702,10 +1008,6 @@ export default function Features() {
                       WebkitBackdropFilter: "none",
                     }}
                   >
-
-                    {wave?.card === index && (
-                      <FishScales color={EGG_COLORS[wave.to]} fading={wave.fading} />
-                    )}
 
                     <div
                       className="
@@ -725,6 +1027,7 @@ export default function Features() {
                       <button
                         type="button"
                         data-egg={index}
+                        tabIndex={ghost ? -1 : undefined}
                         onClick={() => triggerEgg(index)}
                         aria-label="Ganti warna kartu"
                         className="
@@ -815,6 +1118,14 @@ export default function Features() {
         </div>
 
       </div>
+      {detail !== null && (
+        <DetailFitur
+          key={detail}
+          idx={detail}
+          warna={EGG_COLORS[bases[detail]]}
+          onClose={tutupDetail}
+        />
+      )}
     </section>
   );
 }

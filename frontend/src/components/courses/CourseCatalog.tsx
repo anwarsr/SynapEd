@@ -27,11 +27,14 @@ const CHIP =
 export default function CourseCatalog({
   courses,
   categories,
+  initialQuery = "",
 }: {
   courses: CourseSummary[];
   categories: Category[];
+  /** Kata pencarian awal (dari ?q=). */
+  initialQuery?: string;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [kategori, setKategori] = useState("semua");
   const [minRating, setMinRating] = useState(0);
   const [terbuka, setTerbuka] = useState(false);
