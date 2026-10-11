@@ -15,7 +15,6 @@ import {
   listPostSubmissions,
   periksaBerkas,
 } from "@/lib/classAssignments";
-import { deleteObjects } from "@/lib/storageCleanup";
 import {
   MAX_ASSIGNMENT_TITLE,
   MAX_FILES_PER_POST,
