@@ -1258,7 +1258,7 @@ select optgroup {
 .about-judul .about-huruf { opacity: 0; }
 /* Gaya label: putih REDUP (bukan putih sejati) - dicampur dengan latar panel agar
    tegas tetapi tidak menyilaukan; angka sedikit lebih terang daripada judul. */
-.about-angka { color: color-mix(in srgb, var(--color-white) 74%, var(--color-paper)); }
+.about-angka { color: color-mix(in srgb, var(--color-white) 13%, transparent); }
 .about-judul { color: color-mix(in srgb, var(--color-white) 64%, var(--color-paper)); letter-spacing: 0.01em; }
 
 @keyframes about-huruf-masuk {

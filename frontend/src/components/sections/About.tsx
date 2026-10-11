@@ -92,7 +92,7 @@ export default function About() {
                 style={{ fontFamily: "var(--font-sans)" }}
               >
                 <div className="about-label">
-                  <span className="about-angka text-[clamp(2.2rem,4.2vw,3.8rem)] font-extrabold leading-none tracking-[-0.04em]">
+                  <span className="about-angka text-[3.2rem] font-black leading-none tracking-[-0.08em] lg:text-[clamp(5.5rem,11vw,10rem)]">
                     <HurufLabel text={point.num} langkah={90} />
                   </span>
                   <span
@@ -349,7 +349,7 @@ function Sources({ open }: { open: boolean }) {
               className="group/row flex min-h-12 w-full cursor-pointer items-center text-left focus-visible:outline-none"
             >
               <span className="flex min-w-0 items-baseline gap-3">
-                <span className={cn("font-mono text-sm tabular-nums transition-colors duration-300", on ? "text-blue-300" : "text-white/35")}>
+                <span className={cn("text-xl font-semibold tabular-nums transition-colors duration-300", on ? "text-blue-300" : "text-white/35")}>
                   {i + 1}
                 </span>
                 <span
