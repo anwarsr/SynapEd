@@ -90,7 +90,9 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
             <span className="sr-only">SynapLab</span>
             {/* 157×30 — gambar logo, bukan tulisan; tinggi dipatok, lebar mengikuti rasio */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/SynapLab.png" alt="" width={157} height={30} className="h-8 w-auto lg:h-9" />
+            <img src="/images/SynapLab.png" alt="" width={157} height={30} className="logo-on-dark h-8 w-auto lg:h-9" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/SynapLab Black.png" alt="" width={157} height={30} className="logo-on-light h-8 w-auto lg:h-9" />
           </h1>
         </div>
 
