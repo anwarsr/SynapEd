@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   const messages = (body as Record<string, unknown> | null)?.messages;
   if (!isValidMessages(messages)) {
     return NextResponse.json(
-      { message: "Format pesan tidak valid, atau percakapan sudah terlalu panjang — mulai percakapan baru." },
+      { message: "Format pesan tidak valid, atau percakapan sudah terlalu panjang - mulai percakapan baru." },
       { status: 400 },
     );
   }

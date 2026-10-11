@@ -1,4 +1,5 @@
 import Navbar from "@/components/sections/Navbar";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import Footer from "@/components/sections/Footer";
 import Link from "next/link";
 import { COMPANY, LEGAL_EFFECTIVE_DATE } from "@/lib/company";
@@ -39,13 +40,7 @@ export default function KontakPage() {
 
       <main className="bg-paper min-h-screen pt-32 pb-24">
         <div className="container-reading">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-8">
-            <Link href="/" className="hover:text-blue-700 transition-colors">
-              Beranda
-            </Link>
-            <span aria-hidden="true">/</span>
-            <span className="text-ink">Kontak</span>
-          </nav>
+          <Breadcrumb items={[{ label: "Beranda", href: "/" }, { label: "Kontak" }]} className="mb-8" />
 
           <h1 className="t-display mb-6">Hubungi Kami</h1>
 

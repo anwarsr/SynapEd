@@ -46,18 +46,18 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
       {quiz.bestScore !== null && !result && (
         <div
           className={cn(
-            "rounded-lg border px-4 py-3 text-sm",
-            quiz.passed ? "border-blue-100 bg-blue-50 text-blue-700" : "border-rule bg-paper-alt text-ink-body",
+            " px-4 py-3 text-sm",
+            quiz.passed ? "bg-blue-500/150/15 text-blue-200" : "bg-white/5 text-ink-body",
           )}
         >
           {quiz.passed
-            ? `Anda sudah lulus kuis ini — skor terbaik ${quiz.bestScore}%.`
+            ? `Anda sudah lulus kuis ini - skor terbaik ${quiz.bestScore}%.`
             : `Skor terbaik Anda sejauh ini: ${quiz.bestScore}%. Nilai kelulusan: ${quiz.passingScore}%.`}
         </div>
       )}
 
       {error && (
-        <div role="alert" className="rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700">
+        <div role="alert" className="  bg-[#E0795A]/15 px-4 py-3 text-sm text-error-text">
           {error}
         </div>
       )}
@@ -66,16 +66,16 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
         <div className="space-y-5">
           <div
             className={cn(
-              "rounded-2xl border p-6 text-center",
-              result.passed ? "border-blue-100 bg-blue-50" : "border-rust-700/25 bg-rust-100",
+              " p-6 text-center",
+              result.passed ? "bg-blue-500/150/15" : "bg-[#E0795A]/15",
             )}
           >
-            <p className={cn("t-h3 text-lg mb-1", result.passed ? "text-blue-700" : "text-rust-700")}>
+            <p className={cn("t-h3 text-lg mb-1", result.passed ? "text-blue-700" : "text-error-text")}>
               {result.passed ? "Selamat, Anda lulus!" : "Belum lulus"}
             </p>
             <p className="text-sm text-ink-muted">
               Skor: {result.score}% (nilai kelulusan {quiz.passingScore}%)
-              {!result.passed && result.attemptsLeft !== null && ` — sisa percobaan: ${result.attemptsLeft}`}
+              {!result.passed && result.attemptsLeft !== null && ` - sisa percobaan: ${result.attemptsLeft}`}
             </p>
           </div>
 
@@ -83,7 +83,7 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
             <div className="text-center">
               <Link
                 href={`/courses/${courseSlug}/complete`}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
               >
                 Lihat Halaman Kelulusan →
               </Link>
@@ -97,12 +97,12 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
                 <li
                   key={q.id}
                   className={cn(
-                    "rounded-xl border p-4 text-sm",
-                    graded?.correct ? "border-blue-100 bg-blue-50" : "border-rust-700/25 bg-rust-100",
+                    " p-4 text-sm",
+                    graded?.correct ? "bg-blue-500/150/15" : "bg-[#E0795A]/15",
                   )}
                 >
                   <p className="font-medium text-ink mb-1">{q.prompt}</p>
-                  <p className={graded?.correct ? "text-blue-700" : "text-rust-700"}>
+                  <p className={graded?.correct ? "text-blue-700" : "text-error-text"}>
                     {graded?.correct ? "Jawaban benar" : "Coba Lagi"}
                   </p>
                   {graded?.explanation && <p className="mt-2 text-ink-muted">{graded.explanation}</p>}
@@ -118,20 +118,20 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
                 setResult(null);
                 setAnswers({});
               }}
-              className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+              className="  px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-200 ease-out-soft  hover:text-blue-700"
             >
               Coba Lagi
             </button>
           )}
         </div>
       ) : attemptsExhausted ? (
-        <div className="rounded-2xl border border-rust-700/25 bg-rust-100 p-6 text-center text-sm text-rust-700">
+        <div className="  bg-[#E0795A]/15 p-6 text-center text-sm text-error-text">
           Percobaan untuk kuis ini sudah habis.
         </div>
       ) : (
         <div className="space-y-5">
           {quiz.questions.map((q, qi) => (
-            <fieldset key={q.id} className="rounded-xl border border-rule p-4">
+            <fieldset key={q.id} className="  p-4">
               <legend className="text-sm font-medium text-ink px-1">
                 {qi + 1}. {q.prompt}
               </legend>
@@ -140,10 +140,10 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
                   <label
                     key={o.id}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg border px-4 py-2.5 text-sm cursor-pointer transition-colors duration-200",
+                      "flex items-center gap-3  px-4 py-2.5 text-sm cursor-pointer transition-colors duration-200",
                       answers[q.id] === o.id
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-rule text-ink-body hover:border-blue-500/50",
+                        ? "bg-blue-500/150/20 text-white"
+                        : "bg-white/[0.06] text-ink-body hover:bg-white/10",
                     )}
                   >
                     <input
@@ -165,12 +165,12 @@ export default function QuizRunner({ courseSlug, quiz }: { courseSlug: string; q
             type="button"
             onClick={submit}
             disabled={pending || unanswered.length > 0}
-            className="rounded-lg bg-blue-600 px-7 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="bg-blue-600 px-7 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {pending ? "Menilai…" : "Kirim Jawaban"}
           </button>
           {unanswered.length > 0 && (
-            <p className="mt-2 text-xs text-ink-muted">Jawab semua soal dulu — {unanswered.length} tersisa.</p>
+            <p className="mt-2 text-xs text-ink-muted">Jawab semua soal dulu - {unanswered.length} tersisa.</p>
           )}
         </div>
       )}

@@ -113,7 +113,7 @@ export default function PostComposer({
   const bisaKirim = tugas ? judul.trim().length >= 3 && isian.formats.length > 0 : body.trim().length > 0 || berkas.length > 0;
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border border-rule bg-paper-card p-6">
+    <form onSubmit={onSubmit} className="bg-paper-card p-6">
       <div className="flex items-start gap-3">
         <span className="shrink-0 max-sm:hidden">
           <UserAvatar name={meName} photoURL={mePhoto} />
@@ -207,7 +207,7 @@ export default function PostComposer({
               type="submit"
               disabled={sibuk || !bisaKirim}
               className={cn(
-                "rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white",
+                "bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white",
                 "transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5",
                 "disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed",
               )}

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
 import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
 import GradeForm from "@/components/educator/GradeForm";
@@ -70,12 +70,7 @@ export default async function CourseStudentsPage({ params }: Props) {
           <h1 className="t-h2">
             Peserta <span className="mark">{course.title}</span>
           </h1>
-          <Link
-            href="/educator/courses"
-            className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700"
-          >
-            ← Kursus Saya
-          </Link>
+          <BackLink href="/educator/courses">Kembali ke kursus saya</BackLink>
         </div>
 
         <p className="t-body text-ink-muted mb-10">
@@ -154,7 +149,7 @@ export default async function CourseStudentsPage({ params }: Props) {
                           </p>
 
                           {/* Berkasnya SELALU diunduh, tidak pernah dibuka di
-                              tab — jenisnya bebas, dan membiarkan browser
+                              tab - jenisnya bebas, dan membiarkan browser
                               merendernya berarti mengizinkan kiriman peserta
                               dieksekusi di domain ini. */}
                           <a

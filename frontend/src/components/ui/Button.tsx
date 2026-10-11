@@ -5,7 +5,7 @@ type Variant = "primary" | "secondary" | "outline" | "ghost";
 type Size = "sm" | "md";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-lg font-medium " +
+  "inline-flex items-center justify-center gap-2 font-medium " +
   "transition-colors duration-200 ease-out-soft focus-visible:outline-none " +
   "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 " +
   "focus-visible:ring-offset-paper";
@@ -14,8 +14,8 @@ const variants: Record<Variant, string> = {
   // Biru adalah identitas — jadi biru yang memimpin aksi utama.
   primary: "bg-blue-600 text-white hover:bg-blue-700",
   secondary: "bg-ink text-paper hover:bg-ink-body",
-  outline: "border border-rule text-ink bg-paper-card hover:border-blue-500 hover:text-blue-700",
-  ghost: "text-ink-body hover:text-blue-700",
+  outline: "bg-white/10 text-white hover:bg-white/15",
+  ghost: "text-ink-body hover:text-white",
 };
 
 const sizes: Record<Size, string> = {

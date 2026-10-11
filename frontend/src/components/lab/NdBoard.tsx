@@ -23,12 +23,12 @@ import { cn } from "@/lib/cn";
  * menelusuri label berwarna dari kotak terluar ke dalam.
  */
 const WARNA_SUMBU = [
-  "border-blue-300 bg-blue-50 text-blue-700",
-  "border-amber-500/60 bg-amber-100 text-amber-700",
-  "border-rust-700/30 bg-rust-100 text-rust-700",
-  "border-rule-strong bg-paper-alt text-ink",
-  "border-blue-500 bg-blue-100 text-blue-700",
-  "border-ink/30 bg-paper text-ink-body",
+  " bg-blue-500/20 text-blue-200",
+  " bg-amber-500/25 text-warn-text",
+  " bg-[#E0795A]/25 text-error-text",
+  " bg-white/15 text-white",
+  " bg-blue-500/35 text-white",
+  " bg-white/10 text-white",
 ] as const;
 
 const warnaSumbu = (sumbu: number) => WARNA_SUMBU[sumbu % WARNA_SUMBU.length];
@@ -219,16 +219,16 @@ export default function NdBoard({
     return cn(
       kelasPeran(peran, id) ?? kelasKelompok(kelompok, id) ?? (irisan ? LAB_TONE_CLASS[irisan.tone] : LAB_CELL_NETRAL),
       difokus && kelasFokus(fokus.length),
-      offset === offsetKursor && !difokus && "border-blue-600 ring-2 ring-blue-500/30",
-      offset === offsetTerpilih && !difokus && offset !== offsetKursor && "border-ink",
+      offset === offsetKursor && !difokus && "ring-2 ring-blue-500/50",
+      offset === offsetTerpilih && !difokus && offset !== offsetKursor && "shadow-[inset_0_-3px_0_0_var(--color-white)]",
     );
   }
 
   return (
     <div
       className={cn(
-        "lab-board relative flex flex-col border border-rule bg-paper-card",
-        presentasi ? "min-h-[55vh] rounded-none border-0 px-6 py-10" : "rounded-3xl px-5 pt-5 pb-6 shadow-soft lg:min-h-[40vh]",
+        "lab-board relative flex flex-col   bg-paper-card",
+        presentasi ? "min-h-[55vh] rounded-none  px-6 py-10" : "px-5 pt-5 pb-6  lg:min-h-[40vh]",
       )}
       style={{ "--lab-cell": presentasi ? "3.5rem" : "2.6rem" } as React.CSSProperties}
     >
@@ -242,7 +242,7 @@ export default function NdBoard({
             </span>
             <span className="flex flex-wrap items-center gap-1">
               {shape.map((n, k) => (
-                <span key={k} className={cn("rounded-full border px-2 py-px text-[10px]", warnaSumbu(k))}>
+                <span key={k} className={cn("rounded-full  px-2 py-px text-[10px]", warnaSumbu(k))}>
                   sumbu {k}: {n}
                 </span>
               ))}
@@ -274,13 +274,13 @@ export default function NdBoard({
                   <div
                     key={`b${b.kunci}`}
                     className={cn(
-                      "lab-bingkai absolute left-0 top-0 rounded-2xl border-2",
-                      menyala(b.awalan) ? "border-blue-500 bg-blue-50/40 shadow-soft" : "border-rule bg-paper/60",
+                      "lab-bingkai absolute left-0 top-0 ",
+                      menyala(b.awalan) ? "bg-blue-500/15" : "bg-white/[0.05]",
                     )}
                     style={{ width: u(b.w), height: u(b.h), translate: `${u(b.x)} ${u(b.y)}` }}
                   >
                     <span
-                      className={cn("t-numeral absolute -top-2.5 left-3 rounded-full border px-2 py-0.5 text-[10px] tabular-nums", warnaSumbu(b.sumbu))}
+                      className={cn("t-numeral absolute -top-2.5 left-3 rounded-full  px-2 py-0.5 text-[10px] tabular-nums", warnaSumbu(b.sumbu))}
                       title={`sumbu ${b.sumbu}`}
                     >
                       [{b.k}]
@@ -292,9 +292,9 @@ export default function NdBoard({
                   <span
                     key={`l${l.kunci}`}
                     className={cn(
-                      "lab-posisi t-numeral absolute left-0 top-0 flex items-center justify-center rounded-md border text-[10px] tabular-nums",
+                      "lab-posisi t-numeral absolute left-0 top-0 flex items-center justify-center  text-[10px] tabular-nums",
                       warnaSumbu(l.sumbu),
-                      menyala(l.awalan) ? "scale-110 shadow-soft" : "opacity-80",
+                      menyala(l.awalan) ? "scale-110 " : "opacity-80",
                     )}
                     style={{ width: u(l.w), height: u(1), translate: `${u(l.x)} ${u(l.y)}` }}
                     title={`sumbu ${l.sumbu}`}
@@ -326,7 +326,7 @@ export default function NdBoard({
                       onClick={() => onPilih(koordinat)}
                       className={cn(
                         "lab-cell lab-posisi lab-enter t-numeral absolute left-0 top-0 flex h-[var(--lab-cell)] w-[var(--lab-cell)]",
-                        "items-center justify-center rounded-lg border-2 text-sm tabular-nums",
+                        "items-center justify-center  text-sm tabular-nums",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
                         kelasSel(o, sel.id, koordinat),
                       )}
@@ -346,7 +346,7 @@ export default function NdBoard({
             </div>
 
             {/* ── Pita memori ──────────────────────────────────── */}
-            <div className="mt-5 border-t border-dashed border-rule pt-4">
+            <div className="mt-5    pt-4">
               <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-ink-muted">
                 <span className="t-label text-ink">Memori</span>
                 <span>
@@ -369,7 +369,7 @@ export default function NdBoard({
                     >
                       <span
                         className={cn(
-                          "t-numeral flex h-7 w-7 items-center justify-center rounded-md border text-[11px] tabular-nums transition-colors duration-200",
+                          "t-numeral flex h-7 w-7 items-center justify-center  text-[11px] tabular-nums transition-colors duration-200",
                           kelasSel(offset, sel.id, koordinat),
                         )}
                       >
@@ -388,15 +388,15 @@ export default function NdBoard({
           <div className="lab-fade-up flex flex-col items-center gap-3 text-center">
             <div aria-hidden="true" className="flex gap-2 opacity-60">
               {[0, 1].map((b) => (
-                <div key={b} className="grid grid-cols-2 gap-1 rounded-xl border-2 border-dashed border-rule-strong p-1.5">
+                <div key={b} className="grid grid-cols-2 gap-1 bg-white/[0.06] p-1.5">
                   {[0, 1, 2, 3].map((i) => (
-                    <span key={i} className="h-5 w-5 rounded-md border-2 border-dashed border-rule-strong" />
+                    <span key={i} className="h-5 w-5 bg-white/[0.06]" />
                   ))}
                 </div>
               ))}
             </div>
             <p className="max-w-[46ch] text-sm text-ink-muted">
-              Buat array dengan berapa pun dimensinya — tulis panjang tiap dimensi di panel kanan, atau mulai dari contoh:
+              Buat array dengan berapa pun dimensinya - tulis panjang tiap dimensi di panel kanan, atau mulai dari contoh:
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {MULAI_CEPAT.map((m, i) => (
@@ -404,7 +404,7 @@ export default function NdBoard({
                   key={m.label}
                   type="button"
                   onClick={() => onMulai(m.op)}
-                  className="lab-fade-up rounded-full border border-blue-300 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-soft"
+                  className="lab-fade-up rounded-full   bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:"
                   style={{ "--d": `${120 + i * 70}ms` } as React.CSSProperties}
                 >
                   {m.label}

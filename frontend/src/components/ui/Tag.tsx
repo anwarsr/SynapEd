@@ -5,8 +5,9 @@ type Tone = "neutral" | "blue" | "amber" | "rust";
 const tones: Record<Tone, string> = {
   neutral: "bg-paper-alt text-ink-muted",
   blue: "bg-blue-50 text-blue-700",
-  amber: "bg-amber-100 text-amber-700",
-  rust: "bg-rust-100 text-rust-700",
+  // Tema gelap: tint transparan + teks terang, bukan kotak krem/oranye pucat.
+  amber: "bg-amber-500/15 text-warn-text",
+  rust: "bg-[#E0795A]/15 text-error-text",
 };
 
 interface Props {

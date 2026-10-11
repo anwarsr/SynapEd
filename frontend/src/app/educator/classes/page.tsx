@@ -12,11 +12,6 @@ export const metadata: Metadata = { title: "Kelas Saya – SynapEd" };
 
 export const dynamic = "force-dynamic";
 
-const DISPLAY_JUDUL = {
-  fontFamily: "var(--font-sans)",
-  fontWeight: 500,
-} as const;
-
 const DISPLAY_BARIS = {
   fontFamily: "var(--font-sans)",
   fontWeight: 500,
@@ -39,34 +34,27 @@ export default async function MyClassesPage() {
 
   return (
     <EducatorShell user={user}>
-      <div className="-mt-12 mb-10 border-b border-rule bg-paper-alt pb-10 pt-16">
-        <div className="container-reading">
-          <p className="chapter-mark mb-5">
-            <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-            <span>Panel Educator</span>
-          </p>
+      <div className="container-reading mb-12 pt-4">
+        <h1 className="mb-4 text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-white">
+          Kelas yang Anda kelola
+        </h1>
 
-          <h1 className="text-ink" style={{ ...DISPLAY_JUDUL, fontSize: "clamp(2rem,4vw,2.8rem)" }}>
-            Kelas yang Anda <span className="mark">kelola</span>
-          </h1>
-
-          <p className="t-body text-ink-muted mt-4 max-w-[54ch]">
-            {kelas.length === 0
-              ? "Belum ada kelas. Buat satu, lalu bagikan kode undangannya kepada peserta."
-              : `${kelas.length} kelas. Kode undangannya tertera di tiap baris.`}
-          </p>
-        </div>
+        <p className="t-body max-w-[54ch] text-ink-muted">
+          {kelas.length === 0
+            ? "Belum ada kelas. Buat satu, lalu bagikan kode undangannya kepada peserta."
+            : `${kelas.length} kelas. Kode undangannya tertera di tiap baris.`}
+        </p>
       </div>
 
       <div className="container-reading">
         <div className="grid gap-9 grid-cols-[minmax(0,1fr)_minmax(260px,320px)] max-lg:grid-cols-1 max-lg:gap-6">
           <div className="min-w-0">
             {kelas.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-rule-strong bg-paper-card/55 px-8 py-14 text-center">
-                <p className="text-[22px] text-ink" style={DISPLAY_BARIS}>
+              <div className="bg-paper-card px-8 py-14">
+                <p className="text-[22px] font-semibold tracking-[-0.02em] text-white" style={DISPLAY_BARIS}>
                   Belum ada kelas
                 </p>
-                <p className="mx-auto mt-3 max-w-[44ch] text-sm leading-[1.7] text-ink-muted">
+                <p className="mt-3 max-w-[44ch] text-sm leading-[1.7] text-ink-muted">
                   Buat satu di panel sebelah, lalu bagikan kode undangannya kepada peserta Anda.
                 </p>
               </div>
@@ -75,15 +63,15 @@ export default async function MyClassesPage() {
                 {kelas.map((k, i) => (
                   <li key={k.id}>
                     <Reveal delay={i * 90}>
-                      <div className="flex overflow-hidden rounded-2xl border border-rule bg-paper-card transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft">
-                        <ClassSpine nama={k.name} variant="tipis" />
+                      <div className="flex overflow-hidden bg-paper-card transition-colors duration-300 ease-out-soft hover:bg-card-hover">
+                        <ClassSpine nama={k.name} variant="tipis" gambar={k.imageURL} />
 
                         <div className="min-w-0 flex-1 p-5">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
                               <Link
                                 href={`/educator/classes/${k.id}`}
-                                className="text-[20px] text-ink transition-colors duration-200 hover:text-blue-700"
+                                className="text-[20px] text-white transition-colors duration-200 hover:text-blue-300"
                                 style={DISPLAY_BARIS}
                               >
                                 {k.name}
@@ -93,7 +81,7 @@ export default async function MyClassesPage() {
                                 {/* Kode ditaruh di baris, bukan disembunyikan
                                     di dalam kelasnya: inilah yang paling sering
                                     dicari pengajar saat membuka halaman ini. */}
-                                <code className="rounded-md border border-rule bg-paper-alt px-2 py-0.5 text-xs tracking-[0.12em] text-ink">
+                                <code className="bg-white/10 px-2 py-0.5 text-xs tracking-[0.12em] text-white">
                                   {k.joinCode}
                                 </code>
                                 <span>
@@ -106,13 +94,13 @@ export default async function MyClassesPage() {
                             <div className="flex shrink-0 flex-wrap gap-2">
                               <Link
                                 href={`/educator/classes/${k.id}`}
-                                className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 transition-colors duration-200 hover:border-blue-500"
+                                className="bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
                               >
                                 Buka
                               </Link>
                               <Link
                                 href={`/educator/classes/${k.id}/members`}
-                                className="rounded-lg border border-rule px-4 py-2 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700"
+                                className="bg-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-white/15"
                               >
                                 Anggota
                               </Link>

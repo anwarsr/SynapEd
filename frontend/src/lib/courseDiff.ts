@@ -31,7 +31,7 @@ export const changeKindLabel: Record<ChangeKind, string> = {
 };
 
 function text(v: unknown): string {
-  if (v === null || v === undefined || v === "") return "—";
+  if (v === null || v === undefined || v === "") return "-";
   return String(v);
 }
 
@@ -214,7 +214,7 @@ function diffContributors(
     out.push({
       kind: "changed",
       field: "Bagian pemilik",
-      before: pemilikLama ? `${pemilikLama.share}%` : "—",
+      before: pemilikLama ? `${pemilikLama.share}%` : "-",
       after: `${pemilikBaru.share}%`,
     });
   }
@@ -225,14 +225,14 @@ function diffContributors(
   for (const [uid, share] of baruLain) {
     const dulu = lamaLain.get(uid);
     if (dulu === undefined) {
-      out.push({ kind: "added", field: "Kontributor", after: `${labelOf(uid)} — ${share}%` });
+      out.push({ kind: "added", field: "Kontributor", after: `${labelOf(uid)} - ${share}%` });
     } else if (dulu !== share) {
       out.push({ kind: "changed", field: `Bagian ${labelOf(uid)}`, before: `${dulu}%`, after: `${share}%` });
     }
   }
   for (const [uid, share] of lamaLain) {
     if (!baruLain.has(uid)) {
-      out.push({ kind: "removed", field: "Kontributor", before: `${labelOf(uid)} — ${share}%` });
+      out.push({ kind: "removed", field: "Kontributor", before: `${labelOf(uid)} - ${share}%` });
     }
   }
 

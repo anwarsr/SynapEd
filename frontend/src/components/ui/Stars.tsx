@@ -35,7 +35,7 @@ export default function Stars({
       {[1, 2, 3, 4, 5].map((s) => (
         <svg
           key={s}
-          className={cn(sizes[size], s <= Math.round(value) ? "text-amber-500" : "text-blue-100")}
+          className={cn(sizes[size], s <= Math.round(value) ? "text-amber-500" : "text-white/20")}
           fill="currentColor"
           viewBox="0 0 20 20"
           aria-hidden="true"

@@ -41,7 +41,7 @@ export const ND_OP_CATALOG: Record<NdOp["kind"], NdOpSpec> = {
     kind: "isiAcak",
     label: "Isi acak",
     grup: "bentuk",
-    ringkas: "Mengganti seluruh isi dengan angka acak — selalu sama untuk benih yang sama.",
+    ringkas: "Mengganti seluruh isi dengan angka acak - selalu sama untuk benih yang sama.",
     fields: [
       { name: "maks", label: "Nilai terbesar", kind: "angka", placeholder: "99", min: 1 },
       { name: "benih", label: "Benih acak", kind: "angka", placeholder: "42", min: 0 },
@@ -68,7 +68,7 @@ export const ND_OP_CATALOG: Record<NdOp["kind"], NdOpSpec> = {
     kind: "ubahBentuk",
     label: "Ubah bentuk (reshape)",
     grup: "bentuk",
-    ringkas: "Membaca ulang deret memori yang sama dengan bentuk lain — jumlah elemennya harus tetap.",
+    ringkas: "Membaca ulang deret memori yang sama dengan bentuk lain - jumlah elemennya harus tetap.",
     fields: [{ ...F_BENTUK, label: "Bentuk baru", placeholder: "4, 6" }],
     contoh: { kind: "ubahBentuk", bentuk: "4, 6" },
   },
@@ -147,7 +147,7 @@ export const ND_OP_CATALOG: Record<NdOp["kind"], NdOpSpec> = {
     kind: "tukarSumbu",
     label: "Tukar dua sumbu",
     grup: "ubah",
-    ringkas: "Menukar peran dua sumbu — perumuman transpose untuk berapa pun dimensinya.",
+    ringkas: "Menukar peran dua sumbu - perumuman transpose untuk berapa pun dimensinya.",
     fields: [
       { name: "sumbuA", label: "Sumbu pertama", kind: "angka", placeholder: "0", min: 0, max: ND_MAX_DIMS - 1 },
       { name: "sumbuB", label: "Sumbu kedua", kind: "angka", placeholder: "1", min: 0, max: ND_MAX_DIMS - 1 },

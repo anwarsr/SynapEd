@@ -17,10 +17,10 @@ function Note({ status }: { status: Status }) {
     <p
       role="status"
       className={cn(
-        "mt-4 rounded-lg px-4 py-3 text-sm",
+        "mt-4 px-4 py-3 text-sm",
         status.kind === "ok"
-          ? "bg-blue-50 text-blue-700 border border-blue-100"
-          : "bg-rust-100 text-rust-700 border border-rust-700/25",
+          ? "bg-blue-500/15 text-blue-200"
+          : "bg-[#E0795A]/15 text-error-text",
       )}
     >
       {status.msg}
@@ -89,17 +89,17 @@ export function AvatarForm({ user }: { user: SessionUser }) {
   }
 
   return (
-    <div className="bg-paper-card border border-rule rounded-2xl p-7">
+    <div className="bg-paper-card p-7 sm:p-9">
       <h2 className="t-h3 mb-1.5">Foto Profil</h2>
       <p className="t-body text-sm mb-6">Format gambar apa pun, maksimal 2 MB.</p>
 
       <div className="flex items-center gap-6">
-        <span className="relative w-20 h-20 rounded-full overflow-hidden bg-blue-50 border border-rule flex items-center justify-center shrink-0">
+        <span className="relative w-20 h-20 rounded-full overflow-hidden bg-black flex items-center justify-center shrink-0">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={preview} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="t-numeral text-xl text-blue-700">{initials(user.name)}</span>
+            <span className="t-numeral text-xl text-white">{initials(user.name)}</span>
           )}
         </span>
 
@@ -115,8 +115,8 @@ export function AvatarForm({ user }: { user: SessionUser }) {
           <label
             htmlFor="avatar-input"
             className={cn(
-              "inline-block cursor-pointer rounded-lg border border-rule px-5 py-2.5 text-sm font-medium",
-              "transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700",
+              "inline-block cursor-pointer bg-white/10 px-5 py-2.5 text-sm font-medium",
+              "transition-colors duration-200 ease-out-soft hover:bg-white/15 hover:text-white",
               pending && "opacity-60 pointer-events-none",
             )}
           >
@@ -163,7 +163,7 @@ export function PhoneForm({ initialPhone }: { initialPhone: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
+    <form onSubmit={onSubmit} className="bg-paper-card p-7 sm:p-9">
       <h2 className="t-h3 mb-1.5">Nomor HP</h2>
       <p className="t-body text-sm mb-6">
         Opsional. Kosongkan lalu simpan untuk menghapusnya.
@@ -181,14 +181,14 @@ export function PhoneForm({ initialPhone }: { initialPhone: string }) {
           value={phone}
           placeholder="0812-3456-7890"
           onChange={(e) => setPhone(e.target.value)}
-          className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:opacity-60"
+          className="w-full bg-white/[0.06] px-4 py-3 text-sm text-white transition-[background-color,box-shadow] duration-200 placeholder:text-white/35 focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none disabled:opacity-60"
         />
       </div>
 
       <button
         type="submit"
         disabled={pending}
-        className="mt-6 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
+        className="mt-6 bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
       >
         {pending ? "Menyimpan…" : "Simpan Nomor"}
       </button>

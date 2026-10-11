@@ -76,14 +76,14 @@ export default function AssignmentPanel({
   const sibuk = uploading || pending;
 
   return (
-    <div className="rounded-2xl border border-rule bg-paper-alt p-5">
+    <div className="  bg-white/5 p-5">
       <p className="text-sm font-semibold text-ink mb-1">Pengumpulan Tugas</p>
       <p className="text-xs text-ink-muted mb-4">
         Berkas jenis apa pun, maksimal 50 MB. Nilai minimum kelulusan {passingGrade}.
       </p>
 
       {submission && (
-        <div className="mb-4 rounded-xl border border-rule bg-paper p-4">
+        <div className="mb-4   bg-paper p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm text-ink-body break-all">{submission.fileName}</span>
             <span className="text-xs text-ink-muted shrink-0">
@@ -93,11 +93,11 @@ export default function AssignmentPanel({
 
           {submission.status === "submitted" ? (
             <p className="mt-3 text-sm text-amber-700">
-              Terkumpul. Menunggu dinilai educator — sertifikat terbit setelah dinilai.
+              Terkumpul. Menunggu dinilai educator - sertifikat terbit setelah dinilai.
             </p>
           ) : (
             <div className="mt-3">
-              <p className={cn("text-sm font-semibold", lulus ? "text-blue-700" : "text-rust-700")}>
+              <p className={cn("text-sm font-semibold", lulus ? "text-blue-700" : "text-error-text")}>
                 Nilai {submission.grade} {lulus ? "· Lulus" : `· Belum mencapai ${passingGrade}`}
               </p>
               {submission.feedback && (
@@ -130,10 +130,10 @@ export default function AssignmentPanel({
         onClick={() => fileRef.current?.click()}
         disabled={sibuk}
         className={cn(
-          "rounded-lg px-6 py-2.5 text-sm font-semibold transition-colors duration-200 ease-out-soft",
+          "px-6 py-2.5 text-sm font-semibold transition-colors duration-200 ease-out-soft",
           "disabled:opacity-60 disabled:cursor-not-allowed",
           submission
-            ? "border border-rule text-ink-body hover:border-blue-500 hover:text-blue-700"
+            ? "  text-ink-body  hover:text-blue-700"
             : "bg-blue-600 text-white hover:bg-blue-700",
         )}
       >
@@ -149,7 +149,7 @@ export default function AssignmentPanel({
         </a>
       )}
 
-      {error && <p className="mt-3 text-sm text-rust-700">{error}</p>}
+      {error && <p className="mt-3 text-sm text-error-text">{error}</p>}
     </div>
   );
 }

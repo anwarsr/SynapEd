@@ -43,10 +43,10 @@ export default function CategoryManager({ categories }: { categories: CategoryRo
         <p
           role="status"
           className={cn(
-            "rounded-lg px-4 py-3 text-sm border",
+            " px-4 py-3 text-sm",
             status.kind === "ok"
-              ? "bg-blue-50 text-blue-700 border-blue-100"
-              : "bg-rust-100 text-rust-700 border-rust-700/25",
+              ? "bg-blue-50 text-blue-700"
+              : "bg-rust-100 text-rust-700",
           )}
         >
           {status.msg}
@@ -63,7 +63,7 @@ export default function CategoryManager({ categories }: { categories: CategoryRo
             return r;
           });
         }}
-        className="bg-paper-card border border-rule rounded-2xl p-6"
+        className="bg-paper-card p-6"
       >
         <h2 className="t-h3 text-base mb-1.5">Tambah kategori</h2>
         <p className="text-sm text-ink-muted mb-4">
@@ -81,14 +81,14 @@ export default function CategoryManager({ categories }: { categories: CategoryRo
           <button
             type="submit"
             disabled={pending}
-            className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0"
+            className=" bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 disabled:opacity-60 disabled:translate-y-0"
           >
             Tambah
           </button>
         </div>
       </form>
 
-      <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden">
+      <div className="bg-paper-card overflow-hidden">
         <ul className="divide-y divide-rule">
           {categories.map((c) => (
             <li key={c.slug} className="flex flex-wrap items-center gap-4 px-6 py-4">

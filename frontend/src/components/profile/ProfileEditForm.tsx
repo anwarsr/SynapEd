@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/cn";
 
 const inputClass =
-  "w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25";
+  "w-full bg-white/[0.06] px-4 py-3 text-sm text-white transition-[background-color,box-shadow] duration-200 placeholder:text-white/35 focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none";
 
 function Label({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
   return (
@@ -77,18 +77,18 @@ export default function ProfileEditForm({ initial }: { initial: ProfileContent }
   return (
     <form onSubmit={submit} className="space-y-6">
       {error && (
-        <div role="alert" className="rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700">
+        <div role="alert" className="bg-[#E0795A]/15 px-4 py-3 text-sm text-error-text">
           {error}
         </div>
       )}
       {done && (
-        <div role="status" className="rounded-lg border border-blue-500/25 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <div role="status" className="bg-blue-500/15 px-4 py-3 text-sm text-blue-200">
           {done}
         </div>
       )}
 
       {/* ── Tentang saya ────────────────────────────────────── */}
-      <section className="bg-paper-card border border-rule rounded-2xl p-7">
+      <section className="bg-paper-card p-7 sm:p-9">
         <h2 className="t-h3 text-lg mb-1.5">Tentang Saya</h2>
         <p className="t-body text-sm text-ink-muted mb-5">
           Satu paragraf perkenalan yang tampil di bawah nama Anda.
@@ -110,7 +110,7 @@ export default function ProfileEditForm({ initial }: { initial: ProfileContent }
       </section>
 
       {/* ── Riwayat pendidikan ──────────────────────────────── */}
-      <section className="bg-paper-card border border-rule rounded-2xl p-7">
+      <section className="bg-paper-card p-7 sm:p-9">
         <h2 className="t-h3 text-lg mb-1.5">Riwayat Pendidikan</h2>
         <p className="t-body text-sm text-ink-muted mb-5">
           Hanya nama institusi yang wajib diisi. Kosongkan tahun selesai kalau masih berjalan.
@@ -118,7 +118,7 @@ export default function ProfileEditForm({ initial }: { initial: ProfileContent }
 
         <div className="space-y-4">
           {education.map((e, i) => (
-            <div key={e.id} className="rounded-xl border border-rule p-4">
+            <div key={e.id} className="bg-white/5 p-5">
               <div className="flex items-center justify-between gap-4 mb-4">
                 <span className="t-numeral-ghost text-xl text-ink-faint" aria-hidden="true">
                   {String(i + 1).padStart(2, "0")}
@@ -221,7 +221,7 @@ export default function ProfileEditForm({ initial }: { initial: ProfileContent }
           <button
             type="button"
             onClick={() => setEducation((prev) => [...prev, kosong()])}
-            className="mt-4 rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700"
+            className="mt-4 bg-white/10 px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:bg-white/15 hover:text-white"
           >
             + Tambah Pendidikan
           </button>
@@ -229,7 +229,7 @@ export default function ProfileEditForm({ initial }: { initial: ProfileContent }
       </section>
 
       {/* ── Keahlian ────────────────────────────────────────── */}
-      <section className="bg-paper-card border border-rule rounded-2xl p-7">
+      <section className="bg-paper-card p-7 sm:p-9">
         <h2 className="t-h3 text-lg mb-1.5">Keahlian &amp; Minat</h2>
         <p className="t-body text-sm text-ink-muted mb-5">
           Maksimal {MAX_SKILLS} kata kunci singkat, mis. Neuroscience, EEG, Python.
@@ -275,7 +275,7 @@ export default function ProfileEditForm({ initial }: { initial: ProfileContent }
             type="button"
             onClick={tambahSkill}
             disabled={skills.length >= MAX_SKILLS}
-            className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700 disabled:opacity-60"
+            className="bg-white/10 px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:bg-white/15 hover:text-white disabled:opacity-60"
           >
             Tambah
           </button>
@@ -286,7 +286,7 @@ export default function ProfileEditForm({ initial }: { initial: ProfileContent }
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-blue-600 px-7 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
+          className="bg-blue-600 px-7 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
         >
           {pending ? "Menyimpan…" : "Simpan Profil"}
         </button>

@@ -81,10 +81,10 @@ function Note({ status }: { status: Status }) {
     <p
       role="status"
       className={cn(
-        "mt-4 rounded-lg px-4 py-3 text-sm",
+        "mt-4 px-4 py-3 text-sm",
         status.kind === "ok"
-          ? "bg-blue-50 text-blue-700 border border-blue-100"
-          : "bg-rust-100 text-rust-700 border border-rust-700/25",
+          ? "bg-blue-500/15 text-blue-200"
+          : "bg-[#E0795A]/15 text-error-text",
       )}
     >
       {status.msg}
@@ -120,7 +120,7 @@ function Field({
         value={value}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+        className="w-full bg-white/[0.06] px-4 py-3 text-sm text-white transition-[background-color,box-shadow] duration-200 placeholder:text-white/35 focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none"
       />
       {hint && <p className="mt-1.5 text-xs text-ink-muted">{hint}</p>}
     </div>
@@ -128,7 +128,7 @@ function Field({
 }
 
 const submitClass =
-  "rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed";
+  "bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed";
 
 // ── Nama tampilan ───────────────────────────────────────────────────────
 
@@ -161,7 +161,7 @@ export function ProfileForm({ user }: { user: SessionUser }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
+    <form onSubmit={onSubmit} className="bg-paper-card p-7 sm:p-9">
       <h2 className="t-h3 mb-1.5">Profil</h2>
       <p className="t-body text-sm mb-6">Nama yang ditampilkan di seluruh aplikasi.</p>
 
@@ -214,7 +214,7 @@ export function EmailForm({ user, methods }: { user: SessionUser; methods: SignI
   // mengatakannya daripada menyediakan tombol yang merusak.
   if (!methods.password) {
     return (
-      <div className="bg-paper-card border border-rule rounded-2xl p-7">
+      <div className="bg-paper-card p-7 sm:p-9">
         <h2 className="t-h3 mb-1.5">Alamat Email</h2>
         <p className="t-body text-sm">
           Saat ini <span className="text-ink font-medium">{user.email}</span>, mengikuti akun
@@ -225,7 +225,7 @@ export function EmailForm({ user, methods }: { user: SessionUser; methods: SignI
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
+    <form onSubmit={onSubmit} className="bg-paper-card p-7 sm:p-9">
       <h2 className="t-h3 mb-1.5">Alamat Email</h2>
       <p className="t-body text-sm mb-6">
         Saat ini <span className="text-ink font-medium">{user.email}</span>. Email baru berlaku
@@ -300,7 +300,7 @@ export function PasswordForm({ methods }: { methods: SignInMethods }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
+    <form onSubmit={onSubmit} className="bg-paper-card p-7 sm:p-9">
       <h2 className="t-h3 mb-1.5">{creating ? "Buat Kata Sandi" : "Kata Sandi"}</h2>
       <p className="t-body text-sm mb-6">
         {creating
@@ -387,8 +387,8 @@ export function DeleteAccount({ methods }: { methods: SignInMethods }) {
   }
 
   return (
-    <div className="bg-paper-card border border-rust-700/30 rounded-2xl p-7">
-      <h2 className="t-h3 mb-1.5 text-rust-700">Hapus Akun</h2>
+    <div className="bg-[#E0795A]/10 p-7 sm:p-9">
+      <h2 className="t-h3 mb-1.5 text-error-text">Hapus Akun</h2>
       <p className="t-body text-sm mb-6">
         Akun beserta datanya dihapus permanen. Tindakan ini tidak bisa dibatalkan.
       </p>
@@ -396,7 +396,7 @@ export function DeleteAccount({ methods }: { methods: SignInMethods }) {
       {!open ? (
         <button
           onClick={() => setOpen(true)}
-          className="rounded-lg border border-rust-700/40 px-6 py-2.5 text-sm font-semibold text-rust-700 transition-colors duration-200 hover:bg-rust-100"
+          className="bg-[#E0795A]/15 px-6 py-2.5 text-sm font-semibold text-error-text transition-colors duration-200 hover:bg-[#E0795A]/25"
         >
           Saya ingin menghapus akun
         </button>
@@ -420,7 +420,7 @@ export function DeleteAccount({ methods }: { methods: SignInMethods }) {
             <button
               type="submit"
               disabled={pending || (!viaGoogle && !password)}
-              className="rounded-lg bg-rust-700 px-6 py-2.5 text-sm font-semibold text-white transition-opacity duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-rust-700 px-6 py-2.5 text-sm font-semibold text-white transition-opacity duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {pending ? "Menghapus…" : viaGoogle ? "Konfirmasi & Hapus" : "Hapus Permanen"}
             </button>
@@ -431,7 +431,7 @@ export function DeleteAccount({ methods }: { methods: SignInMethods }) {
                 setPassword("");
                 setStatus({ kind: "idle" });
               }}
-              className="rounded-lg border border-rule px-6 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700"
+              className="bg-white/10 px-6 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:bg-white/15 hover:text-white"
             >
               Batal
             </button>

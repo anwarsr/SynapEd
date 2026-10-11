@@ -1,6 +1,7 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
 import { getUserCards } from "@/lib/userCards";
+import { getUsernames } from "@/lib/usernames";
 import { listCategories } from "@/lib/categories";
 import { parseStoredContributors, type Contributor } from "@/lib/contributors";
 
@@ -82,6 +83,12 @@ export interface CourseSummary {
    * lewat panggilan yang sama pula — keduanya datang dari satu UserCard.
    */
   instructorPhoto: string | null;
+  /**
+   * Username akun penyedia (tanpa "@"), dari users/{uid}. Dipakai tulisan di
+   * balik gambar kartu katalog ("DIBUAT OLEH …"). Boleh kosong: akun yang belum
+   * punya username, atau daftar yang tidak melewati withInstructorCards.
+   */
+  instructorUsername?: string | null;
   /**
    * Harga dalam rupiah penuh; 0 berarti gratis.
    *
@@ -197,11 +204,15 @@ async function withInstructorCards<T extends CourseSummary>(rows: T[]): Promise<
   const uids = rows.map((r) => r.ownerUid).filter((u): u is string => Boolean(u));
   if (uids.length === 0) return rows;
 
-  const instructors = await getUserCards(uids);
+  const [instructors, usernames] = await Promise.all([
+    getUserCards(uids),
+    getUsernames(uids).catch(() => new Map<string, string>()),
+  ]);
 
   return rows.map((r) => {
     const found = r.ownerUid ? instructors.get(r.ownerUid) : undefined;
-    if (!found) return r;
+    const username = r.ownerUid ? (usernames.get(r.ownerUid) ?? null) : null;
+    if (!found) return { ...r, instructorUsername: username };
 
     return {
       ...r,
@@ -210,6 +221,7 @@ async function withInstructorCards<T extends CourseSummary>(rows: T[]): Promise<
       // daripada kartu dengan nama lama.
       instructorName: found.name || r.instructorName,
       instructorPhoto: found.photoURL,
+      instructorUsername: username,
     };
   });
 }

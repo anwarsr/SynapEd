@@ -25,7 +25,7 @@ export default function LessonCompleteButton({
 
   if (done) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-5 py-2.5 text-sm font-medium text-blue-700">
+      <span className="inline-flex items-center gap-2 bg-blue-500/15 px-5 py-2.5 text-sm font-medium text-blue-700">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
@@ -53,7 +53,7 @@ export default function LessonCompleteButton({
       onClick={submit}
       disabled={pending}
       className={cn(
-        "inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white",
+        "inline-flex items-center gap-2 bg-blue-600 px-5 py-2.5 text-sm font-medium text-white",
         "transition-colors duration-200 ease-out-soft hover:bg-blue-700",
         "disabled:opacity-60 disabled:cursor-not-allowed",
       )}

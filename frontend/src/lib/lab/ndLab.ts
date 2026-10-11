@@ -279,7 +279,7 @@ function langkahPersempit(state: NdLabState, indeks: readonly number[]): NdStep[
     steps.push(
       langkah(
         state,
-        `Indeks ke-${d + 1} [${indeks[d]}] (sumbu ${d}): masuk ke kotak ${awalan} — tersisa ${strides[d]} elemen, yang berderet di memori mulai offset ${mulai}.`,
+        `Indeks ke-${d + 1} [${indeks[d]}] (sumbu ${d}): masuk ke kotak ${awalan} - tersisa ${strides[d]} elemen, yang berderet di memori mulai offset ${mulai}.`,
         Array.from({ length: strides[d] }, (_, x) => mulai + x),
       ),
     );
@@ -380,7 +380,7 @@ export function applyNdOp(state: NdLabState, op: NdOp): NdOpResult {
         ),
         langkah(
           akhir,
-          `Sel meluncur ke kotak barunya, tapi pita memori di bawah TIDAK bergerak sama sekali — urutan di memori tetap sama, warnanya tetap berderet.`,
+          `Sel meluncur ke kotak barunya, tapi pita memori di bawah TIDAK bergerak sama sekali - urutan di memori tetap sama, warnanya tetap berderet.`,
           [],
           LAB_MOVE_HOLD_MS,
           { kelompok },
@@ -426,7 +426,7 @@ export function applyNdOp(state: NdLabState, op: NdOp): NdOpResult {
       if (typeof indeks === "string") return gagal(indeks);
       const o = ndOffset(indeks, shape);
       return berhasil([
-        langkah({ ...state, cursor: indeks }, `Kursor dipasang di arr${ndLabelIndeks(indeks)} — offset ${o}, nilai ${state.cells[o].value}.`, [o]),
+        langkah({ ...state, cursor: indeks }, `Kursor dipasang di arr${ndLabelIndeks(indeks)} - offset ${o}, nilai ${state.cells[o].value}.`, [o]),
       ]);
     }
 
@@ -523,7 +523,7 @@ export function applyNdOp(state: NdLabState, op: NdOp): NdOpResult {
         ),
         langkah(
           akhir,
-          `Sel meluncur ke alamat barunya, dan kali ini pita memori IKUT tersusun ulang — beda utama dengan reshape. Bentuk ${ndLabelBentuk(shape)} menjadi ${ndLabelBentuk(bentuk)}.`,
+          `Sel meluncur ke alamat barunya, dan kali ini pita memori IKUT tersusun ulang - beda utama dengan reshape. Bentuk ${ndLabelBentuk(shape)} menjadi ${ndLabelBentuk(bentuk)}.`,
           [],
           LAB_MOVE_HOLD_MS,
           { kelompok },

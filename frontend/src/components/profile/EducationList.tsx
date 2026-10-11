@@ -13,7 +13,7 @@ import { formatYears, type EducationEntry } from "@/lib/profileTypes";
 export default function EducationList({ items }: { items: readonly EducationEntry[] }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-rule px-5 py-6 text-center text-[13px] text-ink-muted">
+      <p className="bg-white/5 px-5 py-6 text-center text-[13px] text-ink-muted">
         Belum ada riwayat pendidikan.
       </p>
     );
@@ -36,7 +36,7 @@ export default function EducationList({ items }: { items: readonly EducationEntr
         return (
           <li
             key={e.id}
-            className={`relative border-l border-rule pl-[22px] ${terakhir ? "pb-0" : "pb-[22px]"}`}
+            className={`relative border-l border-white/10 pl-[22px] ${terakhir ? "pb-0" : "pb-[22px]"}`}
           >
             <span
               aria-hidden="true"

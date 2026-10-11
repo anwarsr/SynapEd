@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
 import Stars from "@/components/ui/Stars";
-import ProfileLink from "@/components/ui/ProfileLink";
+import MiniProfile from "@/components/profile/MiniProfile";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { cn } from "@/lib/cn";
+import SectionTitle from "@/components/sections/SectionTitle";
 
 /**
  * "Apa Kata Mereka" — ulasan sungguhan dari peserta yang sudah menyelesaikan
@@ -39,18 +40,16 @@ export interface TestimonialItem {
   courseSlug: string;
   /** URL siap pakai, sudah lewat courseImageUrl(). */
   courseImage: string | null;
+  /** Banner profil penulis; null = hitam bawaan. */
+  banner: string | null;
+  /** Balasan admin; null = belum dibalas. */
+  reply: { body: string; by: string } | null;
 }
 
 /** Di bawah ini kartunya ditata diam, tanpa pita berjalan. */
 const MARQUEE_MIN = 4;
-
-const HEADING: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
-  fontWeight: 800,
-  lineHeight: 1.03,
-  letterSpacing: "-0.04em",
-};
+/** Berapa kali daftar kartu digandakan di pita berjalan. */
+const SALINAN = 4;
 
 const NAME: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
@@ -65,24 +64,11 @@ const QUOTE: React.CSSProperties = {
   letterSpacing: "-0.02em",
 };
 
-/** Latar kartu saat kursusnya belum punya gambar. */
-function CardImage({ src }: { src: string | null }) {
-  if (!src) {
-    return <div className="absolute inset-0 bg-linear-to-br from-blue-600 to-blue-800" />;
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt=""
-      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-warm group-hover:scale-105"
-    />
-  );
-}
-
 export default function Testimonials({ items }: { items: readonly TestimonialItem[] }) {
   const [active, setActive] = useState<number | null>(null);
   const [charCount, setCharCount] = useState(0);
+  // Kartu mini-profil penulis (terbuka di atas dialog komentar).
+  const [mini, setMini] = useState(false);
 
   const reducedMotion = useReducedMotion();
 
@@ -113,6 +99,120 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
   function open(index: number) {
     setActive(index);
     setCharCount(0);
+    setMini(false);
+  }
+
+  // ── Pita kartu: bisa digeser (seret dengan mouse, usap di layar sentuh) dan
+  //    tetap berjalan pelan sendiri; berhenti saat kursor di atasnya, saat
+  //    diseret, atau saat dialog terbuka. Isinya digandakan EMPAT kali
+  //    (SALINAN kali) dan posisinya dijaga di salinan kedua-ketiga: begitu
+  //    melewati satu salinan, posisi dibungkus mundur/maju selebar satu salinan.
+  //    Dulu hanya dua salinan dan posisi awal 0, sehingga menyeret ke KANAN
+  //    langsung membentur scrollLeft = 0 sebelum sempat dibungkus.
+  const berjalan = items.length >= MARQUEE_MIN;
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const dialogRef = useRef(false);
+  const dragRef = useRef({ down: false, startX: 0, startLeft: 0, moved: 0, captured: false });
+
+  useEffect(() => {
+    dialogRef.current = active !== null;
+  }, [active]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || !berjalan) return;
+
+    // Lebar satu salinan; dijaga posisi di [satu, dua] salinan.
+    const lebarSalinan = () => el.scrollWidth / SALINAN;
+
+    const bungkus = () => {
+      const w = lebarSalinan();
+      if (w <= 0) return;
+      if (el.scrollLeft >= 2 * w) el.scrollLeft -= w;
+      else if (el.scrollLeft < w) el.scrollLeft += w;
+    };
+
+    // Mulai di salinan kedua: ada ruang penuh ke kiri maupun ke kanan.
+    el.scrollLeft = lebarSalinan();
+
+    let raf = 0;
+    let last = performance.now();
+    let acc = 0;
+
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      const dt = Math.min(now - last, 50);
+      last = now;
+
+      if (!reducedMotion && !pausedRef.current && !dialogRef.current && !dragRef.current.down) {
+        // ±30 px/dtk; scrollLeft membulatkan, jadi pecahan ditampung dulu
+        acc += dt * 0.03;
+        const utuh = Math.floor(acc);
+        if (utuh > 0) {
+          el.scrollLeft += utuh;
+          acc -= utuh;
+        }
+      }
+      bungkus();
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [berjalan, reducedMotion]);
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    const el = scrollerRef.current;
+    if (!el || e.pointerType !== "mouse" || e.button !== 0) return;
+    dragRef.current = { down: true, startX: e.clientX, startLeft: el.scrollLeft, moved: 0, captured: false };
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const el = scrollerRef.current;
+    const d = dragRef.current;
+    if (!el || !d.down) return;
+
+    const dx = e.clientX - d.startX;
+    d.moved = Math.max(d.moved, Math.abs(dx));
+
+    // Baru dianggap seret setelah 5px; sebelumnya tetap klik biasa pada kartu.
+    if (d.moved > 5 && !d.captured) {
+      d.captured = true;
+      el.setPointerCapture(e.pointerId);
+      el.style.cursor = "grabbing";
+    }
+    if (d.captured) {
+      // Posisi dibungkus SAAT diseret juga, dan titik awal seretan ikut
+      // digeser selebar satu salinan, supaya seretan tak pernah membentur ujung.
+      const w = el.scrollWidth / SALINAN;
+      let v = d.startLeft - dx;
+      if (w > 0) {
+        while (v >= 2 * w) {
+          v -= w;
+          d.startLeft -= w;
+        }
+        while (v < w) {
+          v += w;
+          d.startLeft += w;
+        }
+      }
+      el.scrollLeft = v;
+    }
+  }
+
+  function endDrag(e: React.PointerEvent<HTMLDivElement>) {
+    const el = scrollerRef.current;
+    const d = dragRef.current;
+    if (!el) return;
+    if (d.captured) {
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {
+        // sudah dilepas
+      }
+    }
+    d.down = false;
+    el.style.cursor = "";
   }
 
   const typed = reducedMotion ? full : full.slice(0, charCount);
@@ -121,30 +221,38 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
   // Belum ada ulasan sama sekali — bagian ini tidak usah ada.
   if (items.length === 0) return null;
 
-  const berjalan = items.length >= MARQUEE_MIN;
-  const kartu = berjalan ? [...items, ...items] : items;
+  const kartu = berjalan ? Array.from({ length: SALINAN }, () => items).flat() : items;
 
   return (
-    <section id="testimonials" className="py-28 bg-paper overflow-hidden">
+    <section id="testimonials" className="py-28 bg-ivory overflow-hidden">
       <div className="container-page">
         <Reveal className="flex flex-col items-center text-center mb-14">
-          <h2 className="text-blue-600 max-w-4xl" style={HEADING}>
-            Apa Kata Mereka
-          </h2>
-
-          <p className="t-body mt-6 max-w-2xl text-ink-muted">
-            Ulasan dari peserta yang sudah menyelesaikan kursusnya di SynapEd.
-            Ketuk salah satu kartu untuk membaca selengkapnya.
-          </p>
+          <SectionTitle title="Komentar" />
         </Reveal>
       </div>
 
-      <div className={cn(berjalan && "testimonial-track")}>
+      <div
+        ref={scrollerRef}
+        className="testimonial-scroller"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onPointerEnter={() => (pausedRef.current = true)}
+        onPointerLeave={() => (pausedRef.current = false)}
+        // Seret yang berakhir di atas kartu tidak boleh dihitung sebagai klik
+        onClickCapture={(e) => {
+          if (dragRef.current.moved > 5) {
+            e.stopPropagation();
+            e.preventDefault();
+            dragRef.current.moved = 0;
+          }
+        }}
+      >
         <div
           className={cn(
-            berjalan
-              ? "testimonial-marquee"
-              : "container-page flex flex-wrap justify-center gap-5",
+            "flex gap-5 py-2",
+            berjalan ? "w-max px-5" : "container-page flex-wrap justify-center",
           )}
         >
           {kartu.map((t, i) => {
@@ -159,37 +267,75 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
                 aria-hidden={isClone || undefined}
                 tabIndex={isClone ? -1 : undefined}
                 aria-label={`Baca ulasan lengkap dari ${t.name}`}
-                className="group w-64 shrink-0 flex flex-col overflow-hidden rounded-2xl bg-paper-card text-left transition-all duration-400 ease-warm hover:shadow-lift hover:-translate-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+                className="group flex min-h-96 w-72 shrink-0 flex-col overflow-hidden bg-paper-card text-left transition-[transform,background-color] duration-500 ease-warm hover:-translate-y-1.5 hover:bg-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
-                <div className="relative h-28 w-full overflow-hidden bg-black">
-                  <CardImage src={t.courseImage} />
-                  <div className="absolute inset-0 bg-linear-to-t from-blue-900/70 via-blue-900/10 to-blue-900/0" />
-                  <span className="absolute bottom-2 left-3 right-3 text-[11px] font-medium text-white/90 truncate">
+                {/* Banner penulis (hitam bila belum punya) — foto profil, nama, dan
+                    bintang duduk DI TENGAH banner, sedikit ke atas dari titik tengah */}
+                <span className="keep-white relative flex h-44 w-full shrink-0 flex-col items-center justify-center overflow-hidden bg-banner pb-5">
+                  {t.banner && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t.banner} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+                  )}
+                  {/* Peredam supaya teks tetap terbaca di atas foto apa pun */}
+                  {t.banner && <span aria-hidden="true" className="absolute inset-0 bg-black/45" />}
+
+                  <UserAvatar
+                    name={t.name}
+                    photoURL={t.avatar}
+                    size="md"
+                    className="relative h-[60px] w-[60px] text-base ring-2 ring-white/25"
+                  />
+                  <span className="relative mt-3 block max-w-[85%] truncate text-base text-white" style={NAME}>
+                    {t.name}
+                  </span>
+                  <Stars value={t.rating} size="xs" className="relative mt-1.5" />
+                </span>
+
+                <span className="flex flex-1 flex-col px-6 pb-7 pt-5 text-center">
+                  {/* Kursus yang diulas */}
+                  <span className="block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300">
                     {t.courseTitle}
                   </span>
-                </div>
 
-                <div className="flex flex-1 flex-col p-5">
-                  <p className="text-ink-body text-[13px] line-clamp-2 mb-4" style={QUOTE}>
+                  <span className="mt-3 line-clamp-4 block text-sm text-ink-body" style={QUOTE}>
                     &ldquo;{t.content}&rdquo;
-                  </p>
+                  </span>
 
-                  <div className="mt-auto flex items-center gap-3">
-                    <UserAvatar name={t.name} photoURL={t.avatar} size="sm" />
-
-                    <div className="min-w-0">
-                      <p className="text-black text-sm truncate" style={NAME}>
-                        {t.name}
-                      </p>
-                      <Stars value={t.rating} size="xs" className="mt-1" />
-                    </div>
-                  </div>
-                </div>
+                  {/* Balasan admin: kutipan kecil bergaris biru di dasar kartu */}
+                  {t.reply && (
+                    <span className="mt-auto block pt-5 text-left">
+                      <span className="block bg-white/[0.04] px-4 py-3 shadow-[inset_3px_0_0_var(--color-blue-500)]">
+                        <span className="block text-[10px] font-semibold uppercase tracking-[0.26em] text-blue-300">
+                          Balasan {t.reply.by}
+                        </span>
+                        <span className="mt-1.5 line-clamp-2 block text-[12.5px] leading-[1.6] text-ink-muted">
+                          {t.reply.body}
+                        </span>
+                      </span>
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}
         </div>
       </div>
+
+      {/* Pintu ke laman berisi SEMUA komentar */}
+      <Reveal className="mt-14 flex justify-center">
+        <Link
+          href="/komentar"
+          className="group inline-flex items-center gap-4 bg-white/[0.06] px-6 py-3.5 text-[11.5px] font-semibold uppercase tracking-[0.26em] text-white transition-colors duration-500 ease-warm hover:bg-blue-600"
+        >
+          Lihat semua komentar
+          <span aria-hidden="true" className="flex items-center gap-2">
+            <span className="h-px w-6 bg-white/40 transition-all duration-500 ease-warm group-hover:w-10 group-hover:bg-white" />
+            <svg className="h-3.5 w-3.5 transition-transform duration-500 ease-warm group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </span>
+        </Link>
+      </Reveal>
 
       {/* Dialog dirender sebagai bagian biasa, bukan <dialog> + showModal():
           showModal harus dipanggil dari efek, dan itulah sumber render
@@ -199,64 +345,98 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
           role="dialog"
           aria-modal="true"
           aria-labelledby="ulasan-nama"
-          className="fixed inset-0 z-100 flex items-center justify-center bg-ink/50 p-4"
+          className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) setActive(null);
           }}
         >
-          <div className="w-[min(34rem,calc(100vw-2rem))] overflow-hidden rounded-2xl bg-paper-card shadow-lift">
-            <div className="relative h-40 w-full overflow-hidden bg-blue-600">
-              <CardImage src={current.courseImage} />
-              <div className="absolute inset-0 bg-linear-to-t from-blue-900/70 via-blue-900/10 to-blue-900/0" />
+          <div className="relative w-[min(34rem,calc(100vw-2rem))] overflow-hidden bg-paper-card shadow-lift">
+            {/* Banner: foto profil, nama, dan bintang di tengahnya */}
+            <div className="keep-white relative flex h-48 w-full flex-col items-center justify-center overflow-hidden bg-banner pb-5 sm:h-52">
+              {current.banner && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={current.banner} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+              )}
+              {current.banner && <span aria-hidden="true" className="absolute inset-0 bg-black/45" />}
 
+              {/* Foto & nama membuka kartu mini-profil, bukan berpindah halaman */}
               <button
                 type="button"
-                onClick={() => setActive(null)}
-                aria-label="Tutup"
-                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-paper-card/90 text-ink flex items-center justify-center transition-colors duration-200 ease-out-soft hover:bg-blue-600 hover:text-white"
+                onClick={() => setMini(true)}
+                aria-label={`Lihat profil ${current.name}`}
+                className="relative rounded-full transition-transform duration-300 ease-warm hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <UserAvatar
+                  name={current.name}
+                  photoURL={current.avatar}
+                  size="lg"
+                  className="h-[68px] w-[68px] text-lg ring-2 ring-white/25"
+                />
               </button>
+              <div className="relative mt-3 max-w-[85%] text-center">
+                <button
+                  type="button"
+                  onClick={() => setMini(true)}
+                  className="block max-w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                >
+                  <p id="ulasan-nama" className="truncate text-lg text-white underline-offset-4 hover:underline" style={NAME}>
+                    {current.name}
+                  </p>
+                </button>
+                <Stars value={current.rating} size="sm" className="mx-auto mt-1.5" />
+              </div>
             </div>
 
-            <div className="p-7">
-              <p className="text-ink-body text-base min-h-30 whitespace-pre-line" style={QUOTE} aria-live="polite">
-                &ldquo;{typed}
-                {!selesaiMengetik && (
-                  <span
-                    aria-hidden="true"
-                    className="inline-block w-0.5 h-[0.95em] align-middle bg-blue-500 ml-0.5 animate-pulse"
-                  />
-                )}
-                {selesaiMengetik && "”"}
-              </p>
+            <button
+              type="button"
+              onClick={() => setActive(null)}
+              aria-label="Tutup"
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center bg-black/50 text-white/80 backdrop-blur-sm transition-colors duration-200 ease-out-soft hover:bg-black/70 hover:text-white"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-              <div className="mt-7 flex items-center gap-3 pt-5">
-                <ProfileLink uid={current.uid} name={current.name} secondary className="shrink-0">
-                  <UserAvatar name={current.name} photoURL={current.avatar} size="lg" className="w-12 h-12 text-base" />
-                </ProfileLink>
+            <div className="px-8 pb-8 pt-6 text-center sm:px-10 sm:pb-10">
+            <Link
+              href={`/courses/${current.courseSlug}`}
+              className="block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300 transition-colors hover:text-white"
+            >
+              {current.courseTitle}
+            </Link>
 
-                <div className="min-w-0">
-                  <ProfileLink uid={current.uid} name={current.name}>
-                    <p id="ulasan-nama" className="text-black text-lg" style={NAME}>
-                      {current.name}
-                    </p>
-                  </ProfileLink>
-                  <Link
-                    href={`/courses/${current.courseSlug}`}
-                    className="text-ink-muted text-xs mt-0.5 block truncate transition-colors hover:text-blue-700"
-                  >
-                    Alumni · {current.courseTitle}
-                  </Link>
-                </div>
+            <p className="mt-3 min-h-30 whitespace-pre-line text-base text-ink-body" style={QUOTE} aria-live="polite">
+              &ldquo;{typed}
+              {!selesaiMengetik && (
+                <span
+                  aria-hidden="true"
+                  className="ml-0.5 inline-block h-[0.95em] w-0.5 animate-pulse bg-blue-400 align-middle"
+                />
+              )}
+              {selesaiMengetik && "”"}
+            </p>
 
-                <Stars value={current.rating} size="sm" className="ml-auto" />
+            {current.reply && selesaiMengetik && (
+              <div className="mini-masuk mt-6 bg-white/[0.04] px-5 py-4 text-left shadow-[inset_3px_0_0_var(--color-blue-500)]">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan {current.reply.by}</p>
+                <p className="mt-2 whitespace-pre-line break-words text-sm leading-[1.7] text-ink-body">{current.reply.body}</p>
               </div>
+            )}
             </div>
           </div>
         </div>
+      )}
+
+      {current && mini && (
+        <MiniProfile
+          key={current.uid}
+          uid={current.uid}
+          name={current.name}
+          avatar={current.avatar}
+          banner={current.banner}
+          onClose={() => setMini(false)}
+        />
       )}
     </section>
   );

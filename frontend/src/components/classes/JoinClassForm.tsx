@@ -43,7 +43,7 @@ export default function JoinClassForm() {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={onSubmit} className="rounded-2xl border border-rule bg-paper-card p-6">
+      <form onSubmit={onSubmit} className="bg-paper-card p-6">
         <p className="t-label text-ink-muted mb-1.5">Gabung kelas</p>
         <p className="text-[20px] leading-snug text-ink mb-5" style={DISPLAY_JUDUL}>
           Punya kode dari pengajar?
@@ -63,10 +63,10 @@ export default function JoinClassForm() {
           spellCheck={false}
           placeholder="7KQ2M4XB"
           className={cn(
-            "w-full rounded-lg border border-rule-strong bg-paper px-4 py-3.5",
-            "text-center font-mono text-xl tracking-[0.24em] text-ink",
+            "w-full bg-white/[0.06] px-4 py-3.5",
+            "text-center font-sans tabular-nums text-xl tracking-[0.24em] text-ink",
             "transition-colors duration-200 placeholder:text-ink-faint",
-            "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25",
+            "focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none",
           )}
         />
 
@@ -74,7 +74,7 @@ export default function JoinClassForm() {
           type="submit"
           disabled={pending || code.length < INVITE_CODE_LENGTH}
           className={cn(
-            "mt-4 w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white",
+            "mt-4 w-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white",
             "transition-all duration-200 ease-out-soft hover:bg-blue-700",
             "disabled:opacity-60 disabled:cursor-not-allowed",
           )}
@@ -93,7 +93,7 @@ export default function JoinClassForm() {
         )}
       </form>
 
-      <div className="rounded-2xl border border-dashed border-rule-strong bg-paper-card/50 p-5">
+      <div className="bg-white/5 p-5">
         <p className="text-sm font-medium text-ink">Belum punya kode?</p>
         <p className="mt-1.5 text-[13px] leading-[1.6] text-ink-muted">
           Kode undangan hanya dibagikan pengajar kepada pesertanya. Hubungi pengajar Anda,

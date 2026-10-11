@@ -239,7 +239,7 @@ export default function LabWorkspace<S, Op extends { kind: string }, P>({
         {judul}
 
         {/* Bilah alat DAN narasi langkah menempel di puncak panel saat papan
-            yang tinggi digulir — tombol putar selalu terjangkau, dan kalimat
+            yang tinggi digulir - tombol putar selalu terjangkau, dan kalimat
             yang menjelaskan gerakan tidak pernah keluar layar. */}
         <div className="z-30 -mx-1 flex flex-col gap-2 bg-paper/90 px-1 py-1 backdrop-blur-md lg:sticky lg:top-0">
           {bilah}
@@ -250,7 +250,7 @@ export default function LabWorkspace<S, Op extends { kind: string }, P>({
           <p
             key={sesi.error}
             role="status"
-            className="lab-fade-up rounded-xl border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700"
+            className="lab-fade-up bg-[#E0795A]/15 px-4 py-3 text-sm text-error-text"
           >
             {sesi.error}
           </p>
@@ -260,7 +260,7 @@ export default function LabWorkspace<S, Op extends { kind: string }, P>({
 
         {garisLangkah}
 
-        <details className="group rounded-2xl border border-rule bg-paper-card px-5 py-3 text-sm">
+        <details className="group bg-paper-card px-5 py-3 text-sm">
           <summary className="flex cursor-pointer list-none items-center justify-between text-ink-body">
             Tombol pintas keyboard
             <span aria-hidden="true" className="text-ink-faint transition-transform duration-200 group-open:rotate-180">
@@ -276,7 +276,7 @@ export default function LabWorkspace<S, Op extends { kind: string }, P>({
               ["Esc", "keluar mode presentasi"],
             ].map(([tombol, arti]) => (
               <li key={tombol} className="flex items-center gap-2">
-                <kbd className="rounded-md border border-rule bg-paper px-1.5 py-0.5 font-sans text-[11px] text-ink">{tombol}</kbd>
+                <kbd className="bg-white/10 px-1.5 py-0.5 font-sans text-[11px] text-white">{tombol}</kbd>
                 {arti}
               </li>
             ))}

@@ -76,7 +76,7 @@ export default function GradeForm({
           {aiPending ? "Meminta saran AI…" : "Minta Saran AI"}
         </button>
         <p className="mt-1 text-xs text-ink-faint">
-          Saran AI mengisi kolom di bawah — tinjau dan sunting sebelum menyimpan.
+          Saran AI mengisi kolom di bawah - tinjau dan sunting sebelum menyimpan.
         </p>
         {aiError && <p className="mt-2 text-sm text-rust-700">{aiError}</p>}
       </div>
@@ -108,8 +108,8 @@ export default function GradeForm({
           {nilai === ""
             ? `Minimum lulus ${passingGrade}`
             : lulus
-              ? "Lulus — sertifikat bisa terbit"
-              : `Di bawah ${passingGrade} — sertifikat tertahan`}
+              ? "Lulus - sertifikat bisa terbit"
+              : `Di bawah ${passingGrade} - sertifikat tertahan`}
         </span>
       </div>
 

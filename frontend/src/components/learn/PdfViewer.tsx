@@ -127,12 +127,12 @@ export default function PdfViewer({ src, title }: { src: string; title: string }
   return (
     <div
       className={cn(
-        "flex flex-col rounded-2xl border border-rule bg-paper-alt overflow-hidden",
-        fullscreen && "fixed inset-0 z-50 rounded-none border-0",
+        "flex flex-col   bg-white/5 overflow-hidden",
+        fullscreen && "fixed inset-0 z-50 rounded-none ",
       )}
     >
       {/* ── Bilah alat ──────────────────────────────────────── */}
-      <div className="flex items-center gap-1 px-3 py-2 bg-paper-card border-b border-rule">
+      <div className="flex items-center gap-1 px-3 py-2 bg-paper-card  ">
         <ToolButton onClick={() => goTo(Math.max(1, current - 1))} disabled={current <= 1} label="Halaman sebelumnya">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
         </ToolButton>
@@ -141,7 +141,7 @@ export default function PdfViewer({ src, title }: { src: string; title: string }
         </ToolButton>
 
         <span className="px-2 text-sm text-ink-body tabular-nums whitespace-nowrap">
-          {status === "ready" ? `${current} / ${pages}` : "—"}
+          {status === "ready" ? `${current} / ${pages}` : "-"}
         </span>
 
         <span aria-hidden="true" className="w-px h-5 bg-rule mx-1" />
@@ -180,7 +180,7 @@ export default function PdfViewer({ src, title }: { src: string; title: string }
             href={`${src}${src.includes("?") ? "&" : "?"}download=1`}
             download={title}
             aria-label="Unduh berkas"
-            className="p-2 rounded-lg text-ink-muted transition-colors hover:bg-blue-50 hover:text-blue-700"
+            className="p-2 text-ink-muted transition-colors hover:bg-white/10 hover:text-white"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
@@ -231,7 +231,7 @@ function ToolButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="p-2 rounded-lg text-ink-muted transition-colors hover:bg-blue-50 hover:text-blue-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-muted"
+      className="p-2 text-ink-muted transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-muted"
     >
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
         {children}
@@ -322,7 +322,7 @@ function PdfPageCanvas({
     <div
       ref={holderRef}
       data-page={page}
-      className="mx-auto mb-3 bg-paper-card border border-rule rounded-lg shadow-soft overflow-hidden"
+      className="mx-auto mb-3 bg-paper-card   shadow-soft overflow-hidden"
       style={size ? { width: size.w, height: size.h } : { width: "100%", height: 900 }}
     >
       <canvas

@@ -1,5 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { AVATARS } from "@/lib/storagePaths";
+import { deleteObjects } from "@/lib/storageCleanup";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
@@ -106,13 +108,55 @@ function tooManyJoinAttempts(uid: string): boolean {
   return false;
 }
 
+// ── Foto profil kelas ───────────────────────────────────────────────────
+
+/**
+ * URL foto kelas yang sah: Storage proyek ini + path `avatars/{uid-SESI}/class-<hex>.jpg`.
+ * Tanpa pemeriksaan ini, tindakan ini bisa dipakai menautkan gambar sembarang
+ * (atau milik orang lain) ke sebuah kelas. Mengembalikan null bila tak sah.
+ */
+function fotoKelasSah(raw: unknown, uid: string): string | null {
+  if (
+    typeof raw !== "string" ||
+    raw.length > 900 ||
+    !raw.startsWith("https://firebasestorage.googleapis.com/v0/b/")
+  ) {
+    return null;
+  }
+  const m = raw.match(/\/o\/([^?]+)/);
+  if (!m) return null;
+  let path: string;
+  try {
+    path = decodeURIComponent(m[1]);
+  } catch {
+    return null;
+  }
+  return new RegExp("^" + AVATARS + "/" + uid + "/class-[a-f0-9]{8,32}\\.jpg$").test(path) ? raw : null;
+}
+
+/** Path objek dari URL foto kelas lama (untuk dibuang); null bila bukan foto kelas. */
+function pathFotoKelas(url: string | null | undefined): string | null {
+  const m = url?.match(/\/o\/([^?]+)/);
+  if (!m) return null;
+  try {
+    const path = decodeURIComponent(m[1]);
+    return new RegExp("^" + AVATARS + "/[^/]+/class-[a-f0-9]{8,32}\\.jpg$").test(path) ? path : null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Kelas ───────────────────────────────────────────────────────────────
 
-export async function createClass(nameRaw: string, descRaw: string): Promise<ClassResult> {
+export async function createClass(
+  nameRaw: string,
+  descRaw: string,
+  imageRaw?: string | null,
+): Promise<ClassResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
-  if (user.role !== "educator") {
-    return { ok: false, error: "Hanya educator yang dapat membuat kelas." };
+  if (user.role !== "educator" && user.role !== "admin") {
+    return { ok: false, error: "Hanya educator atau admin yang dapat membuat kelas." };
   }
 
   const name = clean(nameRaw, MAX_CLASS_NAME);
@@ -128,6 +172,8 @@ export async function createClass(nameRaw: string, descRaw: string): Promise<Cla
   }
 
   const description = clean(descRaw, MAX_CLASS_DESC);
+  const imageURL = imageRaw ? fotoKelasSah(imageRaw, user.uid) : null;
+  if (imageRaw && !imageURL) return { ok: false, error: "Foto kelas tidak valid." };
   const waktu = now();
 
   const ref = adminDb().collection("classes").doc();
@@ -135,6 +181,7 @@ export async function createClass(nameRaw: string, descRaw: string): Promise<Cla
     name,
     description,
     ownerUid: user.uid,
+    imageURL,
     joinCode: await freshJoinCode(),
     memberCount: 0,
     postCount: 0,
@@ -147,10 +194,12 @@ export async function createClass(nameRaw: string, descRaw: string): Promise<Cla
   return { ok: true, message: "Kelas berhasil dibuat." };
 }
 
+/** `imageRaw`: undefined = foto tak diubah, null = dihapus, string = foto baru. */
 export async function updateClass(
   classId: string,
   nameRaw: string,
   descRaw: string,
+  imageRaw?: string | null,
 ): Promise<ClassResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
@@ -161,11 +210,22 @@ export async function updateClass(
   const name = clean(nameRaw, MAX_CLASS_NAME);
   if (name.length < 3) return { ok: false, error: "Nama kelas minimal 3 karakter." };
 
-  await classRef(classId).update({
+  const patch: Record<string, unknown> = {
     name,
     description: clean(descRaw, MAX_CLASS_DESC),
     updatedAt: now(),
-  });
+  };
+
+  if (imageRaw !== undefined) {
+    const baru = imageRaw === null ? null : fotoKelasSah(imageRaw, user.uid);
+    if (imageRaw !== null && !baru) return { ok: false, error: "Foto kelas tidak valid." };
+    patch.imageURL = baru;
+    // Foto lama dibuang (upaya terbaik) agar tak menumpuk di Storage.
+    const lama = pathFotoKelas(kelas.imageURL);
+    if (lama && kelas.imageURL !== baru) void deleteObjects([lama]).catch(() => 0);
+  }
+
+  await classRef(classId).update(patch);
 
   revalidatePath("/educator/classes");
   revalidatePath(`/educator/classes/${classId}`);

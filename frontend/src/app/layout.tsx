@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import ChatWidget from "@/components/ui/ChatWidget";
+import SplashLoader from "@/components/ui/SplashLoader";
+import TranslateLoader from "@/components/ui/TranslateLoader";
 import { ChatContextProvider } from "@/components/ui/ChatContext";
 import "./globals.css";
 
@@ -36,8 +38,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={plusJakartaSans.variable}>
+    <html lang="id" className={plusJakartaSans.variable} suppressHydrationWarning>
+      <head>
+        {/* Tandai SEBELUM cat pertama bila intro sudah pernah tampil di tab
+            ini, supaya layar pembuka (yang dirender server) tidak sempat
+            muncul lalu terpotong saat hidrasi. Kunci harus sama dengan
+            SEEN_KEY di SplashLoader. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var d=document.documentElement;if(sessionStorage.getItem("synaped_intro_seen_v2")==="1")d.classList.add("intro-skip");if(localStorage.getItem("synaped_theme")==="light")d.dataset.theme="light"}catch(e){}',
+          }}
+        />
+      </head>
       <body className="antialiased font-body bg-paper text-ink-body">
+        <SplashLoader />
+        <TranslateLoader />
         <ChatContextProvider>
           {children}
           <ChatWidget />

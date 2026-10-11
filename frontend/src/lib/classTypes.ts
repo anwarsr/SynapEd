@@ -25,6 +25,8 @@ export interface Kelas {
   name: string;
   description: string;
   ownerUid: string;
+  /** Foto profil kelas (URL Storage, `avatars/{uid}/class-*.jpg`); null = tanpa foto, jatuh ke inisial. */
+  imageURL: string | null;
   /**
    * Kode undangan. RAHASIA — setara kunci pintu.
    *

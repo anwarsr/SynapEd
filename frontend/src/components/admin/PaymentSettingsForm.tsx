@@ -102,19 +102,19 @@ export default function PaymentSettingsForm({
   }
 
   return (
-    <form onSubmit={simpan} className="bg-paper-card border border-rule rounded-2xl p-7">
+    <form onSubmit={simpan} className="bg-paper-card p-7">
       <h2 className="t-h3 text-lg mb-1.5">Metode Pembayaran</h2>
       <p className="t-body text-sm text-ink-muted mb-6">
         Menentukan tombol apa yang dilihat calon pembeli di halaman kursus berbayar.
       </p>
 
       {error && (
-        <div role="alert" className="mb-4 rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700">
+        <div role="alert" className="mb-4 bg-rust-100 px-4 py-3 text-sm text-rust-700">
           {error}
         </div>
       )}
       {done && (
-        <div role="status" className="mb-4 rounded-lg border border-blue-500/25 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <div role="status" className="mb-4 bg-blue-50 px-4 py-3 text-sm text-blue-700">
           {done}
         </div>
       )}
@@ -127,7 +127,7 @@ export default function PaymentSettingsForm({
           hint={
             midtransConfigured
               ? "Akses terbuka sendiri begitu pembayaran masuk, tanpa campur tangan Anda."
-              : "Kunci Midtrans belum terpasang di server — saklar ini belum berpengaruh."
+              : "Kunci Midtrans belum terpasang di server - saklar ini belum berpengaruh."
           }
         />
 
@@ -147,10 +147,10 @@ export default function PaymentSettingsForm({
               <img
                 src={preview}
                 alt="Kode QRIS yang sedang dipakai"
-                className="w-32 h-32 object-contain rounded-lg border border-rule bg-white shrink-0"
+                className="keep-white w-32 h-32 object-contain bg-white shrink-0"
               />
             ) : (
-              <div className="w-32 h-32 shrink-0 rounded-lg border border-dashed border-rule bg-paper-alt flex items-center justify-center text-center text-xs text-ink-faint px-2">
+              <div className="w-32 h-32 shrink-0 bg-white/[0.06] flex items-center justify-center text-center text-xs text-ink-faint px-2">
                 Belum ada
               </div>
             )}
@@ -170,12 +170,12 @@ export default function PaymentSettingsForm({
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading || pending}
-                className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700 disabled:opacity-60"
+                className="bg-white/10 px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:bg-white/15 hover:text-blue-700 disabled:opacity-60"
               >
                 {uploading ? "Mengunggah…" : preview ? "Ganti Gambar" : "Unggah Gambar"}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
-                JPG, PNG, atau WebP. Maksimal 5 MB. Gambar ini terbuka untuk umum — memang
+                JPG, PNG, atau WebP. Maksimal 5 MB. Gambar ini terbuka untuk umum - memang
                 harus bisa dipindai calon pembeli.
               </p>
             </div>
@@ -191,7 +191,7 @@ export default function PaymentSettingsForm({
               onChange={(e) => setNote(e.target.value)}
               maxLength={300}
               placeholder="Contoh: Atas nama UMKM WIBAWA SYNAPED."
-              className="w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+              className="w-full bg-white/[0.06] shadow-[inset_0_-1px_0_var(--color-rule)] px-4 py-2.5 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:shadow-[inset_0_-2px_0_var(--color-blue-400)] focus:outline-none"
             />
           </div>
         </div>
@@ -201,8 +201,8 @@ export default function PaymentSettingsForm({
         type="submit"
         disabled={pending || uploading}
         className={cn(
-          "mt-6 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white",
-          "transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5",
+          "mt-6  bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white",
+          "transition-all duration-200 ease-out-soft hover:bg-blue-700",
           "disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed",
         )}
       >

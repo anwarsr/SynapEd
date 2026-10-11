@@ -33,13 +33,13 @@ export function LangkahSekarang({
   const peranTampil = LAB_PERAN_URUT.filter((r) => adaPeran.has(r));
 
   return (
-    <div className="rounded-2xl border border-rule bg-paper-card px-4 py-3 shadow-soft">
+    <div className="bg-paper-card px-4 py-3">
       <div className="flex items-start gap-3">
         {total > 0 && (
           <span
             className={cn(
               "t-numeral mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
-              memutar ? "bg-blue-600 text-white" : "bg-paper-alt text-ink-muted",
+              memutar ? "bg-blue-600 text-white" : "bg-white/10 text-white/70",
             )}
           >
             {frame + 1}/{total}
@@ -59,10 +59,10 @@ export function LangkahSekarang({
       </div>
 
       {kelompok && (
-        <div className="lab-fade-up mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-dashed border-rule pt-2.5 text-[11px]">
+        <div className="lab-fade-up mt-2.5 flex flex-wrap items-center gap-1.5 pt-2.5 text-[11px]">
           <span className="text-ink-muted">Warna = asal sel:</span>
           {kelompok.label.map((label, n) => (
-            <span key={n} className={cn("rounded-md border-2 px-1.5 py-px font-medium", LAB_KELOMPOK_CLASS[n % LAB_KELOMPOK_CLASS.length])}>
+            <span key={n} className={cn("rounded-md  px-1.5 py-px font-medium", LAB_KELOMPOK_CLASS[n % LAB_KELOMPOK_CLASS.length])}>
               {label}
             </span>
           ))}
@@ -70,10 +70,10 @@ export function LangkahSekarang({
       )}
 
       {peranTampil.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-dashed border-rule pt-2.5 text-[11px]">
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pt-2.5 text-[11px]">
           {peranTampil.map((r) => (
             // Kelas sel "luar" memakai opacity; di legenda chip-nya harus tetap terbaca.
-            <span key={r} className={cn("rounded-md border-2 px-1.5 py-px font-medium", LAB_PERAN_CLASS[r].replace("opacity-40", "border-dashed"))}>
+            <span key={r} className={cn("rounded-md  px-1.5 py-px font-medium", LAB_PERAN_CLASS[r].replace("opacity-40", ""))}>
               {LAB_PERAN_LABEL[r]}
             </span>
           ))}
@@ -81,7 +81,7 @@ export function LangkahSekarang({
       )}
 
       {sekarang?.jalur && sekarang.jalur.length > 0 && (
-        <p className="mt-2 border-t border-dashed border-rule pt-2 text-[11px] text-ink-muted">
+        <p className="mt-2 pt-2 text-[11px] text-ink-muted">
           Angka kecil di pojok sel = urutan kunjungan; panah menunjukkan arah. Sudah {sekarang.jalur.length} sel dikunjungi.
         </p>
       )}
@@ -124,7 +124,7 @@ export default function StepTimeline({
   const sampai = Math.min(dari + JENDELA, total);
 
   return (
-    <section className="rounded-3xl border border-rule bg-paper-card px-5 py-4 shadow-soft">
+    <section className="bg-paper-card px-5 py-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="t-label text-ink">Semua langkah</h2>
         <span className="text-xs text-ink-muted">{label}</span>
@@ -156,7 +156,7 @@ export default function StepTimeline({
               <span
                 className={cn(
                   "t-numeral flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] tabular-nums",
-                  i === frame ? "bg-blue-600 text-white" : i < frame ? "bg-paper-alt text-ink-muted" : "border border-rule",
+                  i === frame ? "bg-blue-600 text-white" : i < frame ? "bg-white/10 text-white/70" : "bg-white/10",
                 )}
               >
                 {i + 1}

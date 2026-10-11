@@ -83,6 +83,7 @@ export async function requireAdmin(next?: string): Promise<SessionUser> {
  */
 export async function requireEducator(next?: string): Promise<SessionUser> {
   const user = await requireUser(next);
-  if (user.role !== "educator") redirect("/educator");
+  // Admin ikut lolos: ia boleh membuat kursus & kelas seperti educator (ditambah fitur admin).
+  if (user.role !== "educator" && user.role !== "admin") redirect("/educator");
   return user;
 }

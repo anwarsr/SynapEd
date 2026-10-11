@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { getCourse } from "@/lib/courses";
@@ -10,6 +11,7 @@ export type ReviewResult = { ok: true; message: string } | { ok: false; error: s
 
 const MIN_COMMENT = 10;
 const MAX_COMMENT = 1000;
+const MAX_REPLY = 600;
 
 /**
  * Menulis dan menghapus ulasan kursus.
@@ -183,6 +185,46 @@ export async function deleteReview(id: string): Promise<ReviewResult> {
   revalidatePath("/admin/reviews");
 
   return { ok: true, message: "Ulasan dihapus." };
+}
+
+/**
+ * Membalas ulasan - HANYA admin. Satu balasan per ulasan; mengirim teks kosong
+ * menghapus balasannya. Tampil di kartu komentar beranda dan halaman kursus.
+ * Nama admin diambil dari SESI, bukan dari argumen.
+ */
+export async function replyToReview(id: string, bodyRaw: string): Promise<ReviewResult> {
+  const admin = await getCurrentUser();
+  if (admin?.role !== "admin") {
+    return { ok: false, error: "Hanya admin yang dapat membalas ulasan." };
+  }
+  if (typeof id !== "string" || !id) return { ok: false, error: "Ulasan tidak ditemukan." };
+
+  const body = typeof bodyRaw === "string" ? bodyRaw.trim().slice(0, MAX_REPLY) : "";
+
+  const snap = await reviewRef(id).get();
+  const data = snap.data();
+  if (!data) return { ok: false, error: "Ulasan tidak ditemukan." };
+
+  if (!body) {
+    await reviewRef(id).update({
+      adminReply: FieldValue.delete(),
+      adminReplyAt: FieldValue.delete(),
+      adminReplyBy: FieldValue.delete(),
+    });
+  } else {
+    await reviewRef(id).update({
+      adminReply: body,
+      adminReplyAt: new Date().toISOString(),
+      adminReplyBy: admin.name,
+    });
+  }
+
+  const slug = (data.courseSlug as string | undefined) ?? "";
+  revalidatePath("/");
+  if (slug) revalidatePath(`/courses/${slug}`);
+  revalidatePath("/admin/reviews");
+
+  return { ok: true, message: body ? "Balasan tersimpan." : "Balasan dihapus." };
 }
 
 /** Membuang satu ulasan sekaligus menarik kembali sumbangannya ke rata-rata. */

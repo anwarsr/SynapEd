@@ -785,7 +785,7 @@ export function applyMatrixOp(state: MatrixLabState, op: MatrixOp): MatrixOpResu
         steps.push(
           langkah(
             state,
-            `Kunjungan ke-${k + 1}: arr[${k}][${k}] = ${state.rows[k][k].value} — indeks baris dan kolomnya sama-sama ${k}.`,
+            `Kunjungan ke-${k + 1}: arr[${k}][${k}] = ${state.rows[k][k].value} - indeks baris dan kolomnya sama-sama ${k}.`,
             [datar(state, k, k)],
             LAB_VISIT_HOLD_MS,
             { jalur: [...jalur] },
@@ -805,7 +805,7 @@ export function applyMatrixOp(state: MatrixLabState, op: MatrixOp): MatrixOpResu
       const steps: MatrixStep[] = [
         langkah(
           state,
-          `Transpose: setiap BARIS akan berdiri menjadi KOLOM — arr[i][j] pindah ke arr[j][i]. Tiap baris diberi warna sendiri; ikuti warnanya.`,
+          `Transpose: setiap BARIS akan berdiri menjadi KOLOM - arr[i][j] pindah ke arr[j][i]. Tiap baris diberi warna sendiri; ikuti warnanya.`,
           [],
           LAB_STEP_HOLD_MS,
           { kelompok },
@@ -868,7 +868,7 @@ export function applyMatrixOp(state: MatrixLabState, op: MatrixOp): MatrixOpResu
           ),
         );
       }
-      steps.push(langkah(balikTiapBarisState(state), "Setiap baris selesai dibalik — hasilnya cerminan kiri-kanan."));
+      steps.push(langkah(balikTiapBarisState(state), "Setiap baris selesai dibalik - hasilnya cerminan kiri-kanan."));
       return berhasil(steps);
     }
 
@@ -901,7 +901,7 @@ export function applyMatrixOp(state: MatrixLabState, op: MatrixOp): MatrixOpResu
           ),
         );
       }
-      steps.push(langkah(balikUrutanBarisState(state), "Urutan baris selesai dibalik — hasilnya cerminan atas-bawah."));
+      steps.push(langkah(balikUrutanBarisState(state), "Urutan baris selesai dibalik - hasilnya cerminan atas-bawah."));
       return berhasil(steps);
     }
 
@@ -918,11 +918,11 @@ export function applyMatrixOp(state: MatrixLabState, op: MatrixOp): MatrixOpResu
           LAB_STEP_HOLD_MS,
           { kelompok },
         ),
-        langkah(tengah, `Tahap 1 — transpose: baris menjadi kolom, ukuran ${R}×${C} menjadi ${C}×${R}.`, [], LAB_MOVE_HOLD_MS, { kelompok }),
-        langkah(akhir, "Tahap 2 — setiap baris dibalik kiri-kanan.", [], LAB_MOVE_HOLD_MS, { kelompok }),
+        langkah(tengah, `Tahap 1 - transpose: baris menjadi kolom, ukuran ${R}×${C} menjadi ${C}×${R}.`, [], LAB_MOVE_HOLD_MS, { kelompok }),
+        langkah(akhir, "Tahap 2 - setiap baris dibalik kiri-kanan.", [], LAB_MOVE_HOLD_MS, { kelompok }),
         langkah(
           akhir,
-          `Baris 0 semula kini menjadi kolom paling kanan (kolom ${R - 1}) — persis seperti kertas yang diputar searah jarum jam.`,
+          `Baris 0 semula kini menjadi kolom paling kanan (kolom ${R - 1}) - persis seperti kertas yang diputar searah jarum jam.`,
           offsetDariId(akhir, new Set(state.rows[0].map((c) => c.id))),
           LAB_STEP_HOLD_MS,
           { kelompok },
@@ -974,7 +974,7 @@ function urutkanMatriks(state: MatrixLabState, op: { kind: KindUrut; arah: ArahU
     op.cakupan === "semua"
       ? `seluruh ${R * C} elemen diurutkan sebagai SATU deret mengikuti urutan memori (baris 0, lalu baris 1, …), jadi sel bisa pindah ke baris lain.`
       : op.cakupan === "baris"
-        ? `setiap baris diurutkan sendiri-sendiri — tiap baris adalah array 1D. Baris yang sedang dikerjakan terang, sisanya redup.`
+        ? `setiap baris diurutkan sendiri-sendiri - tiap baris adalah array 1D. Baris yang sedang dikerjakan terang, sisanya redup.`
         : `setiap kolom diurutkan sendiri-sendiri, dari atas ke bawah. Kolom yang sedang dikerjakan terang, sisanya redup.`;
 
   const { steps } = langkahUrut<MatrixLabState>({

@@ -82,7 +82,7 @@ export default function SignInMethodsCard({
   }
 
   return (
-    <div className="bg-paper-card border border-rule rounded-2xl p-7">
+    <div className="bg-paper-card p-7">
       <h2 className="t-h3 mb-1.5">Cara Masuk</h2>
       <p className="t-body text-sm mb-6">Cara yang bisa Anda pakai untuk masuk.</p>
 
@@ -91,29 +91,29 @@ export default function SignInMethodsCard({
           <Check on={methods.password} />
           <span className={methods.password ? "text-ink" : "text-ink-muted"}>
             Email dan kata sandi
-            {!methods.password && " — belum ada"}
+            {!methods.password && " - belum ada"}
           </span>
         </li>
         <li className="flex items-center gap-3 text-sm">
           <Check on={methods.google} />
           <span className={methods.google ? "text-ink" : "text-ink-muted"}>
             Akun Google
-            {!methods.google && " — belum ditautkan"}
+            {!methods.google && " - belum ditautkan"}
           </span>
         </li>
       </ul>
 
       {/* Sebab teknisnya (kata sandi pada email yang belum terbukti
-          kepemilikannya dianggap berisiko) sengaja tidak dijelaskan di sini —
+          kepemilikannya dianggap berisiko) sengaja tidak dijelaskan di sini -
           pengguna cukup tahu bahwa ini perlu dilakukan. */}
       {!emailVerified && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-100 px-4 py-3.5 text-sm text-amber-700 mb-6">
+        <div className="bg-amber-100 px-4 py-3.5 text-sm text-amber-700 mb-6">
           <p className="font-semibold mb-1">Email belum diverifikasi</p>
           <p>Verifikasi email Anda agar akun ini lebih aman.</p>
           <button
             onClick={onVerify}
             disabled={pending !== null}
-            className="mt-3 rounded-lg border border-amber-700/30 bg-paper-card px-4 py-2 text-sm font-medium text-amber-700 transition-colors duration-200 hover:bg-amber-100 disabled:opacity-60"
+            className="mt-3 bg-white/10 px-4 py-2 text-sm font-medium text-amber-700 transition-colors duration-200 hover:bg-amber-100 disabled:opacity-60"
           >
             {pending === "verify" ? "Mengirim…" : "Kirim Tautan Verifikasi"}
           </button>
@@ -125,7 +125,7 @@ export default function SignInMethodsCard({
           <button
             onClick={onLink}
             disabled={pending !== null}
-            className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0"
+            className="bg-white/10 px-5 py-2.5 text-sm font-medium text-ink transition-all duration-200 ease-out-soft hover:bg-white/15 hover:shadow-soft disabled:opacity-60 disabled:translate-y-0"
           >
             {pending === "link" ? "Menghubungkan…" : "Tautkan Akun Google"}
           </button>
@@ -137,10 +137,10 @@ export default function SignInMethodsCard({
         <p
           role="status"
           className={cn(
-            "mt-4 rounded-lg px-4 py-3 text-sm border",
+            "mt-4  px-4 py-3 text-sm",
             status.kind === "ok"
-              ? "bg-blue-50 text-blue-700 border-blue-100"
-              : "bg-rust-100 text-rust-700 border-rust-700/25",
+              ? "bg-blue-50 text-blue-700"
+              : "bg-rust-100 text-rust-700",
           )}
         >
           {status.msg}

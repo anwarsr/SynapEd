@@ -57,10 +57,10 @@ export default function ReferralField() {
 
   if (applied) {
     return (
-      <div className="rounded-lg border border-blue-500/25 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+      <div className="bg-blue-500/15 px-4 py-3 text-sm text-blue-200">
         <p>
           Kode referral <strong className="font-semibold">{applied.code}</strong> diterapkan
-          {applied.referrerName ? ` — dari ${applied.referrerName}` : ""}.
+          {applied.referrerName ? ` - dari ${applied.referrerName}` : ""}.
         </p>
         <p className="mt-1 text-xs">
           <button type="button" onClick={() => setApplied(null)} className="underline underline-offset-2 hover:text-blue-800">
@@ -104,15 +104,15 @@ export default function ReferralField() {
           autoCapitalize="characters"
           spellCheck={false}
           placeholder="KODE"
-          className="min-w-0 flex-1 rounded-lg border border-rule bg-paper px-3 py-2.5 text-sm uppercase tracking-wide text-ink placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+          className="min-w-0 flex-1 bg-white/[0.06] px-3 py-2.5 text-sm uppercase tracking-wide text-ink placeholder:text-ink-faint focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none"
         />
         <button
           type="button"
           onClick={terapkan}
           disabled={pending || value.trim() === ""}
           className={cn(
-            "rounded-lg border border-rule px-4 text-sm font-medium text-ink",
-            "transition-colors duration-200 hover:border-blue-500 hover:text-blue-700",
+            "bg-white/10 px-4 text-sm font-medium text-ink",
+            "transition-colors duration-200 hover:bg-white/15 hover:text-white",
             "disabled:opacity-60 disabled:cursor-not-allowed",
           )}
         >

@@ -45,7 +45,7 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
   // Kursus gratis punya jalurnya sendiri (enrollFree). Membiarkannya lewat
   // sini akan membuat transaksi Rp0 yang pasti ditolak Midtrans.
   if (course.price <= 0) {
-    return { ok: false, error: "Kursus ini gratis — cukup tekan tombol daftar." };
+    return { ok: false, error: "Kursus ini gratis - cukup tekan tombol daftar." };
   }
 
   const existing = await getEnrollment(user.uid, slug);

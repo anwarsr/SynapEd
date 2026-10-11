@@ -20,7 +20,7 @@ export default function ShareLabButton({ kode: buatKode }: { kode: () => string 
   async function bagikan() {
     const kode = buatKode();
     if (kode === null) {
-      setPesan({ teks: "Papan terlalu besar untuk dibagikan — kurangi isi atau catatannya.", ok: false });
+      setPesan({ teks: "Papan terlalu besar untuk dibagikan - kurangi isi atau catatannya.", ok: false });
       return;
     }
 
@@ -45,7 +45,7 @@ export default function ShareLabButton({ kode: buatKode }: { kode: () => string 
         type="button"
         onClick={bagikan}
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-xl border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700",
+          "inline-flex items-center gap-1.5 bg-blue-500/15 px-3 py-2 text-sm font-medium text-blue-200",
           "transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-soft",
         )}
       >
@@ -64,7 +64,7 @@ export default function ShareLabButton({ kode: buatKode }: { kode: () => string 
           role="status"
           className={cn(
             "lab-fade-up absolute right-0 top-full z-20 mt-2 w-max max-w-[20rem] break-all rounded-lg px-3 py-1.5 text-xs shadow-lift",
-            pesan.ok ? "bg-ink text-paper" : "border border-rule bg-paper-card text-ink-body",
+            pesan.ok ? "bg-ink text-paper" : "bg-paper-card text-ink-body",
           )}
         >
           {pesan.teks}

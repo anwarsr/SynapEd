@@ -46,7 +46,7 @@ export const INFO_URUT: Record<KindUrut, { nama: string; ringkas: string; pertuk
   },
   insertionSort: {
     nama: "Insertion sort",
-    ringkas: "Ambil satu nilai, sisipkan ke tempatnya di bagian kiri yang sudah urut — seperti menyusun kartu. O(n²), cepat untuk data yang hampir urut.",
+    ringkas: "Ambil satu nilai, sisipkan ke tempatnya di bagian kiri yang sudah urut - seperti menyusun kartu. O(n²), cepat untuk data yang hampir urut.",
     pertukaran: "pergeseran",
   },
   mergeSort: {
@@ -164,7 +164,7 @@ export function rekamUrut(nilai: readonly string[], kind: KindUrut, arah: ArahUr
         for (let j = 0; j < n - 1 - p; j++) {
           perbandingan++;
           const salah = terbalik(j, j + 1);
-          catat(`${kalimatBanding(j, j + 1)} — ${salah ? "urutannya terbalik, harus ditukar" : "sudah urut, biarkan"}.`, {
+          catat(`${kalimatBanding(j, j + 1)} - ${salah ? "urutannya terbalik, harus ditukar" : "sudah urut, biarkan"}.`, {
             peran: { [j]: "banding", [j + 1]: "banding" },
             label: { [j]: "j", [j + 1]: "j+1" },
             rentang: [0, n - 1 - p],
@@ -183,7 +183,7 @@ export function rekamUrut(nilai: readonly string[], kind: KindUrut, arah: ArahUr
         terurut.add(n - 1 - p);
         if (!ditukar) {
           for (let s = 0; s < n; s++) terurut.add(s);
-          catat(`Putaran ${p + 1} tanpa satu pun pertukaran — artinya semua sudah urut. Berhenti lebih awal.`);
+          catat(`Putaran ${p + 1} tanpa satu pun pertukaran - artinya semua sudah urut. Berhenti lebih awal.`);
           break;
         }
         catat(`Putaran ${p + 1} selesai: ${v(n - 1 - p)} sudah di tempat akhirnya (${nama(n - 1 - p)}).`);
@@ -202,7 +202,7 @@ export function rekamUrut(nilai: readonly string[], kind: KindUrut, arah: ArahUr
         for (let j = i + 1; j < n; j++) {
           perbandingan++;
           const baru = terbalik(m, j);
-          catat(`${kalimatBanding(j, m)} — ${baru ? `${v(j)} jadi ${lbl} yang baru` : `${lbl} tetap ${v(m)}`}.`, {
+          catat(`${kalimatBanding(j, m)} - ${baru ? `${v(j)} jadi ${lbl} yang baru` : `${lbl} tetap ${v(m)}`}.`, {
             peran: { [j]: "banding", [m]: "kunci" },
             label: { [j]: "j", [m]: lbl },
           });
@@ -235,7 +235,7 @@ export function rekamUrut(nilai: readonly string[], kind: KindUrut, arah: ArahUr
         while (j > 0) {
           perbandingan++;
           const geser = terbalik(j - 1, j);
-          catat(`${kalimatBanding(j - 1, j)} — ${geser ? "kunci harus di kirinya, geser" : "kunci sudah di tempat yang benar, berhenti"}.`, {
+          catat(`${kalimatBanding(j - 1, j)} - ${geser ? "kunci harus di kirinya, geser" : "kunci sudah di tempat yang benar, berhenti"}.`, {
             peran: { ...urutKiri(i), [j - 1]: "banding", [j]: "kunci" },
             label: { [j]: "kunci" },
           });
@@ -248,7 +248,7 @@ export function rekamUrut(nilai: readonly string[], kind: KindUrut, arah: ArahUr
             gerak: true,
           });
         }
-        catat(`Bagian ${nama(0)} sampai ${nama(i)} kini urut (sementara — nilai yang datang kemudian masih bisa menyisip).`, {
+        catat(`Bagian ${nama(0)} sampai ${nama(i)} kini urut (sementara - nilai yang datang kemudian masih bisa menyisip).`, {
           peran: urutKiri(i),
         });
       }
@@ -277,7 +277,7 @@ export function rekamUrut(nilai: readonly string[], kind: KindUrut, arah: ArahUr
         while (i < j && j <= hi) {
           perbandingan++;
           const ambilKanan = terbalik(i, j);
-          catat(`${kalimatBanding(i, j)} — ${ambilKanan ? `${v(j)} dari kanan didahulukan` : `${v(i)} dari kiri sudah di tempatnya`}.`, {
+          catat(`${kalimatBanding(i, j)} - ${ambilKanan ? `${v(j)} dari kanan didahulukan` : `${v(i)} dari kiri sudah di tempatnya`}.`, {
             rentang: [lo, hi],
             peran: { ...(i > lo ? urut(lo, i - 1) : {}), [i]: "banding", [j]: "banding" },
             label: { [i]: "kiri", [j]: "kanan" },
@@ -326,7 +326,7 @@ export function rekamUrut(nilai: readonly string[], kind: KindUrut, arah: ArahUr
           perbandingan++;
           const keKiri = terbalik(hi, j);
           catat(
-            `${kalimatBanding(j, hi)} — ${keKiri ? `${v(j)} harus di sisi kiri pivot` : `${v(j)} tetap di sisi kanan`}.`,
+            `${kalimatBanding(j, hi)} - ${keKiri ? `${v(j)} harus di sisi kiri pivot` : `${v(j)} tetap di sisi kanan`}.`,
             {
               rentang: [lo, hi],
               peran: { ...batas(i), [j]: "banding", [hi]: "pivot" },
@@ -355,7 +355,7 @@ export function rekamUrut(nilai: readonly string[], kind: KindUrut, arah: ArahUr
             gerak: true,
           });
         } else {
-          catat(`Pivot ${v(i)} sudah di tempat akhirnya (${nama(i)}) — tidak ada yang perlu dipindah.`, {
+          catat(`Pivot ${v(i)} sudah di tempat akhirnya (${nama(i)}) - tidak ada yang perlu dipindah.`, {
             rentang: [lo, hi],
             peran: { ...batas(i), [i]: "pivot" },
             label: { [i]: "pivot" },

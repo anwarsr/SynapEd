@@ -1,7 +1,6 @@
 import Link from "next/link";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ProfileLink from "@/components/ui/ProfileLink";
-import Tag from "@/components/ui/Tag";
 import Reveal from "@/components/ui/Reveal";
 import DeleteButton from "@/components/classes/DeleteButton";
 import ReplyForm from "@/components/classes/ReplyForm";
@@ -56,7 +55,7 @@ export default function PostFeed({
 }) {
   if (posts.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-rule-strong bg-paper-card/55 px-8 py-14 text-center">
+      <div className="bg-white/5 px-8 py-14 text-center">
         <p className="text-[22px] text-ink" style={DISPLAY_KOSONG}>
           Belum ada pengumuman
         </p>
@@ -81,11 +80,9 @@ export default function PostFeed({
         return (
           <li key={post.id}>
             <Reveal delay={i * 90}>
-              <article className="rounded-2xl border border-rule bg-paper-card p-6 transition-all duration-200 ease-out-soft hover:border-rule-strong hover:shadow-soft">
+              <article className="bg-paper-card p-6 transition-all duration-200 ease-out-soft hover:bg-card-hover">
                 <div className="flex flex-wrap items-center gap-3">
-                  <ProfileLink uid={post.authorUid} name={nama} secondary className="shrink-0">
-                    <UserAvatar name={nama} photoURL={penulis?.photoURL ?? null} />
-                  </ProfileLink>
+                  <AvatarMini uid={post.authorUid} name={nama} photoURL={penulis?.photoURL ?? null} />
 
                   <ProfileLink
                     uid={post.authorUid}
@@ -145,13 +142,13 @@ export default function PostFeed({
                 )}
 
                 {(balasan.length > 0 || canReply) && (
-                  <div className="mt-5 border-t border-rule pt-[18px]">
+                  <div className="mt-5 pt-[18px]">
                     <p className="t-label text-ink-muted mb-4">
                       {balasan.length > 0 ? `${balasan.length} balasan` : "Belum ada balasan"}
                     </p>
 
                     {balasan.length > 0 && (
-                      <ul className="mb-4 flex flex-col gap-4 border-l-2 border-blue-100 pl-[18px]">
+                      <ul className="mb-4 flex flex-col gap-4 border-l-2 border-white/10 pl-[18px]">
                         {balasan.map((r) => {
                           const kartu = cards.get(r.authorUid);
                           const namaBalasan = kartu?.name ?? "Peserta";
@@ -159,18 +156,12 @@ export default function PostFeed({
 
                           return (
                             <li key={r.id} className="flex flex-wrap items-start gap-3">
-                              <ProfileLink
+                              <AvatarMini
                                 uid={r.authorUid}
                                 name={namaBalasan}
-                                secondary
-                                className="shrink-0"
-                              >
-                                <UserAvatar
-                                  name={namaBalasan}
-                                  photoURL={kartu?.photoURL ?? null}
-                                  size="sm"
-                                />
-                              </ProfileLink>
+                                photoURL={kartu?.photoURL ?? null}
+                                size="sm"
+                              />
 
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-baseline gap-2">

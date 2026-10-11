@@ -6,9 +6,10 @@ import Reveal from "@/components/ui/Reveal";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileStatsRow from "@/components/profile/ProfileStats";
 import EducationList from "@/components/profile/EducationList";
-import { OwnedCourses } from "@/components/profile/ProfileCourses";
+import { EnrolledCourses, OwnedCourses } from "@/components/profile/ProfileCourses";
 import { getPublicProfile } from "@/lib/publicProfile";
 import { getCurrentUser } from "@/lib/firebase/session";
+import { listCourses } from "@/lib/courses";
 import type { Metadata } from "next";
 
 interface Props {
@@ -50,6 +51,10 @@ export default async function PublicProfilePage({ params }: Props) {
   if (!profile) notFound();
 
   const isEducator = profile.role === "educator" || profile.role === "admin";
+  // Gambar kursus diambil dari katalog (snapshot enrollment tidak menyimpannya).
+  const gambar = profile.followed
+    ? Object.fromEntries((await listCourses()).map((c) => [c.slug, c.thumbnail]))
+    : {};
 
   return (
     <>
@@ -61,6 +66,7 @@ export default async function PublicProfilePage({ params }: Props) {
           username={profile.username}
           email=""
           photoURL={profile.photoURL}
+          bannerURL={profile.bannerURL}
           role={profile.role}
           bio={profile.content.bio}
           skills={profile.content.skills}
@@ -83,11 +89,22 @@ export default async function PublicProfilePage({ params }: Props) {
 
           <div className="flex flex-wrap items-start gap-14 pt-16 pb-[88px]">
             <div className="flex min-w-0 flex-1 basis-[440px] flex-col gap-14">
+              {profile.followed && (
+                <Reveal>
+                  <section id="diikuti">
+                    <div className="mb-[18px] flex flex-wrap items-baseline justify-between gap-4">
+                      <h2 className="t-h3">Kursus yang Diikuti</h2>
+                    </div>
+                    <EnrolledCourses enrollments={profile.followed} gambar={gambar} publik />
+                  </section>
+                </Reveal>
+              )}
+
               {isEducator && (
                 <Reveal>
                   <section id="kursus">
                     <div className="mb-[18px] flex flex-wrap items-baseline justify-between gap-4">
-                      <h2 className="t-h3">Kursus yang Diajarkan</h2>
+                      <h2 className="t-h3">Kursus yang Dibuat</h2>
                       <Link
                         href="/courses"
                         className="text-[13px] text-blue-700 hover:underline underline-offset-4"
@@ -113,7 +130,7 @@ export default async function PublicProfilePage({ params }: Props) {
                 <section>
                   <h2 className="t-label text-ink-muted mb-4">Tentang Educator</h2>
 
-                  <dl className="rounded-2xl border border-rule bg-paper-card px-5 py-[18px] text-[13.5px]">
+                  <dl className="bg-paper-card px-5 py-[18px] text-[13.5px]">
                     {[
                       profile.joinedAt ? ["Bergabung", profile.joinedAt] : null,
                       ["Kursus", `${profile.stats.courses}`],

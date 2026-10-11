@@ -1,4 +1,4 @@
-import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
 import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -44,12 +44,7 @@ export default async function ClassMembersPage({ params }: Props) {
           <h1 className="t-h2">
             Anggota <span className="mark">{kelas.name}</span>
           </h1>
-          <Link
-            href={`/educator/classes/${id}`}
-            className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700"
-          >
-            ← Kembali ke kelas
-          </Link>
+          <BackLink href={`/educator/classes/${id}`}>Kembali ke kelas</BackLink>
         </div>
 
         <p className="t-body text-ink-muted mb-10">
