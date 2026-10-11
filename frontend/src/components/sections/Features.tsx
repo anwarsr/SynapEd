@@ -1046,7 +1046,10 @@ export default function Features() {
                         type="button"
                         data-egg={index}
                         tabIndex={ghost ? -1 : undefined}
-                        onClick={() => triggerEgg(index)}
+                        onClick={(e) => {
+                          // Warna HANYA bisa diganti pada kartu yang sedang DISOROT.
+                          if (e.currentTarget.closest<HTMLElement>("[data-sorot]")?.dataset.sorot === "1") triggerEgg(index);
+                        }}
                         aria-label="Ganti warna kartu"
                         className="
                           cursor-pointer
