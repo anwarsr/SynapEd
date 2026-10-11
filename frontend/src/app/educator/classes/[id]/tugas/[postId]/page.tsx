@@ -101,7 +101,7 @@ export default async function TugasPengajarPage({ params }: Props) {
         aksi={<EditPost classId={id} post={post} />}
         samping={
           <>
-            <div className="rounded-2xl border border-rule bg-paper-card p-6">
+            <div className="bg-paper-card p-6">
               <p className="t-label mb-4 text-ink-muted">Ringkasan</p>
               <dl className="divide-y divide-rule">
                 {[
@@ -142,7 +142,7 @@ export default async function TugasPengajarPage({ params }: Props) {
             <h2 className="t-h3 mb-4">Pengumpulan siswa</h2>
 
             {baris.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-rule-strong bg-paper-card/55 px-6 py-10 text-center text-sm text-ink-muted">
+              <p className="bg-paper-card/55 px-6 py-10 text-center text-sm text-ink-muted">
                 Belum ada anggota di kelas ini.
               </p>
             ) : (
@@ -150,7 +150,7 @@ export default async function TugasPengajarPage({ params }: Props) {
                 {baris.map((b) => {
                   const label = LABEL_STATUS[b.status];
                   return (
-                    <li key={b.uid} className="rounded-2xl border border-rule bg-paper-card">
+                    <li key={b.uid} className="bg-paper-card">
                       {/* <details> tanpa JavaScript: pengajar membuka satu per
                           satu tanpa seluruh jawaban membanjiri halaman. Yang
                           perlu dinilai terbuka sejak awal. */}
@@ -187,9 +187,9 @@ export default async function TugasPengajarPage({ params }: Props) {
                         </summary>
 
                         {b.sub && (
-                          <div className="border-t border-rule px-5 pb-5 pt-4">
+                          <div className="border-t px-5 pb-5 pt-4">
                             {b.sub.text && (
-                              <p className="max-h-96 overflow-y-auto whitespace-pre-line break-words rounded-xl border border-rule bg-paper px-4 py-3 text-sm leading-[1.7] text-ink-body">
+                              <p className="max-h-96 overflow-y-auto whitespace-pre-line break-words bg-white/[0.06] px-4 py-3 text-sm leading-[1.7] text-ink-body">
                                 {b.sub.text}
                               </p>
                             )}

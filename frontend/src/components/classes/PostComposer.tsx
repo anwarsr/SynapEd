@@ -120,7 +120,7 @@ export default function PostComposer({
         </span>
 
         <div className="min-w-0 flex-1">
-          <div role="radiogroup" aria-label="Jenis postingan" className="mb-4 inline-flex rounded-full border border-rule bg-paper p-1">
+          <div role="radiogroup" aria-label="Jenis postingan" className="mb-4 inline-flex bg-white/[0.06] p-1">
             {(
               [
                 { id: "announcement", label: "Pengumuman" },
@@ -135,7 +135,7 @@ export default function PostComposer({
                 disabled={sibuk}
                 onClick={() => setJenis(j.id)}
                 className={cn(
-                  "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors duration-200",
+                  "px-4 py-1.5 text-sm font-semibold transition-colors duration-200",
                   jenis === j.id ? "bg-blue-600 text-white" : "text-ink-body hover:text-blue-700",
                 )}
               >

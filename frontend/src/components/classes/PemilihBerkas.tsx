@@ -61,7 +61,7 @@ export default function PemilihBerkas({
           {files.map((f, i) => (
             <li
               key={`${f.name}-${f.size}-${i}`}
-              className="flex min-w-0 items-center gap-3 rounded-xl border border-rule bg-paper px-3 py-2"
+              className="flex min-w-0 items-center gap-3 bg-white/[0.06] px-3 py-2"
             >
               <span className="w-11 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-ink-muted">
                 {ekstensiOf(f.name).replace(".", "")}
@@ -73,7 +73,7 @@ export default function PemilihBerkas({
                 disabled={disabled}
                 onClick={() => onChange(files.filter((_, j) => j !== i))}
                 aria-label={`Buang ${f.name}`}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-paper-alt hover:text-rust-700 disabled:opacity-50"
+                className="flex h-7 w-7 shrink-0 items-center justify-center text-ink-muted transition-colors hover:bg-paper-alt hover:text-rust-700 disabled:opacity-50"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -101,8 +101,8 @@ export default function PemilihBerkas({
         disabled={disabled || files.length >= maks}
         onClick={() => inputRef.current?.click()}
         className={cn(
-          "inline-flex items-center gap-2 rounded-lg border border-dashed border-rule-strong px-4 py-2 text-sm font-medium text-ink-body",
-          "transition-colors duration-200 hover:border-blue-500 hover:text-blue-700",
+          "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-ink-body",
+          "transition-colors duration-200 hover:text-blue-700",
           "disabled:cursor-not-allowed disabled:opacity-50",
         )}
       >

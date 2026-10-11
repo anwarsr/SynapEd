@@ -151,7 +151,7 @@ export default function EditPost({
   const id = `edit-${post.id}`;
 
   return (
-    <form onSubmit={simpan} className="mt-4 w-full rounded-2xl border border-blue-200 bg-paper-card p-5 shadow-soft">
+    <form onSubmit={simpan} className="mt-4 w-full bg-paper-card p-5">
       <p className="t-label mb-4 text-blue-700">{tugas ? "Edit tugas" : "Edit pengumuman"}</p>
 
       {tugas && (
@@ -188,7 +188,7 @@ export default function EditPost({
         {lama.length > 0 && (
           <ul className="mb-3 space-y-2">
             {lama.map((a) => (
-              <li key={a.path} className="flex min-w-0 items-center gap-3 rounded-xl border border-rule bg-paper px-3 py-2">
+              <li key={a.path} className="flex min-w-0 items-center gap-3 bg-white/[0.06] px-3 py-2">
                 <span className="w-11 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-ink-muted">
                   {ekstensiOf(a.name).replace(".", "")}
                 </span>
@@ -232,14 +232,14 @@ export default function EditPost({
           type="button"
           onClick={batal}
           disabled={sibuk}
-          className="rounded-lg px-4 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink disabled:opacity-60"
+          className="px-4 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink disabled:opacity-60"
         >
           Batal
         </button>
         <button
           type="submit"
           disabled={sibuk || (tugas && (judul.trim().length < 3 || isian.formats.length === 0))}
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+          className="bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {mengunggah ? "Mengunggah…" : pending ? "Menyimpan…" : "Simpan perubahan"}
         </button>

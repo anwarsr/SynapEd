@@ -9,9 +9,9 @@ import {
 import { cn } from "@/lib/cn";
 
 export const KOLOM_KELAS = cn(
-  "w-full rounded-xl border border-rule bg-paper px-4 py-2.5 text-[15px] text-ink",
+  "w-full bg-white/[0.06] px-4 py-2.5 text-[15px] text-ink",
   "transition-colors duration-200 placeholder:text-ink-faint",
-  "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25",
+  "focus:outline-none focus:shadow-[inset_0_-2px_0_var(--color-blue-500)]",
 );
 
 export interface NilaiIsianTugas {
@@ -54,7 +54,7 @@ export default function IsianTugas({
   }
 
   return (
-    <div className="grid gap-5 rounded-xl border border-rule bg-paper p-4 sm:grid-cols-2">
+    <div className="grid gap-5 bg-white/[0.06] p-4 sm:grid-cols-2">
       <fieldset className="min-w-0 sm:col-span-2">
         <legend className="t-label mb-2 text-ink-muted">Format yang boleh dikumpulkan</legend>
         {/* Satu kotak centang per JENIS berkas, dikelompokkan supaya mudah
@@ -63,7 +63,7 @@ export default function IsianTugas({
           {KELOMPOK_FORMAT.map((k) => {
             const semua = k.formats.every((f) => nilai.formats.includes(f));
             return (
-              <div key={k.label} className="min-w-0 rounded-lg border border-rule px-3 py-2.5">
+              <div key={k.label} className="min-w-0 px-3 py-2.5">
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">{k.label}</span>
                   {k.formats.length > 1 && (
@@ -85,8 +85,8 @@ export default function IsianTugas({
                         key={f}
                         title={INFO_FORMAT[f].ket}
                         className={cn(
-                          "flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-sm transition-colors",
-                          aktif ? "border-blue-300 bg-blue-50/60 text-ink" : "border-rule text-ink-body hover:border-rule-strong",
+                          "flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-sm transition-colors",
+                          aktif ? "bg-blue-50/60 text-ink" : "text-ink-body",
                         )}
                       >
                         <input

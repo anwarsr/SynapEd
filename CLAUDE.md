@@ -486,6 +486,7 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 
 Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
 
+- **Tampilan** (sama dengan halaman lain): kartu/isian/tombol PERSEGI tanpa `rounded-*` dan tanpa border kotak (kartu `bg-paper-card`, isian `bg-white/[0.06]` + garis biru di bawah saat fokus, bukan ring); statistik tugas dipisah celah 4px; tab ruang kelas aktif = latar samar + bilah biru di bawah. Jangan menambah `rounded-*`/`border` kotak lagi di `components/classes` dan halaman tugas.
 - Berkas: `classAssignmentRules.ts` (NETRAL — format, MIME, batas, validasi,
   status, WIB), `classAssignments.ts` (server-only, tanpa penjaga: data,
   `periksaBerkas`, `bersihkanPost/Kelas`), `classAssignmentActions.ts`

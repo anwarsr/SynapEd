@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { AVATARS } from "@/lib/storagePaths";
+import { AVATARS, CLASS_FILES } from "@/lib/storagePaths";
 import { deleteObjects } from "@/lib/storageCleanup";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
@@ -21,7 +21,6 @@ import {
   MIME_KELAS,
   validasiPengaturan,
 } from "@/lib/classAssignmentRules";
-import { CLASS_FILES } from "@/lib/storagePaths";
 import {
   CLASS_MEMBERS,
   MAX_CLASS_DESC,

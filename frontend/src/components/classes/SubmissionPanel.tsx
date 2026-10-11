@@ -110,7 +110,7 @@ export default function SubmissionPanel({
   const label = LABEL_STATUS[status];
 
   return (
-    <div className="rounded-2xl border border-rule bg-paper-card p-6">
+    <div className="bg-paper-card p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <p className="text-[17px] font-medium text-ink">Tugas Anda</p>
         <Tag tone={label.tone}>{label.label}</Tag>
@@ -119,7 +119,7 @@ export default function SubmissionPanel({
       {submission ? (
         <>
           {submission.status === "graded" && submission.grade !== null && (
-            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+            <div className="mb-4 bg-blue-50/60 px-4 py-3">
               <p className="t-label text-blue-700">Nilai</p>
               <p className="mt-1 text-[28px] font-medium leading-none tabular-nums text-ink">
                 {submission.grade}
@@ -139,7 +139,7 @@ export default function SubmissionPanel({
           </p>
 
           {submission.text && (
-            <p className="mt-3 max-h-72 overflow-y-auto whitespace-pre-line break-words rounded-xl border border-rule bg-paper px-4 py-3 text-sm leading-[1.7] text-ink-body">
+            <p className="mt-3 max-h-72 overflow-y-auto whitespace-pre-line break-words bg-white/[0.06] px-4 py-3 text-sm leading-[1.7] text-ink-body">
               {submission.text}
             </p>
           )}
@@ -156,7 +156,7 @@ export default function SubmissionPanel({
                 type="button"
                 onClick={() => setKonfirmasi(true)}
                 disabled={sibuk}
-                className="mt-5 w-full rounded-lg border border-rule px-5 py-2.5 text-sm font-semibold text-ink-body transition-colors duration-200 hover:border-rust-700 hover:text-rust-700 disabled:opacity-60"
+                className="mt-5 w-full px-5 py-2.5 text-sm font-semibold text-ink-body transition-colors duration-200 hover:text-rust-700 disabled:opacity-60"
               >
                 {pending ? "Membatalkan…" : "Batalkan pengiriman"}
               </button>
@@ -184,9 +184,9 @@ export default function SubmissionPanel({
                 disabled={sibuk}
                 placeholder="Tulis jawaban Anda di sini."
                 className={cn(
-                  "w-full resize-y rounded-xl border border-rule bg-paper px-4 py-3 text-sm leading-[1.7] text-ink",
+                  "w-full resize-y bg-white/[0.06] px-4 py-3 text-sm leading-[1.7] text-ink",
                   "transition-colors duration-200 placeholder:text-ink-faint",
-                  "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25",
+                  "focus:outline-none focus:shadow-[inset_0_-2px_0_var(--color-blue-500)]",
                 )}
               />
             </>
@@ -209,7 +209,7 @@ export default function SubmissionPanel({
             type="submit"
             disabled={sibuk}
             className={cn(
-              "mt-5 w-full rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white",
+              "mt-5 w-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white",
               "transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5",
               "disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed",
             )}
