@@ -44,3 +44,94 @@ export async function uploadAvatar(user: User, file: File): Promise<string> {
 
   return url;
 }
+
+/** Lebar maksimum banner setelah dikecilkan (px). */
+const BANNER_MAX_WIDTH = 1600;
+
+/**
+ * Mengecilkan gambar banner di browser menjadi JPEG ≤ 1600px lebar.
+ *
+ * Batas tulis storage.rules untuk folder ini 2 MB, sedangkan foto ponsel bisa
+ * 5–10 MB. Daripada menolak, gambarnya dikecilkan — hasilnya hampir selalu di
+ * bawah 600 KB. Kalau masih ≥ 2 MB, kualitas diturunkan bertahap.
+ */
+export async function compressBanner(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const skala = Math.min(1, BANNER_MAX_WIDTH / bitmap.width);
+  const w = Math.round(bitmap.width * skala);
+  const h = Math.round(bitmap.height * skala);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Peramban tidak mendukung pengolahan gambar.");
+  // JPEG tak punya transparansi — alasnya hitam, sama dengan banner bawaan.
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+
+  for (const q of [0.86, 0.72, 0.58]) {
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", q));
+    if (blob && blob.size < MAX_AVATAR_BYTES) return blob;
+  }
+  throw new Error("Gambar terlalu besar. Pilih gambar yang lebih kecil.");
+}
+
+/**
+ * Unggah banner ke `avatars/{uid}/banner.jpg` (folder & aturan tulis yang sama
+ * dengan foto profil) dan mengembalikan URL-nya. Nama berkas tetap, jadi
+ * unggahan baru menimpa yang lama; `?v=` memutus cache peramban/CDN.
+ */
+export async function uploadBanner(user: User, blob: Blob): Promise<string> {
+  const path = `${AVATARS}/${user.uid}/banner.jpg`;
+  const storageRef = ref(firebaseStorage(), path);
+  await uploadBytes(storageRef, blob, { contentType: "image/jpeg" });
+
+  const url = await getDownloadURL(storageRef);
+  return `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+}
+
+/**
+ * Foto profil kelas: dipotong persegi dari tengah, diperkecil ke `sisi` px,
+ * JPEG di bawah 2 MB (batas storage.rules untuk folder avatars).
+ */
+export async function compressSquare(file: File, sisi = 512): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const s = Math.min(bitmap.width, bitmap.height);
+  const ukuran = Math.min(sisi, s);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = ukuran;
+  canvas.height = ukuran;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Peramban tidak mendukung pengolahan gambar.");
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, ukuran, ukuran);
+  ctx.drawImage(bitmap, (bitmap.width - s) / 2, (bitmap.height - s) / 2, s, s, 0, 0, ukuran, ukuran);
+  bitmap.close();
+
+  for (const q of [0.88, 0.74, 0.6]) {
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", q));
+    if (blob && blob.size < MAX_AVATAR_BYTES) return blob;
+  }
+  throw new Error("Gambar terlalu besar. Pilih gambar yang lebih kecil.");
+}
+
+/**
+ * Unggah foto kelas ke `avatars/{uid}/class-{kunci}.jpg` - folder & aturan tulis
+ * yang sama dengan foto profil/banner, jadi tak perlu mendeploy storage.rules.
+ * `kunci` baru tiap unggahan (bukan nama tetap) karena kelasnya mungkin belum
+ * punya id saat dibuat; server memeriksa bentuk path-nya (classActions.ts).
+ */
+export async function uploadClassImage(user: User, blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  const kunci = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+
+  const path = `${AVATARS}/${user.uid}/class-${kunci}.jpg`;
+  const storageRef = ref(firebaseStorage(), path);
+  await uploadBytes(storageRef, blob, { contentType: "image/jpeg" });
+  return getDownloadURL(storageRef);
+}

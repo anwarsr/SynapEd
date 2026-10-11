@@ -47,7 +47,7 @@ export default function CurriculumList({
   return (
     <div className="space-y-4">
       {sections.map((section, si) => (
-        <div key={section.position} className="border border-rule rounded-2xl overflow-hidden">
+        <div key={section.position} className="bg-white/5 overflow-hidden">
           <div className="px-5 py-4 bg-paper-alt flex items-center gap-3">
             <span className="t-numeral-ghost text-xl text-ink-faint" aria-hidden="true">
               {String(si + 1).padStart(2, "0")}

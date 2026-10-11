@@ -17,6 +17,19 @@ export function levelTone(levelColor: string): Tone {
   }
 }
 
+/**
+ * Untuk siapa kursus ini - dari tingkat kesulitannya (tampil di balik gambar
+ * kartu). Hanya tingkatnya ("Untuk pemula"); nama bebas dari
+ * educator yang tak dikenal tetap terbaca wajar: "Untuk {tingkat}".
+ */
+export function untukLevel(level: string): string {
+  const l = level.trim().toLowerCase();
+  if (/pemula|dasar|awal|beginner|basic/.test(l)) return "Untuk pemula";
+  if (/menengah|madya|intermediate/.test(l)) return "Untuk menengah";
+  if (/lanjut|mahir|ahli|advanced|expert/.test(l)) return "Untuk lanjut";
+  return l ? `Untuk ${l}` : "Untuk semua";
+}
+
 /** Path ikon Heroicons per kursus — sebelumnya iconPaths di data/courses.ts. */
 export const iconPaths: Record<string, string> = {
   brain:

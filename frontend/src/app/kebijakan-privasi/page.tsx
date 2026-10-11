@@ -38,25 +38,25 @@ export default function KebijakanPrivasiPage() {
         <Bullets
           items={[
             <>
-              <strong>Data akun</strong> — nama, alamat email, dan kata sandi (tersimpan dalam bentuk
+              <strong>Data akun</strong> - nama, alamat email, dan kata sandi (tersimpan dalam bentuk
               teracak, tidak pernah dalam bentuk aslinya). Bila Anda masuk dengan Google, kami
               menerima nama, email, dan foto profil dari akun Google Anda.
             </>,
             <>
-              <strong>Data profil opsional</strong> — nomor telepon dan foto profil, bila Anda
+              <strong>Data profil opsional</strong> - nomor telepon dan foto profil, bila Anda
               mengisinya.
             </>,
             <>
-              <strong>Data belajar</strong> — kursus yang Anda ikuti, pelajaran yang telah
+              <strong>Data belajar</strong> - kursus yang Anda ikuti, pelajaran yang telah
               diselesaikan, nilai kuis, dan sertifikat yang diterbitkan.
             </>,
             <>
-              <strong>Data transaksi</strong> — nomor pesanan, nama kursus, jumlah, status, dan
+              <strong>Data transaksi</strong> - nomor pesanan, nama kursus, jumlah, status, dan
               metode pembayaran. <strong>Kami tidak pernah menerima atau menyimpan nomor kartu,
               PIN, atau kredensial perbankan Anda.</strong>
             </>,
             <>
-              <strong>Data educator</strong> — bagi pengguna yang mengajukan diri menjadi educator,
+              <strong>Data educator</strong> - bagi pengguna yang mengajukan diri menjadi educator,
               berikut materi yang diunggahnya.
             </>,
           ]}
@@ -87,10 +87,10 @@ export default function KebijakanPrivasiPage() {
         <Bullets
           items={[
             <>
-              <strong>Google Firebase</strong> — autentikasi, basis data, dan penyimpanan berkas.
+              <strong>Google Firebase</strong> - autentikasi, basis data, dan penyimpanan berkas.
             </>,
             <>
-              <strong>Midtrans</strong> — pemrosesan pembayaran. Data pembayaran Anda diserahkan
+              <strong>Midtrans</strong> - pemrosesan pembayaran. Data pembayaran Anda diserahkan
               langsung kepada Midtrans dan tunduk pada kebijakan privasi mereka.
             </>,
           ]}
@@ -114,7 +114,7 @@ export default function KebijakanPrivasiPage() {
           items={[
             "Data akun dan riwayat belajar disimpan selama akun Anda aktif.",
             "Catatan transaksi disimpan lebih lama sesuai kebutuhan pembukuan dan penyelesaian sengketa.",
-            "Berkas yang tidak lagi dirujuk — foto profil lama, materi yang diganti — dihapus otomatis dari penyimpanan kami.",
+            "Berkas yang tidak lagi dirujuk - foto profil lama, materi yang diganti - dihapus otomatis dari penyimpanan kami.",
           ]}
         />
       </Clause>
@@ -124,7 +124,7 @@ export default function KebijakanPrivasiPage() {
         <Bullets
           items={[
             "memperoleh informasi dan salinan data pribadi Anda;",
-            "memperbaiki data yang keliru — nama, email, nomor telepon, dan foto dapat Anda ubah sendiri di halaman profil;",
+            "memperbaiki data yang keliru - nama, email, nomor telepon, dan foto dapat Anda ubah sendiri di halaman profil;",
             "menarik persetujuan dan menghapus akun beserta datanya melalui halaman profil;",
             "mengajukan keberatan atas pemrosesan data tertentu.",
           ]}
@@ -138,7 +138,7 @@ export default function KebijakanPrivasiPage() {
         </p>
         <p>
           Perlu diketahui, menghapus akun juga menghapus akses kursus Anda dan tidak menimbulkan hak
-          pengembalian dana — lihat{" "}
+          pengembalian dana - lihat{" "}
           <Link href="/pengembalian-dana" className="text-blue-700 hover:underline underline-offset-4">
             Pengembalian Dana
           </Link>

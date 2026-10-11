@@ -64,7 +64,7 @@ export default function QuizQuestionsFields({
   }
 
   return (
-    <div className="space-y-5 rounded-xl border border-rule bg-paper-alt p-4">
+    <div className="space-y-5 bg-white/[0.04] p-4">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor={`passing-${idPrefix}`}>Nilai kelulusan (%)</Label>
@@ -94,7 +94,7 @@ export default function QuizQuestionsFields({
 
       <div className="space-y-4">
         {questions.map((q, qi) => (
-          <div key={q.id} className="rounded-xl border border-rule bg-paper-card p-4">
+          <div key={q.id} className="bg-white/[0.05] p-4">
             <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-3">
               <input
                 value={q.prompt}
@@ -115,7 +115,7 @@ export default function QuizQuestionsFields({
                 <button
                   type="button"
                   onClick={() => removeQuestion(qi)}
-                  className="p-2 rounded-lg text-rust-700 hover:bg-rust-100 shrink-0"
+                  className="p-2 text-error-text hover:bg-rust-100 shrink-0"
                 >
                   Hapus
                 </button>
@@ -142,7 +142,7 @@ export default function QuizQuestionsFields({
                     type="button"
                     onClick={() => removeOption(qi, oi)}
                     disabled={q.options.length <= 2}
-                    className="p-1.5 rounded-lg text-ink-faint hover:bg-paper-alt disabled:opacity-30"
+                    className="p-1.5 text-ink-faint hover:bg-white/10 disabled:opacity-30"
                     aria-label="Hapus pilihan"
                   >
                     ✕
@@ -163,7 +163,7 @@ export default function QuizQuestionsFields({
               value={q.explanation}
               onChange={(e) => updateQuestion(qi, { explanation: e.target.value })}
               rows={2}
-              placeholder="Penjelasan (opsional) — tampil ke peserta setelah lulus atau kehabisan percobaan."
+              placeholder="Penjelasan (opsional) - tampil ke peserta setelah lulus atau kehabisan percobaan."
               className={cn(inputClass, "resize-y text-xs")}
             />
           </div>
@@ -173,7 +173,7 @@ export default function QuizQuestionsFields({
       <button
         type="button"
         onClick={addQuestion}
-        className="rounded-lg border border-rule px-4 py-2 text-sm font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+        className="bg-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
       >
         + Tambah Soal
       </button>

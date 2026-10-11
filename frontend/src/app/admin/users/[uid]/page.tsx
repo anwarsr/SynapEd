@@ -1,11 +1,11 @@
-import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
-import DecisionButtons from "@/components/admin/DecisionButtons";
+import UserManage from "@/components/admin/UserManage";
 import Tag from "@/components/ui/Tag";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { formatDate, getUser } from "@/lib/adminUsers";
-import { getApplication, statusLabel } from "@/lib/educator";
 import { adminBadges } from "@/lib/adminBadges";
 import { requireAdmin } from "@/lib/firebase/session";
 import { roleLabel, type Role } from "@/lib/roles";
@@ -45,23 +45,14 @@ export default async function AdminUserDetailPage({ params }: Props) {
   const user = await getUser(uid);
   if (!user) notFound();
 
-  const [application, badges] = await Promise.all([
-    getApplication(uid),
-    adminBadges(),
-  ]);
+  const badges = await adminBadges();
 
   return (
     <AdminShell user={admin} badges={badges}>
       <div className="container-reading">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-ink-muted mb-10">
-          <Link href="/admin" className="hover:text-blue-700 transition-colors">
-            Akun Pengguna
-          </Link>
-          <span aria-hidden="true">/</span>
-          <span className="text-ink">{user.name}</span>
-        </nav>
+        <Breadcrumb items={[{ label: "Akun Pengguna", href: "/admin" }, { label: user.name }]} />
 
-        <div className="bg-paper-card border border-rule rounded-2xl p-8">
+        <div className="bg-paper-card p-8">
           <div className="flex items-center gap-5 pb-7 mb-2 border-b border-rule">
             <UserAvatar name={user.name} photoURL={user.photoURL} size="lg" />
             <div className="min-w-0">
@@ -89,71 +80,20 @@ export default async function AdminUserDetailPage({ params }: Props) {
               {user.phone ?? <span className="text-ink-faint">Belum diisi</span>}
             </Row>
 
-            <Row label="Pengajuan educator">
-              {application ? (
-                <span className="flex flex-wrap items-center gap-2">
-                  <Tag
-                    tone={
-                      application.status === "pending"
-                        ? "amber"
-                        : application.status === "accepted"
-                          ? "blue"
-                          : "rust"
-                    }
-                  >
-                    {statusLabel[application.status]}
-                  </Tag>
-                  <span className="text-ink-muted">{formatDate(application.createdAt)}</span>
-                  <Link
-                    href={`/admin/notifications/${user.uid}`}
-                    className="text-blue-700 hover:underline underline-offset-4"
-                  >
-                    Detail →
-                  </Link>
-                </span>
-              ) : (
-                <span className="text-ink-faint">Tidak ada</span>
-              )}
-            </Row>
-
             <Row label="Terdaftar sejak">{formatDate(user.createdAt)}</Row>
             <Row label="Terakhir masuk">{formatDate(user.lastSignInAt)}</Row>
 
             <Row label="User ID">
-              <code className="text-xs bg-paper-alt px-2 py-1 rounded-md">{user.uid}</code>
+              <code className="text-xs bg-paper-alt px-2 py-1 ">{user.uid}</code>
             </Row>
           </dl>
         </div>
 
-        {/* Keputusan bisa diambil langsung dari sini supaya admin yang sedang
-            memeriksa sebuah akun tidak perlu berpindah ke halaman notifikasi. */}
-        {application?.status === "pending" && (
-          <div className="mt-8">
-            <h2 className="t-h3 text-base mb-2">Pengajuan menjadi educator</h2>
-            <p className="text-sm text-ink-muted mb-5">
-              Keputusan bersifat permanen. Pengguna perlu masuk ulang setelah diterima.
-            </p>
-            <DecisionButtons uid={user.uid} name={user.name} />
-          </div>
-        )}
+        {/* Ubah role & ganti kata sandi (kata sandi lama TIDAK bisa dilihat - lihat adminUserActions.ts) */}
+        <UserManage uid={user.uid} role={user.role} isSelf={user.uid === admin.uid} />
 
-        {/* Selain keputusan pengajuan, panel ini hanya-baca. Mengubah role
-            sembarangan dari UI menuntut penjagaan tersendiri; untuk sekarang
-            jalurnya lewat skrip, dan itu urusan pengembang — bukan sesuatu
-            yang pantas ditempel sebagai perintah terminal di halaman web. */}
-        <p className="mt-6 text-xs text-ink-muted">
-          Selain keputusan pengajuan, halaman ini hanya menampilkan data.
-        </p>
-
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-2 mt-8 text-sm text-blue-700 hover:underline underline-offset-4"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Kembali ke daftar akun
-        </Link>
+        {/* Tautan kembali: garis penunjuk yang memanjang saat di-hover */}
+        <BackLink href="/admin" className="mt-12">Kembali ke daftar akun</BackLink>
       </div>
     </AdminShell>
   );

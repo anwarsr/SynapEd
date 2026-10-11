@@ -8,7 +8,7 @@ import { DOC_ACCEPT } from "@/lib/courseUpload";
  */
 
 export const inputClass =
-  "w-full rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink transition-colors duration-200 placeholder:text-ink-faint focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25";
+  "w-full bg-white/[0.06] px-4 py-3 text-sm text-ink shadow-[inset_0_-1px_0_var(--color-rule)] transition-[background-color,box-shadow] duration-300 placeholder:text-ink-faint hover:bg-white/[0.09] focus:bg-white/[0.09] focus:shadow-[inset_0_-2px_0_var(--color-blue-400)] focus:outline-none";
 
 export function Label({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
   return (
@@ -43,7 +43,7 @@ export function FilePick({
       <div className="flex flex-wrap items-center gap-3">
         <label
           htmlFor={id}
-          className="cursor-pointer rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+          className="cursor-pointer bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
         >
           {file ? "Ganti Berkas" : "Pilih Berkas"}
         </label>

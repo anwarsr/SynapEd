@@ -168,7 +168,7 @@ export default function BuyButton({
         onClick={buy}
         disabled={status.kind === "working"}
         className={cn(
-          "w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white",
+          "w-full bg-blue-600 px-6 py-3 text-sm font-medium text-white",
           "transition-colors duration-200 ease-out-soft hover:bg-blue-700",
           "disabled:opacity-60 disabled:cursor-not-allowed",
         )}
@@ -179,9 +179,9 @@ export default function BuyButton({
       {status.kind === "waiting" && (
         <p
           role="status"
-          className="mt-3 rounded-lg border border-blue-500/25 bg-blue-50 px-4 py-3 text-sm text-blue-700"
+          className="mt-3 bg-blue-500/15 px-4 py-3 text-sm text-blue-200"
         >
-          Pembayaran sedang diproses. Akses terbuka otomatis begitu dana masuk —
+          Pembayaran sedang diproses. Akses terbuka otomatis begitu dana masuk -
           biasanya kurang dari satu menit.
         </p>
       )}
@@ -189,7 +189,7 @@ export default function BuyButton({
       {status.kind === "error" && (
         <p
           role="status"
-          className="mt-3 rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700"
+          className="mt-3 bg-[#E0795A]/15 px-4 py-3 text-sm text-error-text"
         >
           {status.message}
         </p>

@@ -44,7 +44,7 @@ function briefSection(input: { lessonTitle: string; instructions: string | null;
 ${input.lessonTitle}
 
 ## Instruksi/rubrik dari educator
-${input.instructions?.trim() || "(Tidak ada instruksi eksplisit — nilai berdasar kualitas umum jawaban dan judul tugas.)"}
+${input.instructions?.trim() || "(Tidak ada instruksi eksplisit - nilai berdasar kualitas umum jawaban dan judul tugas.)"}
 
 ## Nilai minimum kelulusan kursus ini
 ${input.passingGrade}`;

@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import UserAvatar from "@/components/ui/UserAvatar";
+import AvatarMini from "@/components/profile/AvatarMini";
 import ProfileLink from "@/components/ui/ProfileLink";
-import Tag from "@/components/ui/Tag";
 import CountUp from "@/components/ui/CountUp";
 import PostFeed from "@/components/classes/PostFeed";
 import PostComposer from "@/components/classes/PostComposer";
@@ -50,6 +49,7 @@ interface Props {
     name: string;
     description: string;
     ownerUid: string;
+    imageURL?: string | null;
     memberCount: number;
     postCount: number;
     createdAt: string;
@@ -132,48 +132,31 @@ export default function ClassRoom({
   return (
     <>
       <section
-        data-dark-hero
-        className={cn("bg-navy relative overflow-hidden pb-0", overlayNav ? "-mt-14 pt-40" : "-mt-12 pt-10")}
+        className={cn("relative overflow-hidden bg-header pb-0", overlayNav ? "-mt-14 pt-40" : "-mt-12 pt-10")}
       >
-        {/* Dua kilau radial, murni dekoratif. */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 -top-24 h-[520px] w-[520px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, var(--color-blue-500) 55%, transparent), transparent 62%)",
-          }}
-        />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-32 -left-24 h-[460px] w-[460px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, var(--color-amber-500) 18%, transparent), transparent 62%)",
-          }}
-        />
-
         <div className="container-page relative">
+          {/* Tautan kembali: garis penunjuk yang memanjang saat di-hover */}
           <Link
             href={kembali.href}
-            className="rise-in inline-block text-[13px] text-paper/70 transition-colors duration-200 hover:text-paper"
+            className="rise-in group inline-flex items-center gap-3 text-[11.5px] font-semibold uppercase tracking-[0.3em] text-white/65 transition-colors duration-300 hover:text-white"
             style={{ "--rise-delay": "0ms" } as React.CSSProperties}
           >
-            ← {kembali.label}
+            <span aria-hidden="true" className="h-px w-7 bg-white/40 transition-all duration-500 ease-warm group-hover:w-12 group-hover:bg-white" />
+            {kembali.label}
           </Link>
 
           <div className="mt-6 flex flex-wrap items-start justify-between gap-8">
-            <div className="flex min-w-0 flex-1 flex-wrap items-start gap-6">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-6">
               <span
                 className="rise-in"
                 style={{ "--rise-delay": "120ms" } as React.CSSProperties}
               >
-                <ClassPlate nama={kelas.name} />
+                <ClassPlate nama={kelas.name} gambar={kelas.imageURL ?? null} />
               </span>
 
               <div className="min-w-0 flex-1">
                 <h1
-                  className="rise-in text-paper leading-[1.1]"
+                  className="rise-in text-white leading-[1.1]"
                   style={
                     {
                       ...DISPLAY_JUDUL,
@@ -182,12 +165,12 @@ export default function ClassRoom({
                     } as React.CSSProperties
                   }
                 >
-                  <span className="mark-on-dark">{kelas.name}</span>
+                  {kelas.name}
                 </h1>
 
                 {kelas.description && (
                   <p
-                    className="rise-in mt-3 max-w-[58ch] text-paper/78 text-sm leading-[1.7]"
+                    className="rise-in mt-3 max-w-[58ch] text-white/78 text-sm leading-[1.7]"
                     style={{ "--rise-delay": "320ms" } as React.CSSProperties}
                   >
                     {kelas.description}
@@ -196,16 +179,26 @@ export default function ClassRoom({
               </div>
             </div>
 
+            {/* Pengajar: garis tegak tipis + foto (dipencet = mini-profil) + nama */}
             <div
-              className="rise-in flex items-center gap-3 rounded-xl border border-white/28 bg-white/12 px-4 py-3"
+              className="rise-in flex items-center gap-4 border-l border-white/25 pl-6"
               style={{ "--rise-delay": "420ms" } as React.CSSProperties}
             >
-              <UserAvatar name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
+              <AvatarMini
+                uid={kelas.ownerUid}
+                name={namaPengajar}
+                photoURL={ownerCard?.photoURL ?? null}
+                size="lg"
+                className="h-14 w-14 text-base ring-2 ring-white/20"
+              />
               <span className="min-w-0">
-                <span className="block text-[11px] uppercase tracking-[0.14em] text-paper/60">
+                <span className="block text-[10.5px] font-semibold uppercase tracking-[0.32em] text-white/55">
                   Pengajar
                 </span>
-                <span className="block truncate text-sm font-medium text-paper">
+                <span
+                  className="mt-1 block max-w-[16rem] truncate text-[1.2rem] font-bold leading-tight tracking-[-0.025em] text-white"
+                  style={{ fontFamily: "var(--font-sans)" }}
+                >
                   {namaPengajar}
                 </span>
               </span>
@@ -226,8 +219,8 @@ export default function ClassRoom({
                   className={cn(
                     "shrink-0 rounded-t-xl px-[22px] py-3 text-sm font-semibold transition-colors duration-200 max-sm:px-4",
                     aktif
-                      ? "bg-paper text-blue-700"
-                      : "bg-paper/10 text-paper/72 hover:bg-paper/20 hover:text-paper",
+                      ? "bg-paper text-white"
+                      : "bg-white/10 text-white/72 hover:bg-white/20 hover:text-white",
                   )}
                 >
                   {t.label}
@@ -273,17 +266,10 @@ export default function ClassRoom({
             )}
 
             {tab === "anggota" && (
-              <div className="overflow-hidden rounded-2xl border border-rule bg-paper-card">
+              <div className="overflow-hidden bg-paper-card">
                 <ul className="divide-y divide-rule">
                   <li className="flex flex-wrap items-center gap-3 bg-paper px-6 py-4">
-                    <ProfileLink
-                      uid={kelas.ownerUid}
-                      name={namaPengajar}
-                      secondary
-                      className="shrink-0"
-                    >
-                      <UserAvatar name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
-                    </ProfileLink>
+                    <AvatarMini uid={kelas.ownerUid} name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
                     <ProfileLink
                       uid={kelas.ownerUid}
                       name={namaPengajar}
@@ -291,7 +277,7 @@ export default function ClassRoom({
                     >
                       {namaPengajar}
                     </ProfileLink>
-                    <Tag tone="blue">Pengajar</Tag>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-300">Pengajar</span>
                   </li>
 
                   {members.map((m) => {
@@ -302,9 +288,7 @@ export default function ClassRoom({
                         key={m.id}
                         className="flex flex-wrap items-center gap-3 px-6 py-4 transition-colors duration-200 hover:bg-paper"
                       >
-                        <ProfileLink uid={m.uid} name={nama} secondary className="shrink-0">
-                          <UserAvatar name={nama} photoURL={kartu?.photoURL ?? null} />
-                        </ProfileLink>
+                        <AvatarMini uid={m.uid} name={nama} photoURL={kartu?.photoURL ?? null} />
                         <div className="min-w-0 flex-1">
                           <ProfileLink
                             uid={m.uid}
@@ -331,7 +315,7 @@ export default function ClassRoom({
             )}
 
             {tab === "tentang" && (
-              <div className="rounded-2xl border border-rule bg-paper-card p-6">
+              <div className="bg-paper-card p-6">
                 <h2 className="text-[20px] text-ink mb-4" style={DISPLAY_SEKSI}>
                   Tentang kelas ini
                 </h2>
@@ -340,7 +324,7 @@ export default function ClassRoom({
                   {kelas.description || "Pengajar belum menuliskan deskripsi untuk kelas ini."}
                 </p>
 
-                <dl className="mt-6 divide-y divide-rule border-t border-rule">
+                <dl className="mt-6 divide-y divide-white/10">
                   <div className="flex items-center justify-between py-3">
                     <dt className="text-sm text-ink-muted">Pengajar</dt>
                     <dd className="text-sm font-medium text-ink">{namaPengajar}</dd>
@@ -356,14 +340,14 @@ export default function ClassRoom({
                     ujung daftar pengumuman terbaca seperti bagian dari
                     percakapannya. */}
                 {pengaturan && (
-                  <div className="mt-8 border-t border-rule pt-6">{pengaturan}</div>
+                  <div className="mt-8 pt-6">{pengaturan}</div>
                 )}
               </div>
             )}
           </div>
 
           <aside className="w-full lg:w-80 lg:sticky lg:top-24 lg:self-start space-y-4">
-            <div className="rounded-2xl border border-rule bg-paper-card p-6">
+            <div className="bg-paper-card p-6">
               <p className="t-label text-ink-muted mb-4">Ringkasan</p>
 
               <dl className="divide-y divide-rule">
@@ -395,11 +379,7 @@ export default function ClassRoom({
                             i > 0 && "-ml-[9px]",
                           )}
                         >
-                          <UserAvatar
-                            name={nama}
-                            photoURL={kartu?.photoURL ?? null}
-                            size="sm"
-                          />
+                          <AvatarMini uid={m.uid} name={nama} photoURL={kartu?.photoURL ?? null} size="sm" />
                         </span>
                       );
                     })}

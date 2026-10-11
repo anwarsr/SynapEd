@@ -54,16 +54,16 @@ export default function JoinCodePanel({
   }
 
   const tombol = cn(
-    "rounded-lg border border-rule px-4 py-2.5 text-sm font-medium text-ink-body",
-    "transition-colors duration-200 hover:border-blue-500 hover:text-blue-700",
+    "bg-white/10 px-4 py-2.5 text-sm font-medium text-ink-body",
+    "transition-colors duration-200 hover:bg-white/15 hover:text-white",
     "disabled:opacity-60 disabled:cursor-not-allowed",
   );
 
   return (
-    <div className="rounded-2xl border border-rule-strong bg-paper-card p-6">
+    <div className="bg-paper-card p-6">
       <p className="t-label text-ink-muted mb-3">Kode undangan</p>
 
-      <p className="rounded-xl bg-paper-alt py-4 text-center font-mono text-2xl tracking-[0.22em] text-ink">
+      <p className="bg-white/5 py-4 text-center font-sans tabular-nums text-2xl tracking-[0.22em] text-ink">
         {joinCode}
       </p>
 
@@ -77,16 +77,10 @@ export default function JoinCodePanel({
         </button>
       </div>
 
-      <p className="mt-4 flex gap-2.5 text-xs leading-[1.6] text-ink-muted">
-        <span
-          aria-hidden="true"
-          className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full bg-amber-500"
-        />
-        <span>
-          Siapa pun yang memegang kode ini bisa bergabung dan membaca seluruh isi kelas.
-          Bagikan hanya kepada peserta Anda. Ganti kodenya untuk menutup pendaftaran —
-          anggota yang sudah masuk tidak terpengaruh.
-        </span>
+      <p className="mt-5 text-justify text-xs leading-[1.75] text-ink-muted [hyphens:auto]" lang="id">
+        Siapa pun yang memegang kode ini bisa bergabung dan membaca seluruh isi kelas.
+        Bagikan hanya kepada peserta Anda. Ganti kodenya untuk menutup pendaftaran -
+        anggota yang sudah masuk tidak terpengaruh.
       </p>
 
       <ConfirmDialog

@@ -4,203 +4,179 @@ import { useState } from "react";
 import Reveal from "@/components/ui/Reveal";
 import { faqs } from "@/data/landing";
 import { cn } from "@/lib/cn";
+import SectionTitle from "@/components/sections/SectionTitle";
 
 /** Tipografi FAQ */
-const HEADING: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "clamp(2.5rem, 6.5vw, 5.75rem)",
-  fontWeight: 800,
-  lineHeight: 1.03,
-  letterSpacing: "-0.04em",
-};
-
 const QUESTION: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
   fontWeight: 700,
-  letterSpacing: "-0.015em",
+  letterSpacing: "-0.025em",
+  lineHeight: 1.15,
 };
 
+const FACE: React.CSSProperties = {
+  backfaceVisibility: "hidden",
+  WebkitBackfaceVisibility: "hidden",
+};
+
+/**
+ * Teks dipecah per huruf (kata dibungkus nowrap agar baris tak patah di tengah
+ * kata). Tiap huruf diberi --i = urutan global; animasinya (muncul dari kiri ke
+ * kanan) ada di globals.css (.faq-huruf).
+ */
+function HurufKata({ teks, kelas }: { teks: string; kelas: string }) {
+  let n = 0;
+  return (
+    <>
+      {teks.split(" ").map((kata, k, semua) => (
+        <span key={k} aria-hidden="true" className="inline-block whitespace-nowrap">
+          {[...kata].map((h) => (
+            <span key={n} className={kelas} style={{ "--i": n++ } as React.CSSProperties}>
+              {h}
+            </span>
+          ))}
+          {k < semua.length - 1 ? "\u00A0" : ""}
+        </span>
+      ))}
+    </>
+  );
+}
+
+/**
+ * Tata letak ubin di desktop: 6 kolom — baris pertama tiga ubin selebar 2
+ * kolom, baris kedua dua ubin selebar 3 kolom — jadi seluruh area terisi
+ * penuh tanpa sisa kosong. Di ponsel satu kolom.
+ */
+function spanOf(i: number, total: number): string {
+  const barisAtas = Math.ceil(total / 2);
+  return i < barisAtas ? "md:col-span-2" : "md:col-span-3";
+}
+
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // Tiap ubin membalik sendiri-sendiri; beberapa boleh terbuka sekaligus.
+  const [flipped, setFlipped] = useState<Set<number>>(new Set());
+  // Hover ubin: masuk = "Lihat jawaban" muncul huruf demi huruf dari kiri ke kanan;
+  // keluar = huruf-hurufnya keluar ke kanan (sama dengan label panel About).
+  const [hov, setHov] = useState<{ i: number; fase: "masuk" | "keluar" } | null>(null);
 
   const toggle = (i: number) => {
-    setOpenIndex(openIndex === i ? null : i);
+    // Kursor masih di atas ubin: labelnya ("Lihat pertanyaan"/"Lihat jawaban") muncul lagi setelah dibalik.
+    setHov({ i, fase: "masuk" });
+    setFlipped((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
   };
 
   return (
-    <section
-      id="faq"
-      className="relative py-28 bg-paper overflow-hidden"
-    >
-      <div className="relative container-reading">
-        {/* Heading */}
-        <Reveal className="flex flex-col items-center text-center mb-14">
-          <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 mb-6">
-            <span
-              aria-hidden="true"
-              className="w-6 h-px bg-blue-600/30"
-            />
+    <section id="faq" className="relative flex min-h-screen flex-col overflow-hidden bg-ivory">
+      {/* =====================================================
+          JUDUL - baris tersendiri di atas ubin, jadi tak pernah tertutup
+          ubin dan tak mengganggu susunannya.
+      ====================================================== */}
 
-            Pertanyaan
-
-            <span
-              aria-hidden="true"
-              className="w-6 h-px bg-blue-600/30"
-            />
-          </p>
-
-          <h2
-            className="text-blue-600 max-w-3xl"
-            style={HEADING}
-          >
-            Pertanyaan yang sering diajukan
-          </h2>
+      <div className="container-page pb-10 pt-24 sm:pb-12 sm:pt-28">
+        <Reveal>
+          <SectionTitle title="Tanya Jawab" />
         </Reveal>
+      </div>
 
-        {/* FAQ Cards */}
-        <div className="flex flex-col gap-4 items-center">
-          {faqs.map((faq, i) => {
-            const isOpen = openIndex === i;
+      {/* =====================================================
+          UBIN - memenuhi sisa section sampai tepi layar. Hover: "Lihat jawaban"
+          muncul huruf demi huruf. Ditekan → terbalik (rotateY) ke sisi terang
+          berisi jawaban lengkap, juga muncul huruf demi huruf.
+      ====================================================== */}
 
-            return (
-              <Reveal
-                key={i}
-                delay={i * 90}
-                className="group relative w-full flex justify-center items-center py-1"
+      <div className="grid flex-1 grid-cols-1 gap-1 md:min-h-[640px] md:grid-cols-6 md:grid-rows-2">
+        {faqs.map((faq, i) => {
+          const open = flipped.has(i);
+
+          return (
+            <Reveal key={i} delay={i * 90} className={cn("h-full min-h-[300px]", spanOf(i, faqs.length))}>
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                aria-pressed={open}
+                aria-label={open ? `Tutup jawaban: ${faq.question}` : `Lihat jawaban: ${faq.question}`}
+                data-buka={open}
+                data-hover={hov?.i === i ? hov.fase : "diam"}
+                onPointerEnter={() => setHov({ i, fase: "masuk" })}
+                onPointerLeave={() => setHov((h) => (h?.i === i && h.fase === "masuk" ? { i, fase: "keluar" } : h))}
+                className="faq-ubin group block h-full w-full cursor-pointer text-left focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-blue-500"
+                style={{ perspective: "1600px" }}
               >
-                {/* Maskot */}
-                <div
-                  aria-hidden="true"
-                  className={cn(
-                    "absolute left-[5%] lg:left-[10%] bottom-[-10px] z-30 pointer-events-none",
-                    "transition-all duration-200 ease-out-soft hidden lg:block",
-                    "group-hover:opacity-100 group-hover:translate-x-2",
-                    isOpen
-                      ? "opacity-100 translate-x-2"
-                      : "opacity-0 -translate-x-8"
-                  )}
+                <span
+                  className="relative block h-full w-full transition-transform duration-[900ms] ease-warm motion-reduce:transition-none"
+                  style={{ transformStyle: "preserve-3d", transform: open ? "rotateY(180deg)" : "rotateY(0deg)" }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/images/3.png"
-                    alt=""
-                    className="h-56 w-auto object-contain"
-                  />
-                </div>
-
-                {/* Card */}
-                <div
-                  className={cn(
-                    "relative z-20 w-full max-w-2xl",
-                    "transition-transform duration-200 ease-out-soft",
-                    "group-hover:lg:translate-x-16",
-                    isOpen && "lg:translate-x-16"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "rounded-3xl rounded-tl-sm border",
-                      "bg-paper transition-all duration-200 ease-out-soft",
-                      isOpen
-                        ? "border-blue-600 shadow-sm"
-                        : "border-black/10 group-hover:border-blue-600/40"
-                    )}
+                  {/* ── Depan: nomor + pertanyaan. Di tempat tulisan lama "Ketuk untuk membalik",
+                      kini "Lihat jawaban" yang muncul huruf demi huruf dari kiri ke kanan saat
+                      di-hover (dan keluar ke kanan saat dilepas). Tanpa perubahan warna. ── */}
+                  <span
+                    aria-hidden={open}
+                    className="absolute inset-0 flex flex-col justify-between bg-paper-card p-7 sm:p-9"
+                    style={FACE}
                   >
-                    {/* Question Button */}
-                    <button
-                      onClick={() => toggle(i)}
-                      aria-expanded={isOpen}
-                      className="w-full flex items-center justify-between gap-4 p-6 md:p-8 text-left"
-                    >
-                      <div className="flex items-center gap-5">
-                        {/* Indicator */}
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "w-1 h-8 rounded-full transition-colors duration-200",
-                            isOpen
-                              ? "bg-blue-600"
-                              : "bg-black/15 group-hover:bg-blue-600/50"
-                          )}
-                        />
-
-                        {/* Question */}
-                        <span
-                          className="text-base md:text-lg text-black"
-                          style={QUESTION}
-                        >
-                          {faq.question}
-                        </span>
-                      </div>
-
-                      {/* Arrow */}
+                    <span className="flex items-start justify-between">
                       <span
-                        aria-hidden="true"
-                        className={cn(
-                          "flex-shrink-0 w-9 h-9",
-                          "flex items-center justify-center",
-                          "rounded-full transition-all duration-200",
-                          isOpen
-                            ? "bg-blue-600 text-white"
-                            : "bg-black/5 text-black group-hover:bg-blue-600 group-hover:text-white"
-                        )}
+                        className="select-none text-white/90"
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontSize: "clamp(3.5rem, 7vw, 6rem)",
+                          fontWeight: 900,
+                          lineHeight: 0.8,
+                          letterSpacing: "-0.08em",
+                        }}
                       >
-                        <svg
-                          className={cn(
-                            "w-4 h-4 transition-transform duration-200",
-                            isOpen && "rotate-180"
-                          )}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
+                        {String(i + 1).padStart(2, "0")}
                       </span>
-                    </button>
+                      <span className="about-judul text-xs font-semibold uppercase tracking-[0.16em]">
+                        <HurufKata teks="Lihat jawaban" kelas="about-huruf" />
+                      </span>
+                    </span>
 
-                    {/* Answer */}
-                    <div
-                      className="overflow-hidden transition-all duration-200 ease-out-soft"
-                      style={{
-                        maxHeight: isOpen ? "320px" : "0px",
-                      }}
-                    >
-                      <div className="px-8 md:px-[4.5rem] pb-8 pt-1">
-                        <p
-                          className={cn(
-                            "text-sm text-black/70",
-                            "leading-relaxed",
-                            "border-t border-black/10",
-                            "pt-5"
-                          )}
-                        >
-                          {faq.answer}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
-            );
-          })}
-        </div>
+                    <span className="block max-w-[28ch] text-xl text-white sm:text-2xl" style={QUESTION}>
+                      {faq.question}
+                    </span>
+                  </span>
 
-        {/* Contact */}
-        <p className="text-center text-black/50 text-sm mt-12">
-          Masih ada pertanyaan?{" "}
-          <a
-            href="#"
-            className="text-blue-600 font-medium hover:underline underline-offset-4"
-          >
-            Hubungi kami
-          </a>
-        </p>
+                  {/* ── Belakang: jawaban lengkap di latar terang (lebih muda dari sisi depan), tinta hitam.
+                      Nomor di pojok kiri atas; di pojok kanan atas "Lihat pertanyaan" muncul huruf demi
+                      huruf saat di-hover (animasi sama dengan "Lihat jawaban" di sisi depan). ── */}
+                  <span
+                    aria-hidden={!open}
+                    className="faq-muda absolute inset-0 flex flex-col justify-between overflow-hidden p-7 sm:p-9"
+                    style={{ ...FACE, transform: "rotateY(180deg)" }}
+                  >
+                    <span className="flex items-start justify-between">
+                      <span
+                        className="select-none opacity-90"
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontSize: "clamp(3.5rem, 7vw, 6rem)",
+                          fontWeight: 900,
+                          lineHeight: 0.8,
+                          letterSpacing: "-0.08em",
+                        }}
+                      >
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="about-judul text-xs font-semibold uppercase tracking-[0.16em]">
+                        <HurufKata teks="Lihat pertanyaan" kelas="about-huruf" />
+                      </span>
+                    </span>
+
+                    <span className="block max-w-[46ch] text-base font-medium leading-[1.7] sm:text-lg" style={{ fontFamily: "var(--font-sans)" }}>
+                      <HurufKata teks={faq.answer} kelas="faq-b-huruf" />
+                    </span>
+                  </span>
+                </span>
+              </button>
+            </Reveal>
+          );
+        })}
       </div>
     </section>
   );

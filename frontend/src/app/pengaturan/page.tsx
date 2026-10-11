@@ -42,30 +42,25 @@ export default async function SettingsPage() {
 
       <main className="bg-paper min-h-screen pt-36 pb-24">
         <div className="container-reading">
-          <p className="chapter-mark mb-5">
-            <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-            <span>Akun Saya</span>
-          </p>
-
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
-            <h1 className="t-h2">
-              Pengaturan <span className="mark">akun</span>
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-6">
+            <h1 className="text-[clamp(2.2rem,5vw,3.75rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-white">
+              Pengaturan
             </h1>
             <LogoutButton />
           </div>
-          <p className="t-body text-ink-muted mb-10">{user.email}</p>
+          <p className="t-body mb-12 text-ink-muted">{user.email}</p>
 
-          <div className="mb-10 rounded-2xl border border-rule bg-paper-alt px-6 py-5">
-            <p className="text-sm text-ink-body">
+          <div className="mb-12 bg-paper-card px-7 py-6">
+            <p className="text-sm leading-[1.7] text-ink-body">
               Mencari foto, perkenalan, atau riwayat pendidikan?{" "}
-              <Link href="/profil/edit" className="text-blue-700 hover:underline underline-offset-4">
+              <Link href="/profil/edit" className="font-semibold text-white underline decoration-white/30 underline-offset-[5px] transition-colors hover:decoration-white">
                 Semuanya ada di Edit Profil
               </Link>
               .
             </p>
           </div>
 
-          <section className="space-y-5">
+          <section className="space-y-4">
             <UsernameForm username={username.username} changedAt={username.changedAt} />
             <PhoneForm initialPhone={phone} />
             <SignInMethodsCard methods={methods} emailVerified={user.emailVerified} />

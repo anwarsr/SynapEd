@@ -33,7 +33,7 @@ export default function EnrollButton({ slug }: { slug: string }) {
         onClick={submit}
         disabled={pending}
         className={cn(
-          "w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white",
+          "w-full bg-blue-600 px-6 py-3 text-sm font-medium text-white",
           "transition-colors duration-200 ease-out-soft hover:bg-blue-700",
           "disabled:opacity-60 disabled:cursor-not-allowed",
         )}
@@ -44,7 +44,7 @@ export default function EnrollButton({ slug }: { slug: string }) {
       {result && !result.ok && (
         <p
           role="status"
-          className="mt-3 rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700"
+          className="mt-3 bg-[#E0795A]/15 px-4 py-3 text-sm text-error-text"
         >
           {result.error}
         </p>

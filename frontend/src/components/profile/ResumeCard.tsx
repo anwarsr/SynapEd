@@ -24,7 +24,7 @@ export default function ResumeCard({ enrollment }: { enrollment: Enrollment }) {
     : `/courses/${enrollment.courseSlug}/learn`;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-rule bg-paper-card px-[30px] py-7">
+    <div className="relative overflow-hidden bg-paper-card px-[30px] py-7">
       {/* Persentase raksasa sebagai motif latar, bukan informasi kedua —
           angka yang sama sudah tertulis di sebelah bilahnya. */}
       <span

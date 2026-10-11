@@ -21,12 +21,12 @@ function Ikon({ d, className }: { d: string; className?: string }) {
 }
 
 const TOMBOL =
-  "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-ink-body transition-all duration-200 ease-out-soft hover:bg-paper-alt hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent";
+  "inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-ink-body transition-all duration-200 ease-out-soft hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent";
 
 /** Satu kelompok tombol berbingkai — memisahkan riwayat, pemutar, dan papan. */
 function Kelompok({ children, label }: { children: React.ReactNode; label: string }) {
   return (
-    <div role="group" aria-label={label} className="flex items-center gap-0.5 rounded-xl border border-rule bg-paper-card p-1">
+    <div role="group" aria-label={label} className="flex items-center gap-0.5 bg-paper-card p-1">
       {children}
     </div>
   );
@@ -91,7 +91,7 @@ export default function LabToolbar({
           disabled={!adaLangkah}
           title="Putar atau jeda (spasi)"
           className={cn(
-            "inline-flex min-w-[5.75rem] items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold",
+            "inline-flex min-w-[5.75rem] items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-semibold",
             "transition-all duration-200 ease-out-soft disabled:cursor-not-allowed",
             adaLangkah
               ? "bg-blue-600 text-white shadow-soft hover:bg-blue-700"

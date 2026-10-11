@@ -136,17 +136,17 @@ export default function LearnShell({
     /* h-screen + overflow-hidden, BUKAN min-h-screen.
        Dengan min-h-screen tinggi pembungkus ikut isinya, jadi daftar materi
        dan materi sama-sama setinggi isinya dan `overflow-y-auto` di keduanya
-       tidak pernah aktif — yang bergulir sebenarnya seluruh halaman, dan
+       tidak pernah aktif - yang bergulir sebenarnya seluruh halaman, dan
        keduanya ikut bergerak bersama. Tinggi yang dipatok layar membuat
        masing-masing punya area gulirnya sendiri. */
     <div className="h-screen overflow-hidden bg-paper flex flex-col">
       {/* ── Bilah atas ─────────────────────────────────────── */}
-      <header className="shrink-0 z-40 bg-navy text-paper">
+      <header className="z-40 shrink-0 bg-header text-white">
         <div className="flex items-center gap-4 px-4 sm:px-6 h-14">
           {/* Ponsel: buka/tutup panel melayang. Layar lebar: ciutkan railnya. */}
           <button
             onClick={() => setSidebarOpen((v) => !v)}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            className="p-1.5 transition-colors hover:bg-white/10 lg:hidden"
             aria-label={sidebarOpen ? "Tutup daftar materi" : "Buka daftar materi"}
             aria-expanded={sidebarOpen}
           >
@@ -163,11 +163,11 @@ export default function LearnShell({
           <button
             onClick={toggleRail}
             className={cn(
-              "hidden lg:inline-flex items-center justify-center w-9 h-9 rounded-lg border shrink-0",
+              "hidden lg:inline-flex items-center justify-center w-9 h-9 shrink-0",
               "transition-colors duration-200 ease-out-soft",
               railHidden
-                ? "border-white/20 bg-white/5 text-blue-100 hover:bg-white/15 hover:text-white"
-                : "border-white/25 bg-white/15 text-white hover:bg-white/25",
+                ? "bg-white/5 text-white/80 hover:bg-white/15 hover:text-white"
+                : "bg-white/15 text-white hover:bg-white/25",
             )}
             aria-label={railHidden ? "Tampilkan daftar materi" : "Sembunyikan daftar materi"}
             title={railHidden ? "Tampilkan daftar materi" : "Sembunyikan daftar materi"}
@@ -182,11 +182,9 @@ export default function LearnShell({
             </svg>
           </button>
 
-          <span aria-hidden="true" className="hidden lg:block w-px h-6 bg-white/15 shrink-0" />
-
-          <Link
+                    <Link
             href={`/courses/${course.slug}`}
-            className="flex items-center gap-2 text-sm text-blue-100/80 hover:text-white transition-colors shrink-0"
+            className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors shrink-0"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -199,18 +197,18 @@ export default function LearnShell({
           <div className="ml-auto flex items-center gap-3 shrink-0">
             {canTrackProgress ? (
               <>
-                <span className="text-xs text-blue-100/70 tabular-nums">
+                <span className="text-xs text-white/70 tabular-nums">
                   {progress.done} / {progress.total} selesai
                 </span>
                 <div className="w-24 sm:w-40 h-1.5 rounded-full bg-white/15 overflow-hidden" role="presentation">
                   <div
-                    className="h-full rounded-full bg-amber-500 transition-all duration-500 ease-warm"
+                    className="h-full rounded-full bg-blue-400 transition-all duration-500 ease-warm"
                     style={{ width: `${progress.percent}%` }}
                   />
                 </div>
               </>
             ) : (
-              <span className="text-xs text-blue-100/70">Pratinjau</span>
+              <span className="text-xs text-white/70">Pratinjau</span>
             )}
           </div>
         </div>
@@ -220,13 +218,13 @@ export default function LearnShell({
         {/* ── Sidebar kurikulum ────────────────────────────── */}
         <aside
           className={cn(
-            "shrink-0 border-r border-rule bg-paper-alt overflow-hidden",
+            "shrink-0 bg-paper-alt overflow-hidden",
             // Lebarnya yang dianimasikan, bukan display — display tidak bisa
             // ditransisikan, dan itulah sebabnya dulu ia hilang seketika.
             "transition-[width] duration-300 ease-out-soft motion-reduce:transition-none",
             // Di layar lebar railnya menciut sampai nol; di ponsel ia tetap
             // panel melayang yang dibuka lewat tombol menu.
-            railHidden ? "lg:w-0 lg:border-r-0" : "lg:w-80",
+            railHidden ? "lg:w-0" : "lg:w-80",
             sidebarOpen ? "fixed inset-y-14 left-0 z-30 block w-80 shadow-lift" : "hidden lg:block",
           )}
           // Saat menciut isinya tidak boleh bisa difokus lewat Tab —
@@ -239,21 +237,20 @@ export default function LearnShell({
           inert={railHidden && !sidebarOpen}
         >
           {/* Lebarnya dipatok supaya isinya tidak ikut memampat saat rail
-              menyempit — yang diinginkan adalah tergeser keluar, bukan
+              menyempit - yang diinginkan adalah tergeser keluar, bukan
               teksnya meremas jadi satu kolom sempit selama animasi. */}
           <div className="w-80 h-full overflow-y-auto p-5">
-            <p className="chapter-mark mb-4">
-              <span aria-hidden="true" className="w-5 h-px bg-rule-strong" />
-              <span>Daftar Materi</span>
-            </p>
+            <h2 className="mb-6 text-lg font-extrabold tracking-[-0.02em] text-white" style={{ fontFamily: "var(--font-sans)" }}>
+              Daftar Materi
+            </h2>
 
             {course.sections.map((section, si) => (
               <div key={section.position} className="mb-6">
                 <p className="flex items-baseline gap-2 mb-2.5">
-                  <span className="t-numeral-ghost text-sm text-ink-faint" aria-hidden="true">
+                  <span className="text-xs font-semibold tabular-nums text-white/40" aria-hidden="true">
                     {String(si + 1).padStart(2, "0")}
                   </span>
-                  <span className="text-sm font-medium text-ink">{section.title}</span>
+                  <span className="text-sm font-semibold text-white">{section.title}</span>
                 </p>
 
                 <ul className="space-y-0.5">
@@ -271,7 +268,7 @@ export default function LearnShell({
                         <svg
                           className={cn(
                             "w-4 h-4 mt-0.5 shrink-0",
-                            active ? "text-white" : isLocked ? "text-ink-faint" : "text-blue-600",
+                            active ? "text-white" : isLocked ? "text-white/30" : "text-blue-300",
                           )}
                           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}
                           aria-hidden="true"
@@ -289,7 +286,7 @@ export default function LearnShell({
                           />
                         </svg>
                         <span className="flex-1 leading-snug">{lesson.title}</span>
-                        <span className={cn("text-[11px] shrink-0 mt-0.5", active ? "text-blue-100" : "text-ink-faint")}>
+                        <span className={cn("text-[11px] shrink-0 mt-0.5", active ? "text-white/80" : "text-ink-faint")}>
                           {lesson.duration}
                         </span>
                       </>
@@ -300,7 +297,7 @@ export default function LearnShell({
                         {isLocked ? (
                           <span
                             title="Daftar kursus ini untuk membuka pelajaran"
-                            className="flex items-start gap-2.5 rounded-lg px-3 py-2 text-sm text-ink-faint cursor-not-allowed"
+                            className="flex items-start gap-2.5 px-3 py-2.5 text-sm text-ink-faint cursor-not-allowed"
                           >
                             {inner}
                           </span>
@@ -310,10 +307,10 @@ export default function LearnShell({
                             aria-current={active ? "page" : undefined}
                             onClick={() => setSidebarOpen(false)}
                             className={cn(
-                              "flex items-start gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-200",
+                              "flex items-start gap-2.5 px-3 py-2.5 text-sm transition-colors duration-200",
                               active
                                 ? "bg-blue-600 text-white"
-                                : "text-ink-body hover:bg-blue-50 hover:text-blue-700",
+                                : "text-white/75 hover:bg-white/10 hover:text-white",
                             )}
                           >
                             {inner}
@@ -342,16 +339,16 @@ export default function LearnShell({
             )}
           >
             <div className="flex items-center gap-2.5 mb-4">
-              <span className="t-label text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md">
+              <span className="t-label bg-blue-500/15 px-3 py-1 text-blue-200">
                 {typeLabel[current.type] ?? current.type}
               </span>
               <span className="text-xs text-ink-muted">{current.duration}</span>
             </div>
 
-            <h1 className="t-h2 mb-8">{current.title}</h1>
+            <h1 className="mb-8 text-[clamp(1.8rem,3.4vw,2.7rem)] font-extrabold leading-[1.1] tracking-[-0.035em] text-white">{current.title}</h1>
 
             {current.type === "assignment" && current.instructions && (
-              <section className="mb-8 rounded-2xl border border-rule bg-paper-alt p-5">
+              <section className="mb-8 bg-paper-card p-6">
                 <h2 className="t-label text-ink-muted mb-3">Instruksi Tugas</h2>
                 <p className="text-sm text-ink-body whitespace-pre-line">{current.instructions}</p>
               </section>
@@ -367,7 +364,7 @@ export default function LearnShell({
                   /* Rasio 16:9 dijaga lewat aspect-video supaya tidak bergeser
                      saat iframe dimuat. */
                   <div className="mb-8">
-                    <div className="aspect-video w-full rounded-3xl overflow-hidden border border-rule bg-navy">
+                    <div className="aspect-video w-full overflow-hidden bg-black">
                       <iframe
                         src={embedUrl}
                         title={current.title}
@@ -380,7 +377,7 @@ export default function LearnShell({
 
                     {/* Jalan keluar kalau embed-nya tidak mau jalan.
                         Penyematan YouTube bisa gagal karena hal-hal di luar
-                        jangkauan aplikasi — ekstensi pemblokir, kebijakan
+                        jangkauan aplikasi - ekstensi pemblokir, kebijakan
                         privasi peramban, jaringan yang menyaring. Tanpa
                         tautan ini peserta hanya menatap layar berputar tanpa
                         tahu harus berbuat apa. */}
@@ -413,21 +410,20 @@ export default function LearnShell({
                      tapi tidak ada video maupun berkas yang bisa dibaca. */
                   <div
                     className={cn(
-                      "rounded-3xl border border-rule flex flex-col items-center justify-center text-center px-8 py-16 mb-8",
-                      current.type === "video" ? "bg-navy" : "bg-paper-alt",
+                      "flex flex-col items-center justify-center bg-paper-card px-8 py-16 mb-8 text-center",
                     )}
                   >
                     <svg
-                      className={cn("w-12 h-12 mb-4", current.type === "video" ? "text-blue-300" : "text-blue-600")}
+                      className="w-12 h-12 mb-4 text-blue-300"
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.25}
                       aria-hidden="true"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons[current.type] ?? lessonIcons.reading} />
                     </svg>
-                    <p className={cn("t-h3 text-lg mb-2", current.type === "video" && "text-paper")}>
+                    <p className="t-h3 text-lg mb-2 text-white">
                       Materi belum tersedia
                     </p>
-                    <p className={cn("text-sm max-w-sm", current.type === "video" ? "text-blue-100/70" : "text-ink-muted")}>
+                    <p className="text-sm max-w-sm text-white/65">
                       {attachments.length > 0
                         ? "Berkasnya tidak bisa ditampilkan di halaman. Silakan unduh di bawah."
                         : "Struktur pelajaran sudah ada, tetapi tautan video dan berkasnya belum diunggah."}
@@ -446,10 +442,10 @@ export default function LearnShell({
                             <a
                               href={lessonAssetUrl(course.slug, file.path, true)}
                               download={file.name}
-                              className="group flex items-center gap-3 rounded-2xl border border-rule bg-paper-card px-4 py-3 transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
+                              className="group flex items-center gap-3 bg-paper-card px-4 py-3 transition-[transform,background-color] duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-card-hover"
                             >
-                              <span className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                                <svg className="w-4 h-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+                              <span className="w-9 h-9 bg-white/10 flex items-center justify-center shrink-0">
+                                <svg className="w-4 h-4 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" d={lessonIcons.reading} />
                                 </svg>
                               </span>
@@ -496,11 +492,11 @@ export default function LearnShell({
             )}
 
             {/* Navigasi antar pelajaran */}
-            <nav className="flex items-stretch gap-3 pt-6 border-t border-rule">
+            <nav className="flex items-stretch gap-3 pt-6">
               {prev && !lockedSet.has(prev.slug) ? (
                 <Link
                   href={`/courses/${course.slug}/learn/${prev.slug}`}
-                  className="group flex-1 rounded-2xl border border-rule bg-paper-card p-4 transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
+                  className="group flex-1 bg-paper-card p-4 transition-all duration-200 ease-out-soft hover:bg-card-hover hover:-translate-y-0.5"
                 >
                   <span className="t-label text-ink-faint block mb-1">← Sebelumnya</span>
                   <span className="text-sm text-ink group-hover:text-blue-700 transition-colors line-clamp-1">
@@ -514,7 +510,7 @@ export default function LearnShell({
               {next && !lockedSet.has(next.slug) ? (
                 <Link
                   href={`/courses/${course.slug}/learn/${next.slug}`}
-                  className="group flex-1 rounded-2xl border border-rule bg-paper-card p-4 text-right transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
+                  className="group flex-1 bg-paper-card p-4 text-right transition-all duration-200 ease-out-soft hover:bg-card-hover hover:-translate-y-0.5"
                 >
                   <span className="t-label text-ink-faint block mb-1">Berikutnya →</span>
                   <span className="text-sm text-ink group-hover:text-blue-700 transition-colors line-clamp-1">
@@ -526,7 +522,7 @@ export default function LearnShell({
                 // jangan mengaku "pelajaran terakhir".
                 <Link
                   href={`/courses/${course.slug}`}
-                  className="group flex-1 rounded-2xl border border-rule bg-paper-alt p-4 text-right transition-all duration-200 ease-out-soft hover:border-blue-500"
+                  className="group flex-1 bg-white/5 p-4 text-right transition-all duration-200 ease-out-soft hover:bg-card-hover"
                 >
                   <span className="t-label text-ink-faint block mb-1">Terkunci</span>
                   <span className="text-sm text-ink-muted group-hover:text-blue-700 transition-colors">
@@ -536,7 +532,7 @@ export default function LearnShell({
               ) : certificateId ? (
                 <Link
                   href={`/dashboard/certificates/${certificateId}`}
-                  className="group flex-1 rounded-2xl border border-rule bg-paper-card p-4 text-right transition-all duration-200 ease-out-soft hover:border-blue-500 hover:-translate-y-0.5"
+                  className="group flex-1 bg-paper-card p-4 text-right transition-all duration-200 ease-out-soft hover:bg-card-hover hover:-translate-y-0.5"
                 >
                   <span className="t-label text-ink-faint block mb-1">Selesai</span>
                   <span className="text-sm text-ink group-hover:text-blue-700 transition-colors">
@@ -544,7 +540,7 @@ export default function LearnShell({
                   </span>
                 </Link>
               ) : (
-                <span className="flex-1 rounded-2xl border border-rule bg-paper-alt p-4 text-right">
+                <span className="flex-1 bg-white/5 p-4 text-right">
                   <span className="t-label text-ink-faint block mb-1">Selesai</span>
                   <span className="text-sm text-ink-muted">Pelajaran terakhir</span>
                 </span>
@@ -557,7 +553,7 @@ export default function LearnShell({
                   href={`/courses/${course.slug}#ulasan`}
                   className="text-blue-700 hover:underline underline-offset-4"
                 >
-                  Sudah menyelesaikan kursus ini — tinggalkan ulasan →
+                  Sudah menyelesaikan kursus ini - tinggalkan ulasan →
                 </Link>
               </p>
             )}

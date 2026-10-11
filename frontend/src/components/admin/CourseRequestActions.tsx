@@ -39,7 +39,7 @@ export function DeleteRequestButton({ id, title }: { id: string; title: string }
         onClick={() => setAsking(true)}
         disabled={pending}
         aria-label={`Hapus pengajuan ${title}`}
-        className="shrink-0 rounded-lg p-2 text-ink-faint transition-colors duration-200 hover:bg-rust-100 hover:text-rust-700 disabled:opacity-40"
+        className="shrink-0  p-2 text-ink-faint transition-colors duration-200 hover:bg-rust-100 hover:text-rust-700 disabled:opacity-40"
       >
         {pending ? (
           <span className="text-xs">…</span>
@@ -54,7 +54,7 @@ export function DeleteRequestButton({ id, title }: { id: string; title: string }
         open={asking}
         title="Hapus catatan pengajuan ini?"
         description={`Riwayat pengajuan untuk "${title}" akan hilang dari daftar ini.`}
-        note="Kursusnya tidak terpengaruh — keputusan yang sudah diambil tetap berlaku."
+        note="Kursusnya tidak terpengaruh - keputusan yang sudah diambil tetap berlaku."
         confirmLabel="Ya, Hapus"
         onConfirm={confirm}
         onCancel={() => setAsking(false)}
@@ -93,7 +93,7 @@ export function ClearRequestsButton({ count }: { count: number }) {
         type="button"
         onClick={() => setAsking(true)}
         disabled={pending}
-        className="rounded-lg border border-rule px-4 py-2 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-rust-700/40 hover:text-rust-700 disabled:opacity-60"
+        className="bg-white/10 px-4 py-2 text-sm font-medium text-ink-body transition-colors duration-200 hover:bg-rust-100 hover:text-rust-700 disabled:opacity-60"
       >
         {pending ? "Membersihkan…" : `Bersihkan ${count} pengajuan`}
       </button>

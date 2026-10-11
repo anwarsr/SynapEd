@@ -26,7 +26,7 @@ export const courseCategories: CourseCategory[] = [
 export const faqs: FAQ[] = [
   {
     question: 'Siapa saja yang dapat menggunakan platform SynapEd?',
-    answer: 'SynapEd terbuka untuk semua kalangan — pelajar SMA, SMK, mahasiswa, hingga profesional yang ingin memperdalam berbagai bidang ilmu. Tidak diperlukan latar belakang khusus untuk memulai.',
+    answer: 'SynapEd terbuka untuk semua kalangan - pelajar SMA, SMK, mahasiswa, hingga profesional yang ingin memperdalam berbagai bidang ilmu. Tidak diperlukan latar belakang khusus untuk memulai.',
   },
   {
     question: 'Apakah saya perlu latar belakang tertentu untuk memulai?',

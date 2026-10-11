@@ -36,13 +36,9 @@ export default async function AdminClassesPage() {
   return (
     <AdminShell user={user} badges={badges}>
       <div className="container-page">
-        <p className="chapter-mark mb-5">
-          <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
-          <span>Admin</span>
-        </p>
 
-        <h1 className="t-h2 mb-3">
-          Kelas <span className="mark">terdaftar</span>
+        <h1 className="mb-4 text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-white">
+          Kelas <span>terdaftar</span>
         </h1>
 
         <p className="t-body text-ink-muted mb-10">
@@ -52,7 +48,7 @@ export default async function AdminClassesPage() {
         </p>
 
         {kelas.length === 0 ? (
-          <div className="bg-paper-card border border-rule rounded-2xl p-12 text-center">
+          <div className="bg-paper-card p-12 text-center">
             <p className="t-body text-ink-muted">
               Kelas akan muncul di sini begitu ada educator yang membuatnya.
             </p>
@@ -64,7 +60,7 @@ export default async function AdminClassesPage() {
               const nama = pemilik?.name ?? "Educator";
 
               return (
-                <li key={k.id} className="bg-paper-card border border-rule rounded-2xl p-6">
+                <li key={k.id} className="bg-paper-card p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-ink">{k.name}</p>
@@ -100,7 +96,7 @@ export default async function AdminClassesPage() {
                     <div className="flex flex-wrap items-center gap-3 shrink-0">
                       <Link
                         href={`/educator/classes/${k.id}`}
-                        className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700"
+                        className="bg-white/10 px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 hover:bg-white/15 hover:text-blue-700"
                       >
                         Buka
                       </Link>

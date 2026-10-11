@@ -63,7 +63,7 @@ export default function CourseRequestDecision({
           type="button"
           disabled={pending}
           onClick={() => setAsking("approve")}
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className=" bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
         >
           {pending ? "Memproses…" : "Setujui"}
         </button>
@@ -72,14 +72,14 @@ export default function CourseRequestDecision({
           type="button"
           disabled={pending}
           onClick={() => setAsking("reject")}
-          className="rounded-lg border border-rust-700/40 px-6 py-2.5 text-sm font-medium text-rust-700 transition-colors hover:bg-rust-100 disabled:opacity-60"
+          className="bg-rust-100 px-6 py-2.5 text-sm font-medium text-rust-700 transition-colors hover:bg-rust-100 disabled:opacity-60"
         >
           Tolak
         </button>
       </div>
 
       {error && (
-        <p role="status" className="mt-4 rounded-lg border border-rust-700/25 bg-rust-100 px-4 py-3 text-sm text-rust-700">
+        <p role="status" className="mt-4 bg-rust-100 px-4 py-3 text-sm text-rust-700">
           {error}
         </p>
       )}

@@ -27,16 +27,19 @@ export default function LogoutButton() {
     <button
       onClick={onClick}
       disabled={pending}
-      className="inline-flex items-center gap-2 rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700 disabled:opacity-60"
+      className="group inline-flex items-center gap-4 bg-white/[0.06] px-6 py-3.5 text-[11.5px] font-semibold uppercase tracking-[0.26em] text-white/80 transition-colors duration-500 ease-warm hover:bg-rust-700 hover:text-[#fff] disabled:opacity-60"
     >
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-        />
-      </svg>
       {pending ? "Keluar…" : "Keluar"}
+      <svg
+        className="h-3.5 w-3.5 transition-transform duration-500 ease-warm group-hover:translate-x-1"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+        aria-hidden="true"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
     </button>
   );
 }

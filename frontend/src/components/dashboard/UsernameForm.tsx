@@ -64,7 +64,7 @@ export default function UsernameForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-paper-card border border-rule rounded-2xl p-7">
+    <form onSubmit={onSubmit} className="bg-paper-card p-7">
       <h2 className="t-h3 mb-1.5">Username</h2>
       <p className="t-body text-sm mb-6">
         Dipakai untuk menemukan akun Anda, misalnya saat educator menambahkan Anda sebagai
@@ -72,7 +72,7 @@ export default function UsernameForm({
       </p>
 
       {otomatis && current && (
-        <p className="mb-6 rounded-lg border border-amber-500/30 bg-amber-100 px-4 py-3 text-sm text-amber-700">
+        <p className="mb-6 bg-amber-100 px-4 py-3 text-sm text-amber-700">
           <strong className="font-semibold">@{current}</strong> dibuat otomatis dari alamat email Anda
           dan terlihat di profil publik. Ganti kalau Anda tidak ingin bagian email itu tampil.
         </p>
@@ -82,7 +82,7 @@ export default function UsernameForm({
         <label htmlFor="username" className="block t-label text-ink-muted mb-2">
           Username
         </label>
-        <div className="flex items-stretch rounded-lg border border-rule bg-paper transition-colors duration-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/25">
+        <div className="flex items-stretch bg-white/[0.06] shadow-[inset_0_-1px_0_var(--color-rule)] transition-colors duration-200 focus-within:shadow-[inset_0_-2px_0_var(--color-blue-400)]">
           <span aria-hidden="true" className="flex items-center pl-4 text-sm text-ink-faint">
             @
           </span>
@@ -107,7 +107,7 @@ export default function UsernameForm({
       <button
         type="submit"
         disabled={pending || !berubah}
-        className="mt-6 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
+        className="mt-6  bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed"
       >
         {pending ? "Menyimpan…" : "Ganti Username"}
       </button>
@@ -116,7 +116,7 @@ export default function UsernameForm({
         <p
           role="status"
           className={cn(
-            "mt-4 rounded-lg px-4 py-3 text-sm",
+            "mt-4  px-4 py-3 text-sm",
             status.kind === "ok"
               ? "bg-blue-50 text-blue-700 border border-blue-100"
               : "bg-rust-100 text-rust-700 border border-rust-700/25",

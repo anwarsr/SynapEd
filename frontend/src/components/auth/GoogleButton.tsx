@@ -46,11 +46,11 @@ export default function GoogleButton({
       onClick={onClick}
       disabled={pending || disabled}
       className={cn(
-        "w-full inline-flex items-center justify-center gap-3 rounded-lg px-6 py-3",
-        "border border-rule bg-paper-card text-sm font-medium text-ink",
-        "transition-all duration-200 ease-out-soft",
-        "hover:border-rule-strong hover:shadow-soft hover:-translate-y-0.5",
-        "disabled:opacity-60 disabled:translate-y-0 disabled:cursor-not-allowed disabled:shadow-none",
+        "w-full inline-flex items-center justify-center gap-3 px-6 py-3.5",
+        "bg-white/[0.08] text-sm font-medium text-ink",
+        "transition-colors duration-300 ease-out-soft",
+        "hover:bg-white/[0.13]",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
       )}
     >
       <GoogleMark />

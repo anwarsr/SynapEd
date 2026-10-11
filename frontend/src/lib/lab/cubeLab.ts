@@ -632,12 +632,12 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
         const g = galatSumbu(state, 1, op.baris);
         if (g) return gagal(g);
         box = { from: [0, op.baris, 0], to: [D - 1, op.baris, C - 1], tone: op.tone };
-        narasi = `Baris ${op.baris} di SETIAP lapisan disorot — irisan arr[*][${op.baris}][*] berukuran ${D}×${C}.`;
+        narasi = `Baris ${op.baris} di SETIAP lapisan disorot - irisan arr[*][${op.baris}][*] berukuran ${D}×${C}.`;
       } else if (op.kind === "sorotKolom") {
         const g = galatSumbu(state, 2, op.kolom);
         if (g) return gagal(g);
         box = { from: [0, 0, op.kolom], to: [D - 1, R - 1, op.kolom], tone: op.tone };
-        narasi = `Kolom ${op.kolom} di SETIAP lapisan disorot — irisan arr[*][*][${op.kolom}] berukuran ${D}×${R}.`;
+        narasi = `Kolom ${op.kolom} di SETIAP lapisan disorot - irisan arr[*][*][${op.kolom}] berukuran ${D}×${R}.`;
       } else {
         const g = galatSumbu(state, 1, op.baris) ?? galatSumbu(state, 2, op.kolom);
         if (g) return gagal(g);
@@ -662,7 +662,7 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
         langkah(
           state,
           perLapisan
-            ? "Penelusuran lapisan demi lapisan: untuk setiap lapisan k, setiap baris i, kunjungi kolom j — persis urutan memori."
+            ? "Penelusuran lapisan demi lapisan: untuk setiap lapisan k, setiap baris i, kunjungi kolom j - persis urutan memori."
             : "Penelusuran pilar demi pilar: untuk setiap baris i dan kolom j, turuni semua lapisan k dulu. Urutan ini melompat-lompat di memori.",
         ),
       ];
@@ -709,7 +709,7 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
       if (total === 0) return gagal("Array 3D masih kosong, tidak ada elemen yang bisa ditelusuri.");
       const panjang = Math.min(D, R, C);
       const steps: CubeStep[] = [
-        langkah(state, `Penelusuran diagonal ruang: elemen arr[k][k][k] untuk k dari 0 sampai ${panjang - 1} — dari pojok depan ke pojok belakang.`),
+        langkah(state, `Penelusuran diagonal ruang: elemen arr[k][k][k] untuk k dari 0 sampai ${panjang - 1} - dari pojok depan ke pojok belakang.`),
       ];
       const nilai: string[] = [];
       const jalur: number[] = [];
@@ -720,7 +720,7 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
         steps.push(
           langkah(
             state,
-            `Kunjungan ke-${k + 1}: arr[${k}][${k}][${k}] = ${state.cells[o].value} — satu lapisan lebih dalam, satu baris lebih bawah, satu kolom lebih kanan.`,
+            `Kunjungan ke-${k + 1}: arr[${k}][${k}][${k}] = ${state.cells[o].value} - satu lapisan lebih dalam, satu baris lebih bawah, satu kolom lebih kanan.`,
             [o],
             LAB_VISIT_HOLD_MS,
             { jalur: [...jalur] },
@@ -744,7 +744,7 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
           state,
           transpose
             ? `Setiap lapisan akan di-transpose: arr[k][i][j] pindah ke arr[k][j][i], jadi baris menjadi kolom. Tiap baris diberi warna; ikuti warnanya.`
-            : `Setiap lapisan akan diputar 90° searah jarum jam — seperti memutar kubus pada sumbu yang menembus semua lapisan. Tiap baris diberi warna; ikuti warnanya.`,
+            : `Setiap lapisan akan diputar 90° searah jarum jam - seperti memutar kubus pada sumbu yang menembus semua lapisan. Tiap baris diberi warna; ikuti warnanya.`,
           [],
           LAB_STEP_HOLD_MS,
           { kelompok },
@@ -761,7 +761,7 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
         steps.push(
           langkah(
             hasil,
-            `Lapisan ${k}: baris yang tadinya mendatar kini ${transpose ? "berdiri sebagai kolom dengan nomor yang sama" : "berdiri sebagai kolom, mulai dari kolom paling kanan"} — ${isiLapisan(hasil, k)}.`,
+            `Lapisan ${k}: baris yang tadinya mendatar kini ${transpose ? "berdiri sebagai kolom dengan nomor yang sama" : "berdiri sebagai kolom, mulai dari kolom paling kanan"} - ${isiLapisan(hasil, k)}.`,
             offsetLapisan(bentuk, k),
             LAB_STEP_HOLD_MS,
             { kelompok },
@@ -794,14 +794,14 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
         steps.push(
           langkah(
             berjalan,
-            `Lapisan ${x} bertukar tempat dengan lapisan ${y} — selnya terbang menembus kubus.`,
+            `Lapisan ${x} bertukar tempat dengan lapisan ${y} - selnya terbang menembus kubus.`,
             [...offsetLapisan(shape, x), ...offsetLapisan(shape, y)],
             LAB_MOVE_HOLD_MS,
             { kelompok },
           ),
         );
       }
-      steps.push(langkah(berjalan, "Urutan lapisan selesai dibalik — yang tadinya paling depan kini paling belakang."));
+      steps.push(langkah(berjalan, "Urutan lapisan selesai dibalik - yang tadinya paling depan kini paling belakang."));
       return berhasil(steps);
     }
 
@@ -837,7 +837,7 @@ export function applyCubeOp(state: CubeLabState, op: CubeOp): CubeOpResult {
           LAB_MOVE_HOLD_MS,
           { kelompok },
         ),
-        langkah(hasil, `Tukar sumbu selesai — kubus yang sama, dilihat dari sisi lain; elemennya tersusun ulang di memori.`),
+        langkah(hasil, `Tukar sumbu selesai - kubus yang sama, dilihat dari sisi lain; elemennya tersusun ulang di memori.`),
       ]);
     }
 
@@ -877,7 +877,7 @@ function urutkanKubus(state: CubeLabState, op: { kind: KindUrut; arah: ArahUrut;
     pembuka = `setiap kolom tegak di setiap lapisan diurutkan sendiri-sendiri (${D * C} kolom).`;
   } else {
     deret = rentang(R).flatMap((i) => rentang(C).map((j) => ({ posisi: rentang(D).map((k) => o(k, i, j)), awalan: `Pilar arr[*][${i}][${j}]: ` })));
-    pembuka = `setiap pilar — satu sel dari tiap lapisan, menembus kubus — diurutkan sendiri-sendiri (${R * C} pilar).`;
+    pembuka = `setiap pilar - satu sel dari tiap lapisan, menembus kubus - diurutkan sendiri-sendiri (${R * C} pilar).`;
   }
   const susun = (pen: ReadonlyMap<number, number>) => state.cells.map((_, x) => state.cells[pen.get(x) ?? x]);
   const { steps } = langkahUrut<CubeLabState>({

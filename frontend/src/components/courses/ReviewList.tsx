@@ -24,7 +24,7 @@ export default function ReviewList({
 }) {
   if (reviews.length === 0) {
     return (
-      <div className="bg-paper-card border border-rule rounded-2xl p-8 text-center">
+      <div className="bg-paper-card p-8 text-center">
         <p className="t-body text-ink-muted">
           Belum ada ulasan untuk kursus ini. Ulasan hanya bisa ditulis peserta yang sudah
           menyelesaikan seluruh pelajarannya.
@@ -34,8 +34,8 @@ export default function ReviewList({
   }
 
   return (
-    <div className="bg-paper-card border border-rule rounded-2xl overflow-hidden">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-7 py-5 border-b border-rule">
+    <div className="bg-paper-card overflow-hidden">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white/5 px-7 py-5">
         <span className="t-numeral text-2xl">{rating.toFixed(1)}</span>
         <Stars value={rating} size="md" />
         <span className="text-sm text-ink-muted">
@@ -70,6 +70,13 @@ export default function ReviewList({
                 <p className="mt-2 text-sm text-ink-body whitespace-pre-line break-words">
                   {r.comment}
                 </p>
+
+                {r.reply && (
+                  <div className="mt-4 bg-white/[0.04] px-4 py-3 shadow-[inset_3px_0_0_var(--color-blue-500)]">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan {r.reply.by}</p>
+                    <p className="mt-1.5 whitespace-pre-line break-words text-sm leading-[1.7] text-ink-body">{r.reply.body}</p>
+                  </div>
+                )}
               </div>
             </div>
           </li>

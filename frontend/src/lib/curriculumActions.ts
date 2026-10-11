@@ -149,7 +149,7 @@ export async function updateCourseMeta(slug: string, input: CourseMetaInput): Pr
     level: level.value,
     levelColor: level.color,
     category,
-    duration: canonicalDuration(input.duration, "course") || "—",
+    duration: canonicalDuration(input.duration, "course") || "-",
     price,
     passingGrade: clampGrade(input.passingGrade),
     whatYouLearn,

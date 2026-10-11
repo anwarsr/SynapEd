@@ -36,8 +36,8 @@ export default function EducatorStatus({
   const ditolak = status === "rejected";
 
   return (
-    <div className="rounded-2xl border border-rule bg-paper-alt p-6">
-      <Tag tone={ditolak ? "rust" : "amber"}>
+    <div className="bg-paper-card p-6">
+      <Tag tone={ditolak ? "rust" : menunggu ? "amber" : "blue"}>
         {menunggu ? "Menunggu" : ditolak ? "Ditolak" : "Program Educator"}
       </Tag>
 
@@ -63,7 +63,7 @@ export default function EducatorStatus({
       ) : (
         <Link
           href="/educator"
-          className="mt-4 inline-block rounded-lg bg-blue-600 px-5 py-[11px] text-[13.5px] font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
+          className="mt-4 inline-block bg-blue-600 px-5 py-[11px] text-[13.5px] font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
         >
           {ditolak ? "Ajukan Kembali" : "Pelajari & Ajukan"}
         </Link>

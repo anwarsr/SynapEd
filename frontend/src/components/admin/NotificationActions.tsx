@@ -36,7 +36,7 @@ export function DeleteNotificationButton({ uid, name }: { uid: string; name: str
         onClick={() => setAsking(true)}
         disabled={pending}
         aria-label={`Hapus pengajuan ${name}`}
-        className="shrink-0 rounded-lg p-2 text-ink-faint transition-colors duration-200 hover:bg-rust-100 hover:text-rust-700 disabled:opacity-40"
+        className="shrink-0  p-2 text-ink-faint transition-colors duration-200 hover:bg-rust-100 hover:text-rust-700 disabled:opacity-40"
       >
         {pending ? (
           <span className="text-xs">…</span>
@@ -51,7 +51,7 @@ export function DeleteNotificationButton({ uid, name }: { uid: string; name: str
         open={asking}
         title="Hapus catatan pengajuan ini?"
         description={`Catatan pengajuan ${name} akan hilang dari daftar ini.`}
-        note="Role pengguna tidak berubah — yang dihapus hanya catatannya."
+        note="Role pengguna tidak berubah - yang dihapus hanya catatannya."
         confirmLabel="Ya, Hapus"
         onConfirm={confirm}
         onCancel={() => setAsking(false)}
@@ -90,7 +90,7 @@ export function ClearNotificationsButton({ count }: { count: number }) {
         type="button"
         onClick={() => setAsking(true)}
         disabled={pending}
-        className="rounded-lg border border-rule px-4 py-2 text-sm font-medium text-ink-body transition-colors duration-200 hover:border-rust-700/40 hover:text-rust-700 disabled:opacity-60"
+        className="bg-white/10 px-4 py-2 text-sm font-medium text-ink-body transition-colors duration-200 hover:bg-rust-100 hover:text-rust-700 disabled:opacity-60"
       >
         {pending ? "Membersihkan…" : `Bersihkan ${count} pengajuan`}
       </button>
@@ -143,7 +143,7 @@ export function DeleteStuckApplicationButton({ uid, name }: { uid: string; name:
         type="button"
         onClick={() => setAsking(true)}
         disabled={pending}
-        className="rounded-lg border border-rust-700/40 px-5 py-2.5 text-sm font-medium text-rust-700 transition-colors duration-200 hover:bg-rust-100 disabled:opacity-60"
+        className="bg-rust-100 px-5 py-2.5 text-sm font-medium text-rust-700 transition-colors duration-200 hover:bg-rust-100 disabled:opacity-60"
       >
         {pending ? "Menghapus…" : "Hapus Pengajuan Ini"}
       </button>

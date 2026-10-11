@@ -103,6 +103,7 @@ export async function updateRevenueSettings(input: {
 
   revalidatePath("/admin/payments");
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/pendapatan");
   return {
     ok: true,
     message: `Potongan ${platformFeePercent}% dan referral ${referralPercent}% berlaku untuk pesanan berikutnya.`,

@@ -39,7 +39,15 @@ export default function ClassCard({
   href,
   peran,
 }: {
-  kelas: { id: string; name: string; description: string; memberCount: number; postCount: number; createdAt: string };
+  kelas: {
+    id: string;
+    name: string;
+    description: string;
+    memberCount: number;
+    postCount: number;
+    createdAt: string;
+    imageURL?: string | null;
+  };
   href: string;
   /** Chip peran, mis. "Peserta" atau "Pengajar". Dikosongkan berarti tanpa chip. */
   peran?: string;
@@ -49,9 +57,9 @@ export default function ClassCard({
   return (
     <Link
       href={href}
-      className="group flex overflow-hidden rounded-2xl border border-rule bg-paper-card transition-all duration-240 ease-out-soft hover:border-rule-strong hover:shadow-lift hover:-translate-y-[3px]"
+      className="group flex overflow-hidden bg-paper-card transition-all duration-240 ease-out-soft hover:bg-card-hover hover:-translate-y-[3px]"
     >
-      <ClassSpine nama={kelas.name} />
+      <ClassSpine nama={kelas.name} gambar={kelas.imageURL ?? null} />
 
       <span className="min-w-0 flex-1 p-5 sm:p-6">
         <span className="flex flex-wrap items-start justify-between gap-3">
@@ -75,7 +83,7 @@ export default function ClassCard({
           </span>
         )}
 
-        <span className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-rule pt-3.5">
+        <span className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 pt-3.5">
           <Figur angka={kelas.memberCount} label="anggota" />
           <Figur angka={kelas.postCount} label="postingan" />
           <span className="text-[13px] text-ink-muted">Dibuat {formatDateOnly(kelas.createdAt)}</span>

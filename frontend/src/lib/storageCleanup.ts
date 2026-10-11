@@ -197,7 +197,18 @@ export async function pruneAvatarFolder(uid: string, keep?: string): Promise<num
 
   try {
     const [files] = await bucket.getFiles({ prefix });
-    const stale = files.map((f) => f.name).filter((name) => name !== keep);
+    // Saat menyisakan satu foto profil (keep terisi), banner.jpg di folder yang
+    // sama BUKAN sisa — ia berkas lain. Mengosongkan folder (keep kosong, mis.
+    // akun dihapus) tetap membuang semuanya, termasuk banner.
+    // Foto profil KELAS (`class-*.jpg`) juga hidup di folder ini dan juga bukan sisa.
+    const banner = `${prefix}banner.jpg`;
+    const fotoKelas = `${prefix}class-`;
+    const stale = files
+      .map((f) => f.name)
+      .filter(
+        (name) =>
+          name !== keep && !(keep !== undefined && (name === banner || name.startsWith(fotoKelas))),
+      );
     return await deleteObjects(stale);
   } catch (e) {
     console.warn(`[storage] gagal membaca folder ${prefix}:`, e);

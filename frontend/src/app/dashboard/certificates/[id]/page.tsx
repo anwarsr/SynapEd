@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import BackLink from "@/components/ui/BackLink";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import CertificateCard from "@/components/certificates/CertificateCard";
@@ -34,13 +34,13 @@ export default async function CertificatePrintPage({ params }: Props) {
       <main className="bg-paper min-h-screen pt-36 pb-24 print:pt-0 print:pb-0 print:bg-white">
         <div className="container-reading max-w-2xl">
           <div className="print:hidden flex flex-wrap items-center justify-between gap-4 mb-8">
-            <Link href="/dashboard" className="text-sm text-blue-700 hover:underline underline-offset-4">
-              ← Kembali ke Profil Saya
-            </Link>
+            <BackLink href="/dashboard">Kembali ke profil saya</BackLink>
             <PrintCertificateButton />
           </div>
 
-          <CertificateCard certificate={certificate} />
+          <div className="theme-day">
+            <CertificateCard certificate={certificate} />
+          </div>
 
           <p className="print:hidden text-center text-xs text-ink-muted mt-6">
             Tautan verifikasi publik: <span className="t-numeral">/verify/{certificate.id}</span>

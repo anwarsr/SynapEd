@@ -14,6 +14,9 @@ import {
 } from "@/components/profile/ProfileCourses";
 import EducatorStatus from "@/components/dashboard/EducatorStatus";
 import LogoutButton from "@/components/dashboard/LogoutButton";
+import ThemeSwitch from "@/components/profile/ThemeSwitch";
+import LanguageSwitch from "@/components/profile/LanguageSwitch";
+import { listCourses } from "@/lib/courses";
 import { listMyEnrollments } from "@/lib/enrollments";
 import { getUsernameInfo } from "@/lib/usernames";
 import { listOwnedCourses } from "@/lib/educatorCourses";
@@ -22,6 +25,7 @@ import { listMyCertificates } from "@/lib/certificates";
 import { getApplication } from "@/lib/educator";
 import { getProfileStats, getUserProfile, joinedAtOf } from "@/lib/userProfile";
 import { adminAuth } from "@/lib/firebase/admin";
+import { getBannerURL } from "@/lib/banner";
 import { requireUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
 
@@ -39,12 +43,12 @@ function SectionHead({
   aksi?: { href: string; label: string };
 }) {
   return (
-    <div className="mb-[18px] flex flex-wrap items-baseline justify-between gap-4">
+    <div className="mb-[18px] flex flex-wrap items-center justify-between gap-4">
       <h2 className="t-h3">{judul}</h2>
       {aksi && (
         <Link
           href={aksi.href}
-          className="text-[13px] text-blue-700 hover:underline underline-offset-4"
+          className="rounded-full bg-white/10 px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
         >
           {aksi.label}
         </Link>
@@ -69,7 +73,7 @@ export default async function ProfilePage() {
   const user = await requireUser("/profil");
   const isEducator = user.role === "educator" || user.role === "admin";
 
-  const [profile, stats, enrollments, owned, kelas, sertifikat, application, akun, handle] =
+  const [profile, stats, enrollments, owned, kelas, sertifikat, application, akun, handle, bannerURL, katalog] =
     await Promise.all([
       getUserProfile(user.uid),
       getProfileStats(user.uid, isEducator),
@@ -82,7 +86,12 @@ export default async function ProfilePage() {
         .getUser(user.uid)
         .catch(() => null),
       getUsernameInfo(user.uid),
+      getBannerURL(user.uid).catch(() => null),
+      listCourses().catch(() => []),
     ]);
+
+  // Gambar kursus untuk mini ikon "Kursus yang Diikuti" (sama dengan kartu katalog).
+  const gambar = Object.fromEntries(katalog.map((c) => [c.slug, c.thumbnail]));
 
   // listMyEnrollments sudah terurut lastAccessedAt menurun, jadi yang pertama
   // dan belum selesai adalah yang paling terakhir disentuh.
@@ -100,6 +109,8 @@ export default async function ProfilePage() {
           username={handle.username}
           email={user.email}
           photoURL={user.photoURL}
+          bannerURL={bannerURL}
+          bannerEditable
           role={user.role}
           bio={profile.bio}
           skills={profile.skills}
@@ -140,7 +151,7 @@ export default async function ProfilePage() {
                   <section>
                     <SectionHead
                       judul="Kursus yang Dibuat"
-                      aksi={{ href: "/educator/courses", label: "Kelola kursus →" }}
+                      aksi={{ href: "/educator/courses", label: "Kelola kursus" }}
                     />
                     <OwnedCourses courses={owned} own />
                   </section>
@@ -151,9 +162,9 @@ export default async function ProfilePage() {
                 <section>
                   <SectionHead
                     judul="Kursus yang Diikuti"
-                    aksi={{ href: "/courses", label: "Jelajahi katalog →" }}
+                    aksi={{ href: "/courses", label: "Jelajahi katalog" }}
                   />
-                  <EnrolledCourses enrollments={enrollments} />
+                  <EnrolledCourses enrollments={enrollments} gambar={gambar} />
                 </section>
               </Reveal>
             </div>
@@ -177,20 +188,28 @@ export default async function ProfilePage() {
                 <JoinedClasses kelas={kelas} />
               </section>
 
+              <section>
+                <SideHead judul="Pengaturan Laman" />
+                <p className="mb-2 text-[12.5px] text-ink-muted">Tampilan</p>
+                <ThemeSwitch />
+                <p className="mb-2 mt-5 text-[12.5px] text-ink-muted">Bahasa</p>
+                <LanguageSwitch />
+              </section>
+
               {/* Aksi akun ditaruh paling bawah: profil dibaca dulu, baru
                   disunting. Keluar sengaja tetap di sini dan bukan di navbar,
                   supaya aksi merusak tidak berdampingan dengan tautan biasa. */}
-              <section className="border-t border-rule pt-6">
+              <section className="pt-6">
                 <div className="flex flex-wrap items-center gap-4">
                   <Link
-                    href="/dashboard"
-                    className="rounded-lg border border-rule bg-paper-card px-5 py-[11px] text-[13.5px] font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+                    href="/dashboard/pendapatan"
+                    className="bg-white/10 px-5 py-[11px] text-[13.5px] font-medium text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
                   >
-                    Dashboard Pendapatan
+                    Pendapatan
                   </Link>
                   <Link
                     href="/pengaturan"
-                    className="rounded-lg border border-rule bg-paper-card px-5 py-[11px] text-[13.5px] font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+                    className="bg-white/10 px-5 py-[11px] text-[13.5px] font-medium text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
                   >
                     Pengaturan Akun
                   </Link>

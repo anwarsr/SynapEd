@@ -73,18 +73,242 @@ cd frontend && npm run build       # kadang gagal fetch Google Fonts (jaringan) 
 npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 ```
 
+- **Hero beranda** (`sections/Hero.tsx`) berlatar `bg-ivory` (token
+  `--color-ivory`), tanpa gambar; judul `text-blue-900` dengan huruf muncul
+  "pop" bergiliran (`.letter-pop`, jeda `--letter-delay`; `backwards` bukan
+  `forwards` supaya transform seret huruf tidak tertimpa). Karena hero kini
+  terang, `Navbar` hanya menganggap `[data-dark-hero]` sebagai latar gelap
+  (hero beranda tidak lagi). `sections/SectionDots.tsx` = titik navigasi
+  section di tepi kanan (lg:+), memakai `useActiveSection`; daftar id-nya
+  harus cocok dengan id section di `app/page.tsx`.
+
+- **Hero scroll** (`Hero.tsx`): section setinggi `230vh` (`overflow-clip`,
+  BUKAN `overflow-hidden` — itu mematikan `position: sticky`) dengan isi
+  sticky. Progres scroll ditulis ke variabel CSS `--p` langsung di DOM
+  (bukan state); `--c` (judul/tombol memudar) dan `--q` (bilah muncul &
+  melebar) diturunkan dari `--p` lewat `clamp(calc())`. Tombol oval "Mulai
+  Belajar" adalah SATU elemen yang berubah jadi bilah prompt: di dalam isi
+  hanya ada slot kosong penahan tempat (`slotRef`), tombolnya diposisikan
+  absolut menimpa slot (`--y0` diukur JS) lalu meluncur ke tengah layar
+  (`--y1`) sambil melebar (`--w1`) mengikuti `--e` (smoothstep dari `--m`).
+  State hanya jumlah huruf terketik + boolean `bar`. Latar kotak-kotak hitam tipis menempel pada section, jadi
+  ikut bergeser saat scroll. Tombol "Lihat Kurikulum" sudah dihapus.
+- **Halaman masuk/daftar** (`AuthForm.tsx`) berlatar `bg-ivory bg-grid`
+  (`.bg-grid` = kotak-kotak hitam tipis yang sama dengan hero); logo versi
+  gelap, tautan "Kembali ke beranda" gelap. Kartunya tetap berpanel navy.
+- **Tema gelap SELURUH situs** (landing, dashboard, admin, educator, belajar, auth):
+  token di `@theme` (`globals.css`) kini palet "malam" — `paper` `#0B1A24`
+  (teal-navy), `ink*` putih, `rule` putih transparan. **Nama token `blue-*`
+  TETAP, nilainya sekarang biru langit terang** (`#2F6FED` tombol, `#5B9BFF`
+  teks aksen/hover, 50/100 = tint transparan untuk latar chip, 900 = peredam
+  gelap `#0B1A24`) — sengaja terang agar tidak menyatu dengan latar teal-navy;
+  `--color-navy` (footer, `.bg-hero-navy`, pita header /kelas, header ruang
+  belajar, panel `AuthForm`, header profil) = **hitam `#050505`**, jadi teks di
+  atasnya WAJIB `text-white` (token `paper` kini gelap, `text-paper` di
+  permukaan navy tak terbaca). `.mark` (sapuan krem di judul) dimatikan.
+  Jangan menulis ulang ratusan `text-blue-700` — ubah nilai token saja.
+  "Pulau" yang sengaja terang (keadaan kosong Courses, kartu Features, sertifikat) dibungkus `.theme-day` yang memulihkan
+  palet terang. `.theme-night` (pembungkus beranda) tinggal alias. Jangan
+  menambah warna gelap hardcode (`text-black`, `border-black`) di luar
+  `.theme-day`; kotak QR memang `bg-white`. Navbar selalu bergaya gelap
+  (logo putih). Teks terang di atas permukaan gelap ditulis `text-white/NN`,
+  bukan `text-blue-100` (token itu kini tint transparan).
+- **About** (`sections/About.tsx`): tiga panel akordeon yang memenuhi SELURUH
+  section sampai tepi layar — TANPA jarak, garis, sudut membulat, maupun judul
+  "ABOUT" (sengaja dihapus; judul melayang sempat dicoba dan menimpa angka).
+  Batas antar panel hanya beda tipis warna dasar. Yang dipencet melebar
+  (`flex-grow` 3,4), dua lainnya menyempit (1) dan hanya berisi judul tegak
+  (tanpa angka/lingkaran); lebar dianimasikan lewat `flex-grow` +
+  `flex-basis: 0` (jangan diganti width/height). Panel terbuka memuat angka
+  besar samar, judul huruf-demi-huruf, penjelasan kata-demi-kata, lalu peraga
+  interaktif: 01 `LearningPath` (minimalis: tiga kata Dasar/Menengah/Mahir di atas
+  satu garis tipis, garis biru meluncur ke kata aktif), 02 `Ticker` (papan kata
+  berputar), 03 `Sources` (1 Jurnal / 2 Buku ajar / 3 Penelitian, nomor tanpa kurung; penjelasan HANYA muncul saat
+  poin ditekan dan keluar dari ujung teks poinnya, tekan lagi untuk menutup; tanpa
+  garis penanda/pembatas/centang; judul & penjelasan Plus Jakarta Sans, nomornya SEUKURAN judul poin (`text-xl font-semibold`) dan Plus Jakarta Sans (bukan `font-mono` lagi); penjelasan tanpa tanda pisah "—").
+  `useAutoCycle` selama panel terbuka dan berhenti begitu pengguna menyentuh.
+  CSS `.about-*` di `globals.css`: animasi masuk hanya berjalan di bawah
+  `.about-panel[data-open="true"]` (memutar ulang tiap panel dibuka; pakai
+  `backwards`, bukan `forwards`).
+- **Courses** (`sections/Courses.tsx`): kartu kursus & chip kategori (jenis materi)
+  berbentuk KOTAK (tanpa radius & TANPA border), minimalis — `bg-paper-card`,
+  hover: naik 4px + latar sedikit terang; chip kategori menyatu jadi satu batang
+  di tengah section; tombol "Lihat Detail" kotak biru (bukan `Button`,
+  yang berradius). Jangan menambah `rounded-*` di sini. Keadaan kosong (glitch)
+  masih pulau `.theme-day`.
+- **Comments** (`sections/Testimonials.tsx`): kartu & dialog ulasan berbentuk KOTAK,
+  tanpa border/radius. Bagian atas = FOTO PROFIL pemberi ulasan (`UserAvatar` lg)
+  + nama + bintang; nama kursus ada di atas isi ulasan (huruf kecil kapital biru).
+  Foto kursus (`courseImage`) tak dipakai lagi tampilannya (field tetap ada di tipe).
+- **Features** (`sections/Features.tsx`): kartu karusel 3D berbentuk KOTAK solid
+  `#12293A` (radius 0, tanpa garis/bayangan/kaca/lapisan holo), isi: angka
+  besar di atas, judul (tiap kata satu baris) +
+  deskripsi di bawah, SEMUA putih penuh (tanpa warna selang-seling), tanpa garis.
+  TANPA efek hover. EASTER EGG: memencet ANGKA kartu mengganti warna kartu
+  (siklus `EGG_COLORS`) LANGSUNG ke warna berikutnya lewat transisi `background-color` 650ms pada kartunya sendiri (tanpa lapisan perantara). Efek sisik ikan, air naik, dan air menyebar pernah dicoba lalu DIBUANG atas permintaan pemilik (tepinya terbaca "terpotong" / warna antara terang lalu gelap) - jangan dikembalikan tanpa diminta. Jangan beri petunjuk visual. Lapisan holo (foil/rainbow/gloss/grain) sudah dihapus dari JSX.
+  DUA TAMPILAN: BAWAAN = BARISAN (`flatTargetRef`/`flatRef` awal 1; menggeser KARTU menggeser barisan dan berhenti di satu kartu); menggeser JUDUL "Features" (handler pointer di pembungkus judul, `touch-action: pan-y`; judulnya SENDIRI tidak bergeser) bila >40px BERGANTIAN barisan ↔ cincin 3D (pegas `flatVelRef` + smootherstep; barisan: `scale` 1,1 di tengah lalu ×0,76 tiap langkah, `blur` min(|d|,2)×1,8px) dan memasang ulang judul (`key`, acak alfabet mulai ulang). Geseran judul TIDAK mengubah kartu yang disorot: rotasi hanya dibulatkan ke kartu terdekat SEKALI saat bentuk mulai berbalik (dulu memajukan satu langkah sehingga 01 jadi 02 saat ganti tampilan). Geseran pendek = bentuk kembali. Barisan memakai 8 SLOT (`SLOTS`: 4 asli + 4 bayangan/`ghost`, fitur berulang; posisi `d` melingkar mod 8, -4 ≤ d < 4) agar tak berlubang; jarak tiap pasangan kartu barisan = `lebar×(skala(k)+skala(k+1))/2 + 28` (kumulatif, interpolasi linear untuk d pecahan) supaya celahnya sama (28px) di mana pun. Cincin hanya memakai 4 kartu asli (bayangan `visibility:hidden` saat `flat` ≈ 0, `aria-hidden`, warna egg dibagi lewat `bases[index]`). SEMUA kartu terlihat menerima penunjuk (`pointer-events:auto`); kartu yang diketuk ditentukan lewat GEOMETRI di `ketuk()` (kotak pembatas `getBoundingClientRect` - sudah memperhitungkan transform 3D - diperluas 28px; bila beberapa kena, z-index tertinggi menang; angka diperluas 14px; ambang ketuk-vs-seret 10px), BUKAN hit-test peramban, karena kartu yang berputar/miring/buram sering meleset. Hemat gerak menonaktifkan gestur judul.
+  KETUK kartu (di luar angka) membuka `DetailFitur` HANYA bila kartunya yang DISOROT (`data-sorot` diisi `applyTransforms`; kartu lain diabaikan). Lembar penjelasan TANPA gulir: semua ukuran (judul, jarak, teks, nomor) memakai `clamp()` berbasis tinggi layar (`vh`) supaya seluruh teks muat; ketuk ANGKA tetap ganti warna (easter egg), juga di barisan. Lembar penjelasan bergaya editorial & tak simetris: label+garis, judul bertingkat (menjorok bergantian) yang naik dari balik topeng, kalimat pembuka berpagar garis tegak, poin bernomor besar-tipis (SEMUA angka Plus Jakarta Sans, bukan mono), angka raksasa samar terpotong di pojok yang ikut kursor (`--px/--py`); masuk = tirai clip-path dari garis tengah, tutup = tirai menutup balik 420ms (`data-keluar`). Isi `DETAIL_FITUR` hanya klaim yang benar-benar ada di aplikasi.
+- **FAQ** (`sections/FAQ.tsx`): ubin kotak yang memenuhi sisa section sampai tepi layar (jarak 4px, tanpa border/radius); desktop 6 kolom - 3 ubin `col-span-2` di atas, 2 ubin `col-span-3` di bawah (`spanOf`). Depan = desain lama (nomor besar kiri atas + pertanyaan di bawah, `bg-paper-card`), TANPA "ketuk untuk membalik" dan TANPA perubahan warna saat hover; di pojok kanan atas label "Lihat jawaban" yang muncul huruf demi huruf dari kiri ke kanan saat hover (state `hov` → `data-hover`, memakai `.about-judul`/`.about-huruf` yang SAMA dengan label panel About; keluar ke kanan saat dilepas; di layar tanpa hover tampil terus). Ditekan → terbalik 3D (`rotateY(180deg)`) ke sisi `.faq-muda` (kartu dicampur 38% dengan biru pucat = lebih muda dari sisi depan) berisi nomor besar di pojok KIRI ATAS (tanpa tulisan "Jawaban"), label "Lihat pertanyaan" di pojok kanan atas (animasi hover SAMA dengan "Lihat jawaban"; `toggle` langsung memasang `hov` masuk karena kursor masih di atas ubin), dan jawaban lengkap bertinta hitam yang muncul huruf demi huruf (`.faq-b-huruf`, mulai 520ms setelah balik); tiap ubin independen. Judul "Tanya Jawab" baris sendiri di atas grid.
+- **Learning Path → Comments**: peralihan KEMBALI biasa (Comments sibling normal,
+  tergulung ke atas); peralihan horizontal, "tergencet", dan rasi bintang latar sudah
+  dihapus atas permintaan pemilik — jangan dikembalikan tanpa diminta.
+  Pita ulasan (`.testimonial-scroller`) bisa digeser: seret mouse (>5px, klik kartu
+  ditahan setelah seret) / usap sentuh, tetap jalan pelan sendiri (rAF + scrollLeft),
+  berhenti saat hover/seret/dialog; isi digandakan & posisi dibungkus di separuh lebar.
+- **Banner profil** (`ProfileBanner.tsx`, `lib/banner.ts`): sampul di atas profil; pemilik
+  mengganti lewat tombol "Ganti banner" di /profil. Gambar dikecilkan di browser
+  (`compressBanner`: ≤1600px, JPEG, selalu < 2 MB) lalu diunggah ke
+  `avatars/{uid}/banner.jpg` — SENGAJA memakai folder avatar agar aturan tulis
+  storage.rules yang sudah ter-deploy berlaku (tak perlu deploy rules baru). URL (dengan
+  `?v=` pemutus cache) disimpan ke `users/{uid}.bannerURL` lewat `updateMyBanner`, yang
+  memeriksa URL = Storage + menunjuk banner milik uid SESI. `pruneAvatarFolder` tidak
+  boleh menghapus `banner.jpg` saat sinkron foto profil (hanya saat folder dikosongkan).
+  Tanpa banner = hitam polos; foto profil bawaan (`UserAvatar`) juga hitam + inisial putih.
+  Banner TIDAK disalin ke dokumen ulasan: `listFeaturedReviews` meng-join-nya dari `users`
+  (`getBannerURLs`, satu getAll) sehingga ganti banner langsung tampil di komentar lama.
+  Kartu komentar & dialog: banner di atas, foto profil menumpang tepi bawahnya.
+- **Navbar**: kapsul kaca pil (`bg-[#0B1A24]/35` → `/85` + bayangan saat scroll), tanpa garis tepi;
+  penanda tautan aktif = garis kecil biru di bawah kata (bukan keping berlatar); tombol
+  sekunder = pil `bg-white/10`. Seluruh situs gelap, jadi tak ada varian terang.
+- **Edit profil** (form di `/profil/edit`): kartu persegi `bg-paper-card` tanpa border, kolom isian
+  `bg-white/[0.06]` dengan garis biru di bawah saat fokus, tombol persegi. Kartu komentar: foto profil (60px),
+  nama, dan bintang berada DI TENGAH banner (sedikit di atas titik tengah, di atas peredam
+  hitam 45%); nama kursus + isi komentar di bawah banner, rata tengah.
+- **Banner bawaan** = `#0D2131` (senada kartu komentar `#12293A` tapi lebih tua); peredam hitam hanya dipasang bila ada gambar.
+- **/kelas & ruang kelas**: kepala `#081520` (sedikit lebih tua dari latar `#0B1A24`), judul "Kelas saya" putih penuh tanpa garis kuning (`mark-on-dark` tak dipakai lagi di sini), TANPA PNG (`ClassHeroProps` dihapus), kartu/isian persegi tanpa border, font Plus Jakarta Sans (bukan `font-mono`).
+- **/dashboard** (pendapatan): tanpa label "Akun Saya"; kartu/tabel persegi tanpa border, statistik dipisah celah 4px.
+- **Halaman profil** tanpa border/radius (kartu `bg-paper-card`, hover `#16324A`); `Tag`
+  amber/rust kini tint transparan + teks terang (bukan kotak krem/oranye pucat).
+- **Katalog /courses**: `CourseCatalog` (client) — bilah cari pil (judul, deskripsi, kategori,
+  pengajar) + tombol Filter (jenis kursus + batas rating) yang membuka panel; penyaringan di
+  browser terhadap daftar yang sudah dimuat server. Kartu = `CourseCard` (kotak tanpa border,
+  gaya sama dengan kartu beranda). Beranda punya tombol "Lihat semua kursus" ke sini.
+  `Button` global kini persegi (tanpa `rounded-lg`), varian outline = `bg-white/10`.
+  Navbar lebih transparan: `/10` (diam) dan `/50` (scroll).
+- **Halaman belajar** (`LearnShell`) & **SynapLab**: gaya sama dengan halaman lain — persegi tanpa
+  border, kartu `paper-card`/hover `#16324A`, kepala belajar `#081520`. "Daftar Materi" kini judul
+  tegas tanpa garis hias (chapter-mark dihapus). Papan sel lab (`*Board.tsx`) sengaja tak disentuh —
+  warna nada sel punya makna. Navbar: kaca TERANG (`bg-white/[0.08]` diam, `/[0.14]` scroll), bukan gelap.
+- **Kartu kursus diikuti** di /dashboard = `EnrolledCourseCard` (gaya sama dengan `CourseCard` katalog; hanya
+  gambar, pembuat, judul, deskripsi, bar kemajuan; seluruh kartu = tautan lanjut belajar). Gambar/pembuat/deskripsi
+  diambil dari `listCourses()` (bukan snapshot enrollment); kursus yang sudah dihapus tetap tampil dari snapshot.
+- **Robot asisten** (`ui/ChatRobot.tsx`, dipasang di `ChatWidget`): peluncur chat = kepala robot 64px TANPA
+  lingkaran latar; satu-satunya animasi bawaannya mata berkedip (tak ada naik-turun). BAWAAN mode "diam".
+  Seret = pindah (localStorage `synaped_chat_pos`, pecahan layar); tahan ±0,55 dtk / klik kanan = menu
+  Diam/Bergerak (`synaped_chat_mode`); klik singkat = buka/tutup chat (lewat pointer-up; `onClick` hanya untuk
+  papan ketik, `detail === 0`). Mode bergerak = hanyut KONTINU lewat rAF (arah & kecepatan diperhalus, radius jelajah 64px dari titik asal — TIDAK menarik ke tengah layar,
+  kadang berhenti, dibelokkan ke tengah dekat tepi, selalu dijepit di layar), BUKAN lompat ke titik tujuan —
+  posisi ditulis langsung ke `transform` (tanpa render React per bingkai); gelembung & menu anak dari pembungkus
+  yang bergerak itu. Panel chat dihitung dari posisi robot (`anchor`), yang dilaporkan lewat `onPos` hanya saat
+  robot mengendap. Hemat gerak memaksa "diam". Gelembung (ajakan & kejutan) = balon bicara: digeser 12px menjauhi tepi robot (`right-3`), sudut yang menghadap robot lancip (`rounded-br-none` dst.) + ekor segitiga `clip-path` (`kelasBalon`/`ekor`, mengikuti sisi robot). KEJUTAN: ketuk robot 3x dalam 1 dtk (`ketukRef`) memunculkan gelembung "Jangan lupa follow instagram @nndulgha_ ya" (tautan ke instagram.com/nndulgha_, hilang sendiri 6 dtk; ketukan ke-3 tidak membuka chat).
+- **Tema GELAP (bawaan) / TERANG**: dipilih di profil → "Pengaturan Laman" (`ThemeSwitch`), disimpan di localStorage
+  `synaped_theme`, diterapkan sebagai `<html data-theme="light">` oleh skrip di `<head>` (layout.tsx) sebelum cat
+  pertama. Tema terang = blok `html[data-theme="light"]` di globals.css yang menimpa token yang sama. KUNCI: ia
+  MEMBALIK `--color-white` jadi tinta gelap, sehingga semua `text-white`, `bg-white/NN`, `border-white/NN` ikut
+  berbalik dengan opasitas yang sama. Yang harus tetap putih (tombol `bg-blue-*`, footer, `bg-black/*`,
+  `.bg-navy/.bg-hero-navy`, `.auth-brand-panel`, dan elemen berkelas `keep-white` seperti banner komentar/QR)
+  mendeklarasikan ulang `--color-white:#fff`. ATURAN: jangan menulis hex di kelas Tailwind — pakai token
+  (`bg-card-hover`, `bg-header`, `bg-banner`, `bg-chip`, `text-error-text`, `text-warn-text`, `text-paper`),
+  dan teks di atas `bg-white` solid = `text-paper`. Logo: `.logo-on-dark`/`.logo-on-light` (dua <Image>).
+  Mini ikon "Kursus yang Diikuti" di profil kini memakai gambar kursus (`gambar` dari listCourses()).
+- **Kartu kursus** (`CourseCard`, dipakai beranda & /courses; kartu inline di Courses.tsx sudah dihapus):
+  tingkat kesulitan = teks polos kanan-bawah gambar (tanpa kotak/garis); angka modul & estimasi besar;
+  rating = bintang presisi + nilai + jumlah ulasan. Gambar sampul = `CourseCover` (client): ditekan →
+  tergulung KE ATAS seperti pintu garasi (`translateY(-100%)`, 900ms, bersekat tipis; ditekan lagi = turun menutup) menyingkap "DIBUAT OLEH" + USERNAME pembuat (`instructorUsername` dari `getUsernames`, cadangan:
+  nama penyedia; kapital; username berkedip cepat 4x lalu biru, mulai setelah pintu terbuka — `.cover-kedip`; latar di baliknya = latar kartu); `z-10` supaya tak tertelan tautan kartu. `untukLevel()` masih ada di courseUi.ts tapi tak dipakai kartu.
+- Animasi bagian bawah kartu kursus di landing (info terlipat, berputar/terayun saat hover) pernah dicoba dua kali lalu
+  DIHAPUS atas permintaan pemilik - kartu beranda sama dengan kartu /courses; jangan dikembalikan tanpa diminta.
+- **Bahasa** (profil → Pengaturan Laman): Indonesia (asli, bawaan) / Inggris. Inggris = widget RESMI Google
+  Website Translation (`translate.google.com/translate_a/element.js`, tanpa kunci API) yang dimuat
+  `TranslateLoader` HANYA bila `synaped_lang=en` / cookie `googtrans=/id/en`; memilih bahasa memuat ulang
+  halaman. Widget membungkus ulang simpul teks sehingga React bisa tersandung — `TranslateLoader` memasang
+  tambalan `removeChild`/`insertBefore` saat Inggris aktif. Bilah bawaan widget disembunyikan di globals.css.
+  Label bahasa memakai `translate="no"`. Terjemahan mesin: jangan harap menggantikan teks Inggris tulisan tangan.
+- **Peran** di profil = teks polos berwarna (bukan `Tag`).
+- **Komentar**: nama & foto penulis dibaca HIDUP dari Auth (`withLiveAuthors` di reviews.ts, satu `getUsers`),
+  bukan salinan di dokumen ulasan - ganti nama akun langsung tampil di komentar lama; akun terhapus → salinan.
+- **Learning Path** (ilustrasi per langkah) dan **Features** (siluet di belakang kartu) pernah dicoba lalu
+  DIHAPUS atas permintaan pemilik - jangan dikembalikan tanpa diminta.
+- **Dashboard untuk educator/admin** (`/dashboard`): selain kursus/kelas yang DIIKUTI, ada "Kursus yang Dibuat" (`listOwnedCourses` + `CreatedCourses own kelola`) dan "Kelas yang Dibuat" (`listOwnedClasses` + `ClassCard peran="Pengajar"`), plus dua angka ringkasan. `CreatedCourses` = "buku besar" tanpa ikon (nomor tipis-besar, judul, peserta sebagai angka utama, baris selang-seling menjorok, garis biru tumbuh saat hover); HANYA dipakai dashboard; profil memakai `OwnedCourses` (kartu berikon, DIKEMBALIKAN seperti semula atas permintaan pemilik, begitu juga tulisan peran & "Tentang Educator"). `/kelas` & `/educator/classes` memakai kepala yang sama dengan dashboard (judul besar, tanpa pita/ "Panel Educator"/tautan "buka panel educator"). Features: pencampuran cincin↔barisan memakai smoothstep + lerp 0,06, kartu bayangan baru terlihat saat `flat` > 0,55 (dulu tampak bertumpuk setengah transparan saat kembali ke cincin).
+- **Admin = educator + fitur admin**: `requireEducator` (session.ts), `createClass`, dan `requireEducator` di courseActions kini meloloskan `admin`; Navbar menampilkan "Kursus Saya"/"Kelas Saya" juga untuk admin. `AdminShell` (client) = `Navbar` + `Footer` beranda + sub-navigasi teks (`NAV`, lencana kotak amber, garis biru tumbuh untuk tautan aktif); halaman & komponen `admin/` diratakan massal (tanpa `rounded-*`/`border border-rule`, kartu = `bg-paper-card`, aksen kiri `shadow-[inset_3px_0_0_…]` untuk kartu peringatan, judul `h1` besar tanpa `.mark`).
+- **Foto profil kelas** (`Kelas.imageURL`, null = inisial): dipilih di `ClassForm` (potong persegi 512px via `compressSquare`, unggah `uploadClassImage` → `avatars/{uid}/class-<hex16>.jpg`, folder yang sama dengan foto profil/banner sehingga storage.rules tak perlu dideploy), URL diperiksa `fotoKelasSah` di `createClass`/`updateClass` (path HARUS `avatars/{uid-SESI}/class-<hex>.jpg`; `imageRaw` undefined = tak diubah, null = hapus, foto lama dibuang). `pruneAvatarFolder` TIDAK boleh membuang `class-*.jpg` (selain saat folder dikosongkan). `ClassPlate` kini DIAM (tanpa `drift`/holo/kaca) dan menampilkan foto/inisial; `ClassSpine` memakai foto di pita tebal.
+- **Mini-profil dari foto** (`profile/AvatarMini.tsx`, portal ke `<body>` karena leluhur `Reveal` bertransform merusak `fixed`): foto pengajar/peserta/penulis pengumuman & balasan di ruang kelas membuka `MiniProfile`. Gerbang `getMiniProfile` kini: penulis komentar publik ATAU pemanggil yang masuk dan sekelas (`sekelas()`: satu kelas sebagai pemilik/anggota) ATAU pemanggil admin/dirinya sendiri; kueri tunggal-field, tanpa indeks komposit. Hero ruang kelas: tautan kembali bergaris-penunjuk, kartu pengajar = garis tegak + foto 56px + nama (tanpa kotak abu).
+- **Balasan admin pada ulasan**: `Review.reply` ({body, at, by}; field dokumen `adminReply/adminReplyAt/adminReplyBy`), ditulis HANYA oleh `replyToReview` (admin; nama dari SESI, maks 600 karakter, teks kosong = hapus). Form di `/admin/reviews` (`ReviewReply`); tampil sebagai kutipan bergaris biru di kartu komentar beranda (`TestimonialItem.reply`, 2 baris) + dialognya, dan di `ReviewList` halaman kursus. Penulis menulis ulang ulasannya = balasan hilang (submitReview menimpa dokumen). `/admin` (akun): `UserList` (client) = pencarian nama/email/HP/peran + chip peran; tanggal diformat di server karena `adminUsers.ts` server-only. `/pengaturan` tanpa label "Akun Saya", `LogoutButton` = batang tanpa border (hover merah), `SignInMethodsCard`/`UsernameForm` diratakan. Tombol "Kelola kursus" di pendapatan = batang `SectionHead` (hover biru + garis memanjang).
+- **Pita komentar tanpa batas**: daftar digandakan `SALINAN`=4 kali dan `scrollLeft` dijaga di [1,2] salinan (mulai di salinan kedua; seretan membungkus posisi & menggeser `startLeft`) - dulu 2 salinan mulai dari 0 sehingga seret ke kanan membentur 0. Tombol "Admin" navbar: tanpa ikon perisai, teks biru bold dengan kilau gradien `.admin-kilau` tiap 5 dtk. `LogoutButton`: hover `bg-rust-700` + teks `#fff` (hex karena `text-white` terbalik di tema terang). Tema TERANG: `--color-paper-card` `#E9EFF8` (lebih gelap dari latar `#F5F8FD`), `card-hover` `#DCE7F7`, `paper-alt` `#DFE8F5`; `.theme-day` ikut. Breadcrumb detail kursus = huruf kapital kecil, pemisah garis tipis.
+- **Panel chat** (`ChatWidget`): persegi tanpa border/radius; kepala = judul + "Siap membantu" (teks saja, tanpa titik); balasan asisten = teks polos dengan garis aksen biru di kiri (`shadow-[inset_2px_0_0]`), pesan pengguna = kotak biru; saran/opsi = baris/chip persegi; indikator mengetik = tiga titik (`.chat-titik`); kolom isian bergaris bawah + tombol kirim kotak berpanah. Logika kirim/stream TIDAK berubah.
+- **Admin mengelola akun** (`lib/adminUserActions.ts`, "use server", tiap fungsi memeriksa sesi admin sendiri): `changeUserRole` (custom claim + `revokeRefreshTokens`; role akun SENDIRI tidak bisa diubah agar admin tak mengunci diri), `setUserPassword` (`updateUser` + cabut sesi; `acak` = sandi 12 karakter dari `crypto.randomBytes` dikembalikan SEKALI), `createAccount` (email+sandi, role pilihan, `ensureUsername`; email dibiarkan belum terverifikasi). KATA SANDI LAMA TIDAK BISA DILIHAT: Firebase hanya menyimpan hash satu arah dan tak ada API untuk membacanya - jangan pernah menjanjikan fitur "lihat password". UI: `UserManage` di `/admin/users/[uid]`, `CreateAccountForm` di `/admin/users/new`, tombol "Buat akun" di `/admin`. `/admin/users/[uid]` TIDAK memuat pengajuan educator (itu khusus `/admin/notifications`). Daftar `<select>` (`select option`) dipatok ke token di globals.css (tanpa itu pilihan putih-di-atas-putih di tema gelap). `components/ui/BackLink.tsx` = tautan "Kembali ke …" bersama (garis tipis + kapital kecil; dipakai admin/educator/dashboard/profil edit). `components/ui/Breadcrumb.tsx` = jejak halaman bersama (kapital kecil, pemisah garis, garis bawah biru); dipakai admin/educator/legal/kontak.
+- **Mobile & judul section**: `SectionTitle` memakai 0,72 em/huruf, `nowrap`, `line-height` 1,05 + `padding-bottom` 0,06em (ekor huruf & patah baris tak lagi terpotong di ponsel). Judul section beranda berbahasa Indonesia: Kursus, Fitur, Alur Belajar, Komentar, Tanya Jawab. Learning Path versi mobile (`LearningPathMobile`) = `SectionTitle` + rel tegak berisi biru yang MENGIKUTI GULIRAN (`--rp`, warna pejal `--lp-rel/--lp-simpul`), simpul kotak yang menyala + berdenyut sekali, kartu langkah meluncur dari kanan (kabur→tajam, pantulan) dan angka mengacak digit lalu terkunci (`AngkaAcak`); reversibel, semua teks Plus Jakarta Sans. Balon robot (`balon()` di ChatRobot): di KIRI robot (kanan bila robot di separuh kiri layar), sejajar tengah, ekor segitiga menunjuk robot, `bg-card-hover`, animasi `balon-kiri/kanan-muncul`. `/komentar` (`KomentarWall`): SEMUA ulasan (beranda hanya bintang ≥4) dalam kolom bata + saringan bintang, kartu SATU WARNA (miring mengikuti kursor + cahaya sorot, "Baca selengkapnya"), tanpa tanda kutip hias dan tanpa kalimat ringkasan jumlah/rata-rata di atasnya, balasan admin, foto → mini-profil; tombol "Lihat semua komentar" di bawah pita komentar beranda.
+- **Mini-profil di komentar** (`profile/MiniProfile.tsx`, `lib/miniProfileActions.ts`): foto/nama penulis di DIALOG komentar (`Testimonials`) membuka kartu di atasnya, bukan berpindah halaman. Pengguna: banner, foto, kursus DIIKUTI + kemajuan (tiap kursus → `/courses/slug`); educator: itu + kursus DIBUAT (tanpa bilah); admin: hanya `FORBIDDEN` ber-glitch (`.forbidden`, ::before/::after + clip-path steps). `getMiniProfile` = server action PUBLIK, jadi dibatasi: hanya uid yang pernah menulis ulasan (`reviews`), kursus disaring ke katalog publik, admin tanpa data, tanpa email/telepon/nilai kuis. INI SENGAJA melonggarkan keputusan lama di `publicProfile.ts` (kursus yang diikuti tak tampil di profil publik) atas permintaan pemilik - hanya lewat kartu ini; profil publik `/profil/[uid]` tetap TIDAK menampilkannya.
+- **Halaman educator** (`EducatorShell` kini SERVER component yang hanya merender `Navbar` + `Footer` beranda - bilah atas lama dengan "Panel Educator" dibuang): `/educator/courses` = daftar "buku besar" (nomor tipis, judul, tingkat sebagai TEKS polos, aksi teks); `/educator/courses/new` = judul dua baris menjorok + rel bab sticky (`#tentang/#kontributor/#isi/#terbit`) + `CourseForm` berbab bernomor (`BabHead`); `inputClass` bersama (juga form sunting) kini persegi, latar `white/[0.06]`, garis bawah biru saat fokus; `/educator` (pengajuan) = tiga keunggulan bernomor raksasa-tipis, turun bertangga, TANPA ikon.
+- **Form kursus (kontributor, isi kursus)**: `ContributorEditor` punya prop `tanpaJudul` (kepala bab ditulis `CourseForm`), bilah pembagian bertumpuk (potongan platform / pemilik / tiap kontributor, `flex: <bagian> 1 0`), baris dengan garis rambut `divide-white/10`, slider `.range-tipis` (lintasan 2px, penggeser kotak biru). `SectionList` (curriculumDraft): bagian = kartu persegi, pelajaran = `bg-white/[0.04]`, tombol naik/turun kotak 36px (`iconButton`) dan `hapusButton` setinggi sama, "+ Tambah bagian" selebar kartu. Rel bab di `/educator/courses/new`: tiga kolom tetap `[12px|2.4rem|1fr]` dan garis tegak di `left:5.5px` agar kotak penanda tepat di atas garis (versi lama melenceng).
+- **Profil lengkap `/profil/[uid]`** kini menampilkan "Kursus yang Diikuti" (kartu profil `EnrolledCourses publik`, tanpa harga/sertifikat/ruang belajar) dan, untuk educator, "Kursus yang Dibuat". `getPublicProfile.followed` dibatasi: null untuk admin dan untuk pengguna biasa yang belum pernah menulis komentar publik; hanya katalog publik; `bersihkanEnrollment` membuang order/harga/nilai kuis/sertifikat. Banner profil kini menempel ke tepi atas layar (tanpa `mt-24`, tinggi 290/340px). Tingkat kesulitan di detail kursus = teks polos berwarna (tanpa `Tag`).
+- Features: peralihan cincin↔barisan kini pegas teredam (`flatVelRef`: kekakuan 0,010, redaman 0,80) + smootherstep, bukan lerp eksponensial.
+- **Tanda pisah**: teks tampilan memakai tanda hubung "-", BUKAN em dash "—" (permintaan pemilik; sudah
+  diganti di seluruh string/JSX, komentar kode tak disentuh). Jangan menulis "—" di teks yang tampil.
+  Tombol/halaman pendapatan bernama "Pendapatan"; kartu "Cari kursus baru"/"Cari kelas" ada di /dashboard.
+- **/dashboard** = kursus & kelas yang DIIKUTI + tombol khusus ke **/dashboard/pendapatan** (royalti,
+  referral, kontribusi, penjualan — isi lama dashboard). Tautan lama `#referral`, tab "Penjualan" educator,
+  dan tombol di profil sudah menunjuk ke /dashboard/pendapatan.
+- **SynapLab tanpa border**: pembatas diganti isian (`bg-white/[…]`), bilah bawah inset (`shadow-[inset_0_-3px_0_…]`)
+  untuk sel terpilih / kelompok bergaris-bawah, dan bingkai bersarang berisian samar. Judul menu lab = gambar
+  `public/images/SynapLab.png` (157×30), titik biru berdenyut dihapus. Jangan kembalikan `border-*` di papan.
+- **/educator**: tanpa label "Program Educator"; kartu persegi tanpa border.
+- **Judul section landing** (About, Courses, Features, Learning Path,
+  Comments, FAQ) memakai `sections/SectionTitle.tsx`: kata besar kapital di
+  tengah, tanpa label/deskripsi (sengaja dihapus atas permintaan pemilik). Ukuran huruf dihitung dari panjang
+  judul (`88 / (panjang × 0.64)` vw, maks 11rem) supaya judul panjang tetap
+  muat — jangan diberi `whitespace-nowrap` tanpa menghitung ulang.
+  Judul kini CLIENT component: animasi ACAK ALFABET saat masuk layar (huruf berganti A–Z lalu mengunci kiri→kanan, 350ms + 80ms/huruf); lebar tiap huruf dikunci pada huruf asli yang tak terlihat supaya baris tidak bergetar; hemat gerak = langsung tampil.
+- Bilah hero yang melebar jadi panel "mencari" setelah diam 5 dtk pernah dicoba lalu DIHAPUS atas permintaan
+  pemilik - jangan dikembalikan tanpa diminta.
+- **Hero menunggu splash**: `SplashLoader.intiSelesai()` memasang `<html data-intro="selesai">` + peristiwa `synaped:intro-selesai` saat splash selesai ATAU dilewati; `Hero` menahan semua animasinya (`data-tunggu="true"` → `animation-play-state: paused !important` di globals.css; jeda `--rise-delay` tidak berjalan selama ditahan) sampai tanda itu (jaring pengaman 8 dtk), dan meneruskan `mulai` ke `HeroStars`. Dulu hero beranimasi di BALIK splash sehingga tertimpa. `HeroStars`: 8 bentuk tak simetris (posisi/skala/kemiringan beda + jitter acak per pemuatan), 4 bentuk rinci (pensil berserat+cincin+penghapus, buku berpita+tumpukan halaman, bohlam berulir+filamen+sinar+taburan cahaya, laptop berpapan ketik+jendela kode) + debu bintang; KEMUNCULAN = tiap bintang melesat spiral dari jauh (`jauh`, `putar`, `tunda` per bentuk, `lembut` easeOutQuart + kilatan terang).
+- **Tombol hero "Mulai Belajar"** (wajah tombol di `Hero.tsx`, state `mulaiFase` → `data-fase` = diam/masuk/keluar): hover (`masuk`) = label turun keluar dari bawah & "AYOK KITA MULAI BELAJAR" jatuh dari atas kata demi kata (`.mulai-kata`, jeda `--i`×130ms, pantulan); lepas (`keluar`) = kata turun ke bawah & label datang dari atas (seperti memutar). Terpotong batas tombol (`overflow-hidden`). TANPA perubahan warna saat hover - berlaku juga untuk tombol kirim di bilah hero. Panah idle bergeser ke samping lalu kembali (`.mulai-panah`). CSS di globals.css.
+- **About, panel menyempit**: label bawaan = ANGKA 01/02/03 (bukan judul tegak), tanpa sorotan warna saat hover. Hover (`data-hover="masuk"` dari state `hov` di About.tsx) → judul muncul huruf demi huruf dari kiri ke kanan & angka keluar ke kanan; lepas (`keluar`) → angka muncul lagi huruf demi huruf & judul keluar ke kanan (`.about-huruf`, `--i`, `--langkah` di globals.css). Layar tanpa hover (`@media (hover: none)`) menampilkan angka & judul berdampingan. Panah bilah hero: naik-turun selama di-hover (`.bilah-panah`), tanpa efek angkat/warna.
+- **Kartu kursus**: TANPA perubahan warna saat hover (latar kartu, judul, lencana nomor, sisi belakang sampul, dan tombol "Lihat Detail" semua dihapus); hover = kartu terangkat 4px + tombol "Lihat Detail" berdenyut (`.tombol-denyut`: cincin `box-shadow` + label `scale` di dalam; SENGAJA tanpa transform pada tautannya karena `::after` penutup-klik-kartu akan menyusut). Modul & estimasi = grid 2 kolom selebar penuh kartu, angka 2,3rem, modul rata kiri, estimasi rata kanan, TANPA garis pemisah. Label About menyempit: ANGKA besar (hingga 10rem, `font-black`, tracking -0,08em) sangat samar (`color-mix` putih 13% transparan) seperti angka hantu panel terbuka, tetap di tengah; JUDUL putih REDUP (64% dengan `--color-paper`).
+- **Titik section (`SectionDots`) = pemilih section**: menyeret titik-titik ke KIRI (>36px; mouse/sentuh, pendengar di `window`, TANPA `setPointerCapture` agar klik tombol tetap sampai) membuka mode pilih - lapisan `backdrop-blur-xl` `z-[65]` memburamkan seluruh laman (termasuk navbar) dan titik-titik (`z-[70]`) bergeser kiri + membesar menjadi daftar bernomor (label tampil bertahap); seret ke KANAN / Esc / ketuk latar buram / memilih section menutupnya. Klik yang menyusul seretan ditelan (`barusSeret`). Tombol `sr-only` untuk papan ketik. Hanya lg:+. Indikator hover: SELAMA penunjuk di atas daftar (`hover` state), HANYA tulisan section yang sedang AKTIF memantul ke kiri-kanan TERUS-MENERUS (`.dots-pantul`, infinite, jeda singkat tiap siklus); titik-titik diam; area pegang diperlebar (`p-4`) karena titik 8px terlalu kecil untuk diseret.
+- **Bintang hero** (`HeroStars.tsx`, canvas 2D di dalam div sticky, `opacity: var(--c)`): bintang berkedip menyusun PENSIL/BUKU/LAMPU/LAPTOP (garis poligon dalam kotak 0..100, disampel tiap ±10px). Kursor/sentuhan (`pointermove` dibaca dari `window`; kanvas `pointer-events:none` agar huruf hero tetap bisa diseret) melontarkan bintang menjauh + acak; pegas pulang (`PEGAS`, melemah selama `patah`>0) menyusun ulang bentuknya; `pointerdown` = ledakan lebih besar. Warna bintang = `color` kanvas (`text-blue-300`, ikut tema). Berhenti bila tak terlihat/tab tersembunyi; hemat gerak = digambar sekali tanpa interaksi. TERPISAH dari rasi bintang di Learning Path→Comments yang sudah dihapus.
+- **Hero bilah**: kalimat yang diketik DIBANGUN dari katalog (`lib/heroPrompts.ts`, modul netral; `app/page.tsx` meneruskan
+  `buildHeroPrompts(courses, categories)` ke `Hero`): templat tetap per kursus (dipilih lewat hash slug) + satu kalimat
+  per kategori yang punya kursus, maks 36; kursus baru otomatis menambah kalimat. SENGAJA bukan panggilan AI (tampil di
+  beranda tiap kunjungan: harus instan & tak bergantung kuota model gratis). Tiap kalimat membawa `q` (judul/kategori
+  kursusnya); anak panah di bilah menuju `/courses?q=<q>` (`heroHref`), dan `/courses` meneruskan `?q` ke
+  `CourseCatalog` sebagai `initialQuery`. Indeks diundi sekali setelah mount (HTML server = klien), tidak pernah sama
+  dengan kalimat sebelumnya (`sessionStorage` `synaped_hero_prompt`, jadi muat ulang selalu berganti), dan diundi
+  ulang saat pengunjung kembali ke atas. Tombol wajah "Mulai Belajar" tetap ke /register. Fitur bilah → panel
+  rekomendasi kursus dan bilah yang melebar sendiri sudah DIHAPUS atas permintaan pemilik - jangan dikembalikan tanpa
+  diminta; `Hero` kini hanya menerima `prompts`.
+- **Latar section landing** semuanya `bg-ivory` (alias `paper`, kini gelap).
+- **Layar pembuka** `ui/SplashLoader.tsx` (dipasang di `layout.tsx`), alurnya
+  meniru intro nomu.store (CSS `.intro-*` di `globals.css`: kata TAHU. → BISA.,
+  lapisan ivory naik, logo + tagline mendarat, 5 rel terisi, layar terangkat).
+  Sekali per sesi tab (`sessionStorage` `synaped_intro_seen_v2`), dilewati bila
+  `prefers-reduced-motion`. **Penanda "sudah tampil" ditulis SETELAH animasi
+  selesai**, bukan di awal: React dev menjalankan efek dua kali, dan penanda
+  yang ditulis di awal membuat putaran kedua membuang intro (bug: intro tak
+  pernah muncul). Dirender terlihat sejak HTML server; keputusan
+  melewati dibuat di callback timer (lint melarang setState sinkron di efek).
+  `--color-blue-600` & `--color-blue-900` = **biru sapphire `#0F52BA`**
+  (permintaan pemilik; keduanya sengaja sama). Animasi hero berjalan di
+  belakang splash pada kunjungan pertama.
+
 ## Autentikasi & otorisasi
 
 - Login di klien → `POST /api/auth/session` menukar ID token jadi cookie
   httpOnly `synaped_session`. Rute ini juga memanggil `ensureUsername` (gagal = log saja).
 - `/login` & `/register` keduanya merender `AuthForm` (satu komponen), yang
   menyimpan mode aktif di state lokal (bukan sekadar lewat props) supaya
-  tombol "Masuk"/"Daftar" bisa berpindah dengan geser + memudar (`.auth-fade`,
-  arah dari `--auth-fade-from`) tanpa menunggu navigasi Next. Di layar md:+
-  kartunya terbelah DIAM (sisi navy kiri, sisi formulir kanan — tidak ada
-  PANEL yang meluncur/bertukar posisi, itu sempat dicoba lalu dibatalkan
-  karena terlihat seperti komponen "slider/toggle"); yang bergerak hanya
-  ISI tiap sisi. URL disinkronkan lewat `window.history.replaceState`
+  tombol "Masuk"/"Daftar" bisa berpindah tanpa menunggu navigasi Next. Di
+  layar md:+ kartunya terbelah dan kedua sisi (panel navy berisi tombol
+  ajakan + sisi formulir) BERTUKAR tempat dengan meluncur (`translate-x`,
+  900ms; Daftar = panel kiri, Masuk = panel kanan). Isi TIDAK dilepas-pasang
+  (dulu `key={mode}` membuat kolom lenyap & berkedip): state `mode` = tujuan
+  (menggerakkan panel), `shown` = mode yang isinya terlihat, tertinggal
+  `OUT_MS` supaya teks ditukar saat `.auth-isi` transparan (`data-tampil`).
+  Bagian khusus satu mode (kolom nama, "Lupa kata sandi", ketentuan) dirender
+  selalu dan dilipat halus lewat `Lipat` (grid-rows 0fr↔1fr + `inert`). Tampilan
+  persegi tanpa border/bayangan, tanpa tautan "Kembali ke beranda". Panel samping berwarna `#0D2131` (= banner profil bawaan, dipatok karena teksnya tetap putih di tema terang), polos tanpa gradasi. Teksnya dipecah per huruf (`Huruf`, `.grav-h`): masuk dengan ayunan tertinggal+overshoot searah geser panel; bila tombol panel "digesek" 3 kali (`onGesek`: 3 sapuan ≥28px bolak-balik dalam 3 dtk) `beku` terisi dan `hurufFisika.ts` (mesin fisika kecil: lingkaran + gravitasi + tumbukan, rAF menulis `transform` langsung) mengambil alih: huruf judul/kalimat jatuh ke dasar panel (tombol jadi pijakan), huruf tombol ke tepi bawah tombol; panel yang meluncur memberi gaya semu (dari percepatan posisinya) sehingga tumpukan bergelinding; huruf bisa diseret & dilempar (ketukan singkat pada huruf tombol = menekan tombol). Teks panel dibekukan (`beku` = mode saat itu, `key` wadah tetap) supaya elemen huruf tak diganti; Huruf direset (`setBeku(null)` + wadah dipasang ulang) saat pertukaran teks di akhir `switchMode`, atau saat halaman dimuat ulang; tidak disimpan. Tinggi kartu desktop 640px (Masuk) / 800px (Daftar), beranimasi. Sempat dibatalkan
+  (terlihat seperti "slider/toggle"), lalu diminta pemilik lagi sesuai
+  gambar acuan — jangan dihapus. URL disinkronkan lewat `window.history.replaceState`
   langsung, **bukan** `router.replace` — `router.replace` membuat Next
   mengambil ulang RSC
   halaman tujuan dan me-remount `AuthForm`, yang mengulang animasi masuk
@@ -153,7 +377,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `royaltySales/{orderId}`, `royaltyEarnings/{…}` | Buku royalti. Tanpa data pembeli. |
 | `referralCodes/{KODE}` | Pemilik kode `{uid}`. |
 
-Storage: `avatars/{uid}`, `course-assets/{uid}` (PDF, dilayani lewat
+Storage: `avatars/{uid}` (juga `banner.jpg` — banner profil, lihat bawah), `course-assets/{uid}` (PDF, dilayani lewat
 `/api/courses/[slug]/asset`), `course-thumbnails/{uid}` (publik), `payment-qris`
 (publik), `payment-proofs/{uid}` (lewat `/api/payments/proof`, admin),
 `submissions/{uid}` (lewat `/api/submissions/file`), `class-files/{uid}/{classId}/`

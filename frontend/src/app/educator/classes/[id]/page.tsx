@@ -67,7 +67,7 @@ export default async function EducatorClassPage({ params, searchParams }: Props)
           <div>
             <h3 className="t-label text-ink-muted mb-4">Pengaturan kelas</h3>
 
-            <ClassForm kelas={{ id, name: kelas.name, description: kelas.description }} />
+            <ClassForm kelas={{ id, name: kelas.name, description: kelas.description, imageURL: kelas.imageURL }} />
 
             <div className="mt-5 flex flex-wrap items-center gap-5">
               <Link

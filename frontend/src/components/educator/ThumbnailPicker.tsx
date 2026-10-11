@@ -103,7 +103,7 @@ export default function ThumbnailPicker({
       <Label htmlFor="thumbnail">Gambar latar kursus</Label>
 
       <div className="flex flex-wrap items-start gap-5">
-        <span className="w-44 h-28 rounded-xl overflow-hidden border border-rule bg-paper-alt flex items-center justify-center shrink-0">
+        <span className="w-44 h-28 overflow-hidden bg-white/[0.06] flex items-center justify-center shrink-0">
           {preview ? (
             // Gambar bisa berasal dari Storage, URL luar, atau folder public —
             // <img> biasa menghindarkan daftar remotePatterns yang panjang.
@@ -125,7 +125,7 @@ export default function ThumbnailPicker({
           <div className="flex flex-wrap items-center gap-3">
             <label
               htmlFor="thumbnail"
-              className="cursor-pointer rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+              className="cursor-pointer bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-white/15"
             >
               {preview ? "Ganti Gambar" : "Pilih Gambar"}
             </label>

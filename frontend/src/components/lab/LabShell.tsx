@@ -86,8 +86,11 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
             Lab {infoMateri.nomor} · {infoMateri.nama}
             {materi === "array" ? ` ${lab.nama}` : ""}
           </p>
-          <h1 className="t-h3 mt-1 text-2xl lg:text-[1.75rem]">
-            Synap<span className="text-blue-600">Lab</span>
+          <h1 className="mt-2">
+            <span className="sr-only">SynapLab</span>
+            {/* 157×30 — gambar logo, bukan tulisan; tinggi dipatok, lebar mengikuti rasio */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/SynapLab.png" alt="" width={157} height={30} className="h-8 w-auto lg:h-9" />
           </h1>
         </div>
 
@@ -106,7 +109,7 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
                 onClick={() => pilih(l.id)}
                 className={cn(
                   "rounded-full px-4 py-1.5 text-sm font-semibold tabular-nums transition-all duration-200 ease-out-soft",
-                  dipilih ? "bg-blue-600 text-white shadow-soft" : "text-ink-body hover:bg-blue-50 hover:text-blue-700",
+                  dipilih ? "bg-blue-600 text-white shadow-soft" : "text-white/70 hover:bg-white/10 hover:text-white",
                 )}
               >
                 {/* Kunci = pilihan: label yang baru dipilih berdenyut sekali. */}
@@ -126,7 +129,7 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
       </p>
 
       {beritahuRusak && (
-        <p role="status" className="lab-fade-up rounded-xl border border-amber-500/30 bg-amber-100 px-4 py-3 text-sm text-amber-700">
+        <p role="status" className="lab-fade-up bg-amber-500/15 px-4 py-3 text-sm text-warn-text">
           Tautan papan tidak dapat dibaca, jadi lab dibuka kosong.
         </p>
       )}

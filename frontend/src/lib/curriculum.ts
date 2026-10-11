@@ -119,7 +119,7 @@ export function normalizeSections(
         // Satu-satunya jalan masuk kurikulum, jadi pembakuan satuan pelajaran
         // cukup di sini — createCourse, saveCurriculum, dan pengajuan sunting
         // semuanya lewat sini.
-        duration: canonicalDuration(l.duration, "lesson") || "—",
+        duration: canonicalDuration(l.duration, "lesson") || "-",
         position: li,
       };
 
