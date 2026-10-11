@@ -115,8 +115,11 @@ export default function ArrayBoard({
         <div className="lab-scroller overflow-x-auto scrollbar-hide">
           {/* `w-max` + `mx-auto`: dipusatkan selama muat, dan saat deretnya lebih
               panjang dari papan, margin otomatis jatuh ke 0 sehingga guliran
-              dimulai dari indeks 0 - bukan dari tengah yang memotong kedua ujung. */}
-          <div className="mx-auto w-max px-2">
+              dimulai dari indeks 0 — bukan dari tengah yang memotong kedua ujung.
+              `pb-4`: wadah gulir mendatar ikut memotong ke arah tegak, dan cincin
+              fokus, denyut, serta bayangan sel menonjol beberapa piksel di luar
+              sel — tanpa ruang ini bagian bawahnya terpangkas. */}
+          <div className="mx-auto w-max px-2 pt-1 pb-4">
             {/* ── Lajur variabel algoritma (hanya selama pengurutan) ── */}
             {peran && (
               <div className="relative h-9" aria-hidden="true">

@@ -28,7 +28,7 @@ const SALINAN: Record<Target["kind"], { label: string; title: string; descriptio
     label: "Hapus kelas",
     title: "Hapus kelas ini?",
     description:
-      "Seluruh postingan, balasan, dan daftar anggotanya ikut terhapus. Tindakan ini tidak bisa dibatalkan.",
+      "Seluruh postingan, tugas beserta pengumpulannya, balasan, lampiran, dan daftar anggotanya ikut terhapus. Tindakan ini tidak bisa dibatalkan.",
   },
   leave: {
     label: "Keluar dari kelas",
@@ -39,7 +39,7 @@ const SALINAN: Record<Target["kind"], { label: string; title: string; descriptio
   post: {
     label: "Hapus",
     title: "Hapus postingan ini?",
-    description: "Balasan di bawahnya ikut terhapus.",
+    description: "Balasan, lampiran, dan — bila ini tugas — seluruh pengumpulan & nilai siswa ikut terhapus.",
   },
   reply: {
     label: "Hapus",

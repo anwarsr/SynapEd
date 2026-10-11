@@ -1799,6 +1799,13 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
         border-color 300ms var(--ease-out-soft), opacity 300ms var(--ease-out-soft);
 }
 
+/* Panah pointer linked list (ListBoard): bentuknya (`d`) ikut dianimasikan,
+   jadi pointer yang dibelokkan terlihat berbelok. Peramban yang belum bisa
+   menganimasikan `d` tetap menggambar bentuk akhirnya dengan benar. */
+.lab-panah {
+    transition: d var(--lab-gerak, 1000ms) var(--ease-out-soft), opacity 400ms var(--ease-out-soft);
+}
+
 /* Jejak penelusuran (JejakPanah): ruas terbaru tegas, ruas lama memudar. */
 .lab-jejak-lama { stroke: var(--color-blue-300); stroke-width: 2; opacity: 0.85; }
 .lab-jejak-baru { stroke: var(--color-blue-600); stroke-width: 3; }
@@ -1878,7 +1885,8 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
     .lab-kubus-badan,
     .lab-kubus-lapisan,
     .lab-posisi,
-    .lab-bingkai { transition: none !important; }
+    .lab-bingkai,
+    .lab-panah { transition: none !important; }
 
     /* Dimatikan total, bukan dipersingkat: blok global di atas hanya
        memendekkan durasi, sementara jeda bertingkat (--d) tetap berlaku dan

@@ -5,6 +5,7 @@ import ProfileLink from "@/components/ui/ProfileLink";
 import CountUp from "@/components/ui/CountUp";
 import PostFeed from "@/components/classes/PostFeed";
 import PostComposer from "@/components/classes/PostComposer";
+import AssignmentList, { type SudutTugas } from "@/components/classes/AssignmentList";
 import DeleteButton from "@/components/classes/DeleteButton";
 import JoinCodePanel from "@/components/classes/JoinCodePanel";
 import { ClassPlate } from "@/components/classes/ClassPlate";
@@ -14,10 +15,10 @@ import type { KelasMember, KelasPost, KelasReply } from "@/lib/classTypes";
 import type { UserCard } from "@/lib/userCards";
 import { cn } from "@/lib/cn";
 
-export type TabKelas = "pengumuman" | "anggota" | "tentang";
+export type TabKelas = "pengumuman" | "tugas" | "anggota" | "tentang";
 
 export function toTab(raw: unknown): TabKelas {
-  return raw === "anggota" || raw === "tentang" ? raw : "pengumuman";
+  return raw === "tugas" || raw === "anggota" || raw === "tentang" ? raw : "pengumuman";
 }
 
 const DISPLAY_JUDUL = {
@@ -37,6 +38,7 @@ const DISPLAY_SEKSI = {
 
 const TABS: readonly { id: TabKelas; label: string }[] = [
   { id: "pengumuman", label: "Pengumuman" },
+  { id: "tugas", label: "Tugas" },
   { id: "anggota", label: "Anggota" },
   { id: "tentang", label: "Tentang" },
 ];
@@ -83,6 +85,10 @@ interface Props {
   overlayNav?: boolean;
   /** Panel pengaturan pemilik, dirender di tab Tentang. */
   pengaturan?: ReactNode;
+  /** Status tugas milik siswa, atau hitungan pengumpulan untuk pengajar. */
+  sudutTugas: SudutTugas;
+  /** Jam server saat render, supaya seluruh status tenggat memakai satu "sekarang". */
+  saat: number;
 }
 
 /**
@@ -116,6 +122,8 @@ export default function ClassRoom({
   kembali,
   overlayNav = false,
   pengaturan,
+  sudutTugas,
+  saat,
 }: Props) {
   const namaPengajar = ownerCard?.name ?? "Pengajar";
   const tumpukan = members.slice(0, 5);
@@ -200,7 +208,7 @@ export default function ClassRoom({
           {/* Tab lewat URL, bukan state klien: bisa ditautkan langsung, tetap
               bekerja tanpa JavaScript, dan tidak menahan daftar anggota di
               memori halaman yang sedang membaca umpan. */}
-          <nav className="mt-9 flex gap-1.5" aria-label="Bagian kelas">
+          <nav className="mt-9 flex gap-1.5 overflow-x-auto scrollbar-hide" aria-label="Bagian kelas">
             {TABS.map((t) => {
               const aktif = t.id === tab;
               return (
@@ -209,7 +217,7 @@ export default function ClassRoom({
                   href={t.id === "pengumuman" ? basePath : `${basePath}?tab=${t.id}`}
                   aria-current={aktif ? "page" : undefined}
                   className={cn(
-                    "px-[22px] py-3 text-sm font-semibold transition-colors duration-200",
+                    "shrink-0 rounded-t-xl px-[22px] py-3 text-sm font-semibold transition-colors duration-200 max-sm:px-4",
                     aktif
                       ? "bg-paper text-white"
                       : "bg-white/10 text-white/72 hover:bg-white/20 hover:text-white",
@@ -240,6 +248,7 @@ export default function ClassRoom({
 
                 <PostFeed
                   classId={kelas.id}
+                  basePath={basePath}
                   posts={posts}
                   repliesByPost={repliesByPost}
                   cards={cards}
@@ -250,6 +259,10 @@ export default function ClassRoom({
                   canReply
                 />
               </>
+            )}
+
+            {tab === "tugas" && (
+              <AssignmentList posts={posts} basePath={basePath} sudut={sudutTugas} saat={saat} />
             )}
 
             {tab === "anggota" && (

@@ -13,6 +13,10 @@ Firestore, aturan bisnis, skrip, variabel lingkungan, atau langkah deploy
 
 - `README.md` — bahasa manusia: apa fiturnya, siapa memakainya, cara menjalankan.
 - `CLAUDE.md` (berkas ini) — detail teknis, invarian, jebakan, peta berkas.
+- `frontend/src/lib/chatKnowledge.ts` — pengetahuan Asisten SynapEd, kalau
+  perubahannya terlihat pengguna (asisten hanya tahu apa yang tertulis di
+  sana). Halaman baru/berubah alamat juga didaftarkan di `chatLinks.ts`;
+  `npm run verify:chat-knowledge` memerah sampai itu dilakukan.
 
 Kalau menemukan isi yang sudah tidak sesuai kode, betulkan saat itu juga.
 Sebutkan pembaruan dokumen ini di ringkasan akhir pekerjaan.
@@ -328,7 +332,8 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 4. **Modul netral** (tanpa `server-only`, tanpa `"use client"`, tanpa impor `@/`)
    untuk nilai/validasi yang dipakai klien + server + skrip tsx: `*Rules.ts`,
    `*Types.ts`, `contributors.ts`, `royaltySplit.ts`, `royaltyTerms.ts`,
-   `referralRules.ts`, `classTypes.ts`, `profileTypes.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
+   `referralRules.ts`, `classTypes.ts`, `classAssignmentRules.ts`, `profileTypes.ts`, `chatLinks.ts`,
+   `chatKnowledge.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
    `server-only` dari komponen klien menyeret firebase-admin ke bundel browser.
 5. **Semua koleksi Firestore tertutup dari klien** (`allow read, write: if false`),
    kecuali `courses/{slug}` baca publik dan `users/{uid}` baca oleh pemiliknya.
@@ -363,8 +368,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `reviews/{id}` | Hanya pemilik enrollment `completed`. |
 | `educatorApplications/{uid}` | Pengajuan jadi educator. |
 | `categories/{slug}` | Dikelola admin; slug tidak berubah saat label diganti. |
-| `classes/{id}` (+ `posts/{id}/replies/{id}`), `classMembers/{uid}_{classId}` | Kelas educator; `joinCode` rahasia (jangan dikirim ke anggota biasa). |
-| `users/{uid}` | `bio`, `education`, `skills`, `phone`, `bannerURL`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
+| `classes/{id}` (+ `posts/{id}/replies/{id}`), `classMembers/{uid}_{classId}` | Kelas educator; `joinCode` rahasia (jangan dikirim ke anggota biasa). Post: `kind` (`announcement`/`assignment`; hilang = announcement), `title`, `body`, `attachments[{name,path,size,mime}]`, `assignment {formats, dueAt, acceptLate, maxPoints}` (null untuk pengumuman). |
+| `classSubmissions/{classId}_{postId}_{uid}` | Pengumpulan tugas kelas: `text`, `files[]`, `status` submitted/graded, `late` (dibekukan saat kirim), `grade`, `feedback`. Koleksi TERPISAH dari `classes` — `recursiveDelete` tidak menjangkaunya. |
+| `users/{uid}` | `bio`, `education`, `skills`, `phone`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
 | `usernames/{username}` | Reservasi `{uid}`. |
 | `orders/{orderId}` | Pesanan. `method` midtrans/manual, `status`, `royalty` (syarat dibekukan), `postPaidStatus`. |
 | `settings/payments` | Saklar metode, QRIS, `platformFeePercent` (bawaan 30), `referralPercent` (bawaan 10). |
@@ -374,7 +380,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 Storage: `avatars/{uid}` (juga `banner.jpg` — banner profil, lihat bawah), `course-assets/{uid}` (PDF, dilayani lewat
 `/api/courses/[slug]/asset`), `course-thumbnails/{uid}` (publik), `payment-qris`
 (publik), `payment-proofs/{uid}` (lewat `/api/payments/proof`, admin),
-`submissions/{uid}` (lewat `/api/submissions/file`). Materi terkunci selalu
+`submissions/{uid}` (lewat `/api/submissions/file`), `class-files/{uid}/{classId}/`
+(lampiran pengajar, lewat `/api/classes/attachment`), `class-submissions/{uid}/{classId}/{postId}/`
+(jawaban siswa, lewat `/api/classes/submission`). Materi terkunci selalu
 dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 
 ## Pembayaran
@@ -441,6 +449,19 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 - Model `:free` dilayani dari **kolam bersama** seluruh pengguna OpenRouter — 429
   `upstream_provider_shared_pool` itu antrean sesaat (retry), BUKAN jatah kita habis
   (jangan retry, tunggu besok). `readRateLimit()` membedakan keduanya.
+- **Pengetahuan asisten** (system prompt dirakit `chatPrompt.ts` setiap permintaan):
+  - aturan topik/format (stabil, di `chatPrompt.ts`) → `PENGETAHUAN_SITUS` dari
+    `chatKnowledge.ts` (ditulis tangan, WAJIB ikut diperbarui saat fitur berubah) →
+    `infoTerkini()` yang dibaca LANGSUNG tiap permintaan: metode bayar aktif
+    (`getPaymentSettings` + `manualQrisReady`), persen referral, kontak `COMPANY`
+    → katalog kursus (`listCourses`, mode FAQ) atau konteks pelajaran (mode tutor).
+    Gagal membaca setelan = bagian itu dilewati, chat tidak ikut gagal.
+  - Daftar tautan yang boleh dipakai model = `CHAT_LINKS` (`chatLinks.ts`);
+    halaman yang sengaja tidak ditautkan di `CHAT_LINKS_DIKECUALIKAN` + alasannya.
+    `verify-chat-knowledge` (murni) memindai `app/**/page.tsx`: tautan harus ada,
+    setiap halaman harus ditautkan ATAU dikecualikan, alamat di teks pengetahuan
+    harus terdaftar, dan frasa basi ("belum bisa dibeli", …) dilarang.
+  - Jangan menaruh harga, potongan platform, atau detail teknis di pengetahuan.
 - **Tutor dalam course**: `ChatWidget.tsx` dipasang sekali secara global di
   `layout.tsx`, tanpa props. Konteks "sedang di pelajaran mana" mengalir lewat
   `ChatContext.tsx` (satu-satunya React Context di proyek ini) yang dipublikasikan
@@ -461,12 +482,106 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
   ke instruksi format kompleks. `parseGradingResponse` mengambil kecocokan
   **terakhir**, jaga-jaga model menulis contoh/mikir keras dulu sebelum jawaban asli.
 
+## Tugas kelas
+
+Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
+
+- Berkas: `classAssignmentRules.ts` (NETRAL — format, MIME, batas, validasi,
+  status, WIB), `classAssignments.ts` (server-only, tanpa penjaga: data,
+  `periksaBerkas`, `bersihkanPost/Kelas`), `classAssignmentActions.ts`
+  (`"use server"`: `gradeClassSubmission`, `submitClassAssignment`,
+  `unsubmitClassAssignment`), `createPost`/`createAssignment`/`editPost` di
+  `classActions.ts`, isian tugas bersama `IsianTugas.tsx` (kotak tulis + formulir edit), unggah klien di `classUpload.ts`, penyaji `serveStorageFile.ts`.
+- Format dipilih per tugas, SATU PER JENIS BERKAS: `text`/`pdf`/`jpg`/`png`/`docx`/`pptx`/
+  `xlsx`/`zip` (`.jpeg` = `jpg`). Versi pertama berkelompok (`pdfImage`, `office`):
+  `normalisasiFormat` menerjemahkannya saat MEMBACA (`toPengaturan`) dan saat MENERIMA
+  (`validasiPengaturan`, untuk browser yang masih memuat formulir lama) — data lama tidak
+  dimigrasi dan tetap menerima jenis yang sama. Urutan disimpan selalu urutan baku
+  `FORMAT_TUGAS`. `KELOMPOK_FORMAT` hanya untuk tampilan; `ringkasFormat` untuk teks
+  ringkas. **MIME diambil dari
+  ekstensi** (`mimeOfName`), bukan `file.type` (Windows: ZIP = `x-zip-compressed`).
+  Daftar MIME sama persis dengan `isClassFile()` di storage.rules; batas 20 MB eksklusif.
+- **`periksaBerkas` tidak mempercayai browser**: path wajib berawalan folder milik
+  pengirim (`class-files/{uid}/{classId}/` atau `class-submissions/{uid}/{classId}/{postId}/`,
+  tanpa `..`/`//`), lalu ukuran & MIME dibaca ULANG dari metadata Storage. Hanya nama tampilan
+  yang diambil dari klien.
+- Unggahan terjadi saat formulir DIKIRIM (bukan saat berkas dipilih) supaya
+  berkas yang dibuang tidak meninggalkan sampah. Galat unggah diterjemahkan
+  `pesanGagalUnggah` per kode Firebase — dulu semuanya "periksa koneksi",
+  padahal penyebab nyatanya storage.rules belum di-deploy (`storage/unauthorized`, 403).
+- Tenggat diukur jam SERVER. `masihDibuka` = belum lewat ATAU `acceptLate`.
+  Satu kiriman per siswa per tugas; mengganti = batalkan dulu. Batal ditolak
+  setelah dinilai dan setelah pengumpulan ditutup. Batal menghapus dokumen DULU,
+  baru berkas. Menilai pakai transaksi (siswa bisa membatalkan bersamaan).
+- **Edit postingan** (`editPost`, UI `EditPost.tsx` — di umpan & di halaman tugas):
+  masukan bentuk UTUH, divalidasi persis seperti membuat (`validasiPengaturan(..., false)`:
+  tenggat lampau BOLEH, itu cara menutup lebih awal). `keepAttachments` dicocokkan
+  dengan lampiran tersimpan, unggahan baru lewat `periksaBerkas`, lampiran yang dibuang
+  dihapus SETELAH tersimpan. `maxPoints` ditolak bila di bawah nilai tertinggi yang
+  sudah diberikan. Jenis (pengumuman/tugas) tidak bisa berubah. Kiriman lama tidak
+  disentuh (format/`late` tidak dihitung ulang). Formulir memuat ulang isinya dari
+  props setiap kali dibuka — tanpa itu unggahan yang baru tersimpan hilang di simpanan
+  berikutnya. `pernahDiedit` (> 1 menit) memberi tanda "diedit". `updateAssignment`
+  (khusus tenggat) sudah DIHAPUS — jangan dihidupkan lagi; satu jalur edit saja.
+- **WIB tetap** (`inputWibKeIso`, `isoKeInputWib`, `formatWib`): server App Hosting
+  UTC. Komponen klien menerima waktu yang SUDAH diformat server (`waktuKirim`) —
+  Intl Node vs browser bisa berbeda tanda baca → hydration mismatch.
+- Halaman: `/kelas/[id]?tab=tugas`, `/kelas/[id]/tugas/[postId]` (siswa; pemilik/admin
+  dialihkan), `/educator/classes/[id]/tugas/[postId]` (daftar siswa + nilai). Halaman
+  siswa hanya membaca kiriman miliknya lewat ID deterministik. `jamServer()` dipanggil
+  sekali per render (lint purity melarang `Date.now()` langsung di komponen).
+- Hapus post/kelas memanggil `bersihkanPost`/`bersihkanKelas`: dokumen
+  `classSubmissions` + berkasnya + lampiran. `MANAGED_PREFIXES` di `storageCleanup.ts`
+  memuat kedua folder kelas (tanpa itu `deleteObjects` diam-diam tidak menghapus apa-apa).
+- Penyaji berkas: lampiran → anggota/pemilik (bukan anggota = 404); jawaban →
+  pengirim atau `requireOwnedClass` (siswa lain = 403). Keduanya memeriksa ulang
+  awalan path dan selalu `attachment` + `nosniff`.
+- **Koreksi AI** (`classGradingActions.ts`: `suggestClassGrade`, `saveAiGradingSettings`;
+  tombol di `ClassGradeForm.tsx`, kartu `AiGradingSettings.tsx`):
+  - Hanya SARAN, persis seperti `suggestGrade` kursus: tidak pernah menulis nilai;
+    pengajar menyimpan lewat `gradeClassSubmission`. Penjaga `requireOwnedClass`;
+    pembatas laju `grade-ai:{uid}` yang SAMA dengan kursus (satu kuota OpenRouter).
+  - Pengaturan per tugas di field `aiGrading {source: "assignment"|"separate", files,
+    fillComment}` pada dokumen post, dibaca HANYA lewat `getPengaturanAi` —
+    `toPost`/`KelasPost` sengaja tidak memuatnya (berkasnya bisa kunci jawaban;
+    tipe yang tidak memuatnya membuat halaman siswa mustahil membocorkannya).
+    Berkas konteks di `class-files/{uid}/{classId}/ai-{postId}/`, BUKAN lampiran,
+    jadi `/api/classes/attachment` tidak bisa menyajikannya.
+  - `saveAiGradingSettings`: `keep` (berkas lama) dicocokkan dengan daftar di server,
+    `files` (unggahan baru) lewat `periksaBerkas` + `MIME_AI_KONTEKS` (tanpa ZIP),
+    maks `MAX_AI_CONTEXT_FILES` 3; berkas lama yang dibuang dihapus SETELAH tersimpan.
+    Kartunya diberi `key` = isi pengaturan supaya dipasang ulang setelah refresh —
+    tanpa itu state lama bertahan dan simpanan berikutnya membuang unggahan baru.
+  - Hapus post/kelas membaca `getPengaturanAi`/`berkasAiKelas` SEBELUM
+    `recursiveDelete`, lalu meneruskan path-nya ke `bersihkanPost/Kelas`.
+  - Pembacaan berkas (`classGradingFiles.ts`): PDF → `pdfText`, JPG/PNG → base64
+    ke `VISION_MODELS` (≤ 4 MB, maks 2 gambar soal + 3 jawaban), DOCX/PPTX/XLSX →
+    `officeText.ts` (pembaca ZIP+XML sendiri dengan zlib, tanpa dependensi;
+    `maxOutputLength` 8 MB per entri menahan bom ZIP). Yang tak terbaca dilaporkan
+    sebagai `peringatan`; jawaban yang sama sekali tak terbaca ditolak tanpa
+    memanggil AI. Gambar diselipkan tepat setelah teks bagiannya (soal vs jawaban).
+  - Prompt (`classGradingPrompt.ts`, netral): skala 0..`maxPoints` tugas; isi
+    jawaban siswa dinyatakan sebagai DATA (abaikan perintah di dalamnya).
+    `parseGradingResponse(raw, max, maxGrade=100)` — regex 4 digit + `(?!\d)`:
+    dengan 3 digit, "GRADE: 1000" terbaca 100 dan lolos diam-diam.
+
 ## SynapLab (`/lab`)
 
 Papan sandbox untuk memvisualisasikan materi. **Tanpa Firestore, tanpa Server
 Action, tanpa login** — seluruh keadaan hidup di memori browser dan di URL.
-Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
-**N-D** (`arrayNd`).
+Dua materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
+**3D** (`array3d`), **N-D** (`arrayNd`) — dan **Linked List** (`linkedList`,
+singly). Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
+MENIMPA halaman (fixed + latar gelap, `inert` saat tertutup, fokus dikurung,
+gulir `body` dikunci, `Esc` ditangkap di fase capture supaya tidak ikut menutup
+mode presentasi). Komponennya generik — hanya menerima `BagianNavigasi[]`
+(teks) dan `onPilih(id)` — dan dirender SEKALI oleh `LabShell` di luar ruang
+kerja mana pun, jadi tidak bergantung pada halaman materi yang sedang dibuka
+(materi baru boleh punya halaman yang sama sekali berbeda). Tombolnya: di lg
+kolom sempit di kiri judul — `LabShell` membungkus `[LabNavigasi | ruang kerja]`
+dalam `lg:flex`, jadi tombol sejajar judul dan tidak ikut tergulir; di layar
+sempit pil mengambang di tengah bawah. Materi/lab baru = satu entri di `NAVIGASI` + `MATERI` + cabang
+ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
 
 - **Logika murni di `lib/lab/`** (semuanya netral; `scripts/verify-lab.ts`
   mengimpornya lewat path relatif):
@@ -480,8 +595,8 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   - URL: `labUrl.ts` (dispatcher `encodeLabSnapshot`/`decodeLabSnapshot`),
     `labUrlMatrix.ts`, `labUrlCube.ts`, `labUrlNd.ts`, `labUrlBagian.ts` (penolong
     urai bersama).
-- **UI**: `LabShell.tsx` = pengalih 1D·2D·3D·N-D + kepala halaman. Tiap lab adalah
-  sebuah `LabKit` (`labKit.ts` kontraknya, `labKits.tsx` keempatnya: reducer,
+- **UI**: `LabShell.tsx` = laci materi (`LabNavigasi`), pengalih dimensi, dan kepala halaman. Tiap lab adalah
+  sebuah `LabKit` (`labKit.ts` kontraknya, `labKits.tsx` kelimanya: reducer,
   katalog, kanvas, encode, navigasi panah, isian "pakai sel" + `isianSel` = nama
   isian yang boleh diisi dari sel dan karenanya TIDAK diisi contoh di awal). `LabWorkspace.tsx`
   generik (bilah alat, langkah, riwayat, presentasi, bagikan, pintasan) dan
@@ -524,7 +639,8 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
 - Transformasi 2D & 3D memindahkan **sel** (id, catatan) beserta penunjuk & sorotannya;
   `verify-lab` memeriksa "yang ditandai" tetap sel yang sama.
 - **Skema URL** `?s=1<huruf>~ruas~ruas~ruas~ruas` (selalu 5 ruas), huruf `a`=1D,
-  `m`=2D, `c`=3D, `n`=N-D. 1D: nilai~penunjuk~rentang~catatan. 2D: baris dipisah `;`,
+  `m`=2D, `c`=3D, `n`=N-D, `l`=linked list. Linked list: nilai dari head ~ tiga ruas
+  cadangan yang WAJIB kosong (alamat dihitung ulang dari id). 1D: nilai~penunjuk~rentang~catatan. 2D: baris dipisah `;`,
   nilai `,` ~ `nama:r:c:nada` ~ `r1:c1:r2:c2:nada` ~ `r:c:teks`. 3D: bentuk `DxRxC` (kosong = kubus kosong) ~ nilai row-major ~
   `nama:k:i:j:nada` ~ `k1:i1:j1:k2:i2:j2:nada`. N-D: bentuk dipisah
   `x` ~ nilai row-major ~ kursor dipisah `x` (kosong = tanpa) ~ `sumbu:posisi:nada`.
@@ -566,6 +682,40 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   - `StepTimeline` hanya merender jendela 60 langkah di sekitar langkah aktif
     (pengurutan bisa ratusan langkah) + tombol lompat ke awal/akhir.
   - Isian `pilihan` (select) di `labForm`/`LabControls`; nilai bawaannya opsi pertama.
+- **Linked list** (`listLab.ts`, `listLabCatalog.ts`, `labUrlList.ts`, `ListBoard.tsx`):
+  - Keadaan = `nodes[{id,value,next}]` + `head` + `nextId`; urutan larik `nodes` tidak
+    bermakna, urutan list = rantai `next` dari head. Maksimal `LIST_MAX_NODES` 8.
+    `alamatSimpul(id)` = 1000 + (id×7919 mod 8999): tiruan alamat yang sengaja
+    TIDAK berurutan, unik untuk id < 8999.
+  - Dua tingkat invarian: `assertListInvariants` (keadaan akhir & URL: semua simpul
+    tercapai dari head tepat sekali, tanpa siklus) dan `assertListLangkah` (setiap
+    langkah tengah: simpul boleh lepas dari rantai, tetapi **tidak boleh hilang** —
+    harus tercapai dari head atau dari variabel penunjuk langkah itu). Inilah yang
+    menangkap urutan pointer yang salah (mis. `cur.next = baru` sebelum
+    `baru.next = cur.next`). Langkah terakhir tanpa variabel.
+  - Tanda khusus di `LabStep`: `variabel` (`{nama, id|null}[]`, chip dikunci NAMA
+    sehingga `cur` yang maju meluncur) dan `posisiSimpul` (id → {kolom, baris};
+    dipakai saat tata letak bawaan menyesatkan — simpul baru/dihapus di baris 1,
+    dan seluruh simpul dikunci di tempat selama list dibalik). Tanpa `posisiSimpul`,
+    papan menata rantai dari head (simpul lepas di baris 1).
+  - `ListBoard` menggambar dalam piksel tetap lalu `scale()` agar muat (minimum
+    0,72 — di bawahnya alamat tak terbaca — selebihnya digulir). Simpul = kartu
+    `[data | next]`, head = kotak pointer berlabel "HEAD" (bentuk sama dengan
+    bagian next), pointer null = coretan miring di kotaknya, indeks & alamat di
+    BAWAH kartu (atas kartu dipakai chip variabel). SVG panah dirender SESUDAH
+    simpul (di atasnya); bulatan pointer BUKAN elemen HTML melainkan
+    `marker-start` panahnya, jadi bulatan & garis selalu menyatu (juga saat
+    meluncur). Pangkalnya = pusat isi kotak next (memperhitungkan tepi 2px), dan
+    tombol simpul `flex justify-start` — `<button>` bawaannya memusatkan isi
+    tegak dan menggeser kartu ±2px dari posisi hitungan panah;
+    panah maju berakhir di tengah sisi kiri simpul tujuan, jadi rantai lurus
+    benar-benar lurus (titik awal & akhir sama tinggi). Panah = `<path>` SVG yang bentuknya ditulis lewat
+    properti CSS `d` dan ditransisikan (`.lab-panah`) — SELALU satu perintah
+    `M … C …` dengan jumlah angka sama supaya bisa dianimasikan; pointer null =
+    jalur yang mengerut di titik asal (titik kendali di titik asal juga, supaya
+    tidak mengayun). Panah yang menunjuk ke belakang melengkung di bawah rantai
+    dan masuk dari bawah simpul (toleransi "sebaris" = setengah tinggi baris).
+  - Pilihan papan = INDEKS simpul di rantai (bukan id).
 - **Panah keyboard** memilih sel hanya kalau fokus ada di papan (atau di body);
   di tempat lain panah tetap menggulir panel. 2D: ←→↑↓; 3D: ←→ kolom, ↑↓ baris,
   PgUp/PgDn lapisan; N-D: ←→ sumbu terakhir, ↑↓ sumbu sebelumnya.
@@ -639,7 +789,19 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   `settings/payments` harus menyalin & memulihkan dokumennya **persis**
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
-- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`. Sisanya butuh `npm run dev`.
+- `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
+  lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
+  Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office
+  (ZIP buatan sendiri, termasuk bom ZIP), dan parser nilai; panggilan AI sungguhan
+  hanya terjadi bila `OPENROUTER_API_KEY` ada (lokal biasanya tidak — pemeriksaannya
+  menerima "belum dikonfigurasi" sebagai bukti alur sampai ke pemanggilan AI).
+- Kunci OpenRouter kosong → `openRouterTerkonfigurasi()` false → kedua action penilaian
+  menjawab `PESAN_AI_BELUM_DIKONFIGURASI`, bukan "tidak bisa dihubungi" (dulu menyesatkan:
+  di dev lokal tanpa kunci, pengajar mengira jaringan/OpenRouter bermasalah).
+- Puppeteer dengan dua peran: pakai `browser.createBrowserContext()` per peran. Tab dalam
+  satu konteks berbagi cookie — memasang cookie siswa diam-diam mengubah tab pengajar jadi
+  siswa (halaman pengelola lalu 404 dan tampak seperti bug).
 - `check`/`finish` hidup di `scripts/checks.ts`; `testSupport.ts` me-re-export-nya.
   Suite murni WAJIB mengimpor dari `./checks` — `testSupport.ts` memanggil
   `initAdmin()` di level modul, jadi mengimpornya menuntut kredensial Firebase
@@ -670,4 +832,11 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   tanpa try/catch — dulu tombol beli diam tanpa pesan padahal pesanan sudah dibuat.
 - `CountUp` membaca "4,7" sebagai 47; angka desimal dirender statis.
 - `.rise-in` animasi `transform` menimpa transform lain di elemen yang sama; bungkus dengan lapisan terpisah.
-- **`lib/chatPrompt.ts` masih menyatakan kursus berbayar belum bisa dibeli** — basi, perlu diperbarui.
+- **Pengetahuan asisten pernah basi berminggu-minggu** (bersikeras kursus berbayar belum
+  bisa dibeli padahal Midtrans sudah aktif). Karena itu kini dipisah ke `chatKnowledge.ts`,
+  hal yang bisa dibaca dari sistem dibaca langsung, dan `verify-chat-knowledge` menjaga sisanya.
+- `.next/dev/types/validator.ts` bisa terpotong kalau dev server mati di tengah menulis →
+  `tsc --noEmit` gagal dengan galat sintaks di berkas itu. Hapus berkasnya, lalu ulangi.
+  Kalau setelah itu rute yang ADA menjawab 404 bahkan untuk anonim (seharusnya 307 ke
+  login) atau suite melaporkan "Server action not found": cache Turbopack di `.next/dev`
+  ikut rusak — matikan dev server, hapus seluruh `.next/dev`, jalankan ulang.

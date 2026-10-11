@@ -25,6 +25,10 @@ export interface LabBoardProps<S, P, Op> {
   peran?: Record<number, LabPeran>;
   /** Label variabel algoritma di atas sel (id → teks), kalau ada. */
   labelSel?: Record<number, string>;
+  /** Variabel penunjuk (linked list), kalau ada. */
+  variabel?: readonly { nama: string; id: number | null }[];
+  /** Letak gambar simpul yang ditetapkan langkah ini (linked list), kalau ada. */
+  posisiSimpul?: Record<number, { kolom: number; baris: number }>;
   terpilih: P | null;
   onPilih: (p: P) => void;
   /** Menjalankan operasi dari tombol mulai cepat di papan kosong. */

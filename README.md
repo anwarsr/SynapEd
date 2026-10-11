@@ -134,9 +134,12 @@ penyusun kursus tidak pernah berkurang.
 ### SynapLab — papan coba-coba (`/lab`)
 
 Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
-orang lain. Isinya saat ini **lab array** dalam empat versi yang dipilih lewat
-tombol **1D · 2D · 3D · N-D** di kepala halaman. Tiap versi punya papan, operasi,
-dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
+orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
+tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
+(Lab 01 — 1D, 2D, 3D, N-D) dan **Linked List** (Lab 02). Laci menimpa halaman
+tanpa menggesernya. Array punya empat versi lagi — **1D · 2D · 3D · N-D**.
+Tiap lab punya papan, operasi, dan tautan bagikannya sendiri; berpindah lab
+tidak menghapus papan lab lain.
 
 - **Terbuka untuk siapa saja**, tanpa login. Tautan yang dibagikan guru bisa
   langsung dibuka siswa.
@@ -201,6 +204,23 @@ dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
 - **Batalkan & ulangi** untuk setiap operasi.
 - **Mode presentasi** (sel membesar, layar penuh, `Esc` untuk keluar) dan
   tombol pintas keyboard.
+- **Linked list (singly)** — materi tersendiri, terpisah dari array:
+  - setiap simpul digambar `[nilai | next]` lengkap dengan **alamat memorinya**,
+    disambung panah; kotak `head` menunjuk simpul pertama, dan tabel **Memori**
+    di bawah papan memperlihatkan bahwa simpul-simpul tersebar, tidak berderet
+    seperti array (maksimal 8 simpul);
+  - operasi: isi dari teks/acak, kosongkan, sisip di depan / belakang / di
+    indeks, hapus di depan / belakang / di indeks / menurut nilai, cari nilai,
+    baca & ubah nilai di indeks, telusuri, dan **balik list**;
+  - variabel penunjuk algoritma (`cur`, `prev`, `next`, `baru`, `hapus`)
+    meluncur dari simpul ke simpul; panah pointer **berbelok** saat diubah;
+    simpul baru muncul di bawah rantai lalu naik masuk, simpul yang dihapus
+    turun keluar lalu dibebaskan; saat dibalik, panah dibalik satu per satu
+    sementara simpulnya diam;
+  - narasinya menekankan biaya: sisip/hapus di depan O(1), mencapai indeks k
+    harus berjalan k langkah dari head, dan **urutan mengubah pointer** saat
+    menyisip (sambungkan simpul baru ke sisa list dulu, baru belokkan
+    pendahulunya — kalau terbalik, sisa list hilang).
 - **Bagikan papan lewat tautan**: seluruh keadaan papan ikut di URL. Tidak ada
   yang tersimpan di server — menutup tab berarti papan itu hilang.
 
@@ -211,9 +231,54 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - Educator (dan admin) membuat kelas, memberinya **foto profil** (tampil di kotak
   identitas kelas), dan membagikan **kode undangan**.
 - Anggota bergabung dengan kode itu di `/kelas`.
-- Di dalam kelas ada pengumuman/postingan dan balasan.
-- Foto pengajar, peserta, dan penulis di ruang kelas bisa dipencet untuk melihat
-  mini-profil orangnya.
+- Di dalam kelas ada pengumuman/postingan dan balasan. Pengumuman boleh
+  berlampiran berkas (atau berkas saja tanpa teks), dan isi serta lampirannya
+  bisa diedit setelah terbit.
+- **Tugas** (mirip Google Classroom), diterbitkan pengajar dari kotak tulis yang
+  sama dengan memilih "Tugas":
+  - judul, instruksi, dan lampiran berkas (opsional);
+  - format jawaban yang diterima, dipilih **per jenis berkas** dan boleh lebih
+    dari satu: **teks** yang diketik langsung, **PDF**, **JPG**, **PNG**,
+    **Word (.docx)**, **PowerPoint (.pptx)**, **Excel (.xlsx)**, **ZIP** —
+    misalnya "hanya .docx". Di formulir dikelompokkan (Teks · PDF & gambar ·
+    Dokumen Office · Arsip) dengan tombol *Pilih semua* per kelompok;
+  - **tenggat** opsional (ditulis & ditampilkan dalam WIB) dan pilihan
+    **menerima pengumpulan setelah tenggat** (ditandai "Terlambat");
+  - nilai maksimal (bawaan 100).
+
+  Setelah terbit, tugas tetap bisa **diedit** lewat tombol *Edit tugas* di
+  halaman tugas (atau *Edit* di umpan): judul, instruksi, lampiran (tambah /
+  buang), format, tenggat (termasuk memperpanjang atau menutup lebih awal),
+  izin terlambat, dan nilai maksimal. Kiriman yang sudah masuk tidak berubah,
+  dan nilai maksimal tidak bisa diturunkan di bawah nilai yang sudah
+  diberikan. Postingan yang disunting diberi tanda *diedit*.
+- Siswa melihat semua tugas di tab **Tugas** beserta statusnya (belum
+  mengumpulkan / dikumpulkan / terlambat / dinilai), lalu mengumpulkan di
+  halaman tugas `/kelas/[id]/tugas/[postId]`. Selama belum dinilai dan
+  pengumpulan masih dibuka, kiriman bisa **dibatalkan lalu dikirim ulang**
+  (berkas yang sudah dikirim ikut terhapus).
+- Pengajar melihat daftar seluruh siswa per tugas di
+  `/educator/classes/[id]/tugas/[postId]`, mengunduh jawabannya, lalu memberi
+  **nilai + komentar** yang langsung terlihat oleh siswa.
+- Batas: maksimal 5 berkas per postingan/kiriman, masing-masing di bawah 20 MB.
+  Siswa tidak bisa melihat jawaban siswa lain.
+- **Koreksi dengan AI** (per siswa, di halaman tugas pengajar):
+  - tombol di setiap kiriman mengisi kolom **nilai** otomatis (skala nilai
+    maksimal tugas). Pengajar tetap meninjau, boleh mengubah, lalu menekan
+    *Simpan nilai* sendiri — AI tidak pernah menyimpan;
+  - centang **"AI juga mengisi komentar"** (bawaannya diatur per tugas, bisa
+    diubah per siswa). Kalau tidak dicentang, catatan AI tetap ditampilkan
+    sebagai petunjuk dengan tombol *Pakai sebagai komentar*;
+  - kartu **Koreksi AI** menentukan dari mana AI membaca soal: **instruksi &
+    lampiran tugas**, atau **berkas konteks terpisah** (maks. 3 berkas PDF,
+    gambar, atau Office — misalnya kunci jawaban) yang **tidak pernah terlihat
+    siswa**;
+  - AI bisa membaca jawaban teks, PDF ketikan, gambar JPG/PNG, dan dokumen
+    DOCX/PPTX/XLSX. ZIP dan PDF hasil pindai tidak terbaca — pengajar diberi
+    tahu berkas mana yang dilewati;
+  - memakai OpenRouter (model gratis), berbagi kuota harian dengan asisten chat
+    dan "Minta Saran AI" kursus, maksimal 8 koreksi per menit per pengajar.
+    Jawaban siswa dikirim ke layanan AI pihak ketiga saat dikoreksi.
 
 ### Profil & akun
 
@@ -240,6 +305,15 @@ seputar SynapEd (OpenRouter, model gratis). Dibuka dari dalam halaman
 belajar suatu pelajaran, ia beralih ke **mode tutor**: bisa mendiskusikan
 materi pelajaran itu, tapi menolak memberi jawaban akhir untuk kuis/tugas
 yang sedang dikerjakan.
+
+Yang diketahui asisten:
+- **Pengetahuan fitur** ditulis di `frontend/src/lib/chatKnowledge.ts` dan
+  wajib ikut diperbarui setiap kali fitur yang terlihat pengguna berubah.
+- **Diperbarui otomatis** setiap pesan, karena dibaca langsung dari sistem:
+  katalog kursus, metode pembayaran yang sedang dinyalakan admin, persentase
+  referral, dan kontak resmi.
+- `npm run verify:chat-knowledge` gagal kalau ada halaman baru atau alamat yang
+  berubah tetapi pengetahuan asisten belum ikut diperbarui.
 
 ### Panel admin (`/admin`)
 
@@ -337,6 +411,8 @@ cd frontend && npx tsc --noEmit   # aplikasi
 cd frontend && npm run lint
 npm run verify:royalty            # contoh; daftar lengkap di package.json
 npm run verify:lab                # SynapLab — murni, tanpa dev server & kredensial
+npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
+npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
 
 ---
@@ -346,10 +422,12 @@ npm run verify:lab                # SynapLab — murni, tanpa dev server & krede
 - Penarikan dana / payout untuk royalti dan referral.
 - Refund otomatis. Kabar refund dari Midtrans hanya ditandai untuk ditindaklanjuti admin.
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
-- Asisten chat di dalam halaman belajar.
 - Soal kuis selain pilihan tunggal.
-- Lab selain array di SynapLab (string, visualisasi data), dan algoritma selain pengurutan di atas papan (mis. pencarian linear/biner).
+- Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
+- Tugas kelas: mengembalikan tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
+  rekap nilai per kelas, dan koreksi AI untuk semua siswa sekaligus.
+- Koreksi AI untuk PDF hasil pindai dan isi arsip ZIP.
 
 ---
 

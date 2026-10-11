@@ -77,18 +77,23 @@ Gambar yang dilampirkan berikut adalah jawaban/karya yang dikumpulkan peserta. A
 /**
  * Mengambil kecocokan GRADE: TERAKHIR (jaga-jaga model "mikir keras" dulu
  * sebelum jawaban final) dan segala sesuatu setelah FEEDBACK: TERAKHIR.
- * Grade di luar 0-100 atau tidak ketemu -> null — TIDAK PERNAH menebak atau
- * membulatkan angka yang sebenarnya tidak valid.
+ * Grade di luar 0..maxGrade atau tidak ketemu -> null — TIDAK PERNAH menebak
+ * atau membulatkan angka yang sebenarnya tidak valid.
+ *
+ * `maxGrade` bawaan 100 (kursus). Tugas kelas memakai nilai maksimal tugasnya
+ * (sampai 1000) — karena itu regex menerima 4 digit, bukan 3: dengan 3 digit,
+ * "GRADE: 1000" terbaca 100 dan lolos diam-diam.
  */
 export function parseGradingResponse(
   raw: string,
   maxFeedbackChars: number,
+  maxGrade = 100,
 ): { grade: number; feedback: string } | null {
-  const gradeMatches = [...raw.matchAll(/GRADE:\s*(\d{1,3})/gi)];
+  const gradeMatches = [...raw.matchAll(/GRADE:\s*(\d{1,4})(?!\d)/gi)];
   if (gradeMatches.length === 0) return null;
 
   const grade = Math.round(Number(gradeMatches[gradeMatches.length - 1][1]));
-  if (!Number.isFinite(grade) || grade < 0 || grade > 100) return null;
+  if (!Number.isFinite(grade) || grade < 0 || grade > maxGrade) return null;
 
   const idx = raw.toUpperCase().lastIndexOf("FEEDBACK:");
   const feedback = idx === -1 ? "" : raw.slice(idx + "FEEDBACK:".length).trim().slice(0, maxFeedbackChars);

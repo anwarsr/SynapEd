@@ -1,6 +1,6 @@
 /**
  * Pemeriksaan murni untuk SynapLab: reducer keempat lab array (1D, 2D, 3D,
- * N-dimensi), serialisasi URL, dan riwayat.
+ * N-dimensi) dan lab linked list, serialisasi URL, dan riwayat.
  *
  * Tidak butuh dev server, Firestore, maupun kredensial — seluruh logika yang
  * diuji di sini berjalan di browser dan tidak pernah menyentuh jaringan. Karena
@@ -86,6 +86,21 @@ import {
 } from "../frontend/src/lib/lab/labHistory";
 import { mulberry32 } from "../frontend/src/lib/lab/labRandom";
 import { bandingkanNilai, KIND_URUT, rekamUrut } from "../frontend/src/lib/lab/labSort";
+import {
+  alamatSimpul,
+  applyListOp,
+  assertListInvariants,
+  assertListLangkah,
+  emptyListState,
+  labelAlamat,
+  LIST_MAX_NODES,
+  LIST_MAX_STEPS,
+  listStateFromValues,
+  nilaiList,
+  type ListLabState,
+  type ListOp,
+} from "../frontend/src/lib/lab/listLab";
+import { buildListOp, LIST_OP_CATALOG } from "../frontend/src/lib/lab/listLabCatalog";
 import {
   LAB_MAX_HISTORY,
   LAB_MAX_ITEMS,
@@ -1951,6 +1966,208 @@ const idNd = (s: unknown) => (s as NdLabState).cells.map((c) => c.id);
       mergeMuat.steps.length <= LAB_MAX_STEPS_URUT &&
       ditolak.every((ok) => !ok),
     terlaluPanjang.ok ? "bubble 64 elemen diterima" : `${terlaluPanjang.error.slice(0, 70)}… | merge ${mergeMuat.ok ? mergeMuat.steps.length : "ditolak"} langkah`,
+  );
+}
+
+// ── 13. Linked list ──────────────────────────────────────────────────────
+
+function akhirL(state: ListLabState, op: ListOp): ListLabState {
+  const h = applyListOp(state, op);
+  if (!h.ok) throw new Error(`fixture list gagal (${op.kind}): ${h.error}`);
+  return h.steps[h.steps.length - 1].state;
+}
+
+/** Masalah pertama di rangkaian langkah list: simpul hilang, rantai berputar, atau akhir tidak rapi. */
+function periksaLangkahList(steps: readonly { state: ListLabState; variabel?: { id: number | null }[] }[]): string | null {
+  for (const [n, st] of steps.entries()) {
+    const m = assertListLangkah(st.state, st.variabel ?? []);
+    if (m) return `langkah ${n + 1}: ${m}`;
+  }
+  const akhir = steps[steps.length - 1];
+  const m = assertListInvariants(akhir.state);
+  if (m) return `langkah terakhir: ${m}`;
+  if (akhir.variabel && akhir.variabel.length > 0) return "langkah terakhir masih memegang variabel penunjuk";
+  return null;
+}
+
+const L4 = listStateFromValues(["3", "8", "1", "5"]);
+
+{
+  // ── Katalog ──
+  const spesifikasi = Object.values(LIST_OP_CATALOG);
+  const gagalContoh = spesifikasi
+    .map((spec) => [spec.kind, applyListOp(L4, spec.contoh)] as const)
+    .filter(([, h]) => !h.ok)
+    .map(([k, h]) => `${k}: ${h.ok ? "" : h.error}`);
+  check(
+    "list: setiap operasi di katalog jalan, buildListOp menolak form yang belum lengkap",
+    gagalContoh.length === 0 &&
+      spesifikasi.length === 15 &&
+      buildListOp("sisipDiIndeks", { indeks: "1", nilai: "7" }) !== null &&
+      buildListOp("sisipDiIndeks", { indeks: "", nilai: "7" }) === null,
+    gagalContoh.length === 0 ? `${spesifikasi.length} operasi` : gagalContoh.join(" | "),
+  );
+
+  // ── Hasil yang diharapkan ──
+  const kasus: [string, ListOp, ListLabState, string][] = [
+    ["sisip depan", { kind: "sisipDepan", nilai: "7" }, L4, "7,3,8,1,5"],
+    ["sisip belakang", { kind: "sisipBelakang", nilai: "7" }, L4, "3,8,1,5,7"],
+    ["sisip di indeks 2", { kind: "sisipDiIndeks", indeks: 2, nilai: "7" }, L4, "3,8,7,1,5"],
+    ["sisip di indeks n", { kind: "sisipDiIndeks", indeks: 4, nilai: "7" }, L4, "3,8,1,5,7"],
+    ["sisip ke list kosong", { kind: "sisipBelakang", nilai: "7" }, emptyListState(), "7"],
+    ["hapus depan", { kind: "hapusDepan" }, L4, "8,1,5"],
+    ["hapus belakang", { kind: "hapusBelakang" }, L4, "3,8,1"],
+    ["hapus di indeks 1", { kind: "hapusDiIndeks", indeks: 1 }, L4, "3,1,5"],
+    ["hapus nilai di tengah", { kind: "hapusNilai", nilai: "1" }, L4, "3,8,5"],
+    ["hapus nilai di head", { kind: "hapusNilai", nilai: "3" }, L4, "8,1,5"],
+    ["hapus nilai yang tidak ada", { kind: "hapusNilai", nilai: "9" }, L4, "3,8,1,5"],
+    ["hapus satu-satunya simpul", { kind: "hapusBelakang" }, listStateFromValues(["4"]), ""],
+    ["ubah nilai di indeks", { kind: "setIndeks", indeks: 1, nilai: "9" }, L4, "3,9,1,5"],
+    ["balik", { kind: "balik" }, L4, "5,1,8,3"],
+  ];
+  const meleset = kasus.filter(([, op, awal, harap]) => {
+    const h = applyListOp(awal, op);
+    return !h.ok || nilaiList(h.steps[h.steps.length - 1].state).join(",") !== harap;
+  });
+  check("list: operasi menghasilkan rantai yang diharapkan", meleset.length === 0, meleset.length === 0 ? `${kasus.length} kasus` : meleset.map(([n]) => n).join(", "));
+
+  // ── Tidak ada simpul hilang di langkah mana pun ──
+  const hilang = Object.values(LIST_OP_CATALOG)
+    .map((spec) => {
+      const h = applyListOp(L4, spec.contoh);
+      return h.ok ? periksaLangkahList(h.steps) : null;
+    })
+    .filter((m): m is string => m !== null);
+  check(
+    "list: di SETIAP langkah tiap simpul masih ditunjuk head atau variabel; akhir rapi tanpa variabel",
+    hilang.length === 0,
+    hilang.length === 0 ? "15 operasi" : hilang.slice(0, 2).join(" | "),
+  );
+
+  // ── Memori: simpul tidak berpindah alamat ──
+  const sisipTengah = akhirL(L4, { kind: "sisipDiIndeks", indeks: 2, nilai: "7" });
+  const idTetap = L4.nodes.every((x) => sisipTengah.nodes.some((y) => y.id === x.id && y.value === x.value));
+  const alamatUnik = new Set(sisipTengah.nodes.map((x) => alamatSimpul(x.id))).size === sisipTengah.nodes.length;
+  const tidakBerurut = L4.nodes.some((x, i) => i > 0 && alamatSimpul(x.id) < alamatSimpul(L4.nodes[i - 1].id));
+  check(
+    "list: menyisip tidak memindahkan simpul lain; alamat unik dan memang tidak berurutan seperti array",
+    idTetap && alamatUnik && tidakBerurut,
+    `id tetap=${idTetap}, unik=${alamatUnik}, tersebar=${tidakBerurut} (${L4.nodes.map((x) => labelAlamat(x.id)).join(" ")})`,
+  );
+
+  // ── Balik: satu panah per langkah, simpul diam di tempat ──
+  const balik = applyListOp(L4, { kind: "balik" });
+  let panahBerubahLebih = 0;
+  let posisiBerubah = 0;
+  if (balik.ok) {
+    const tengah = balik.steps.slice(0, -1);
+    for (let k = 1; k < tengah.length; k++) {
+      const a = tengah[k - 1].state.nodes;
+      const b = tengah[k].state.nodes;
+      const berubah = b.filter((x) => a.find((y) => y.id === x.id)?.next !== x.next).length;
+      if (berubah > 1) panahBerubahLebih++;
+      if (JSON.stringify(tengah[k].posisiSimpul) !== JSON.stringify(tengah[0].posisiSimpul)) posisiBerubah++;
+    }
+  }
+  check(
+    "list: balik mengubah tepat satu panah per langkah, simpul diam sampai langkah terakhir",
+    balik.ok && panahBerubahLebih === 0 && posisiBerubah === 0,
+    `${panahBerubahLebih} langkah mengubah >1 panah, ${posisiBerubah} langkah menggeser simpul`,
+  );
+
+  // ── Biaya berjalan terlihat ──
+  const baca3 = applyListOp(L4, { kind: "bacaIndeks", indeks: 3 });
+  const langkahCur = baca3.ok ? baca3.steps.filter((st) => st.variabel?.some((v) => v.nama === "cur")).length : -1;
+  const cari = applyListOp(L4, { kind: "cariNilai", nilai: "1" });
+  const banding = cari.ok ? cari.steps.filter((st) => st.narasi.includes("Bandingkan")).length : -1;
+  check(
+    "list: baca indeks 3 = 4 posisi cur (head + 3 langkah), cari nilai di indeks 2 = 3 perbandingan",
+    langkahCur === 4 && banding === 3,
+    `cur ${langkahCur} kali, ${banding} perbandingan`,
+  );
+
+  // ── Penolakan ──
+  const penuh = listStateFromValues(Array.from({ length: LIST_MAX_NODES }, (_, i) => String(i)));
+  const harusDitolak: [string, ListLabState, ListOp][] = [
+    ["sisip ke list penuh", penuh, { kind: "sisipDepan", nilai: "1" }],
+    ["sisip di indeks > n", L4, { kind: "sisipDiIndeks", indeks: 5, nilai: "1" }],
+    ["sisip indeks negatif", L4, { kind: "sisipDiIndeks", indeks: -1, nilai: "1" }],
+    ["hapus dari list kosong", emptyListState(), { kind: "hapusDepan" }],
+    ["hapus di indeks n", L4, { kind: "hapusDiIndeks", indeks: 4 }],
+    ["baca indeks pecahan", L4, { kind: "bacaIndeks", indeks: 1.5 }],
+    ["nilai 7 karakter", L4, { kind: "sisipBelakang", nilai: "1234567" }],
+    ["nilai berisi titik dua", L4, { kind: "setIndeks", indeks: 0, nilai: "a:b" }],
+    ["isi lebih dari batas", emptyListState(), { kind: "isiDariTeks", teks: Array.from({ length: LIST_MAX_NODES + 1 }, () => "1").join(" ") }],
+    ["telusuri list kosong", emptyListState(), { kind: "telusuri" }],
+  ];
+  const lolos = harusDitolak.filter(([, awal, op]) => applyListOp(awal, op).ok);
+  check("list: masukan tidak sah ditolak", lolos.length === 0, lolos.length === 0 ? `${harusDitolak.length} kasus ditolak` : lolos.map(([n]) => n).join(", "));
+
+  // ── Operasi acak ──
+  const rng = mulberry32(20261009);
+  const bulat = (maks: number) => Math.floor(rng() * maks);
+  const pilih = <T>(arr: readonly T[]): T => arr[Math.floor(rng() * arr.length)];
+  let state = L4;
+  let masalah: string | null = null;
+  let kasusAcak = 0;
+  for (let i = 0; i < 8000 && masalah === null; i++) {
+    const n = nilaiList(state).length;
+    const v = () => String(bulat(10));
+    const op: ListOp = pilih<ListOp>([
+      { kind: "sisipDepan", nilai: v() },
+      { kind: "sisipBelakang", nilai: v() },
+      { kind: "sisipDiIndeks", indeks: bulat(n + 1), nilai: v() },
+      { kind: "hapusDepan" },
+      { kind: "hapusBelakang" },
+      { kind: "hapusDiIndeks", indeks: bulat(Math.max(n, 1)) },
+      { kind: "hapusNilai", nilai: v() },
+      { kind: "cariNilai", nilai: v() },
+      { kind: "bacaIndeks", indeks: bulat(Math.max(n, 1)) },
+      { kind: "setIndeks", indeks: bulat(Math.max(n, 1)), nilai: v() },
+      { kind: "telusuri" },
+      { kind: "balik" },
+      { kind: "acak", panjang: bulat(LIST_MAX_NODES) + 1, maks: 9, benih: bulat(1000) },
+      { kind: "kosongkan" },
+    ]);
+    let h;
+    try {
+      h = applyListOp(state, op);
+    } catch (e) {
+      masalah = `${op.kind} melempar: ${e instanceof Error ? e.message : String(e)}`;
+      break;
+    }
+    if (!h.ok) continue;
+    kasusAcak++;
+    const m = periksaLangkahList(h.steps);
+    if (m) masalah = `${op.kind} pada [${nilaiList(state).join(",")}]: ${m}`;
+    if (h.steps.length > LIST_MAX_STEPS) masalah = `${op.kind}: ${h.steps.length} langkah`;
+    state = h.steps[h.steps.length - 1].state;
+  }
+  check("list: operasi acak tidak pernah melempar, menghilangkan simpul, atau meninggalkan rantai rusak", masalah === null, masalah ?? `${kasusAcak.toLocaleString("id-ID")} operasi`);
+
+  // ── URL ──
+  const rngUrl = mulberry32(6060);
+  let urlMeleset: string | null = null;
+  for (let i = 0; i < 300 && urlMeleset === null; i++) {
+    const s = akhirL(emptyListState(), { kind: "acak", panjang: Math.floor(rngUrl() * LIST_MAX_NODES) + 1, maks: 999, benih: i });
+    const kode = encodeLabSnapshot({ lab: "linkedList", state: s });
+    const kembali = kode === null ? null : decodeLabSnapshot(kode);
+    if (!kode || !kembali || kembali.lab !== "linkedList" || nilaiList(kembali.state).join(",") !== nilaiList(s).join(",")) urlMeleset = `meleset pada ${kode}`;
+    else if (encodeLabSnapshot({ lab: "linkedList", state: kembali.state }) !== kode || new URLSearchParams({ s: kode }).get("s") !== kode) urlMeleset = `tidak stabil: ${kode}`;
+  }
+  const rusakUrl = [
+    "1l~1,2~x~~",
+    `1l~${Array.from({ length: LIST_MAX_NODES + 1 }, () => "1").join(",")}~~~`,
+    "1l~1,a:b~~~",
+    "1l~1,,2~~~",
+    "1l~1,2~~",
+  ];
+  const diterima = rusakUrl.filter((raw) => decodeLabSnapshot(raw) !== null);
+  const kosong = decodeLabSnapshot("1l~~~~");
+  check(
+    "list: bolak-balik lewat URL, tautan rusak ditolak, list kosong terbaca",
+    urlMeleset === null && diterima.length === 0 && kosong !== null && kosong.lab === "linkedList" && kosong.state.nodes.length === 0,
+    urlMeleset ?? (diterima.length === 0 ? `300 list, ${rusakUrl.length} tautan rusak ditolak` : `diterima: ${diterima.join(" | ")}`),
   );
 }
 

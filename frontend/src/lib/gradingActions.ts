@@ -6,7 +6,14 @@ import { getSubmission, MAX_FEEDBACK } from "@/lib/submissions";
 import { adminStorage } from "@/lib/firebase/admin";
 import { extractPdfText } from "@/lib/pdfText";
 import { buildGradingPrompt, buildGradingSystemPrompt, buildImageGradingUserText, parseGradingResponse } from "@/lib/gradingPrompt";
-import { OpenRouterError, openRouterStream, VISION_MODELS, type OpenRouterMessage } from "@/lib/openrouter";
+import {
+  OpenRouterError,
+  openRouterStream,
+  openRouterTerkonfigurasi,
+  PESAN_AI_BELUM_DIKONFIGURASI,
+  VISION_MODELS,
+  type OpenRouterMessage,
+} from "@/lib/openrouter";
 import { checkChatRateLimit } from "@/lib/chatRateLimit";
 import { SUBMISSION_FILES } from "@/lib/storagePaths";
 
@@ -54,6 +61,8 @@ export async function suggestGrade(submissionId: string): Promise<SuggestGradeRe
   if (!limit.ok) {
     return { ok: false, error: "Terlalu banyak permintaan saran AI. Coba lagi dalam beberapa menit." };
   }
+
+  if (!openRouterTerkonfigurasi()) return { ok: false, error: PESAN_AI_BELUM_DIKONFIGURASI };
 
   const submission = await getSubmission(submissionId);
   if (!submission) return { ok: false, error: "Pengumpulan tidak ditemukan." };

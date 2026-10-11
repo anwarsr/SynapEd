@@ -117,6 +117,22 @@ export interface OpenRouterStreamOptions {
   maxTokens?: number;
 }
 
+/**
+ * Apakah kunci API tersedia di server ini.
+ *
+ * Di produksi kunci hidup di Secret Manager; di dev lokal hanya ada kalau
+ * diisi di frontend/.env.local. Tanpa pemeriksaan ini, kunci yang kosong
+ * terbaca sebagai "AI tidak bisa dihubungi" — pesan yang membuat orang
+ * menyalahkan jaringan atau OpenRouter, padahal penyebabnya konfigurasi.
+ */
+export function openRouterTerkonfigurasi(): boolean {
+  return Boolean(process.env.OPENROUTER_API_KEY);
+}
+
+/** Pesan seragam untuk kunci yang belum diisi. */
+export const PESAN_AI_BELUM_DIKONFIGURASI =
+  "AI belum dikonfigurasi di server ini (kunci OpenRouter belum diisi). Hubungi admin, atau nilai secara manual.";
+
 /** Membawa status HTTP supaya pemanggil bisa membedakan 429 kuota dari galat lain. */
 export class OpenRouterError extends Error {
   readonly status: number;

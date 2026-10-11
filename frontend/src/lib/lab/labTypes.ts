@@ -52,7 +52,7 @@ export const LAB_MAX_STEPS_URUT = 1000;
  * Masing-masing punya kanvas & operasinya sendiri; bilah alat, langkah,
  * riwayat, presentasi, dan tautan bagikan dipakai bersama.
  */
-export type LabId = "array1d" | "array2d" | "array3d" | "arrayNd";
+export type LabId = "array1d" | "array2d" | "array3d" | "arrayNd" | "linkedList";
 
 /**
  * Nilai elemen: 1–6 karakter.
@@ -152,13 +152,27 @@ export interface LabStep<S> {
   peran?: Record<number, LabPeran>;
   /** Label kecil di atas sel (id sel → teks), mis. "j", "min", "pivot". */
   labelSel?: Record<number, string>;
+  /**
+   * Variabel penunjuk algoritma (linked list): `cur`, `prev`, `baru`, … beserta
+   * simpul yang ditunjuknya, atau null. Digambar sebagai chip berpanah yang
+   * meluncur dari simpul ke simpul — kuncinya NAMA variabel, jadi `cur` yang
+   * maju terlihat maju, bukan hilang lalu muncul.
+   */
+  variabel?: { nama: string; id: number | null }[];
+  /**
+   * Letak gambar simpul (id → kolom & baris) untuk langkah yang tata letak
+   * bawaannya akan menyesatkan: saat list dibalik, panah dibalik satu per satu
+   * sementara simpulnya DIAM di tempat. Tanpa ini, papan menyusun ulang simpul
+   * mengikuti rantai dari head di setiap langkah.
+   */
+  posisiSimpul?: Record<number, { kolom: number; baris: number }>;
 }
 
 /**
  * Peran sel selama pengurutan. Sengaja sedikit: setiap peran punya satu warna
  * dan satu kalimat di legenda, dan siswa harus bisa mengingat semuanya.
  */
-export type LabPeran = "banding" | "kunci" | "pivot" | "sementara" | "terurut" | "luar";
+export type LabPeran = "banding" | "kunci" | "pivot" | "sementara" | "terurut" | "luar" | "hapus" | "hasil";
 
 /**
  * Pewarnaan sel menurut ASALNYA selama transformasi.

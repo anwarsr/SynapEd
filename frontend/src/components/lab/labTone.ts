@@ -83,12 +83,14 @@ export function kelasFokus(jumlahFokus: number): string {
  * "Terurut" sengaja paling gelap — sel yang sudah di tempat akhirnya terkunci.
  */
 export const LAB_PERAN_CLASS: Record<LabPeran, string> = {
-  banding: "bg-blue-500/35 text-white",
-  kunci: "bg-amber-500/30 text-warn-text",
-  pivot: "bg-[#E0795A]/30 text-error-text",
-  sementara: "bg-white/15 text-white shadow-[inset_0_-3px_0_0_rgba(255,255,255,0.6)]",
-  terurut: "bg-white text-paper",
-  luar: "bg-white/[0.06] text-white/40 opacity-40",
+  banding: "border-blue-600 bg-blue-100 text-blue-700",
+  kunci: "border-amber-500 bg-amber-100 text-amber-700",
+  pivot: "border-rust-700 bg-rust-100 text-rust-700",
+  sementara: "border-dashed border-ink/50 bg-paper-alt text-ink",
+  terurut: "border-ink bg-ink text-paper",
+  luar: "border-rule bg-paper-card text-ink-faint opacity-40",
+  hapus: "border-dashed border-rust-700 bg-rust-100 text-rust-700",
+  hasil: "border-blue-600 bg-blue-600 text-white",
 };
 
 export const LAB_PERAN_LABEL: Record<LabPeran, string> = {
@@ -98,10 +100,12 @@ export const LAB_PERAN_LABEL: Record<LabPeran, string> = {
   sementara: "sudah urut sementara",
   terurut: "sudah di tempat akhir",
   luar: "sedang tidak dikerjakan",
+  hapus: "akan dihapus",
+  hasil: "ditemukan",
 };
 
 /** Urutan tampil di legenda. */
-export const LAB_PERAN_URUT: readonly LabPeran[] = ["banding", "kunci", "pivot", "sementara", "terurut", "luar"];
+export const LAB_PERAN_URUT: readonly LabPeran[] = ["banding", "hasil", "kunci", "pivot", "hapus", "sementara", "terurut", "luar"];
 
 export function kelasPeran(peran: Record<number, LabPeran> | undefined, id: number): string | null {
   const r = peran?.[id];

@@ -10,7 +10,9 @@
  * halaman yang gagal dikompilasi dengan pesan tentang `node-fetch`.
  *
  * Pola yang sama sudah dipakai courseRequestTypes.ts dan profileTypes.ts.
+ * Aturan tugas (format, tenggat, nilai) tinggal di classAssignmentRules.ts.
  */
+import type { JenisPost, KelasBerkas, PengaturanTugas } from "./classAssignmentRules";
 
 /** Batas panjang, diperiksa ulang di server — bukan hanya di formulir. */
 export const MAX_CLASS_NAME = 80;
@@ -51,7 +53,14 @@ export interface KelasPost {
   id: string;
   classId: string;
   authorUid: string;
+  /** Postingan dari sebelum fitur tugas tidak punya field ini → pengumuman. */
+  kind: JenisPost;
+  /** Judul tugas. Pengumuman tidak berjudul (string kosong). */
+  title: string;
   body: string;
+  attachments: KelasBerkas[];
+  /** Hanya terisi bila `kind === "assignment"`. */
+  assignment: PengaturanTugas | null;
   replyCount: number;
   createdAt: string;
   updatedAt: string;
