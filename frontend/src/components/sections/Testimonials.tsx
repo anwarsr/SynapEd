@@ -227,7 +227,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
     <section id="testimonials" className="py-28 bg-ivory overflow-hidden">
       <div className="container-page">
         <Reveal className="flex flex-col items-center text-center mb-14">
-          <SectionTitle title="Comments" />
+          <SectionTitle title="Komentar" />
         </Reveal>
       </div>
 
@@ -320,6 +320,22 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
           })}
         </div>
       </div>
+
+      {/* Pintu ke laman berisi SEMUA komentar */}
+      <Reveal className="mt-14 flex justify-center">
+        <Link
+          href="/komentar"
+          className="group inline-flex items-center gap-4 bg-white/[0.06] px-6 py-3.5 text-[11.5px] font-semibold uppercase tracking-[0.26em] text-white transition-colors duration-500 ease-warm hover:bg-blue-600"
+        >
+          Lihat semua komentar
+          <span aria-hidden="true" className="flex items-center gap-2">
+            <span className="h-px w-6 bg-white/40 transition-all duration-500 ease-warm group-hover:w-10 group-hover:bg-white" />
+            <svg className="h-3.5 w-3.5 transition-transform duration-500 ease-warm group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </span>
+        </Link>
+      </Reveal>
 
       {/* Dialog dirender sebagai bagian biasa, bukan <dialog> + showModal():
           showModal harus dipanggil dari efek, dan itulah sumber render

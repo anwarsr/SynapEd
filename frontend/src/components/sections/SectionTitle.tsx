@@ -25,7 +25,9 @@ export default function SectionTitle({
   as?: "h1" | "h2" | "h3";
   className?: string;
 }) {
-  const vw = (88 / (title.length * 0.64)).toFixed(2);
+  // 0,72 em per huruf (huruf lebar seperti M/W/O memakan >0,64) agar judul tak melebar
+  // melewati layar ponsel; nowrap mencegah patah baris yang tampak terpotong.
+  const vw = (88 / (title.length * 0.72)).toFixed(2);
   const asli = title.toUpperCase().split("");
 
   const ref = useRef<HTMLDivElement>(null);
@@ -82,7 +84,10 @@ export default function SectionTitle({
         style={{
           fontFamily: "var(--font-sans)",
           fontSize: `min(${vw}vw, 11rem)`,
-          lineHeight: 0.95,
+          // 1,05 + padding bawah: ekor huruf (Q, G, J) tak terpotong oleh kotak baris
+          lineHeight: 1.05,
+          paddingBottom: "0.06em",
+          whiteSpace: "nowrap",
           letterSpacing: "-0.04em",
           opacity: terlihat ? 1 : 0,
           transition: "opacity 250ms",

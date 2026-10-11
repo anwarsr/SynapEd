@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { heroHref, type HeroPrompt } from "@/lib/heroPrompts";
+import HeroStars from "@/components/sections/HeroStars";
 
 type LetterPosition = {
   x: number;
@@ -44,6 +45,26 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
   // Prompt acak (indeks baru dipilih setelah mount supaya HTML server = klien)
   const [promptIdx, setPromptIdx] = useState(0);
   const promptRef = useRef(0);
+  // Hero baru beranimasi SESUDAH splash loader selesai (lihat SplashLoader.intiSelesai).
+  const [siap, setSiap] = useState(false);
+  // Fase hover tombol "Mulai Belajar": masuk = AYOK KITA… turun dari atas; keluar = kata turun ke
+  // bawah & label bawaan datang dari atas (seperti memutar). diam = keadaan awal.
+  const [mulaiFase, setMulaiFase] = useState<"diam" | "masuk" | "keluar">("diam");
+
+  useEffect(() => {
+    const mulai = () => setSiap(true);
+    if (document.documentElement.dataset.intro === "selesai") {
+      const id = requestAnimationFrame(mulai);
+      return () => cancelAnimationFrame(id);
+    }
+    window.addEventListener("synaped:intro-selesai", mulai, { once: true });
+    // Jaring pengaman: bila splash tak pernah memberi tanda, hero tetap tampil.
+    const darurat = setTimeout(mulai, 8000);
+    return () => {
+      window.removeEventListener("synaped:intro-selesai", mulai);
+      clearTimeout(darurat);
+    };
+  }, []);
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -287,6 +308,7 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
     <section
       ref={sectionRef}
       id="hero"
+      data-tunggu={siap ? "false" : "true"}
       className="relative h-[230vh] bg-ivory overflow-clip"
       style={
         {
@@ -324,6 +346,12 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
           } as React.CSSProperties
         }
       >
+      {/* Bintang berkedip membentuk pensil, buku, lampu, laptop; hancur oleh kursor/sentuhan.
+          Memudar bersama judul (--c) saat hero digulir. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0" style={{ opacity: "var(--c)" }}>
+        <HeroStars mulai={siap} />
+      </div>
+
       {/* =====================================================
           HERO CONTENT
           ===================================================== */}
@@ -485,22 +513,37 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
           <Link
             href="/register"
             tabIndex={bar ? -1 : 0}
-            className="group absolute inset-0 flex items-center justify-center gap-2 rounded-full bg-blue-600 text-sm font-semibold text-white shadow-soft transition-colors duration-200 ease-out-soft hover:bg-blue-700"
+            data-fase={mulaiFase}
+            onPointerEnter={() => setMulaiFase("masuk")}
+            onPointerLeave={() => setMulaiFase((f) => (f === "masuk" ? "keluar" : f))}
+            className="group absolute inset-0 flex items-center justify-center gap-2 overflow-hidden rounded-full bg-blue-600 text-sm font-semibold text-white shadow-soft"
             style={{
               opacity: "clamp(0, calc(1 - var(--e) * 3), 1)",
               pointerEvents: bar ? "none" : "auto",
             }}
           >
-            Mulai Belajar
-            <svg
-              className="h-4 w-4 transition-transform duration-200 ease-out-soft group-hover:translate-x-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
+            {/* Label bawaan: turun & memudar saat di-hover */}
+            <span className="mulai-label flex items-center gap-2">
+              Mulai Belajar
+              <svg
+                className="mulai-panah h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </span>
+
+            {/* Saat di-hover: AYOK KITA MULAI BELAJAR, kata demi kata jatuh dari atas, terpotong batas tombol */}
+            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center gap-[0.45em] whitespace-nowrap px-3 text-[10px] font-bold uppercase tracking-[0.07em]">
+              {["AYOK", "KITA", "MULAI", "BELAJAR"].map((k, i) => (
+                <span key={k} className="mulai-kata" style={{ "--i": i } as React.CSSProperties}>
+                  {k}
+                </span>
+              ))}
+            </span>
           </Link>
 
           {/* Isi bilah */}
@@ -520,9 +563,9 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
                 href={heroHref(prompts[promptIdx] ?? { text: "", q: "" })}
                 aria-label="Cari kursus sesuai kalimat ini"
                 tabIndex={bar ? 0 : -1}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition-transform duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-700"
+                className="group flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="bilah-panah h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" />
                 </svg>
               </Link>

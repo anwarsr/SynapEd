@@ -381,33 +381,33 @@ export default function ChatRobot({
   // di bawahnya bila di atas; rata kanan/kiri menurut separuh layar robot.
   const kelasSisi = (s: Sisi) => cn(s.kanan ? "right-0" : "left-0", s.bawah ? "bottom-full mb-2" : "top-full mt-2");
 
-  // Gelembung bicara: sedikit digeser menjauhi tepi robot (right-3 = ke kiri bila
-  // robot di kanan), sudut yang menghadap robot dibuat lancip, dan ekor segitiga
-  // kecil menempel di sudut itu - supaya terbaca sebagai balon bicara sungguhan.
-  const kelasBalon = (sd: Sisi) =>
-    cn(
-      "bg-white px-4 py-2.5 text-left text-sm font-medium leading-snug text-paper shadow-lift",
-      sd.kanan ? "right-3" : "left-3",
-      sd.bawah ? "bottom-full mb-3" : "top-full mt-3",
-      "rounded-2xl",
-      sd.bawah ? (sd.kanan ? "rounded-br-none" : "rounded-bl-none") : sd.kanan ? "rounded-tr-none" : "rounded-tl-none",
-    );
-  const ekor = (sd: Sisi) => (
+  // Gelembung bicara: di SAMPING robot - kiri bila robot di separuh kanan layar (bawaan),
+  // kanan bila di separuh kiri - sejajar tengah robot, dengan ekor segitiga yang
+  // menunjuk robot. Muncul dengan animasi "balon-robot" (membesar dari sisi robot).
+  const balon = (sd: Sisi, isi: React.ReactNode, kelas: string) => (
     <span
-      aria-hidden="true"
       className={cn(
-        "absolute h-3 w-3 bg-white",
-        sd.kanan ? "right-0" : "left-0",
-        sd.bawah ? "top-full" : "bottom-full",
-        sd.bawah
-          ? sd.kanan
-            ? "[clip-path:polygon(0_0,100%_0,100%_100%)]"
-            : "[clip-path:polygon(0_0,100%_0,0_100%)]"
-          : sd.kanan
-            ? "[clip-path:polygon(0_100%,100%_100%,100%_0)]"
-            : "[clip-path:polygon(0_100%,100%_100%,0_0)]",
+        "pointer-events-none absolute top-0 flex h-16 items-center",
+        sd.kanan ? "right-full pr-3.5" : "left-full pl-3.5",
       )}
-    />
+    >
+      <span
+        className={cn(
+          "balon-robot pointer-events-auto relative block w-max max-w-[min(220px,calc(100vw-6rem))] rounded-[18px] bg-card-hover px-5 py-3 text-left text-[13px] font-medium leading-snug text-white shadow-lift",
+          sd.kanan ? "balon-kiri" : "balon-kanan",
+          kelas,
+        )}
+      >
+        {isi}
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute top-1/2 h-4 w-2.5 -translate-y-1/2 bg-card-hover",
+            sd.kanan ? "-right-[9px] [clip-path:polygon(0_0,100%_50%,0_100%)]" : "-left-[9px] [clip-path:polygon(100%_0,0_50%,100%_100%)]",
+          )}
+        />
+      </span>
+    </span>
   );
 
   const tampilBubble = bubble !== null && aktifBergerak && !salam;
@@ -452,13 +452,10 @@ export default function ChatRobot({
             setBubble(null);
             onToggle();
           }}
-          className={cn(
-            "absolute w-max max-w-[min(230px,calc(100vw-1rem))] animate-[robot-pop_320ms_cubic-bezier(0.34,1.56,0.64,1)]",
-            kelasBalon(bubble.sisi),
-          )}
+          aria-label={bubble.teks}
+          className="contents"
         >
-          {bubble.teks}
-          {ekor(bubble.sisi)}
+          {balon(bubble.sisi, bubble.teks, "cursor-pointer")}
         </button>
       )}
 
@@ -469,13 +466,9 @@ export default function ChatRobot({
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => setSalam(null)}
-          className={cn(
-            "absolute w-max max-w-[min(230px,calc(100vw-1rem))] animate-[robot-pop_320ms_cubic-bezier(0.34,1.56,0.64,1)]",
-            kelasBalon(salam.sisi),
-          )}
+          className="contents"
         >
-          Jangan lupa follow instagram @nndulgha_ ya
-          {ekor(salam.sisi)}
+          {balon(salam.sisi, "Jangan lupa follow instagram @nndulgha_ ya", "cursor-pointer")}
         </a>
       )}
 

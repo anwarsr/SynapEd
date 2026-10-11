@@ -58,7 +58,7 @@ export default function Courses({ courses, categories }: Props) {
 
         <div className="flex flex-col items-center">
           <Reveal>
-            <SectionTitle title="Courses" />
+            <SectionTitle title="Kursus" />
           </Reveal>
         </div>
 

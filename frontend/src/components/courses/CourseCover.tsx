@@ -57,7 +57,7 @@ export default function CourseCover({ course, nomor }: { course: CourseSummary; 
             />
 
             <span
-              className="absolute left-0 top-0 flex h-9 w-11 items-center justify-center bg-black/60 text-[11px] tracking-wider text-white backdrop-blur-sm transition-colors duration-300 group-hover:bg-blue-600"
+              className="absolute left-0 top-0 flex h-9 w-11 items-center justify-center bg-black/60 text-[11px] tracking-wider text-white backdrop-blur-sm"
               style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}
             >
               {String(nomor).padStart(2, "0")}
@@ -79,7 +79,7 @@ export default function CourseCover({ course, nomor }: { course: CourseSummary; 
               beberapa kali lalu menetap berwarna biru. */}
           <span
             aria-hidden={!balik}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper-card px-6 text-center transition-colors duration-500 ease-warm group-hover:bg-card-hover"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper-card px-6 text-center"
           >
             <span
               className="text-[11px] font-semibold uppercase tracking-[0.3em] text-ink-muted transition-[opacity,transform] duration-500 ease-warm motion-reduce:transition-none"

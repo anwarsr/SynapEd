@@ -1116,6 +1116,241 @@ select optgroup {
     color: var(--color-ink);
 }
 
+/* ══ Learning Path (mobile): rel progres + simpul + kartu meluncur ═══
+   Rel pejal (campuran putih & latar, bukan transparan) dengan isian biru yang
+   mengikuti gulir (--rp). Simpul kotak menyala & berdenyut sekali; kartu masuk
+   dari kanan, kabur → tajam, dengan pantulan kecil. */
+:root { --lp-rel: color-mix(in srgb, var(--color-white) 14%, var(--color-paper)); --lp-simpul: color-mix(in srgb, var(--color-white) 30%, var(--color-paper)); }
+.lp-m-kartu {
+    opacity: 0;
+    transform: translateX(34px);
+    filter: blur(7px);
+    transition: opacity 600ms ease, transform 950ms cubic-bezier(0.34, 1.45, 0.5, 1), filter 700ms ease;
+}
+.lp-m-kartu[data-on="true"] { opacity: 1; transform: translateX(0); filter: blur(0); }
+@keyframes lp-m-denyut {
+    0%   { box-shadow: 0 0 0 0 rgb(47 111 237 / 0.7); }
+    100% { box-shadow: 0 0 0 18px rgb(47 111 237 / 0); }
+}
+.lp-m-denyut { animation: lp-m-denyut 900ms ease-out 1; }
+@media (prefers-reduced-motion: reduce) {
+    .lp-m-kartu { opacity: 1; transform: none; filter: none; transition: none; }
+    .lp-m-denyut { animation: none; }
+}
+
+/* ══ Kartu komentar (/komentar): miring mengikuti kursor + cahaya sorot ═══ */
+.komen-kartu {
+    --rx: 0deg;
+    --ry: 0deg;
+    --ty: 0px;
+    transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(var(--ty));
+    transition: transform 300ms ease-out, background-color 500ms var(--ease-warm);
+    will-change: transform;
+}
+.komen-kartu:hover { --ty: -5px; background-color: var(--color-card-hover); }
+.komen-sorot {
+    opacity: 0;
+    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--color-white) 9%, transparent), transparent 70%);
+    transition: opacity 400ms ease;
+}
+.komen-kartu:hover .komen-sorot { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .komen-kartu { transform: none; transition: background-color 300ms; }
+    .komen-sorot { display: none; }
+}
+
+/* ══ Balon bicara robot: membesar dari sisi robot ═══════════════
+   Titik asal transformasi = tepi balon yang menghadap robot; melampaui sedikit
+   lalu mengendap (pantulan), disusul teks yang memudar masuk. */
+@keyframes balon-kiri-muncul {
+    0%   { opacity: 0; transform: translateX(18px) scale(0.55); }
+    55%  { opacity: 1; transform: translateX(-3px) scale(1.04); }
+    100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes balon-kanan-muncul {
+    0%   { opacity: 0; transform: translateX(-18px) scale(0.55); }
+    55%  { opacity: 1; transform: translateX(3px) scale(1.04); }
+    100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.balon-robot { animation-duration: 520ms; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); animation-fill-mode: both; }
+.balon-kiri  { transform-origin: 100% 50%; animation-name: balon-kiri-muncul; }
+.balon-kanan { transform-origin: 0% 50%; animation-name: balon-kanan-muncul; }
+@media (prefers-reduced-motion: reduce) {
+    .balon-robot { animation: none; }
+}
+
+/* ══ Hero menunggu splash loader ═══════════════════════════════
+   Selama data-tunggu="true" SEMUA animasi di dalam hero ditahan di keadaan awal
+   (opacity 0 / posisi awal lewat fill backwards-forwards); begitu splash selesai
+   Hero.tsx mengubahnya jadi "false" dan animasi berjalan dari awal, termasuk
+   jeda --rise-delay (jeda tidak berjalan selama ditahan). */
+[data-tunggu="true"] *,
+[data-tunggu="true"] *::before,
+[data-tunggu="true"] *::after {
+    animation-play-state: paused !important;
+}
+
+/* ══ Tombol "Mulai Belajar" (hero) ═══════════════════════════════
+   Fase diatur Hero.tsx lewat data-fase pada tautannya (tanpa perubahan warna):
+   masuk  = label turun keluar dari bawah; AYOK KITA MULAI BELAJAR jatuh dari atas,
+            kata demi kata (--i), terpotong batas tombol;
+   keluar = kata-kata turun ke bawah (keluar); label "Mulai Belajar" datang dari
+            atas - satu arah putar seperti penggulung.
+   Panah: bergeser ke samping lalu kembali, terus-menerus (idle). */
+.mulai-label { display: flex; }
+.mulai-kata { display: inline-block; transform: translateY(-150%); opacity: 0; }
+
+@keyframes mulai-kata-masuk {
+    from { transform: translateY(-150%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes mulai-kata-keluar {
+    from { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(150%); opacity: 0; }
+}
+@keyframes mulai-label-keluar {
+    from { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(150%); opacity: 0; }
+}
+@keyframes mulai-label-masuk {
+    from { transform: translateY(-150%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes mulai-panah {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(6px); }
+}
+
+[data-fase="masuk"] .mulai-label { animation: mulai-label-keluar 420ms ease-in both; }
+[data-fase="masuk"] .mulai-kata {
+    animation: mulai-kata-masuk 620ms cubic-bezier(0.34, 1.45, 0.5, 1) both;
+    animation-delay: calc(var(--i) * 130ms + 90ms);
+}
+[data-fase="keluar"] .mulai-kata {
+    animation: mulai-kata-keluar 420ms ease-in both;
+    animation-delay: calc(var(--i) * 70ms);
+}
+[data-fase="keluar"] .mulai-label {
+    animation: mulai-label-masuk 560ms cubic-bezier(0.34, 1.35, 0.5, 1) both;
+    animation-delay: 200ms;
+}
+.mulai-panah { animation: mulai-panah 1.7s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    [data-fase] .mulai-label, [data-fase] .mulai-kata, .mulai-panah { animation: none; }
+    [data-fase="masuk"] .mulai-label { opacity: 0; }
+    [data-fase="masuk"] .mulai-kata { transform: none; opacity: 1; }
+}
+
+/* ══ Anak panah bilah hero: naik-turun selama di-hover ═══════════ */
+@keyframes bilah-panah { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.group:hover .bilah-panah { animation: bilah-panah 0.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .group:hover .bilah-panah { animation: none; } }
+
+/* ══ Label panel About (menyempit): angka ↔ judul huruf demi huruf ═════
+   data-hover pada panel: diam | masuk | keluar (diatur About.tsx).
+   masuk  = angka keluar ke kanan; judul muncul dari kiri, huruf demi huruf;
+   keluar = judul keluar ke kanan; angka muncul lagi dari kiri, huruf demi huruf.
+   Kedua lapisan bertumpuk di satu sel grid supaya tepat di tengah. */
+.about-label { display: grid; place-items: center; }
+.about-label > * { grid-area: 1 / 1; }
+.about-huruf { display: inline-block; }
+.about-judul .about-huruf { opacity: 0; }
+/* Gaya label: putih REDUP (bukan putih sejati) - dicampur dengan latar panel agar
+   tegas tetapi tidak menyilaukan; angka sedikit lebih terang daripada judul. */
+.about-angka { color: color-mix(in srgb, var(--color-white) 74%, var(--color-paper)); }
+.about-judul { color: color-mix(in srgb, var(--color-white) 64%, var(--color-paper)); letter-spacing: 0.01em; }
+
+@keyframes about-huruf-masuk {
+    from { opacity: 0; transform: translateX(-0.9em); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes about-huruf-keluar {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(0.9em); }
+}
+[data-hover="masuk"] .about-angka .about-huruf {
+    animation: about-huruf-keluar 360ms ease-in both;
+    animation-delay: calc(var(--i) * 45ms);
+}
+[data-hover="masuk"] .about-judul .about-huruf {
+    animation: about-huruf-masuk 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(220ms + var(--i) * var(--langkah, 45ms));
+}
+[data-hover="keluar"] .about-judul .about-huruf {
+    animation: about-huruf-keluar 360ms ease-in both;
+    animation-delay: calc(var(--i) * 28ms);
+}
+[data-hover="keluar"] .about-angka .about-huruf {
+    animation: about-huruf-masuk 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(300ms + var(--i) * var(--langkah, 90ms));
+}
+/* Layar tanpa hover (sentuh): angka & judul tampil berdampingan, tanpa animasi. */
+@media (hover: none) {
+    .about-label { display: flex; align-items: baseline; gap: 0.9rem; }
+    .about-label > * { grid-area: auto; }
+    .about-judul .about-huruf { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    [data-hover] .about-huruf { animation: none; }
+    [data-hover="masuk"] .about-angka .about-huruf { opacity: 0; }
+    [data-hover="masuk"] .about-judul .about-huruf { opacity: 1; }
+}
+
+/* ══ Tombol "Lihat Detail" berdenyut saat kartu di-hover (pengganti perubahan warna) ═══
+   Cincin cahaya (box-shadow) yang melebar & memudar + label membesar tipis. SENGAJA
+   tanpa transform pada tautannya: transform membuat tautan jadi acuan posisi bagi
+   ::after (penutup klik seluruh kartu) sehingga area klik kartu menyusut. */
+@keyframes tombol-denyut {
+    0%, 100% { box-shadow: 0 0 0 0 rgb(47 111 237 / 0.55); }
+    50%      { box-shadow: 0 0 0 9px rgb(47 111 237 / 0); }
+}
+@keyframes tombol-denyut-isi {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.07); }
+}
+.group:hover .tombol-denyut { animation: tombol-denyut 1.3s ease-in-out infinite; }
+.group:hover .tombol-denyut-isi { animation: tombol-denyut-isi 1.3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .group:hover .tombol-denyut, .group:hover .tombol-denyut-isi { animation: none; }
+}
+
+/* ══ Ubin FAQ ═════════════════════════════════════════════════
+   .faq-muda = versi LEBIH MUDA dari warna ubin (kartu dicampur 38% dengan biru pucat)
+   dengan tinta hampir hitam. Hover pada sisi depan = label "Lihat jawaban" (kelas .about-huruf, animasi sama dengan
+   panel About). Dibalik (data-buka): huruf jawaban lengkap muncul dari kiri ke kanan setelah ubin
+   hampir selesai berputar. */
+.faq-muda {
+    background-color: color-mix(in srgb, var(--color-paper-card) 38%, #d7e6f5);
+    color: #07131b;
+}
+/* Label hover di sisi belakang (latar muda): tinta gelap, bukan putih redup bawaan .about-judul */
+.faq-muda .about-judul { color: color-mix(in srgb, #07131b 78%, transparent); letter-spacing: 0.16em; }
+@keyframes faq-huruf {
+    from { opacity: 0; transform: translateX(-0.55em); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+.faq-b-huruf { display: inline-block; opacity: 0; }
+.faq-ubin[data-buka="true"] .faq-b-huruf {
+    animation: faq-huruf 420ms var(--ease-warm) both;
+    animation-delay: calc(520ms + var(--i) * 12ms);
+}
+@media (prefers-reduced-motion: reduce) {
+    .faq-b-huruf { opacity: 1; animation: none !important; }
+}
+
+/* ══ Titik section: pantulan ke kiri saat di-hover (petunjuk "bisa digeser") ═══ */
+@keyframes dots-pantul {
+    0%   { transform: translateX(0); }
+    20%  { transform: translateX(-22px); }
+    40%  { transform: translateX(4px); }
+    54%  { transform: translateX(-2px); }
+    68%, 100% { transform: translateX(0); }
+}
+/* Berulang selama di-hover (jeda singkat di akhir tiap siklus) */
+.dots-pantul { animation: dots-pantul 1.15s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+@media (prefers-reduced-motion: reduce) { .dots-pantul { animation: none; } }
+
 /* ══ Robot asisten (ChatRobot) ═════════════════════════════
    Mata berkedip tiap ±4 dtk; gelembung & menu muncul dengan "pop" kecil. */
 @keyframes robot-blink {

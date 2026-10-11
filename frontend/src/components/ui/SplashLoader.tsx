@@ -15,6 +15,17 @@ const HOLD_MS = 700;
 const SEEN_KEY = "synaped_intro_seen_v2";
 
 /**
+ * Memberi tahu halaman bahwa layar pembuka SUDAH SELESAI (atau dilewati).
+ * Animasi kemunculan hero menunggu tanda ini - dulu berjalan di balik splash
+ * sehingga tertimpa dan tak pernah terlihat. Tandanya dipasang di <html>
+ * (bertahan untuk navigasi berikutnya) + peristiwa untuk yang sudah menunggu.
+ */
+function intiSelesai() {
+  document.documentElement.setAttribute("data-intro", "selesai");
+  window.dispatchEvent(new Event("synaped:intro-selesai"));
+}
+
+/**
  * Layar pembuka — tampil sekali per sesi tab, saat website pertama dibuka.
  * Alurnya meniru intro nomu.store (lihat `.intro-*` di globals.css).
  *
@@ -37,7 +48,10 @@ export default function SplashLoader() {
     }
 
     if (skip) {
-      const t = setTimeout(() => setPhase("gone"), 0);
+      const t = setTimeout(() => {
+        intiSelesai();
+        setPhase("gone");
+      }, 0);
       return () => clearTimeout(t);
     }
 
@@ -56,6 +70,7 @@ export default function SplashLoader() {
         // abaikan
       }
       root.style.overflow = "";
+      intiSelesai();
       setPhase("gone");
     }, INTRO_MS + HOLD_MS + EXIT_MS);
 

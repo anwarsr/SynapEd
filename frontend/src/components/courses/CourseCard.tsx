@@ -46,7 +46,8 @@ function Bintang({ nilai }: { nilai: number }) {
 /**
  * Kartu kursus untuk katalog (beranda & /courses).
  *
- * Kotak persegi tanpa garis tepi; hover mengangkat 4px dan menerangkan latar.
+ * Kotak persegi tanpa garis tepi; hover mengangkat 4px dan membuat tombol
+ * "Lihat Detail" berdenyut (tanpa perubahan warna apa pun).
  * Gambar sampul bisa dibalik (CourseCover). Tingkat kesulitan = teks polos di
  * pojok kanan, tepat di bawah gambar. Seluruh kartu dapat diklik lewat tautan
  * "Lihat Detail" yang diperluas (after:absolute) - sampulnya `z-10` agar tetap
@@ -54,7 +55,7 @@ function Bintang({ nilai }: { nilai: number }) {
  */
 export default function CourseCard({ course, nomor }: { course: CourseSummary; nomor: number }) {
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden bg-paper-card transition-[transform,background-color] duration-500 ease-warm hover:-translate-y-1 hover:bg-card-hover">
+    <article className="group relative flex h-full flex-col overflow-hidden bg-paper-card transition-transform duration-500 ease-warm hover:-translate-y-1">
       <CourseCover course={course} nomor={nomor} />
 
       <div className="flex flex-1 flex-col px-6 pb-6 pt-3">
@@ -67,23 +68,24 @@ export default function CourseCard({ course, nomor }: { course: CourseSummary; n
 
         <CourseAuthor name={course.instructorName} uid={course.ownerUid} photoURL={course.instructorPhoto} className="mb-4" />
 
-        <h3 className="mb-3 line-clamp-2 text-[1.3rem] leading-[1.28] text-white transition-colors duration-300 group-hover:text-blue-300" style={CARD_TITLE}>
+        <h3 className="mb-3 line-clamp-2 text-[1.3rem] leading-[1.28] text-white" style={CARD_TITLE}>
           {course.title}
         </h3>
 
         <p className="mb-7 line-clamp-2 text-[13.5px] font-normal leading-[1.8] tracking-[0.005em] text-ink-muted">{course.shortDesc}</p>
 
-        {/* Modul & estimasi selesai - angka besar, label kecil */}
-        <dl className="mb-5 flex items-end gap-9">
+        {/* Modul & estimasi selesai: dua sel selebar penuh kartu, angka besar - modul rata
+            kiri, estimasi rata kanan. Tanpa garis pemisah. */}
+        <dl className="mb-6 grid grid-cols-2 items-end gap-4">
           <div>
-            <dd className="text-[1.65rem] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-white">
+            <dd className="text-[2.3rem] font-extrabold leading-none tracking-[-0.04em] tabular-nums text-white">
               {course.lessonsCount}
             </dd>
-            <dt className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Modul</dt>
+            <dt className="mt-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Modul</dt>
           </div>
-          <div>
-            <dd className="text-[1.65rem] font-extrabold leading-none tracking-[-0.03em] text-white">{course.duration}</dd>
-            <dt className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Estimasi selesai</dt>
+          <div className="text-right">
+            <dd className="text-[2.3rem] font-extrabold leading-[1.02] tracking-[-0.04em] text-white">{course.duration}</dd>
+            <dt className="mt-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">Estimasi selesai</dt>
           </div>
         </dl>
 
@@ -101,9 +103,9 @@ export default function CourseCard({ course, nomor }: { course: CourseSummary; n
 
           <Link
             href={`/courses/${course.slug}`}
-            className="inline-flex items-center gap-1.5 bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700 after:absolute after:inset-0 after:content-['']"
+            className="tombol-denyut inline-flex items-center gap-1.5 bg-blue-600 px-4 py-2 text-sm font-semibold text-white after:absolute after:inset-0 after:content-['']"
           >
-            Lihat Detail
+            <span className="tombol-denyut-isi inline-block">Lihat Detail</span>
           </Link>
         </div>
       </div>

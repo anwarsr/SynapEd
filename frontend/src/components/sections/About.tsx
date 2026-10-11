@@ -49,6 +49,9 @@ const GROW_CLOSED = 1;
 
 export default function About() {
   const [active, setActive] = useState(0);
+  // Hover panel yang menyempit: masuk = judul muncul huruf demi huruf (angka keluar ke kanan);
+  // keluar = angka muncul lagi huruf demi huruf (judul keluar ke kanan).
+  const [hov, setHov] = useState<{ i: number; fase: "masuk" | "keluar" } | null>(null);
 
   return (
     <section id="about" className="relative flex min-h-screen flex-col overflow-hidden bg-ivory">
@@ -67,35 +70,38 @@ export default function About() {
             <article
               key={point.num}
               data-open={isActive}
+              data-hover={!isActive && hov?.i === i ? hov.fase : "diam"}
+              onPointerEnter={() => !isActive && setHov({ i, fase: "masuk" })}
+              onPointerLeave={() => setHov((h) => (h?.i === i && h.fase === "masuk" ? { i, fase: "keluar" } : h))}
               className={cn(
                 "about-panel group relative min-h-[84px] min-w-0 overflow-hidden",
                 "transition-[flex-grow] duration-[900ms] ease-warm motion-reduce:transition-none",
               )}
               style={{ flexGrow: isActive ? GROW_OPEN : GROW_CLOSED, flexBasis: 0, backgroundColor: point.bg }}
             >
-              {/* Sorotan tipis saat panel yang menyempit di-hover */}
-              {!isActive && (
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.04]"
-                />
-              )}
-
-              {/* ── Keadaan menyempit: hanya judul (tegak di desktop) ── */}
+              {/* ── Keadaan menyempit: ANGKA (01/02/03) bawaan; saat di-hover judulnya muncul huruf
+                  demi huruf dari kiri ke kanan dan angkanya keluar ke kanan; saat dilepas kebalikannya.
+                  Tanpa perubahan warna latar. Di layar tanpa hover keduanya tampil berdampingan. ── */}
               <div
                 aria-hidden={isActive}
                 className={cn(
-                  "pointer-events-none absolute inset-0 flex items-center px-6 lg:justify-center lg:px-0",
+                  "pointer-events-none absolute inset-0 flex items-center justify-start px-6 lg:justify-center lg:px-3",
                   "transition-opacity duration-300 ease-out-soft",
                   isActive ? "opacity-0" : "opacity-100 delay-500",
                 )}
+                style={{ fontFamily: "var(--font-sans)" }}
               >
-                <span
-                  className="text-xl font-extrabold tracking-tight text-white lg:rotate-180 lg:text-[2rem] lg:[writing-mode:vertical-rl]"
-                  style={{ fontFamily: "var(--font-sans)" }}
-                >
-                  {point.title}
-                </span>
+                <div className="about-label">
+                  <span className="about-angka text-[clamp(2.2rem,4.2vw,3.8rem)] font-extrabold leading-none tracking-[-0.04em]">
+                    <HurufLabel text={point.num} langkah={90} />
+                  </span>
+                  <span
+                    className="about-judul whitespace-nowrap text-[clamp(1.05rem,1.75vw,1.65rem)] font-extrabold leading-tight"
+                    aria-label={point.title}
+                  >
+                    <HurufLabel text={point.title} langkah={45} />
+                  </span>
+                </div>
               </div>
 
               {/* ── Keadaan melebar: judul huruf-demi-huruf, penjelasan kata-demi-kata, peraga teks ── */}
@@ -140,7 +146,10 @@ export default function About() {
               {!isActive && (
                 <button
                   type="button"
-                  onClick={() => setActive(i)}
+                  onClick={() => {
+                    setHov(null);
+                    setActive(i);
+                  }}
                   aria-expanded={false}
                   aria-label={`Buka ${point.title}`}
                   className="absolute inset-0 z-30 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-blue-500"
@@ -160,6 +169,23 @@ export default function About() {
    (lihat globals.css), jadi memutar ulang setiap panel dibuka. Jeda
    `--d` ditambah 300 ms agar mulai sesudah isi panel selesai memudar masuk.
 ============================================================= */
+
+/** Huruf-huruf label panel yang menyempit; --i = urutan (dipakai jeda animasi di globals.css). */
+function HurufLabel({ text, langkah }: { text: string; langkah: number }) {
+  return (
+    <>
+      {text.split("").map((ch, i) =>
+        ch === " " ? (
+          <span key={i}> </span>
+        ) : (
+          <span key={i} className="about-huruf" aria-hidden="true" style={{ "--i": i, "--langkah": `${langkah}ms` } as React.CSSProperties}>
+            {ch}
+          </span>
+        ),
+      )}
+    </>
+  );
+}
 
 /** Judul: tiap huruf naik dari balik topeng, bergiliran. */
 function Letters({ text }: { text: string }) {

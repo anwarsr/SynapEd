@@ -246,7 +246,7 @@ export default function Features() {
   // DUA TAMPILAN, DUA GESTUR di section ini:
   //  - BAWAAN = BARISAN lurus (`flat` = 1): kartu tengah paling besar & tajam,
   //    tetangganya mengecil bertahap & sedikit buram. Menggeser KARTU menggeser barisan.
-  //  - Menggeser JUDUL "Features" (>40px) BERGANTIAN barisan ↔ cincin 3D (`flat` 0)
+  //  - Menggeser JUDUL "Fitur" (>40px) BERGANTIAN barisan ↔ cincin 3D (`flat` 0)
   //    dan memutar ulang acak alfabet judul. Judulnya sendiri TIDAK bergeser, dan
   //    KARTU YANG DISOROT TIDAK BERUBAH: geseran judul hanya mengganti bentuk
   //    (dulu ikut memajukan kartu satu langkah, sehingga 01 jadi 02 dst).
@@ -954,7 +954,7 @@ export default function Features() {
         >
           {/* key berganti → SectionTitle dipasang ulang → acak alfabet mulai dari awal */}
           <div key={`judul-${judulKe}`}>
-            <SectionTitle as="h1" title="Features" />
+            <SectionTitle as="h1" title="Fitur" />
           </div>
         </div>
 
