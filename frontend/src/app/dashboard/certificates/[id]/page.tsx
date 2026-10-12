@@ -32,15 +32,13 @@ export default async function CertificatePrintPage({ params }: Props) {
       </div>
 
       <main className="bg-paper min-h-screen pt-36 pb-24 print:pt-0 print:pb-0 print:bg-white">
-        <div className="container-reading max-w-2xl">
+        <div className="container-reading max-w-3xl">
           <div className="print:hidden flex flex-wrap items-center justify-between gap-4 mb-8">
             <BackLink href="/dashboard">Kembali ke profil saya</BackLink>
             <PrintCertificateButton />
           </div>
 
-          <div className="theme-day">
-            <CertificateCard certificate={certificate} />
-          </div>
+          <CertificateCard certificate={certificate} />
 
           <p className="print:hidden text-center text-xs text-ink-muted mt-6">
             Tautan verifikasi publik: <span className="t-numeral">/verify/{certificate.id}</span>

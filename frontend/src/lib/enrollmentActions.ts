@@ -80,9 +80,10 @@ export async function grantEnrollment(uid: string, slug: string): Promise<Enroll
  *
  * Server Action bisa dipanggil lewat POST langsung, jadi akses diperiksa
  * ulang di sini — bukan mengandalkan tombolnya tidak dirender. Hanya
- * pengguna dengan enrollment aktif yang progresnya dilacak; pratinjau
- * admin/educator (yang tidak punya dokumen enrollment) ditolak di sini,
- * bukan hanya disembunyikan di UI.
+ * pengguna dengan enrollment aktif yang progresnya dilacak (educator/admin
+ * dibuatkan enrollment saat membuka halaman belajar, lihat
+ * pastikanEnrollmentStaf); yang tanpa enrollment ditolak di sini, bukan hanya
+ * disembunyikan di UI.
  *
  * arrayUnion dipakai, bukan read-modify-write: idempoten di sisi server,
  * jadi klik ganda atau dua tab terbuka tidak bisa menghasilkan duplikat.
