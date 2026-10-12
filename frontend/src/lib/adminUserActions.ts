@@ -1,8 +1,10 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { adminAuth } from "@/lib/firebase/admin";
+import { adminAuth, adminStorage } from "@/lib/firebase/admin";
+import { pruneAvatarFolder } from "@/lib/storageCleanup";
+import { AVATARS } from "@/lib/storagePaths";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { ensureUsername } from "@/lib/usernames";
 import { toRole, type Role } from "@/lib/roles";
@@ -48,6 +50,86 @@ function galat(e: unknown): string {
 
 function bersih(v: unknown, max: number): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
+}
+
+const MAX_NAMA = 60;
+/** Foto pengganti dari admin: JPEG persegi hasil kompres browser (±100 KB); batas longgar 600 KB. */
+const MAX_FOTO_BYTES = 600 * 1024;
+
+/**
+ * MODERASI PROFIL: admin boleh mengganti nama dan foto akun mana pun (mencegah nama/foto
+ * yang tak pantas). Nama & foto hidup di Firebase Auth, jadi komentar, kelas, dan mini-profil
+ * ikut berubah otomatis. Foto pengganti ditulis SERVER (Admin SDK) ke folder avatar akun itu
+ * - storage.rules hanya mengizinkan pemilik menulis di sana, jadi admin tak bisa mengunggah dari browser.
+ */
+export async function setUserName(uid: string, nameRaw: string): Promise<AkunHasil> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: "Hanya admin yang dapat mengubah nama." };
+
+  const name = bersih(nameRaw, MAX_NAMA + 1).replace(/\s+/g, " ");
+  if (name.length < 2) return { ok: false, error: "Nama minimal 2 karakter." };
+  if (name.length > MAX_NAMA) return { ok: false, error: `Nama maksimal ${MAX_NAMA} karakter.` };
+
+  try {
+    await adminAuth().updateUser(uid, { displayName: name });
+  } catch (e) {
+    return { ok: false, error: galat(e) };
+  }
+  revalidatePath("/admin");
+  revalidatePath(`/admin/users/${uid}`);
+  return { ok: true, message: "Nama diperbarui." };
+}
+
+/** Menghapus foto profil akun (kembali ke inisial) dan membuang berkasnya dari Storage. */
+export async function removeUserPhoto(uid: string): Promise<AkunHasil> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: "Hanya admin yang dapat mengubah foto." };
+
+  try {
+    await adminAuth().updateUser(uid, { photoURL: null });
+  } catch (e) {
+    return { ok: false, error: galat(e) };
+  }
+  // keep terisi = banner & foto kelas milik akun itu TIDAK ikut terhapus.
+  await pruneAvatarFolder(uid, "__tidak-ada__");
+  revalidatePath("/admin");
+  revalidatePath(`/admin/users/${uid}`);
+  return { ok: true, message: "Foto dihapus." };
+}
+
+/** Mengganti foto profil akun dengan gambar JPEG (data URL) dari admin. */
+export async function replaceUserPhoto(uid: string, dataUrl: string): Promise<AkunHasil> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: "Hanya admin yang dapat mengubah foto." };
+
+  const m = typeof dataUrl === "string" ? /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl) : null;
+  if (!m) return { ok: false, error: "Foto tidak valid." };
+  const bytes = Buffer.from(m[1], "base64");
+  // Tanda tangan JPEG (FF D8 FF): jangan percaya awalan data URL saja.
+  if (bytes.length < 100 || bytes.length > MAX_FOTO_BYTES || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) {
+    return { ok: false, error: "Foto harus JPEG dan tidak lebih dari 600 KB." };
+  }
+
+  const target = await adminAuth().getUser(uid).catch(() => null);
+  if (!target) return { ok: false, error: "Akun tidak ditemukan." };
+
+  const path = `${AVATARS}/${uid}/admin-${randomBytes(8).toString("hex")}.jpg`;
+  const token = randomUUID();
+  const bucket = adminStorage().bucket();
+  try {
+    await bucket.file(path).save(bytes, {
+      contentType: "image/jpeg",
+      metadata: { metadata: { firebaseStorageDownloadTokens: token } },
+    });
+    const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+    await adminAuth().updateUser(uid, { photoURL: url });
+  } catch {
+    return { ok: false, error: "Foto gagal disimpan. Coba lagi." };
+  }
+  await pruneAvatarFolder(uid, path);
+  revalidatePath("/admin");
+  revalidatePath(`/admin/users/${uid}`);
+  return { ok: true, message: "Foto diganti." };
 }
 
 /** Mengubah role. Pengguna targetnya dikeluarkan (token dicabut) supaya role baru berlaku. */

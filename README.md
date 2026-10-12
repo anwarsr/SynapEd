@@ -231,6 +231,11 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - Educator (dan admin) membuat kelas, memberinya **foto profil** (tampil di kotak
   identitas kelas), dan membagikan **kode undangan**.
 - Anggota bergabung dengan kode itu di `/kelas`.
+- **Roda pemilih** (`/educator/classes/<id>/wheel`, pintasan di bawah kotak kode undangan):
+  roda untuk mengundi siswa yang menjawab. Bisa membuat beberapa roda per kelas, mengisinya
+  dengan anggota kelas dan/atau nama sendiri, dan menyesuaikan nama, warna, lama putaran, serta
+  opsi mengeluarkan pemenang otomatis, warna kustom sendiri, dan pop-up nama pemenang di
+  tengah layar (layar diburamkan 2 detik). Roda tersimpan di peramban pengajar (tidak di server).
 - Di dalam kelas ada pengumuman/postingan dan balasan. Pengumuman boleh
   berlampiran berkas (atau berkas saja tanpa teks), dan isi serta lampirannya
   bisa diedit setelah terbit.
@@ -361,6 +366,11 @@ npm run emulators            # UI di http://localhost:4000
 Lalu setel `NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true` dan variabel emulator di
 `.env.local`, serta `.firebaserc` ke `demo-synaped`. Login akun hasil impor
 lama tidak bisa diuji di emulator.
+
+### Moderasi nama & foto akun
+
+Admin dapat mengganti nama dan foto profil akun mana pun (atau menghapus fotonya) di
+`/admin/users/<uid>`, untuk menertibkan nama/foto yang tidak pantas.
 
 ### Mengubah role akun
 

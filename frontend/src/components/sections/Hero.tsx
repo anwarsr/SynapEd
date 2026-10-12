@@ -231,12 +231,6 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
     setDraggingLetter(null);
   };
 
-  // =========================================================
-  // RESET LETTERS
-  // =========================================================
-  const resetLetters = () => {
-    setLetterPositions({});
-  };
 
   // =========================================================
   // RENDER WORD
@@ -416,31 +410,6 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
             </span>
           </h1>
 
-          {/* =================================================
-              DESCRIPTION
-              ================================================= */}
-
-          <p
-            className="
-              rise-in
-              text-lg
-              2xl:text-xl
-              leading-relaxed
-              text-ink-body
-              max-w-lg
-              2xl:max-w-xl
-              mt-8
-              mx-auto
-            "
-            style={
-              {
-                "--rise-delay": "1300ms",
-              } as React.CSSProperties
-            }
-          >
-            Akses ratusan materi berkualitas dari berbagai bidang ilmu. Didesain
-            untuk pelajar, mahasiswa, dan profesional di semua bidang.
-          </p>
 
           {/* =================================================
               BUTTONS
@@ -451,7 +420,7 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
               flex
               flex-wrap
               gap-3
-              mt-9
+              mt-10
               justify-center
             "
           >
@@ -463,27 +432,6 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
               style={{ width: BTN_W, height: BTN_H }}
             />
 
-            {/* =================================================
-                RESET
-                ================================================= */}
-
-            {Object.keys(letterPositions).length > 0 && (
-              <button
-                type="button"
-                onClick={resetLetters}
-                className="
-                  basis-full
-                  mx-auto
-                  mt-2
-                  text-xs
-                  text-ink-muted
-                  hover:text-white
-                  transition-colors
-                "
-              >
-                Reset posisi huruf
-              </button>
-            )}
           </div>
         </div>
       </div>

@@ -1129,8 +1129,8 @@ select optgroup {
 }
 .lp-m-kartu[data-on="true"] { opacity: 1; transform: translateX(0); filter: blur(0); }
 @keyframes lp-m-denyut {
-    0%   { box-shadow: 0 0 0 0 rgb(47 111 237 / 0.7); }
-    100% { box-shadow: 0 0 0 18px rgb(47 111 237 / 0); }
+    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-white) 60%, transparent); }
+    100% { box-shadow: 0 0 0 18px color-mix(in srgb, var(--color-white) 0%, transparent); }
 }
 .lp-m-denyut { animation: lp-m-denyut 900ms ease-out 1; }
 @media (prefers-reduced-motion: reduce) {
@@ -1252,7 +1252,14 @@ select optgroup {
    masuk  = angka keluar ke kanan; judul muncul dari kiri, huruf demi huruf;
    keluar = judul keluar ke kanan; angka muncul lagi dari kiri, huruf demi huruf.
    Kedua lapisan bertumpuk di satu sel grid supaya tepat di tengah. */
-.about-label { display: grid; place-items: center; }
+.about-label { display: grid; place-items: center start; position: relative; }
+/* Di ponsel angka rata kiri pada garis yang SAMA di tiap panel (dulu dipusatkan di sel selebar judul, jadi 02 dan 03 bergeser); di desktop dipusatkan di panel. */
+@media (min-width: 1024px) { .about-label { place-items: center; } }
+/* Ponsel: judul DILEPAS dari aliran (absolut) supaya lebar label = lebar angka saja; angka 01/02/03 pun
+   berhenti bergeser mengikuti lebar judul yang berbeda-beda. */
+@media (max-width: 1023px) {
+    .about-label > .about-judul { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+}
 .about-label > * { grid-area: 1 / 1; }
 .about-huruf { display: inline-block; }
 .about-judul .about-huruf { opacity: 0; }
@@ -1286,11 +1293,6 @@ select optgroup {
     animation-delay: calc(300ms + var(--i) * var(--langkah, 90ms));
 }
 /* Layar tanpa hover (sentuh): angka & judul tampil berdampingan, tanpa animasi. */
-@media (hover: none) {
-    .about-label { display: flex; align-items: baseline; gap: 0.9rem; }
-    .about-label > * { grid-area: auto; }
-    .about-judul .about-huruf { opacity: 1; }
-}
 @media (prefers-reduced-motion: reduce) {
     [data-hover] .about-huruf { animation: none; }
     [data-hover="masuk"] .about-angka .about-huruf { opacity: 0; }
@@ -1351,12 +1353,54 @@ select optgroup {
 .dots-pantul { animation: dots-pantul 1.15s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
 @media (prefers-reduced-motion: reduce) { .dots-pantul { animation: none; } }
 
+/* ══ Tautan navbar: garis melebar dari tengah + huruf merenggang ═══ */
+.nav-aksi { position: relative; letter-spacing: 0; transition: letter-spacing 400ms cubic-bezier(0.22, 1, 0.36, 1), color 200ms ease; }
+.nav-aksi::after {
+    content: ""; position: absolute; left: 50%; bottom: 3px; height: 1.5px; width: calc(100% - 1.5rem);
+    background: currentColor; transform: translateX(-50%) scaleX(0); transform-origin: center;
+    transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-aksi:hover, .nav-aksi:focus-visible { letter-spacing: 0.035em; }
+.nav-aksi:hover::after, .nav-aksi:focus-visible::after { transform: translateX(-50%) scaleX(1); }
+@media (prefers-reduced-motion: reduce) { .nav-aksi, .nav-aksi::after { transition: none; } }
+
+/* ══ Foto profil yang bisa diklik: garis melingkar tergambar mengelilingi foto saat di-hover ═══
+   Cincin = conic-gradient yang sudutnya (--sudut, @property) dianimasikan 0→360deg, dilubangi
+   dengan mask radial sehingga hanya tersisa garis 2px. Pembungkusnya WAJIB bulat & seukuran foto. */
+@property --sudut { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.foto-link { position: relative; }
+.foto-link::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 9999px; pointer-events: none;
+    background: conic-gradient(from 0deg, var(--color-blue-400) var(--sudut), transparent var(--sudut));
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+    transition: --sudut 700ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.foto-link:hover::after, .foto-link:focus-visible::after { --sudut: 360deg; }
+@media (prefers-reduced-motion: reduce) { .foto-link::after { transition: none; } }
+
+/* ══ Pemilih section: garis yang memutari kata saat di-hover ═══
+   pathLength=1 menormalkan keliling kotak, jadi dashoffset 1→0 menggambar garis dari kiri-atas
+   searah jarum jam sepanjang bentuk kata, berapa pun lebarnya. */
+.dots-garis rect { x: 0.75px; y: 0.75px; width: calc(100% - 1.5px); height: calc(100% - 1.5px); stroke: var(--color-blue-400); stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 650ms cubic-bezier(0.65, 0, 0.35, 1); }
+.group:hover .dots-garis rect, .group:focus-visible .dots-garis rect { stroke-dashoffset: 0; }
+.dots-garis-aktif rect { stroke-dashoffset: 0; stroke: var(--color-blue-600); }
+@media (prefers-reduced-motion: reduce) { .dots-garis rect { transition: none; } }
+
+/* ══ Roda pemilih: pop-up pemenang di tengah layar ═══ */
+@keyframes wheel-popup-masuk { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wheel-popup-nama { from { opacity: 0; transform: scale(0.82); filter: blur(10px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
+.wheel-popup { animation: wheel-popup-masuk 300ms ease both; }
+.wheel-popup-nama { animation: wheel-popup-nama 650ms cubic-bezier(0.34, 1.4, 0.5, 1) 80ms both; }
+@media (prefers-reduced-motion: reduce) { .wheel-popup, .wheel-popup-nama { animation: none; } }
+
 /* ══ Robot asisten (ChatRobot) ═════════════════════════════
    Mata berkedip tiap ±4 dtk; gelembung & menu muncul dengan "pop" kecil. */
 @keyframes robot-blink {
     0%, 90%, 100% { transform: scaleY(1); }
     94% { transform: scaleY(0.1); }
 }
+.robot-mata { transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1); }
 .robot-eye {
     transform-box: fill-box;
     transform-origin: center;
@@ -1763,9 +1807,10 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
    tanpa itu, sampai di ujung panel operasi, seluruh halaman ikut bergeser. */
 .lab-pane {
     overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-rule-strong) transparent;
+    /* Bilah gulir disembunyikan (tetap bisa digulir dengan roda mouse/sentuh). */
+    scrollbar-width: none;
 }
+.lab-pane::-webkit-scrollbar { display: none; }
 
 .lab-pointer {
     transform: translateX(calc(var(--i) * (var(--lab-cell) + var(--lab-gap))));

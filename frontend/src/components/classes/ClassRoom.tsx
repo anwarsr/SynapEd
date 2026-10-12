@@ -399,6 +399,17 @@ export default function ClassRoom({
 
             {joinCode && <JoinCodePanel classId={kelas.id} joinCode={joinCode} />}
 
+            {/* Pintasan pemilik: roda pemilih siswa yang menjawab (hanya pemilik/admin yang punya joinCode). */}
+            {joinCode && (
+              <Link
+                href={`/educator/classes/${kelas.id}/wheel`}
+                className="group flex items-center justify-between gap-3 bg-paper-card px-6 py-4"
+              >
+                <span className="text-[15px] font-semibold text-ink">Roda pemilih</span>
+                <span aria-hidden="true" className="text-lg text-blue-300 transition-transform duration-300 ease-warm group-hover:translate-x-1">→</span>
+              </Link>
+            )}
+
             {isMember && (
               <div className="pt-1">
                 <DeleteButton target={{ kind: "leave", classId: kelas.id }} after="/kelas" />

@@ -515,8 +515,40 @@ export default function ChatRobot({
  * kepala putih tetap terbaca di atas latar apa pun.
  */
 function RobotFace() {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const mataRef = useRef<SVGGElement>(null);
+
+  // Mata melirik ke arah kursor (maks 3px tegak, separuhnya mendatar), ditulis langsung ke DOM lewat rAF
+  // (tanpa render React per gerakan); kelembutan datang dari transisi CSS.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let bingkai = 0;
+    const gerak = (e: PointerEvent) => {
+      if (bingkai) return;
+      bingkai = requestAnimationFrame(() => {
+        bingkai = 0;
+        const svg = svgRef.current;
+        const mata = mataRef.current;
+        if (!svg || !mata) return;
+        const r = svg.getBoundingClientRect();
+        const dx = e.clientX - (r.left + r.width / 2);
+        const dy = e.clientY - (r.top + r.height / 2);
+        const jarak = Math.hypot(dx, dy) || 1;
+        // Makin dekat kursor ke robot, makin penuh lirikannya; jauh = tetap 3px.
+        const k = Math.min(1, jarak / 120) * 3;
+        mata.style.transform = `translate(${((dx / jarak) * k * 0.5).toFixed(2)}px, ${((dy / jarak) * k).toFixed(2)}px)`;
+      });
+    };
+    window.addEventListener("pointermove", gerak, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", gerak);
+      cancelAnimationFrame(bingkai);
+    };
+  }, []);
+
   return (
     <svg
+      ref={svgRef}
       className="h-16 w-16 drop-shadow-[0_6px_12px_rgba(0,0,0,0.5)]"
       viewBox="0 0 64 64"
       fill="none"
@@ -532,9 +564,11 @@ function RobotFace() {
       <rect x="7" y="14" width="50" height="42" rx="15" fill="#fff" />
       {/* layar wajah */}
       <rect x="13" y="20" width="38" height="30" rx="11" fill="#0F2A44" />
-      {/* mata */}
-      <ellipse className="robot-eye" cx="23.5" cy="33" rx="4.2" ry="5" fill="#8DB8FF" />
-      <ellipse className="robot-eye" cx="40.5" cy="33" rx="4.2" ry="5" fill="#8DB8FF" />
+      {/* mata: berkedip, dan pasangannya (.robot-mata) melirik mengikuti kursor */}
+      <g ref={mataRef} className="robot-mata">
+        <ellipse className="robot-eye" cx="23.5" cy="33" rx="4.2" ry="5" fill="#8DB8FF" />
+        <ellipse className="robot-eye" cx="40.5" cy="33" rx="4.2" ry="5" fill="#8DB8FF" />
+      </g>
       {/* senyum */}
       <path d="M26 42.5c2.2 2.8 9.8 2.8 12 0" stroke="#8DB8FF" strokeWidth="2.6" strokeLinecap="round" />
     </svg>
