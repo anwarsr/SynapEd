@@ -8,8 +8,21 @@
  *
  * `galat` = alur tidak akan bisa dijalankan; `saran` = jalan, tetapi
  * menyalahi kebiasaan menggambar flowchart yang baik.
+ *
+ * Bentuk baku teks = gaya Cambridge (START/STOP, INPUT, OUTPUT, ←, Yes/No,
+ * AND/OR/NOT, MOD, <>). Bentuk lain (Baca, Tampilkan, x = 1, Ya/Tidak, dan, …)
+ * tetap BERJALAN; yang berbeda hanya dilaporkan sebagai saran "gaya-cambridge"
+ * — satu temuan per simbol, berisi semua yang perlu diganti.
  */
-import { adalahPenugasan, pecahPernyataan, uraiEkspresi, uraiIo, GalatEkspresi } from "./flowEkspresi";
+import {
+  adalahPenugasan,
+  bersihkanKondisi,
+  gayaEkspresi,
+  pecahPernyataan,
+  uraiEkspresi,
+  uraiIo,
+  GalatEkspresi,
+} from "./flowEkspresi";
 import { INFO_JENIS, artiLabel, ikutAlur, type Diagram, type Simpul } from "./flowTypes";
 
 export type Tingkat = "galat" | "saran";
@@ -50,7 +63,7 @@ export function periksaDiagram(d: Diagram): Temuan[] {
   const mulai = alur.filter((s) => s.jenis === "mulai");
   const selesai = alur.filter((s) => s.jenis === "selesai");
   if (mulai.length === 0) tambah("tanpa-mulai", "galat", "Belum ada simbol Mulai. Setiap flowchart punya tepat satu titik awal.");
-  if (mulai.length > 1) tambah("mulai-ganda", "galat", `Ada ${mulai.length} simbol Mulai — seharusnya tepat satu.`, mulai.map((s) => s.id));
+  if (mulai.length > 1) tambah("mulai-ganda", "galat", `Ada ${mulai.length} simbol Mulai - seharusnya tepat satu.`, mulai.map((s) => s.id));
   if (selesai.length === 0) tambah("tanpa-selesai", "galat", "Belum ada simbol Selesai. Setiap alur harus berakhir.");
 
   // ── Garis per simbol ──────────────────────────────────────────────
@@ -81,19 +94,31 @@ export function periksaDiagram(d: Diagram): Temuan[] {
     }
     if (s.jenis === "keputusan") {
       if (k.length !== 2) {
-        tambah("cabang-keputusan", "galat", `${nama(s)} harus punya tepat 2 garis keluar (Ya dan Tidak); sekarang ${k.length}.`, [s.id], kId);
+        tambah("cabang-keputusan", "galat", `${nama(s)} harus punya tepat 2 garis keluar (Yes dan No); sekarang ${k.length}.`, [s.id], kId);
       } else {
         const arti = k.map((g) => artiLabel(g.label));
         if (arti.includes(null)) {
           tambah(
             "label-keputusan",
             "galat",
-            `Garis keluar ${nama(s)} harus berlabel "Ya" dan "Tidak".`,
+            `Garis keluar ${nama(s)} harus berlabel "Yes" dan "No".`,
             [s.id],
             k.filter((g) => artiLabel(g.label) === null).map((g) => g.id),
           );
         } else if (arti[0] === arti[1]) {
-          tambah("label-kembar", "galat", `Kedua cabang ${nama(s)} berlabel sama — satu "Ya", satu "Tidak".`, [s.id], kId);
+          tambah("label-kembar", "galat", `Kedua cabang ${nama(s)} berlabel sama - satu "Yes", satu "No".`, [s.id], kId);
+        } else {
+          // Ya/Tidak, Benar/Salah, Y/T tetap berjalan; bentuk baku Cambridge Yes/No (atau True/False).
+          const takBaku = k.filter((g) => !/^(yes|no|true|false)$/i.test(g.label.trim()));
+          if (takBaku.length > 0) {
+            tambah(
+              "gaya-cambridge",
+              "saran",
+              `${nama(s)}: label cabang baku Cambridge adalah Yes/No (atau True/False), bukan ${takBaku.map((g) => `"${g.label.trim()}"`).join(" dan ")}.`,
+              [s.id],
+              takBaku.map((g) => g.id),
+            );
+          }
         }
       }
     } else if (s.jenis === "konektor") {
@@ -106,7 +131,7 @@ export function periksaDiagram(d: Diagram): Temuan[] {
       }
       if (k.length > 1) tambah("konektor-cabang", "galat", `${nama(s)} hanya boleh punya satu garis keluar.`, [s.id], kId);
     } else {
-      if (k.length === 0) tambah("buntu", "galat", `${nama(s)} belum punya garis keluar — alurnya berhenti di sini.`, [s.id]);
+      if (k.length === 0) tambah("buntu", "galat", `${nama(s)} belum punya garis keluar - alurnya berhenti di sini.`, [s.id]);
       if (k.length > 1) {
         tambah("cabang-liar", "galat", `${nama(s)} punya ${k.length} garis keluar. Untuk bercabang, pakai Keputusan.`, [s.id], kId);
       }
@@ -115,7 +140,7 @@ export function periksaDiagram(d: Diagram): Temuan[] {
     // Label pada garis bukan-keputusan biasanya salah tempel.
     if (s.jenis !== "keputusan") {
       const berlabel = k.filter((g) => artiLabel(g.label) !== null);
-      if (berlabel.length > 0) tambah("label-salah", "saran", `Label Ya/Tidak hanya untuk garis keluar Keputusan.`, [s.id], berlabel.map((g) => g.id));
+      if (berlabel.length > 0) tambah("label-salah", "saran", `Label Yes/No hanya untuk garis keluar Keputusan.`, [s.id], berlabel.map((g) => g.id));
     }
   }
 
@@ -170,6 +195,10 @@ export function periksaDiagram(d: Diagram): Temuan[] {
     // Teks yang tidak akan bisa dijalankan — saran, karena flowchart juga sah sebagai gambar.
     const sebab = sebabTakJalan(s);
     if (sebab) tambah("tak-bisa-dijalankan", "saran", `${nama(s)}: ${sebab}`, [s.id]);
+    else {
+      const gaya = saranGaya(s);
+      if (gaya.length > 0) tambah("gaya-cambridge", "saran", `${nama(s)}: bentuk baku Cambridge - ${gaya.join("; ")}.`, [s.id]);
+    }
   }
 
   const urutan = (t: Temuan) => (t.tingkat === "galat" ? 0 : 1);
@@ -210,7 +239,7 @@ export function sebabTakJalan(s: Simpul): string | null {
       case "proses":
       case "persiapan":
         for (const b of pecahPernyataan(s.teks)) {
-          if (!adalahPenugasan(b)) return `"${b}" belum bisa dijalankan — tulis sebagai penugasan, mis. x = x + 1.`;
+          if (!adalahPenugasan(b)) return `"${b}" belum bisa dijalankan - tulis sebagai penugasan, mis. X ← X + 1.`;
           uraiEkspresi(b.replace(/^[^=←:+\-*/<]*(\+\+|--|\+=|-=|\*=|\/=|:=|←|<-|=)/, "").trim() || "0");
         }
         return null;
@@ -218,7 +247,7 @@ export function sebabTakJalan(s: Simpul): string | null {
         uraiIo(s.teks);
         return null;
       case "keputusan":
-        uraiEkspresi(s.teks.trim().replace(/\?+\s*$/, ""));
+        uraiEkspresi(bersihkanKondisi(s.teks));
         return null;
       default:
         return null;
@@ -226,4 +255,48 @@ export function sebabTakJalan(s: Simpul): string | null {
   } catch (e) {
     return e instanceof GalatEkspresi ? e.message : null;
   }
+}
+
+/** Operator penugasan selain `←` (dan `<-`, cara mengetiknya). */
+const RE_TUGAS_TAK_BAKU = /^([A-Za-z_][A-Za-z0-9_]*)\s*(\+\+|--|\+=|-=|\*=|\/=|:=|=(?!=))/;
+
+/**
+ * Bagian teks simbol yang berbeda dari bentuk baku Cambridge. Hanya dipanggil
+ * untuk teks yang SUDAH bisa dijalankan (galat sintaks dilaporkan lebih dulu).
+ */
+export function saranGaya(s: Simpul): string[] {
+  const t = s.teks.trim();
+  const out: string[] = [];
+  switch (s.jenis) {
+    case "mulai":
+      if (t && !/^start$/i.test(t)) out.push(`tulis START, bukan "${t}"`);
+      break;
+    case "selesai":
+      if (t && !/^stop$/i.test(t)) out.push(`tulis STOP, bukan "${t}"`);
+      break;
+    case "io": {
+      const io = uraiIo(t);
+      if (io.jenis === "input") {
+        if (io.kata !== "INPUT") out.push(`tulis INPUT, bukan "${io.kata}"`);
+        if (io.nama.length > 1) out.push("satu INPUT untuk satu variabel");
+      } else {
+        if (io.kata !== "OUTPUT") out.push(`tulis OUTPUT, bukan "${io.kata}"`);
+        for (const e of io.ekspresi) out.push(...gayaEkspresi(e));
+      }
+      break;
+    }
+    case "proses":
+    case "persiapan":
+      for (const b of pecahPernyataan(t)) {
+        const m = RE_TUGAS_TAK_BAKU.exec(b);
+        if (m) out.push(`penugasan memakai ← (ketik <-), bukan "${m[2]}": ${m[1]} ← …`);
+        const kanan = b.replace(/^[^=←:+\-*/<]*(\+\+|--|\+=|-=|\*=|\/=|:=|←|<-|=)/, "").trim();
+        if (kanan) out.push(...gayaEkspresi(kanan));
+      }
+      break;
+    case "keputusan":
+      out.push(...gayaEkspresi(bersihkanKondisi(t)));
+      break;
+  }
+  return [...new Set(out)];
 }

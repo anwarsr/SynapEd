@@ -142,9 +142,14 @@ export const PENGETAHUAN_SITUS = `## Akun
   Konektor, Dokumen, Data, Catatan), menyambungnya dengan menyeret bulatan di
   sisi simbol, lalu memeriksa aturannya (tab Periksa) dan MENJALANKANNYA langkah
   demi langkah (tab Jalankan) dengan variabel, masukan, dan keluaran.
-  Teks ditulis seperti pseudocode: "x = x + 1", "Baca n", "Tampilkan total",
-  kondisi "n mod 2 = 0?". Flowchart bisa dibagikan lewat tautan, disimpan/dibuka
-  sebagai berkas .json, dan diekspor ke PNG atau SVG. Ada contoh siap pakai.
+  Bentuk baku penulisannya gaya Cambridge (IGCSE/O Level), sama dengan Lab 05:
+  START/STOP, "INPUT X", "OUTPUT Total", penugasan "Total ← Total + X" (ketik
+  <- untuk ←), kondisi "X MOD 2 = 0?", AND/OR/NOT, cabang Yes/No. Tulisan gaya
+  lama (Baca, Tampilkan, x = x + 1, Ya/Tidak) tetap bisa dijalankan, hanya
+  disarankan diganti di tab Periksa. Daftar lengkap perintahnya ada di tab
+  Panduan pada panel kanan. Flowchart bisa dibagikan lewat tautan,
+  disimpan/dibuka sebagai berkas .json, dan diekspor ke PNG atau SVG. Ada
+  contoh siap pakai.
 - Python (Lab 04): menulis dan menjalankan Python 3 sungguhan langsung di
   browser (tanpa install, tanpa akun). Masukan untuk input() diisi di muka di
   kotak Masukan, satu nilai per baris. Tombol "Langkah demi langkah" memutar

@@ -65,6 +65,18 @@ export function pushHistory<S>(h: LabHistory<S>, state: S, label: string): LabHi
 }
 
 /**
+ * Mengganti keadaan SEKARANG tanpa menambah entri — untuk perubahan yang
+ * berlangsung terus (mengetik teks simbol flowchart): setiap ketukan langsung
+ * terlihat, tetapi satu sesi mengetik tetap satu langkah undo. Ekor redo
+ * dipotong, sama alasannya dengan `pushHistory`. Di kursor 0 (keadaan awal)
+ * entri baru ditambahkan, supaya keadaan awal tetap bisa dikembalikan.
+ */
+export function gantiPuncakHistory<S>(h: LabHistory<S>, state: S, label: string): LabHistory<S> {
+  if (h.cursor === 0) return pushHistory(h, state, label);
+  return { entries: [...h.entries.slice(0, h.cursor), { state, label }], cursor: h.cursor };
+}
+
+/**
  * Mundur satu langkah.
  *
  * Di kursor 0 ia mengembalikan OBJEK YANG SAMA (`===`), bukan salinan dengan

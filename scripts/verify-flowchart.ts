@@ -32,9 +32,9 @@ import {
   mulaiJalan,
   type KeadaanJalan,
 } from "../frontend/src/lib/lab/flowJalan";
-import { periksaDiagram } from "../frontend/src/lib/lab/flowPeriksa";
+import { periksaDiagram, saranGaya } from "../frontend/src/lib/lab/flowPeriksa";
 import { CONTOH_FLOW } from "../frontend/src/lib/lab/flowContoh";
-import { bentukSimpul, bungkusTeks, jepret, ruteGaris, titikGaris, titikSisi, type Titik } from "../frontend/src/lib/lab/flowGeometri";
+import { bentukSimpul, bungkusTeks, jepret, ruangGeser, ruteGaris, titikGaris, titikSisi, ujungGaris, type Titik } from "../frontend/src/lib/lab/flowGeometri";
 import { berkasKeDiagram, decodeFlow, diagramKeBerkas, encodeFlow, FLOW_MAX_URL, sahkanDiagram } from "../frontend/src/lib/lab/flowUrl";
 import { diagramKeSvg } from "../frontend/src/lib/lab/flowSvg";
 import {
@@ -43,11 +43,13 @@ import {
   JENIS_SIMPUL,
   SISI,
   type Diagram,
+  type Simpul,
   type JenisSimpul,
   type Sisi,
 } from "../frontend/src/lib/lab/flowTypes";
 import { mulberry32 } from "../frontend/src/lib/lab/labRandom";
 import { duplikat, hapus, pindahkan, sambung, tambahSimpul, ubahJenis, ubahTeks } from "../frontend/src/lib/lab/flowEdit";
+import { canRedo, currentState, gantiPuncakHistory, initHistory, pushHistory, undoHistory } from "../frontend/src/lib/lab/labHistory";
 
 // ── Penolong ────────────────────────────────────────────────────────────
 
@@ -84,6 +86,22 @@ function jalankan(d: Diagram, masukan = ""): KeadaanJalan {
 const kode = (d: Diagram) => periksaDiagram(d).map((t) => t.kode);
 
 // ── 1. Ekspresi ─────────────────────────────────────────────────────────
+
+// Laporan pemilik: Keputusan "x > mod 2 == 0?" memberi galat '"%" tidak boleh
+// berada di sini' — siswa menulis "mod", dan pesannya tidak menunjuk ">" yang salah.
+{
+  const g = hasil("x > mod 2 == 0", v({ x: 3 }));
+  check(
+    "dua operator berurutan: pesan menyebut keduanya dengan ejaan siswa",
+    typeof g === "string" && g.includes('">" lalu "mod"') && !g.includes('"%"'),
+    String(g),
+  );
+  const awal = hasil("mod 2", v());
+  check("operator tanpa nilai di kiri: ejaan siswa, beri contoh", typeof awal === "string" && awal.includes('"mod" butuh nilai') && awal.includes("x mod 2"), String(awal));
+  const beda = hasil("x <> * 2", v({ x: 1 }));
+  check("ejaan asli simbol juga dipertahankan (<> bukan !=)", typeof beda === "string" && beda.includes('"<>" lalu "*"'), String(beda));
+  check("bentuk yang benar tetap jalan: x mod 2 == 0", hasil("x mod 2 == 0", v({ x: 3 })) === false && hasil("x mod 2 == 0", v({ x: 4 })) === true, "");
+}
 
 check("urutan operator", hasil("2 + 3 * 4") === 14 && hasil("(2 + 3) * 4") === 20, String(hasil("2 + 3 * 4")));
 check("pangkat asosiatif kanan, minus di luar pangkat", hasil("2 ^ 3 ^ 2") === 512 && hasil("-2 ^ 2") === -4, `${hasil("2^3^2")} ${hasil("-2^2")}`);
@@ -203,7 +221,7 @@ const contoh = (id: string) => CONTOH_FLOW.find((c) => c.id === id)!.diagram;
 {
   const d = contoh("genap");
   let k = jalankan(d, "");
-  check("tanpa masukan di muka: berhenti menunggu n", k.status === "tunggu-input" && k.menunggu?.join() === "n", `${k.status} ${k.menunggu}`);
+  check("tanpa masukan di muka: berhenti menunggu N", k.status === "tunggu-input" && k.menunggu?.join() === "N", `${k.status} ${k.menunggu}`);
   k = berikanMasukan(k, "4");
   k = jalankanSampaiBerhenti(d, k);
   check("setelah diberi nilai: lanjut sampai selesai", k.status === "selesai" && k.keluaran.join() === "4 genap", `${k.status} ${k.keluaran}`);
@@ -259,7 +277,7 @@ const contoh = (id: string) => CONTOH_FLOW.find((c) => c.id === id)!.diagram;
     ],
   );
   const k = jalankan(tanpaLabel);
-  check("keputusan tanpa label Ya/Tidak → galat yang menjelaskan", k.status === "galat" && (k.galat ?? "").includes("Ya"), k.galat ?? "");
+  check("keputusan tanpa label Yes/No → galat yang menjelaskan", k.status === "galat" && (k.galat ?? "").includes('"Yes"'), k.galat ?? "");
   const cabang = dg(
     [
       ["mulai", "Mulai"],
@@ -678,7 +696,7 @@ function beku<T>(x: T): T {
   const s1 = sambung(d, 2, 3);
   const s2 = s1.ok ? sambung(s1.diagram, 2, 4) : s1;
   const lbl = s2.ok ? s2.diagram.garis.filter((g) => g.dari === 2).map((g) => g.label) : [];
-  check("cabang Keputusan otomatis berlabel Ya lalu Tidak", lbl.join() === "Ya,Tidak", lbl.join());
+  check("cabang Keputusan otomatis berlabel Yes lalu No (Cambridge)", lbl.join() === "Yes,No", lbl.join());
   const sisi = s1.ok ? s1.diagram.garis.at(-1)! : null;
   check("sisi otomatis: tujuan di bawah → bawah ke atas", sisi?.dariSisi === "bawah" && sisi?.keSisi === "atas", `${sisi?.dariSisi}/${sisi?.keSisi}`);
 
@@ -700,9 +718,180 @@ function beku<T>(x: T): T {
   const j = ubahJenis(ubahJenis(d, 3, "io"), 4, "io");
   check("ganti jenis: teks sendiri dipertahankan", j.simpul.find((s) => s.id === 3)!.teks === "a = 1", "teks");
   const def = ubahJenis(tambahSimpul(kosong, "proses", 0, 0).ok ? (tambahSimpul(kosong, "proses", 0, 0) as { diagram: Diagram }).diagram : kosong, 1, "io");
-  check("ganti jenis: teks bawaan ikut berganti", def.simpul[0].teks === "Baca x", def.simpul[0].teks);
+  check("ganti jenis: teks bawaan ikut berganti", def.simpul[0].teks === "INPUT X", def.simpul[0].teks);
   check("teks dipotong ke batas", [...ubahTeks(d, 3, "x".repeat(FLOW_MAX_TEKS + 50)).simpul.find((s) => s.id === 3)!.teks].length === FLOW_MAX_TEKS, "maks");
   check("ubah teks yang sama mengembalikan objek yang sama (tanpa entri riwayat)", ubahTeks(d, 3, "a = 1") === d, "===");
+}
+
+// ── 7. Riwayat untuk mengetik langsung (panel Properti) ─────────────────
+// Teks simbol diterapkan per ketukan; satu sesi mengetik harus tetap SATU undo.
+{
+  // Seperti FlowWorkspace: ketukan PERTAMA sesi menambah entri, berikutnya mengganti.
+  let h = initHistory("awal", "Awal");
+  h = pushHistory(h, "sebelum", "Pindah");
+  h = pushHistory(h, "x", "Ubah teks");
+  for (const t of ["x =", "x = 1"]) h = gantiPuncakHistory(h, t, "Ubah teks");
+  check("sesi mengetik mengganti entri teratas, bukan menambah", h.entries.length === 3 && currentState(h) === "x = 1", JSON.stringify(h.entries.map((e) => e.state)));
+  check("satu undo mengembalikan keadaan sebelum mengetik", currentState(undoHistory(h)) === "sebelum", currentState(undoHistory(h)));
+
+  const awal = gantiPuncakHistory(initHistory("awal", "Awal"), "a", "Ubah teks");
+  check("di kursor 0 keadaan awal tidak tertimpa (entri baru)", awal.entries.length === 2 && currentState(undoHistory(awal)) === "awal", JSON.stringify(awal.entries.map((e) => e.state)));
+
+  const ekor = undoHistory(pushHistory(pushHistory(initHistory("a", "Awal"), "b", "1"), "c", "2"));
+  const g = gantiPuncakHistory(ekor, "b2", "Ubah teks");
+  check("mengetik setelah undo memotong ekor redo", !canRedo(g) && currentState(g) === "b2" && g.entries.length === 2, JSON.stringify(g.entries.map((e) => e.state)));
+}
+
+// ── 8. Garis lurus antar-simbol yang lebarnya berbeda ───────────────────
+// Bug yang dilaporkan pemilik: Mulai (140) → Baca (170) → Keputusan (160)
+// yang ditaruh di tengah yang sama tetap tersambung garis berbelok kecil.
+{
+  const lurus = (t: Titik[]) => t.length === 2 && (t[0].x === t[1].x || t[0].y === t[1].y);
+
+  // a) Menaruh & menggeser: titik TENGAH yang dijepret, untuk setiap jenis.
+  let d: Diagram = { simpul: [], garis: [], nextId: 1 };
+  for (const j of JENIS_SIMPUL) {
+    const h = tambahSimpul(d, j, 303, 207);
+    if (h.ok) d = h.diagram;
+  }
+  const tengah = d.simpul.map((s) => [s.x + s.w / 2, s.y + s.h / 2]);
+  check("setiap jenis yang ditaruh di titik yang sama punya tengah yang sama (di grid)", tengah.every(([x, y]) => x === 300 && y === 210), JSON.stringify(tengah));
+  const p = pindahkan(d, new Set(d.simpul.map((s) => s.id)), 37, -12);
+  const tengahP = p.simpul.map((s) => [s.x + s.w / 2, s.y + s.h / 2]);
+  check("digeser bersama: tengahnya tetap sejajar & di grid", tengahP.every(([x, y]) => x === 340 && y === 200), JSON.stringify(tengahP.slice(0, 3)));
+
+  // b) Diagram LAMA yang tepinya dijepret (tengah meleset 5px): garisnya diluruskan.
+  const lama: Diagram = {
+    simpul: [
+      { id: 1, jenis: "mulai", x: 230, y: 40, w: 140, h: 50, teks: "Mulai" },
+      { id: 2, jenis: "io", x: 220, y: 130, w: 170, h: 60, teks: "Baca x" },
+      { id: 3, jenis: "keputusan", x: 220, y: 240, w: 160, h: 90, teks: "x > 0?" },
+      { id: 4, jenis: "keputusan", x: 225, y: 380, w: 160, h: 90, teks: "y > 0?" },
+      { id: 5, jenis: "proses", x: 400, y: 500, w: 160, h: 60, teks: "a = 1" },
+      { id: 6, jenis: "proses", x: 300, y: 650, w: 160, h: 60, teks: "b = 2" },
+    ],
+    garis: [
+      { id: 7, dari: 1, ke: 2, dariSisi: "bawah", keSisi: "atas", label: "" },
+      { id: 8, dari: 2, ke: 3, dariSisi: "bawah", keSisi: "atas", label: "" },
+      { id: 9, dari: 3, ke: 4, dariSisi: "bawah", keSisi: "atas", label: "Ya" },
+      { id: 10, dari: 5, ke: 6, dariSisi: "bawah", keSisi: "atas", label: "" },
+    ],
+    nextId: 11,
+  };
+  const r = (id: number) => titikGaris(lama, lama.garis.find((g) => g.id === id)!)!;
+  check("Mulai → Baca (meleset 5px): garis lurus", lurus(r(7)), JSON.stringify(r(7)));
+  const r8 = r(8);
+  const puncak = titikSisi(lama.simpul[2], "atas");
+  check("Baca → Keputusan: lurus DAN tepat di puncak ketupat", lurus(r8) && r8[1].x === puncak.x && r8[1].y === puncak.y, JSON.stringify(r8));
+  check("ketupat → ketupat (tanpa sisi datar): tetap ke tengah, berbelok", !lurus(r(9)), JSON.stringify(r(9)));
+  check("selisih besar (100px) = belokan yang disengaja, tidak diluruskan", !lurus(r(10)), JSON.stringify(r(10)));
+  const a1 = ujungGaris(lama.simpul[0], "bawah", lama.simpul[1], "atas");
+  check("ujung asal tetap di tengah simbol asal; ujung tujuan yang bergeser", a1.a.x === 300 && a1.b.x === 300, JSON.stringify(a1));
+  const naik = ujungGaris(lama.simpul[1], "bawah", lama.simpul[0], "atas");
+  check("tidak berhadapan (tujuan di atas) → tidak diubah", naik.b.x === 300 && naik.a.x === 305, JSON.stringify(naik));
+
+  // c) Acak: setiap ujung tetap DI sisi datar bentuknya, rute tetap siku.
+  const acak = mulberry32(9618);
+  let salah = "";
+  for (let i = 0; i < 4000 && !salah; i++) {
+    const buat = (id: number): Simpul => {
+      const jenis = JENIS_SIMPUL[Math.floor(acak() * JENIS_SIMPUL.length)];
+      return { id, jenis, x: Math.round(acak() * 60) * 5, y: Math.round(acak() * 60) * 5, w: 40 + Math.round(acak() * 30) * 5, h: 40 + Math.round(acak() * 16) * 5, teks: "" };
+    };
+    const s1 = buat(1);
+    const s2 = buat(2);
+    const sa = SISI[Math.floor(acak() * 4)];
+    const sb = SISI[Math.floor(acak() * 4)];
+    const { a, b } = ujungGaris(s1, sa, s2, sb);
+    const pa = titikSisi(s1, sa);
+    const pb = titikSisi(s2, sb);
+    const diSisi = (u: Titik, p: Titik, s: Simpul, sisi: Sisi) =>
+      sisi === "atas" || sisi === "bawah" ? u.y === p.y && Math.abs(u.x - p.x) <= ruangGeser(s, sisi) : u.x === p.x && Math.abs(u.y - p.y) <= ruangGeser(s, sisi);
+    if (!diSisi(a, pa, s1, sa) || !diSisi(b, pb, s2, sb)) salah = JSON.stringify({ s1, s2, sa, sb, a, b });
+    else if (!siku(ruteGaris(a, sa, b, sb))) salah = "tidak siku " + JSON.stringify({ s1, s2, sa, sb });
+  }
+  check("4000 pasangan acak: ujung selalu di bagian datar sisinya, rute siku", salah === "", salah);
+}
+
+// ── 9. Bentuk baku Cambridge (IGCSE 0478 / O Level 2210) ────────────────
+// Bawaan = gaya Cambridge; bentuk lama/Indonesia TETAP berjalan dan hanya
+// mendapat saran "gaya-cambridge" di tab Periksa.
+{
+  const nilai = (src: string, vars = v({ X: 7, Nama: "ani", Selesai: false })) => hasil(src, vars);
+  check("MOD/DIV operator & bentuk fungsi MOD(a, b), DIV(a, b)", nilai("X MOD 2") === 1 && nilai("MOD(X, 2)") === 1 && nilai("DIV(X, 2)") === 3 && nilai("X DIV 2") === 3, `${nilai("MOD(X, 2)")} ${nilai("DIV(X, 2)")}`);
+  check("& menyambung teks", nilai('"Hai " & Nama') === "Hai ani", String(nilai('"Hai " & Nama')));
+  check("AND/OR/NOT, <> dan = di kondisi", nilai("X > 5 AND NOT Selesai") === true && nilai("X <> 7 OR X = 7") === true, "");
+  check("fungsi Cambridge: INT, ROUND(x, n), LENGTH, UCASE, LCASE", nilai("INT(7.9)") === 7 && nilai("INT(-7.9)") === -7 && nilai("ROUND(3.14159, 2)") === 3.14 && nilai("LENGTH(Nama)") === 3 && nilai("UCASE(Nama)") === "ANI" && nilai("LCASE(\"AB\")") === "ab", `${nilai("ROUND(3.14159, 2)")}`);
+  const kondisi = (src: string) => {
+    try {
+      return evaluasiKondisi(src, v({ X: 7 }));
+    } catch (e) {
+      return `GALAT: ${(e as Error).message}`;
+    }
+  };
+  check("Keputusan diawali Is / Apakah", kondisi("Is X > 5?") === true && kondisi("Apakah X < 5?") === false, `${kondisi("Is X > 5?")} ${kondisi("Apakah X < 5?")}`);
+  const jalanBaku = jalankan(
+    dg(
+      [
+        ["mulai", "START"],
+        ["io", "INPUT Panjang"],
+        ["io", "INPUT Lebar"],
+        ["proses", "Luas ← Panjang * Lebar"],
+        ["io", 'OUTPUT "Luas = ", Luas'],
+        ["selesai", "STOP"],
+      ],
+      [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6]],
+    ),
+    "4, 5",
+  );
+  check("flowchart gaya Cambridge berjalan; OUTPUT menyambung tanpa pemisah", jalanBaku.status === "selesai" && jalanBaku.keluaran.join("|") === "Luas = 20", `${jalanBaku.status} ${jalanBaku.keluaran} ${jalanBaku.galat ?? ""}`);
+  const jalanLama = jalankan(
+    dg(
+      [
+        ["mulai", "Mulai"],
+        ["io", "Baca a, b"],
+        ["proses", "c = a + b\nc += 1"],
+        ["keputusan", "c == 10 dan a != 0?"],
+        ["io", 'Tampilkan "c =", c'],
+        ["io", "Tampilkan 0"],
+        ["selesai", "Selesai"],
+      ],
+      [[1, 2], [2, 3], [3, 4], [4, 5, "Ya"], [4, 6, "Tidak"], [5, 7], [6, 7]],
+    ),
+    "4, 5",
+  );
+  check("flowchart gaya lama (Baca/Tampilkan/=/dan/Ya) TETAP berjalan, Tampilkan memakai spasi", jalanLama.status === "selesai" && jalanLama.keluaran.join("|") === "c = 10", `${jalanLama.status} ${jalanLama.keluaran} ${jalanLama.galat ?? ""}`);
+
+  const gaya = (jenis: JenisSimpul, teks: string) => saranGaya({ id: 1, jenis, x: 0, y: 0, w: 160, h: 60, teks }).join(" | ");
+  check("saran: Baca → INPUT", gaya("io", "Baca x").includes("tulis INPUT"), gaya("io", "Baca x"));
+  check("saran: satu INPUT per variabel", gaya("io", "INPUT a, b").includes("satu INPUT"), gaya("io", "INPUT a, b"));
+  check("saran: Tampilkan → OUTPUT", gaya("io", 'Tampilkan "x"').includes("tulis OUTPUT"), gaya("io", 'Tampilkan "x"'));
+  check("saran: x = 1 → ←", gaya("proses", "x = 1").includes("←"), gaya("proses", "x = 1"));
+  check("tanpa saran: x <- 1 (cara mengetik ←) dan X ← X + 1", gaya("proses", "x <- 1") === "" && gaya("proses", "X ← X + 1") === "", gaya("proses", "x <- 1"));
+  const k = gaya("keputusan", "n mod 2 == 0 dan benar?");
+  check("saran kondisi: mod → MOD, == → =, dan → AND, benar → TRUE", k.includes("→ MOD") && k.includes('"==" → =') && k.includes("→ AND") && k.includes("→ TRUE"), k);
+  check("tanpa saran: kondisi baku", gaya("keputusan", "Is X MOD 2 = 0 AND NOT Selesai?") === "" && gaya("keputusan", "X <> 0?") === "", gaya("keputusan", "X <> 0?"));
+  check("saran: Mulai/Selesai → START/STOP", gaya("mulai", "Mulai").includes("START") && gaya("selesai", "Selesai").includes("STOP") && gaya("mulai", "Start") === "", "");
+
+  const label = periksaDiagram(
+    dg(
+      [
+        ["mulai", "START"],
+        ["keputusan", "X > 0?"],
+        ["selesai", "STOP"],
+        ["selesai", "STOP"],
+      ],
+      [[1, 2], [2, 3, "Ya"], [2, 4, "Tidak"]],
+    ),
+  ).filter((t) => t.kode === "gaya-cambridge");
+  check("saran: label Ya/Tidak → Yes/No, menyorot kedua garis", label.length === 1 && label[0].garis.length === 2 && label[0].pesan.includes("Yes/No"), label.map((t) => t.pesan).join(" | "));
+  const contohBaku = CONTOH_FLOW.flatMap((c) => periksaDiagram(c.diagram).filter((t) => t.tingkat === "saran" || t.tingkat === "galat").map((t) => `${c.id}: ${t.pesan}`));
+  check("semua contoh siap pakai sudah baku Cambridge (tanpa saran/galat)", contohBaku.length === 0, contohBaku.join(" | "));
+  const bawaan = JENIS_SIMPUL.filter((j) => j !== "catatan" && j !== "konektor").flatMap((j) => {
+    const d = tambahSimpul({ simpul: [], garis: [], nextId: 1 }, j, 0, 0);
+    return d.ok ? saranGaya(d.diagram.simpul[0]).map((x) => `${j}: ${x}`) : [];
+  });
+  check("teks bawaan setiap simbol sudah baku", bawaan.length === 0, bawaan.join(" | "));
 }
 
 ujiTautan().then(finish);

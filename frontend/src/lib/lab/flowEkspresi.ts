@@ -8,13 +8,15 @@
  * disimpan di `Map`, bukan objek biasa, supaya nama seperti `__proto__` atau
  * `constructor` hanyalah nama variabel, bukan pintu ke prototipe.
  *
- * Sintaks mengikuti pseudocode yang lazim di kelas:
- *  - penugasan: `x = 5`, `x ← x + 1`, `x <- 2`, `x := 3`, `x += 1`, `x++`
- *  - di Keputusan, `=` berarti SAMA DENGAN (`n mod 2 = 0`), sama seperti `==`
- *  - `mod`/`%` sisa bagi, `div` bagi bulat, `^` pangkat
- *  - `dan`/`and`/`&&`, `atau`/`or`/`||`, `tidak`/`not`/`!`
- *  - `benar`/`salah` (juga true/false), teks dalam "kutip"
- *  - fungsi: akar, abs, bulat, bawah, atas, min, max, panjang
+ * Bentuk BAKU = pseudocode Cambridge (silabus IGCSE 0478 / O Level 2210 merujuk
+ * ke pseudocode yang sama untuk isi flowchart; lab Pseudocode memakai 9618):
+ *  - `INPUT X`, `OUTPUT "Total: ", Total`, penugasan `X ← X + 1` (ketik `<-`)
+ *  - di Keputusan `=` berarti SAMA DENGAN, `<>` tidak sama; `AND OR NOT`
+ *  - `MOD`/`DIV` sebagai operator (`X MOD 2`) maupun fungsi (`MOD(X, 2)`), `&` sambung teks
+ *  - fungsi Cambridge: INT, ROUND(x, n), LENGTH, UCASE, LCASE
+ * Bentuk lama/Indonesia TETAP diterima (Baca/Tampilkan, `x = 5`, `+=`, `++`,
+ * `dan/atau/tidak`, `==`, `!=`, `%`, akar/bulat/panjang, …) — flowchart lama
+ * harus tetap berjalan. Bedanya hanya saran gaya di tab Periksa (`gayaEkspresi`).
  *
  * Modul netral; diuji `verify-flowchart`.
  */
@@ -35,7 +37,8 @@ type Token =
   | { t: "angka"; v: number }
   | { t: "teks"; v: string }
   | { t: "nama"; v: string }
-  | { t: "op"; v: string }
+  /** `asli` = ejaan yang ditulis siswa ("mod", "<>"); `v` = bentuk baku ("%", "!="). Pesan galat memakai `asli`. */
+  | { t: "op"; v: string; asli: string }
   | { t: "akhir" };
 
 const KATA_OP: Record<string, string> = {
@@ -49,7 +52,7 @@ const KATA_OP: Record<string, string> = {
   not: "!",
 };
 
-const OP_SIMBOL = ["<=", ">=", "==", "!=", "<>", "&&", "||", "≤", "≥", "≠", "+", "-", "*", "/", "%", "^", "(", ")", ",", "=", "<", ">", "!", "×", "÷"];
+const OP_SIMBOL = ["<=", ">=", "==", "!=", "<>", "&&", "||", "≤", "≥", "≠", "+", "-", "*", "/", "%", "^", "(", ")", ",", "=", "<", ">", "!", "×", "÷", "&"];
 
 function tokenisasi(src: string): Token[] {
   const out: Token[] = [];
@@ -78,14 +81,14 @@ function tokenisasi(src: string): Token[] {
       const m = /^[A-Za-z_][A-Za-z0-9_]*/.exec(src.slice(i))!;
       const kata = m[0];
       const op = KATA_OP[kata.toLowerCase()];
-      out.push(op ? { t: "op", v: op } : { t: "nama", v: kata });
+      out.push(op ? { t: "op", v: op, asli: kata } : { t: "nama", v: kata });
       i += kata.length;
       continue;
     }
     const sim = OP_SIMBOL.find((o) => src.startsWith(o, i));
     if (!sim) throw new GalatEkspresi(`Karakter "${c}" tidak dikenal.`);
     const normal: Record<string, string> = { "≤": "<=", "≥": ">=", "≠": "!=", "<>": "!=", "==": "=", "×": "*", "÷": "/" };
-    out.push({ t: "op", v: normal[sim] ?? sim });
+    out.push({ t: "op", v: normal[sim] ?? sim, asli: sim });
     i += sim.length;
   }
   out.push({ t: "akhir" });
@@ -112,6 +115,7 @@ const KEKUATAN: Record<string, number> = {
   ">=": 4,
   "+": 5,
   "-": 5,
+  "&": 5,
   "*": 6,
   "/": 6,
   "%": 6,
@@ -166,6 +170,17 @@ class Pengurai {
     if (t.t === "angka") return { k: "nilai", v: t.v };
     if (t.t === "teks") return { k: "nilai", v: t.v };
     if (t.t === "op" && (t.v === "-" || t.v === "+")) return { k: "uner", op: t.v, a: this.ekspresi(7) };
+    // Bentuk fungsi silabus IGCSE/O Level: MOD(10, 3), DIV(10, 3).
+    if (t.t === "op" && (t.v === "%" || t.v === "div") && this.opIni("(")) {
+      this.ambil();
+      const a = this.ekspresi(0);
+      if (!this.opIni(",")) throw new GalatEkspresi(`${t.asli.toUpperCase()}(a, b) butuh dua isian, mis. ${t.asli.toUpperCase()}(X, 2).`);
+      this.ambil();
+      const b = this.ekspresi(0);
+      if (!this.opIni(")")) throw new GalatEkspresi(`Kurung tutup ${t.asli.toUpperCase()}( kurang.`);
+      this.ambil();
+      return { k: "biner", op: t.v, a, b };
+    }
     if (t.t === "op" && t.v === "!") return { k: "uner", op: "!", a: this.ekspresi(3) };
     if (t.t === "op" && t.v === "(") {
       const s = this.ekspresi(0);
@@ -197,12 +212,26 @@ class Pengurai {
       return { k: "var", nama: t.v };
     }
     if (t.t === "akhir") throw new GalatEkspresi("Ekspresi tidak lengkap.");
+    // Operator biner di tempat nilai: hampir selalu dua operator berurutan
+    // ("x > mod 2") atau operator tanpa nilai di kirinya. Sebutkan keduanya
+    // dengan ejaan siswa — dulu pesannya '"%" tidak boleh berada di sini',
+    // padahal siswa menulis "mod" dan tidak pernah mengetik "%".
+    if (t.t === "op" && KEKUATAN[t.v] !== undefined) {
+      const sebelum = this.tk[this.p - 2];
+      if (sebelum?.t === "op" && sebelum.v !== "(" && sebelum.v !== ",") {
+        throw new GalatEkspresi(
+          `Dua operator berurutan: "${sebelum.asli}" lalu "${t.asli}". Di antara keduanya harus ada nilai, mis. "x ${t.asli} 2".`,
+        );
+      }
+      throw new GalatEkspresi(`"${t.asli}" butuh nilai di sebelah kirinya, mis. "x ${t.asli} 2".`);
+    }
     throw new GalatEkspresi(`"${tampilToken(t)}" tidak boleh berada di sini.`);
   }
 }
 
 function tampilToken(t: Token): string {
-  return t.t === "akhir" ? "akhir" : String(t.v);
+  if (t.t === "akhir") return "akhir";
+  return t.t === "op" ? t.asli : String(t.v);
 }
 
 export function uraiEkspresi(src: string): Simpul {
@@ -233,7 +262,21 @@ const FUNGSI: Record<string, (a: Nilai[]) => Nilai> = {
     return Math.sqrt(n);
   },
   abs: ([x]) => Math.abs(angka(x, "abs")),
-  bulat: ([x]) => Math.round(angka(x, "bulat")),
+  bulat: ([x, n]) => {
+    if (n === undefined) return Math.round(angka(x, "bulat"));
+    const tempat = angka(n, "ROUND");
+    if (!Number.isInteger(tempat) || tempat < 0 || tempat > 10) throw new GalatEkspresi("Jumlah angka desimal ROUND harus bilangan bulat 0 sampai 10.");
+    return Math.round(angka(x, "ROUND") * 10 ** tempat) / 10 ** tempat;
+  },
+  int: ([x]) => Math.trunc(angka(x, "INT")),
+  ucase: ([x]) => {
+    if (typeof x !== "string") throw new GalatEkspresi("UCASE() butuh teks.");
+    return x.toUpperCase();
+  },
+  lcase: ([x]) => {
+    if (typeof x !== "string") throw new GalatEkspresi("LCASE() butuh teks.");
+    return x.toLowerCase();
+  },
   bawah: ([x]) => Math.floor(angka(x, "bawah")),
   atas: ([x]) => Math.ceil(angka(x, "atas")),
   min: (a) => Math.min(...a.map((x) => angka(x, "min"))),
@@ -243,11 +286,24 @@ const FUNGSI: Record<string, (a: Nilai[]) => Nilai> = {
     return [...x].length;
   },
 };
-const ALIAS: Record<string, string> = { sqrt: "akar", mutlak: "abs", round: "bulat", floor: "bawah", ceil: "atas", len: "panjang" };
+const ALIAS: Record<string, string> = {
+  sqrt: "akar",
+  mutlak: "abs",
+  round: "bulat",
+  floor: "bawah",
+  ceil: "atas",
+  len: "panjang",
+  length: "panjang",
+  to_upper: "ucase",
+  to_lower: "lcase",
+};
 const JUMLAH_ARG: Record<string, [number, number]> = {
   akar: [1, 1],
   abs: [1, 1],
-  bulat: [1, 1],
+  bulat: [1, 2],
+  int: [1, 1],
+  ucase: [1, 1],
+  lcase: [1, 1],
   bawah: [1, 1],
   atas: [1, 1],
   min: [1, 20],
@@ -317,7 +373,8 @@ function hitung(s: Simpul, vars: Variabel): Nilai {
       const a = hitung(s.a, vars);
       const b = hitung(s.b, vars);
       if (["=", "!=", "<", ">", "<=", ">="].includes(s.op)) return bandingkan(a, b, s.op);
-      if (s.op === "+" && (typeof a === "string" || typeof b === "string")) return `${tampilNilai(a)}${tampilNilai(b)}`;
+      // `&` = sambung teks gaya Cambridge; `+` dengan teks juga menyambung (bentuk lama).
+      if (s.op === "&" || (s.op === "+" && (typeof a === "string" || typeof b === "string"))) return `${tampilNilai(a)}${tampilNilai(b)}`;
       const x = angka(a, s.op);
       const y = angka(b, s.op);
       switch (s.op) {
@@ -348,10 +405,20 @@ export function evaluasi(src: string, vars: Variabel): Nilai {
   return hitung(uraiEkspresi(src), vars);
 }
 
-/** Kondisi Keputusan: tanda tanya di ujung dibuang; hasilnya WAJIB benar/salah. */
+/**
+ * Teks Keputusan → ekspresinya: tanda tanya di ujung dibuang, begitu juga
+ * awalan pertanyaan "Is …?" / "Apakah …?" yang lazim di buku & soal.
+ */
+export function bersihkanKondisi(src: string): string {
+  return src
+    .trim()
+    .replace(/\?+\s*$/, "")
+    .replace(/^(is|apakah)\s+/i, "");
+}
+
+/** Kondisi Keputusan; hasilnya WAJIB benar/salah. */
 export function evaluasiKondisi(src: string, vars: Variabel): boolean {
-  const bersih = src.trim().replace(/\?+\s*$/, "");
-  const v = evaluasi(bersih, vars);
+  const v = evaluasi(bersihkanKondisi(src), vars);
   if (typeof v !== "boolean") throw new GalatEkspresi(`Kondisi harus menghasilkan benar/salah, bukan ${namaJenis(v)}.`);
   return v;
 }
@@ -388,7 +455,7 @@ export function jalankanPenugasan(baris: string, vars: Variabel): { nama: string
     return { nama: t[1], nilai: n };
   }
   const m = RE_TUGAS.exec(baris);
-  if (!m) throw new GalatEkspresi(`"${baris}" bukan penugasan. Tulis seperti: x = x + 1`);
+  if (!m) throw new GalatEkspresi(`"${baris}" bukan penugasan. Tulis seperti: X ← X + 1 (ketik <- untuk ←).`);
   const [, nama, op, kanan] = m;
   let nilai = evaluasi(kanan, vars);
   if (op.length === 2 && op.endsWith("=") && op !== ":=") {
@@ -412,25 +479,65 @@ export function jalankanPenugasan(baris: string, vars: Variabel): { nama: string
 const RE_INPUT = /^(baca|input|masukkan|masukan|read|terima|ambil)\b\s*(.*)$/i;
 const RE_OUTPUT = /^(tampilkan|cetak|tulis|output|print|keluarkan|display)\b\s*(.*)$/i;
 
-export type PerintahIo = { jenis: "input"; nama: string[] } | { jenis: "output"; ekspresi: string[] };
+/**
+ * `kata` = kata perintah persis seperti ditulis (untuk saran gaya).
+ * `pemisah` = penyambung nilai OUTPUT: OUTPUT gaya Cambridge menyambung TANPA
+ * pemisah (seperti pseudocode: `OUTPUT "Luas = ", Luas`, spasinya ditulis
+ * sendiri); kata lama (Tampilkan, Cetak, Print, …) tetap memakai spasi supaya
+ * flowchart lama tidak berubah keluarannya.
+ */
+export type PerintahIo =
+  | { jenis: "input"; nama: string[]; kata: string }
+  | { jenis: "output"; ekspresi: string[]; kata: string; pemisah: string };
 
-/** Mengenali teks simbol Input/Output: "Baca a, b" atau "Tampilkan "Luas =", luas". */
+/** Mengenali teks simbol Input/Output: "INPUT X" atau "OUTPUT "Luas = ", Luas" (juga Baca/Tampilkan). */
 export function uraiIo(teks: string): PerintahIo {
   const bersih = teks.trim().replace(/\s+/g, " ");
   const i = RE_INPUT.exec(bersih);
   if (i) {
     const nama = i[2].split(/\s*,\s*|\s+dan\s+|\s+/i).filter(Boolean);
-    if (nama.length === 0) throw new GalatEkspresi("Sebutkan variabel yang dibaca, mis. Baca n");
+    if (nama.length === 0) throw new GalatEkspresi("Sebutkan variabel yang dibaca, mis. INPUT X");
     for (const n of nama) if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(n)) throw new GalatEkspresi(`"${n}" bukan nama variabel yang sah.`);
-    return { jenis: "input", nama };
+    return { jenis: "input", nama, kata: i[1] };
   }
   const o = RE_OUTPUT.exec(bersih);
   if (o) {
     const ekspresi = pecahKoma(o[2]);
-    if (ekspresi.length === 0) throw new GalatEkspresi("Sebutkan yang ditampilkan, mis. Tampilkan total");
-    return { jenis: "output", ekspresi };
+    if (ekspresi.length === 0) throw new GalatEkspresi("Sebutkan yang ditampilkan, mis. OUTPUT Total");
+    return { jenis: "output", ekspresi, kata: o[1], pemisah: o[1].toLowerCase() === "output" ? "" : " " };
   }
-  throw new GalatEkspresi('Awali dengan "Baca …" untuk input atau "Tampilkan …" untuk output.');
+  throw new GalatEkspresi("Awali dengan INPUT (mis. INPUT X) untuk masukan atau OUTPUT (mis. OUTPUT Total) untuk keluaran.");
+}
+
+// ── Saran gaya Cambridge ────────────────────────────────────────────────
+
+/** Bentuk baku Cambridge untuk tiap operator/kata yang berbeda ejaannya. */
+const BAKU_OP: Record<string, string> = { "&&": "AND", "||": "OR", "!": "NOT", "%": "MOD", div: "DIV", "!=": "<>" };
+
+/**
+ * Ejaan di sebuah ekspresi yang berbeda dari bentuk baku Cambridge, mis.
+ * `["\"dan\" → AND", "\"==\" → ="]`. Kosong bila sudah baku atau tak bisa
+ * dipecah (galat sintaks dilaporkan pemeriksaan lain). Untuk tab Periksa —
+ * hanya SARAN, ekspresinya tetap dijalankan.
+ */
+export function gayaEkspresi(src: string): string[] {
+  let tk: Token[];
+  try {
+    tk = tokenisasi(src);
+  } catch {
+    return [];
+  }
+  const saran = new Set<string>();
+  for (const t of tk) {
+    if (t.t === "op") {
+      const baku = t.v === "=" ? "=" : t.v === "<=" ? "<=" : t.v === ">=" ? ">=" : t.v === "*" ? "*" : t.v === "/" ? "/" : BAKU_OP[t.v];
+      if (baku && t.asli !== baku) saran.add(`"${t.asli}" → ${baku}`);
+    } else if (t.t === "nama" && /^(benar|salah|true|false)$/i.test(t.v)) {
+      const baku = /^(benar|true)$/i.test(t.v) ? "TRUE" : "FALSE";
+      if (t.v !== baku) saran.add(`"${t.v}" → ${baku}`);
+    }
+  }
+  return [...saran];
 }
 
 /** Memecah daftar di koma TINGKAT ATAS (koma di dalam kutip/kurung dibiarkan). */

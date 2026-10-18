@@ -9,11 +9,13 @@ import {
   sisiTerdekat,
   titikGaris,
   titikSisi,
+  ujungGaris,
   TINGGI_BARIS,
   UKURAN_FONT,
   type Titik,
 } from "@/lib/lab/flowGeometri";
 import { RONA_JENIS, tataTeks } from "@/lib/lab/flowSvg";
+import { pindahkan } from "@/lib/lab/flowEdit";
 import { FLOW_GRID, FLOW_MAX_LABEL, FLOW_MAX_TEKS, FLOW_MIN_UKURAN, SISI, type Diagram, type Simpul, type Sisi } from "@/lib/lab/flowTypes";
 import { cn } from "@/lib/cn";
 
@@ -291,10 +293,9 @@ export default function FlowCanvas({
   // Diagram yang digambar = diagram + perubahan seret yang belum dilepas.
   let tampil = diagram;
   if (mode.k === "geser" && mode.bergerak) {
-    const ids = new Set(mode.ids);
-    const dx = jepret(mode.dx);
-    const dy = jepret(mode.dy);
-    tampil = { ...diagram, simpul: diagram.simpul.map((s) => (ids.has(s.id) ? { ...s, x: s.x + dx, y: s.y + dy } : s)) };
+    // Fungsi yang SAMA dengan saat dilepas: pratinjau dan hasil akhir tidak
+    // boleh berbeda (menjepret titik tengah ≠ menjepret tepi kiri).
+    tampil = pindahkan(diagram, new Set(mode.ids), jepret(mode.dx), jepret(mode.dy));
   } else if (mode.k === "ukur") {
     tampil = { ...diagram, simpul: diagram.simpul.map((s) => (s.id === mode.id ? { ...s, ...mode.kotak } : s)) };
   }
@@ -436,9 +437,16 @@ export default function FlowCanvas({
             (() => {
               const asal = tampil.simpul.find((s) => s.id === mode.dari);
               if (!asal) return null;
-              const a = titikSisi(asal, mode.sisi);
               const t = mode.target !== null ? tampil.simpul.find((s) => s.id === mode.target) : null;
-              const rute = t ? ruteGaris(a, mode.sisi, titikSisi(t, sisiTerdekat(t, mode.ujung)), sisiTerdekat(t, mode.ujung)) : [a, mode.ujung];
+              let rute: Titik[];
+              if (t) {
+                // Pelurusan yang sama dengan garis jadi: pratinjau = hasil.
+                const sb = sisiTerdekat(t, mode.ujung);
+                const u = ujungGaris(asal, mode.sisi, t, sb);
+                rute = ruteGaris(u.a, mode.sisi, u.b, sb);
+              } else {
+                rute = [titikSisi(asal, mode.sisi), mode.ujung];
+              }
               return (
                 <path d={dGaris(rute)} fill="none" stroke="var(--color-blue-500)" strokeWidth={2} strokeDasharray="6 4" markerEnd={panah("pilih")} className="pointer-events-none" />
               );

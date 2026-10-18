@@ -20,9 +20,10 @@ import {
   type Sisi,
 } from "@/lib/lab/flowTypes";
 import type { Pilihan } from "./FlowCanvas";
+import PanduanFlow from "./PanduanFlow";
 import { cn } from "@/lib/cn";
 
-export type TabPanel = "simbol" | "properti" | "periksa" | "jalankan";
+export type TabPanel = "simbol" | "properti" | "periksa" | "jalankan" | "panduan";
 
 const KOLOM = "w-full bg-white/[0.06] px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:shadow-[inset_0_-2px_0_var(--color-blue-500)]";
 const TOMBOL = "inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-ink-body transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent";
@@ -45,7 +46,14 @@ export function IkonJenis({ jenis, className }: { jenis: JenisSimpul; className?
 
 export interface AksiPanel {
   onTambah: (jenis: JenisSimpul) => void;
+  /** Diterapkan setiap ketukan; ketukan berturut-turut digabung jadi satu undo. */
   onUbahTeks: (id: number, teks: string) => void;
+  /** Label garis diketik — sama seperti onUbahTeks. */
+  onKetikLabel: (id: number, label: string) => void;
+  /** Isian teks/label kehilangan fokus: sesi mengetik berikutnya jadi entri undo baru. */
+  onSelesaiKetik: () => void;
+  /** Membuka tab Panduan (dari petunjuk di Properti). */
+  onPanduan: () => void;
   onUbahJenis: (id: number, jenis: JenisSimpul) => void;
   onUbahUkuran: (id: number, w: number, h: number) => void;
   onUbahGaris: (id: number, ubah: Partial<Pick<Garis, "label" | "dariSisi" | "keSisi">>) => void;
@@ -86,11 +94,12 @@ export default function FlowPanel({
     { id: "properti", label: "Properti" },
     { id: "periksa", label: "Periksa", lencana: temuan.length },
     { id: "jalankan", label: "Jalankan" },
+    { id: "panduan", label: "Panduan" },
   ];
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="Panel flowchart" className="grid grid-cols-4 bg-paper-card p-1">
+      <div role="tablist" aria-label="Panel flowchart" className="grid grid-cols-3 bg-paper-card p-1 sm:grid-cols-5">
         {TAB.map((t) => (
           <button
             key={t.id}
@@ -122,6 +131,7 @@ export default function FlowPanel({
       {tab === "properti" && <TabProperti diagram={diagram} pilihan={pilihan} bisaSunting={bisaSunting} aksi={aksi} />}
       {tab === "periksa" && <TabPeriksa temuan={temuan} onPilih={aksi.onPilih} />}
       {tab === "jalankan" && (jalanan ?? <TabMulaiJalan jumlahGalat={jumlahGalat} onMulai={aksi.onMulaiJalan} adaSimbol={diagram.simpul.length > 0} />)}
+      {tab === "panduan" && <PanduanFlow Ikon={IkonJenis} />}
     </div>
   );
 }
@@ -183,10 +193,12 @@ function TabProperti({ diagram, pilihan, bisaSunting, aksi }: { diagram: Diagram
     );
   }
   if (simpul.length === 1 && garis.length === 0) {
-    return <PropertiSimpul key={`${simpul[0].id}-${simpul[0].teks}-${simpul[0].w}-${simpul[0].h}`} s={simpul[0]} bisaSunting={bisaSunting} aksi={aksi} />;
+    // Kunci TANPA teks: teks kini diterapkan per ketukan, dan memasang ulang
+    // panel di setiap ketukan akan membuang fokus dari textarea-nya.
+    return <PropertiSimpul key={`${simpul[0].id}-${simpul[0].w}-${simpul[0].h}`} s={simpul[0]} bisaSunting={bisaSunting} aksi={aksi} />;
   }
   if (garis.length === 1 && simpul.length === 0) {
-    return <PropertiGaris key={`${garis[0].id}-${garis[0].label}`} g={garis[0]} diagram={diagram} bisaSunting={bisaSunting} aksi={aksi} />;
+    return <PropertiGaris key={garis[0].id} g={garis[0]} diagram={diagram} bisaSunting={bisaSunting} aksi={aksi} />;
   }
   return (
     <div className="flex flex-col gap-3 bg-paper-card p-4">
@@ -206,9 +218,11 @@ function TabProperti({ diagram, pilihan, bisaSunting, aksi }: { diagram: Diagram
 }
 
 function PropertiSimpul({ s, bisaSunting, aksi }: { s: Simpul; bisaSunting: boolean; aksi: AksiPanel }) {
-  // Teks & ukuran dipegang lokal dan baru diterapkan saat fokus pergi:
-  // menerapkannya tiap ketukan akan membuat satu entri undo per huruf.
-  const [teks, setTeks] = useState(s.teks);
+  // Teks diterapkan SETIAP KETUKAN (langsung terlihat di kanvas). Dulu baru
+  // diterapkan saat blur — tetapi mengeklik kanvas mengganti panel ini lebih
+  // dulu, blur tidak pernah datang, dan ketikan hilang. Ketukan beruntun
+  // digabung jadi satu entri undo di FlowWorkspace (sesi mengetik).
+  // Ukuran tetap lokal: angka setengah jadi ("1" menuju "120") bukan ukuran sah.
   const [w, setW] = useState(String(s.w));
   const [h, setH] = useState(String(s.h));
   const terapkanUkuran = () => {
@@ -244,15 +258,20 @@ function PropertiSimpul({ s, bisaSunting, aksi }: { s: Simpul; bisaSunting: bool
         </label>
         <textarea
           id="flow-teks"
-          value={teks}
+          value={s.teks}
           maxLength={FLOW_MAX_TEKS}
           rows={3}
           disabled={!bisaSunting}
-          onChange={(e) => setTeks(e.target.value)}
-          onBlur={() => teks !== s.teks && aksi.onUbahTeks(s.id, teks)}
+          onChange={(e) => aksi.onUbahTeks(s.id, e.target.value)}
+          onBlur={aksi.onSelesaiKetik}
           className={cn(KOLOM, "resize-y font-mono text-[13px]")}
         />
-        <p className="mt-1 text-xs leading-relaxed text-ink-muted">{PETUNJUK_TEKS[s.jenis]}</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-muted">
+          {PETUNJUK_TEKS[s.jenis]}{" "}
+          <button type="button" className="font-semibold text-blue-700 underline-offset-2 hover:underline" onClick={aksi.onPanduan}>
+            Panduan penulisan
+          </button>
+        </p>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {(
@@ -293,13 +312,14 @@ function PropertiSimpul({ s, bisaSunting, aksi }: { s: Simpul; bisaSunting: bool
   );
 }
 
+// Bentuk baku Cambridge — sama dengan tab Panduan (PanduanFlow.tsx).
 const PETUNJUK_TEKS: Record<JenisSimpul, string> = {
-  mulai: "Biasanya cukup “Mulai”.",
-  selesai: "Biasanya cukup “Selesai”.",
-  proses: "Penugasan, satu per baris: total = total + i. Bisa juga ←, +=, ++.",
-  io: "Input: Baca n  ·  Output: Tampilkan \"Hasil =\", x",
-  keputusan: "Kondisi benar/salah: n mod 2 = 0?  ·  i <= n dan x > 0",
-  persiapan: "Inisialisasi, satu per baris: i = 1",
+  mulai: "Tulis START.",
+  selesai: "Tulis STOP.",
+  proses: "Penugasan, satu per baris: Total ← Total + X (ketik <- untuk ←).",
+  io: "INPUT X  ·  OUTPUT \"Hasil = \", X",
+  keputusan: "Kondisi benar/salah: X MOD 2 = 0?  ·  X > 0 AND Y < 5? Cabang: Yes / No.",
+  persiapan: "Inisialisasi, satu per baris: Count ← 1",
   subproses: "Nama prosedur (dilewati saat dijalankan), atau penugasan yang ingin dijalankan.",
   konektor: "Label pasangan, mis. A. Konektor tanpa garis keluar melompat ke konektor berlabel sama.",
   dokumen: "Keterangan dokumen. Tidak dijalankan.",
@@ -308,7 +328,6 @@ const PETUNJUK_TEKS: Record<JenisSimpul, string> = {
 };
 
 function PropertiGaris({ g, diagram, bisaSunting, aksi }: { g: Garis; diagram: Diagram; bisaSunting: boolean; aksi: AksiPanel }) {
-  const [label, setLabel] = useState(g.label);
   const dari = diagram.simpul.find((s) => s.id === g.dari);
   const ke = diagram.simpul.find((s) => s.id === g.ke);
   return (
@@ -326,10 +345,7 @@ function PropertiGaris({ g, diagram, bisaSunting, aksi }: { g: Garis; diagram: D
               key={l}
               type="button"
               disabled={!bisaSunting}
-              onClick={() => {
-                setLabel(l);
-                aksi.onUbahGaris(g.id, { label: l });
-              }}
+              onClick={() => aksi.onUbahGaris(g.id, { label: l })}
               className={cn(TOMBOL, "bg-white/[0.06]", g.label === l && "bg-blue-600 text-white hover:bg-blue-700")}
             >
               {l}
@@ -337,12 +353,12 @@ function PropertiGaris({ g, diagram, bisaSunting, aksi }: { g: Garis; diagram: D
           ))}
           <input
             id="flow-label"
-            value={label}
+            value={g.label}
             maxLength={FLOW_MAX_LABEL}
             disabled={!bisaSunting}
             placeholder="tanpa label"
-            onChange={(e) => setLabel(e.target.value)}
-            onBlur={() => label !== g.label && aksi.onUbahGaris(g.id, { label })}
+            onChange={(e) => aksi.onKetikLabel(g.id, e.target.value)}
+            onBlur={aksi.onSelesaiKetik}
             className={KOLOM}
           />
         </div>
@@ -431,22 +447,22 @@ function TabMulaiJalan({ jumlahGalat, adaSimbol, onMulai }: { jumlahGalat: numbe
           id="flow-masukan"
           value={masukan}
           onChange={(e) => setMasukan(e.target.value)}
-          placeholder="mis. 4, 5 — untuk simbol Baca"
+          placeholder="mis. 4, 5 - untuk simbol INPUT"
           className={KOLOM}
         />
-        <p className="mt-1 text-xs text-ink-muted">Kosongkan untuk mengetik nilainya saat simbol Baca dijalankan.</p>
+        <p className="mt-1 text-xs text-ink-muted">Kosongkan untuk mengetik nilainya saat simbol INPUT dijalankan.</p>
       </div>
       {jumlahGalat > 0 && (
         <p className="bg-amber-500/15 px-3 py-2 text-xs text-warn-text">
-          Ada {jumlahGalat} galat aturan (lihat tab Periksa) — jalannya mungkin berhenti di tengah.
+          Ada {jumlahGalat} galat aturan (lihat tab Periksa) - jalannya mungkin berhenti di tengah.
         </p>
       )}
       <button type="button" className={TOMBOL_UTAMA} disabled={!adaSimbol} onClick={() => onMulai(masukan)}>
         ▶ Jalankan
       </button>
       <p className="text-xs leading-relaxed text-ink-muted">
-        Bahasa yang dipahami: penugasan <code>x = x + 1</code>, kondisi <code>n mod 2 = 0</code>, <code>dan</code>/<code>atau</code>/<code>tidak</code>,
-        teks dalam kutip, dan fungsi akar, abs, bulat, min, max.
+        Penulisan baku gaya Cambridge: <code>INPUT X</code>, <code>Total ← Total + X</code>, <code>X MOD 2 = 0?</code>,{" "}
+        <code>OUTPUT Total</code>. Daftar lengkapnya ada di tab Panduan.
       </p>
     </div>
   );

@@ -23,7 +23,17 @@ import { diagramKeSvg } from "@/lib/lab/flowSvg";
 import { CONTOH_FLOW } from "@/lib/lab/flowContoh";
 import { diagramKosong, JENIS_SIMPUL, type Diagram, type JenisSimpul } from "@/lib/lab/flowTypes";
 import { LAB_URL_PARAM } from "@/lib/lab/labUrl";
-import { canRedo, canUndo, currentState, initHistory, pushHistory, redoHistory, undoHistory, type LabHistory } from "@/lib/lab/labHistory";
+import {
+  canRedo,
+  canUndo,
+  currentState,
+  gantiPuncakHistory,
+  initHistory,
+  pushHistory,
+  redoHistory,
+  undoHistory,
+  type LabHistory,
+} from "@/lib/lab/labHistory";
 import { cn } from "@/lib/cn";
 import { IKON, ITEM_MENU, Ikon, Kelompok, Menu, TOMBOL, unduh } from "../LabAlat";
 
@@ -96,8 +106,20 @@ export default function FlowWorkspace({ awal, judul, aktif }: { awal: Diagram | 
   const diagramDraf = useMemo(() => (draf ? berkasKeDiagram(draf) : null), [draf]);
 
   // ── Riwayat ────────────────────────────────────────────────────────
-  const terapkan = useCallback((baru: Diagram, label: string) => {
-    setRiwayat((h) => (baru === currentState(h) ? h : pushHistory(h, baru, label)));
+  // Kunci sesi mengetik yang sedang berjalan (mis. "teks-12"). Selama kuncinya
+  // sama, setiap ketukan MENGGANTI entri riwayat teratas alih-alih menambah —
+  // teks di kanvas berubah langsung, tetapi satu sesi mengetik = satu undo.
+  // Operasi lain apa pun, blur, undo, dan redo memutus sesinya.
+  const sesiKetik = useRef<string | null>(null);
+  const terapkan = useCallback((baru: Diagram, label: string, sesi?: string) => {
+    // Dibaca SEBELUM setRiwayat: pembaruan state bisa berjalan belakangan,
+    // sesudah ref sudah diganti ke sesi baru.
+    const lanjut = sesi !== undefined && sesiKetik.current === sesi;
+    sesiKetik.current = sesi ?? null;
+    setRiwayat((h) => {
+      if (baru === currentState(h)) return h;
+      return lanjut && h.cursor === h.entries.length - 1 ? gantiPuncakHistory(h, baru, label) : pushHistory(h, baru, label);
+    });
   }, []);
 
   function beriPesan(teks: string, ok: boolean) {
@@ -182,12 +204,23 @@ export default function FlowWorkspace({ awal, judul, aktif }: { awal: Diagram | 
     setPilihan({ simpul: new Set(h.baru), garis: new Set() });
   }
 
-  const undo = () => bisaSunting && setRiwayat((h) => undoHistory(h));
-  const redo = () => bisaSunting && setRiwayat((h) => redoHistory(h));
+  const undo = () => {
+    sesiKetik.current = null;
+    if (bisaSunting) setRiwayat((h) => undoHistory(h));
+  };
+  const redo = () => {
+    sesiKetik.current = null;
+    if (bisaSunting) setRiwayat((h) => redoHistory(h));
+  };
 
   const aksi: AksiPanel = {
     onTambah: (j) => tambah(j),
-    onUbahTeks: (id, t) => terapkan(ubahTeks(diagram, id, t), "Ubah teks"),
+    onUbahTeks: (id, t) => terapkan(ubahTeks(diagram, id, t), "Ubah teks", `teks-${id}`),
+    onKetikLabel: (id, label) => terapkan(ubahGaris(diagram, id, { label }), "Ubah label", `label-${id}`),
+    onSelesaiKetik: () => {
+      sesiKetik.current = null;
+    },
+    onPanduan: () => setTab("panduan"),
     onUbahJenis: (id, j) => terapkan(ubahJenis(diagram, id, j), "Ganti jenis"),
     onUbahUkuran: (id, w, h) => {
       const s = diagram.simpul.find((x) => x.id === id);
@@ -279,7 +312,7 @@ export default function FlowWorkspace({ awal, judul, aktif }: { awal: Diagram | 
   async function bagikan() {
     if (diagram.simpul.length === 0) return beriPesan("Flowchart masih kosong.", false);
     const kode = await encodeFlow(diagram);
-    if (!kode) return beriPesan("Terlalu besar untuk tautan — pakai Berkas → Simpan .json.", false);
+    if (!kode) return beriPesan("Terlalu besar untuk tautan - pakai Berkas → Simpan .json.", false);
     const url = new URL(window.location.pathname, window.location.origin);
     url.searchParams.delete(LAB_URL_PARAM);
     url.searchParams.set(FLOW_URL_PARAM, kode);
@@ -549,7 +582,7 @@ export default function FlowWorkspace({ awal, judul, aktif }: { awal: Diagram | 
       )}
 
       {!bisaSunting && (
-        <p className="pointer-events-none absolute left-3 top-3 bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white">Mode Jalankan — tekan “Sunting” untuk mengubah</p>
+        <p className="pointer-events-none absolute left-3 top-3 bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white">Mode Jalankan - tekan “Sunting” untuk mengubah</p>
       )}
     </div>
   );

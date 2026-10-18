@@ -49,17 +49,20 @@ export interface InfoJenis {
 }
 
 export const INFO_JENIS: Record<JenisSimpul, InfoJenis> = {
-  mulai: { nama: "Mulai", ket: "Titik awal alur. Tepat satu.", w: 140, h: 50, teks: "Mulai" },
-  selesai: { nama: "Selesai", ket: "Titik akhir alur. Minimal satu.", w: 140, h: 50, teks: "Selesai" },
-  proses: { nama: "Proses", ket: "Perhitungan atau penugasan: total = total + x", w: 160, h: 60, teks: "x = 0" },
-  io: { nama: "Input / Output", ket: "Baca x  ·  Tampilkan x", w: 170, h: 60, teks: "Baca x" },
-  keputusan: { nama: "Keputusan", ket: "Kondisi dengan dua cabang: Ya dan Tidak", w: 160, h: 90, teks: "x > 0?" },
-  persiapan: { nama: "Persiapan", ket: "Inisialisasi atau awal perulangan: i = 1", w: 170, h: 60, teks: "i = 1" },
-  subproses: { nama: "Subproses", ket: "Prosedur/fungsi yang dijelaskan terpisah", w: 170, h: 60, teks: "Hitung luas" },
-  konektor: { nama: "Konektor", ket: "Penyambung alur berlabel sama (A ke A)", w: 44, h: 44, teks: "A" },
-  dokumen: { nama: "Dokumen", ket: "Laporan atau dokumen tercetak", w: 160, h: 70, teks: "Laporan" },
-  data: { nama: "Data tersimpan", ket: "Basis data atau penyimpanan", w: 140, h: 70, teks: "Data" },
-  catatan: { nama: "Catatan", ket: "Keterangan; tidak ikut alur", w: 160, h: 50, teks: "Catatan" },
+  // Teks bawaan = bentuk baku Cambridge (silabus IGCSE 0478 / O Level 2210):
+  // simbol Terminator START/STOP, INPUT/OUTPUT, penugasan ←, Decision Yes/No.
+  // Simbol yang tidak ada di daftar silabus itu ditandai "simbol ISO tambahan".
+  mulai: { nama: "Mulai", ket: "Terminator: titik awal alur (START). Tepat satu.", w: 140, h: 50, teks: "START" },
+  selesai: { nama: "Selesai", ket: "Terminator: titik akhir alur (STOP). Minimal satu.", w: 140, h: 50, teks: "STOP" },
+  proses: { nama: "Proses", ket: "Process: penugasan, mis. Total ← Total + X", w: 160, h: 60, teks: "X ← 0" },
+  io: { nama: "Input / Output", ket: "INPUT X  ·  OUTPUT X", w: 170, h: 60, teks: "INPUT X" },
+  keputusan: { nama: "Keputusan", ket: "Decision: kondisi dengan dua cabang, Yes dan No", w: 160, h: 90, teks: "X > 0?" },
+  persiapan: { nama: "Persiapan", ket: "Inisialisasi, mis. Count ← 1 (simbol ISO tambahan)", w: 170, h: 60, teks: "Count ← 1" },
+  subproses: { nama: "Subproses", ket: "Subroutine: prosedur/fungsi yang dijelaskan di flowchart terpisah", w: 170, h: 60, teks: "HitungLuas" },
+  konektor: { nama: "Konektor", ket: "Penyambung alur berlabel sama, A ke A (simbol ISO tambahan)", w: 44, h: 44, teks: "A" },
+  dokumen: { nama: "Dokumen", ket: "Laporan atau dokumen tercetak (simbol ISO tambahan)", w: 160, h: 70, teks: "Laporan" },
+  data: { nama: "Data tersimpan", ket: "Basis data atau penyimpanan (simbol ISO tambahan)", w: 140, h: 70, teks: "Data" },
+  catatan: { nama: "Catatan", ket: "Keterangan; tidak ikut alur (simbol ISO tambahan)", w: 160, h: 50, teks: "Catatan" },
 };
 
 /** Sisi tempat garis menempel. */

@@ -211,12 +211,80 @@ export function dGaris(t: readonly Titik[]): string {
   return t.map((p, i) => `${i === 0 ? "M" : "L"}${r(p.x)},${r(p.y)}`).join(" ");
 }
 
+/**
+ * Seberapa jauh titik sambung boleh bergeser dari TENGAH sisinya sambil tetap
+ * tepat di tepi bentuk — hanya bagian sisi yang LURUS. Puncak ketupat, busur
+ * kapsul/lingkaran/silinder, sisi miring jajar genjang, dan gelombang bawah
+ * dokumen = 0 (titik sambungnya harus tetap di tengah).
+ */
+export function ruangGeser(s: Pick<Simpul, "jenis" | "w" | "h">, sisi: Sisi): number {
+  const { w, h } = s;
+  const datar = tegak(sisi);
+  const sudut = 4; // jauhi sudut persis — panah di pojok terbaca milik sisi lain
+  switch (s.jenis) {
+    case "proses":
+    case "subproses":
+    case "catatan":
+      return Math.max(0, (datar ? w : h) / 2 - sudut);
+    case "mulai":
+    case "selesai":
+      return datar ? Math.max(0, w / 2 - Math.min(h / 2, w / 2)) : 0;
+    case "io":
+      return datar ? Math.max(0, w / 2 - miringIo(w, h) - sudut) : 0;
+    case "persiapan":
+      return datar ? Math.max(0, w / 2 - Math.min(h * 0.4, w * 0.2) - sudut) : 0;
+    case "dokumen":
+      return sisi === "atas" ? w / 2 - sudut : datar ? 0 : Math.max(0, h * 0.35 - sudut);
+    case "data":
+      return datar ? 0 : Math.max(0, h / 2 - elipsData(w, h) - sudut);
+    default:
+      return 0;
+  }
+}
+
+/** Selisih terbesar yang diluruskan. Lebih dari ini = tata letak yang disengaja (belokan memang diharapkan). */
+export const TOLERANSI_LURUS = 2 * FLOW_GRID;
+
+/**
+ * Titik sambung kedua ujung garis, diluruskan bila bisa: dua simbol yang
+ * BERHADAPAN (bawah→atas, kanan→kiri, …) dengan tengah meleset sedikit
+ * (≤ TOLERANSI_LURUS) disambung garis lurus dengan menggeser salah satu
+ * ujung sepanjang sisi datarnya — diutamakan ujung tujuan, supaya garis tetap
+ * keluar dari tengah simbol asal. Bila tak ada sisi datar yang cukup (mis.
+ * ketupat ke ketupat), titik tengah dipakai dan garis berbelok seperti biasa.
+ *
+ * Ini menolong diagram LAMA (posisi dijepret per tepi kiri sebelum
+ * `tepiDariPusat`) tanpa memindahkan simbolnya.
+ */
+export function ujungGaris(
+  dari: Pick<Simpul, "jenis" | "x" | "y" | "w" | "h">,
+  sa: Sisi,
+  ke: Pick<Simpul, "jenis" | "x" | "y" | "w" | "h">,
+  sb: Sisi,
+): { a: Titik; b: Titik } {
+  const a = titikSisi(dari, sa);
+  const b = titikSisi(ke, sb);
+  const berhadapan =
+    (sa === "bawah" && sb === "atas" && b.y > a.y) ||
+    (sa === "atas" && sb === "bawah" && b.y < a.y) ||
+    (sa === "kanan" && sb === "kiri" && b.x > a.x) ||
+    (sa === "kiri" && sb === "kanan" && b.x < a.x);
+  if (!berhadapan) return { a, b };
+  const sumbu = tegak(sa) ? "x" : "y";
+  const selisih = Math.abs(a[sumbu] - b[sumbu]);
+  if (selisih === 0 || selisih > TOLERANSI_LURUS) return { a, b };
+  if (ruangGeser(ke, sb) >= selisih) return { a, b: { ...b, [sumbu]: a[sumbu] } };
+  if (ruangGeser(dari, sa) >= selisih) return { a: { ...a, [sumbu]: b[sumbu] }, b };
+  return { a, b };
+}
+
 /** Rute lengkap sebuah garis di diagram, atau null kalau ujungnya hilang. */
 export function titikGaris(diagram: Pick<Diagram, "simpul">, g: Garis): Titik[] | null {
   const dari = diagram.simpul.find((s) => s.id === g.dari);
   const ke = diagram.simpul.find((s) => s.id === g.ke);
   if (!dari || !ke) return null;
-  return ruteGaris(titikSisi(dari, g.dariSisi), g.dariSisi, titikSisi(ke, g.keSisi), g.keSisi);
+  const { a, b } = ujungGaris(dari, g.dariSisi, ke, g.keSisi);
+  return ruteGaris(a, g.dariSisi, b, g.keSisi);
 }
 
 /** Posisi label garis: dekat pangkalnya, di samping ruas pertama — "Ya"/"Tidak" terbaca milik keputusan yang mana. */

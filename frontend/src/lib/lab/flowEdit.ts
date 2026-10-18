@@ -32,6 +32,15 @@ export type HasilEdit = { ok: true; diagram: Diagram; baru: number[] } | { ok: f
 const jepit = (v: number, min: number, maks: number) => Math.min(maks, Math.max(min, v));
 const koordinat = (v: number) => jepit(jepret(v), -FLOW_BATAS_KOORDINAT, FLOW_BATAS_KOORDINAT);
 const ukuran = (v: number) => jepit(jepret(v), FLOW_MIN_UKURAN, FLOW_MAX_UKURAN);
+/**
+ * Tepi kiri/atas yang membuat TITIK TENGAH simbol jatuh di grid. Lebar bawaan
+ * tiap jenis berbeda (140, 160, 170, …): kalau yang dijepret tepi kirinya,
+ * tengah simbol selebar 170 meleset 5px dari simbol selebar 140 di atasnya,
+ * dan garis penghubung keduanya berbelok kecil (bug yang dilaporkan pemilik).
+ * Garis tersambung di TENGAH sisi, jadi tengahlah yang harus sejajar.
+ */
+const tepiDariPusat = (tepi: number, besar: number) =>
+  jepit(koordinat(tepi + besar / 2) - besar / 2, -FLOW_BATAS_KOORDINAT, FLOW_BATAS_KOORDINAT);
 const potongTeks = (s: string, maks: number) => [...s].slice(0, maks).join("");
 
 /** Menambah simpul berpusat di (cx, cy). */
@@ -39,16 +48,16 @@ export function tambahSimpul(d: Diagram, jenis: JenisSimpul, cx: number, cy: num
   if (d.simpul.length >= FLOW_MAX_SIMPUL) return { ok: false, pesan: `Maksimal ${FLOW_MAX_SIMPUL} simbol per flowchart.` };
   const info = INFO_JENIS[jenis];
   const id = d.nextId;
-  const s: Simpul = { id, jenis, x: koordinat(cx - info.w / 2), y: koordinat(cy - info.h / 2), w: info.w, h: info.h, teks: info.teks };
+  const s: Simpul = { id, jenis, x: tepiDariPusat(cx - info.w / 2, info.w), y: tepiDariPusat(cy - info.h / 2, info.h), w: info.w, h: info.h, teks: info.teks };
   return { ok: true, diagram: { ...d, simpul: [...d.simpul, s], nextId: id + 1 }, baru: [id] };
 }
 
-/** Menggeser simbol-simbol; posisi akhirnya dijepret ke grid. */
+/** Menggeser simbol-simbol; titik tengahnya dijepret ke grid (lihat `tepiDariPusat`). */
 export function pindahkan(d: Diagram, ids: ReadonlySet<number>, dx: number, dy: number): Diagram {
   if (ids.size === 0 || (dx === 0 && dy === 0)) return d;
   return {
     ...d,
-    simpul: d.simpul.map((s) => (ids.has(s.id) ? { ...s, x: koordinat(s.x + dx), y: koordinat(s.y + dy) } : s)),
+    simpul: d.simpul.map((s) => (ids.has(s.id) ? { ...s, x: tepiDariPusat(s.x + dx, s.w), y: tepiDariPusat(s.y + dy, s.h) } : s)),
   };
 }
 
@@ -80,9 +89,9 @@ export function ubahJenis(d: Diagram, id: number, jenis: JenisSimpul): Diagram {
 }
 
 /**
- * Menyambung dua simbol. Garis dari Keputusan diberi label otomatis: "Ya"
- * untuk cabang pertama, "Tidak" untuk yang kedua — kesalahan paling sering
- * siswa adalah lupa melabeli cabang.
+ * Menyambung dua simbol. Garis dari Keputusan diberi label otomatis: "Yes"
+ * untuk cabang pertama, "No" untuk yang kedua (bentuk Cambridge; Ya/Tidak tetap
+ * diterima bila diketik) — kesalahan paling sering siswa adalah lupa melabeli cabang.
  */
 export function sambung(d: Diagram, dari: number, ke: number, dariSisi?: Sisi, keSisi?: Sisi): HasilEdit {
   if (dari === ke) return { ok: false, pesan: "Garis tidak bisa menunjuk simbolnya sendiri." };
@@ -96,7 +105,7 @@ export function sambung(d: Diagram, dari: number, ke: number, dariSisi?: Sisi, k
   let label = "";
   if (a.jenis === "keputusan") {
     const ada = d.garis.filter((g) => g.dari === dari).map((g) => artiLabel(g.label));
-    label = !ada.includes("ya") ? "Ya" : !ada.includes("tidak") ? "Tidak" : "";
+    label = !ada.includes("ya") ? "Yes" : !ada.includes("tidak") ? "No" : "";
   }
   const id = d.nextId;
   const g: Garis = { id, dari, ke, dariSisi: dariSisi ?? otomatis.dariSisi, keSisi: keSisi ?? otomatis.keSisi, label };
@@ -146,7 +155,7 @@ export function duplikat(d: Diagram, ids: ReadonlySet<number>, geser = 30): Hasi
   const simpulBaru = asal.map((s) => {
     const id = next++;
     peta.set(s.id, id);
-    return { ...s, id, x: koordinat(s.x + geser), y: koordinat(s.y + geser) };
+    return { ...s, id, x: tepiDariPusat(s.x + geser, s.w), y: tepiDariPusat(s.y + geser, s.h) };
   });
   const garisBaru = dalam.map((g) => ({ ...g, id: next++, dari: peta.get(g.dari)!, ke: peta.get(g.ke)! }));
   return {

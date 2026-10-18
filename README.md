@@ -212,28 +212,38 @@ tidak menghapus papan lab lain.
     Persiapan, Subproses, Konektor, Dokumen, Data tersimpan, dan Catatan —
     diseret dari panel Simbol (atau diklik untuk ditaruh di tengah);
   - **menyambung**: arahkan ke simbol, seret bulatan biru di sisinya ke simbol
-    lain; garis siku digambar otomatis, cabang Keputusan otomatis berlabel
-    **Ya** lalu **Tidak**. Sisi keluar/masuk dan label bisa diubah di Properti;
+    lain; garis siku digambar otomatis (diluruskan bila dua simbol hampir
+    sejajar), cabang Keputusan otomatis berlabel **Yes** lalu **No**. Sisi
+    keluar/masuk dan label bisa diubah di Properti; teks yang diketik di
+    Properti langsung tampil di kanvas;
   - menyunting: klik ganda untuk mengubah teks/label di tempat, seret sudut
     untuk mengubah ukuran, Shift+seret untuk memilih banyak, salin (Ctrl+D),
     hapus (Del), undo/redo, geser kanvas & zoom (Ctrl+roda), grid, layar penuh;
   - **pemeriksa aturan** (tab Periksa, berupa peringatan — tetap boleh
     menggambar bebas): satu Mulai, ada Selesai, Mulai tanpa garis masuk,
-    Selesai tanpa garis keluar, Keputusan tepat dua cabang Ya/Tidak, simbol
+    Selesai tanpa garis keluar, Keputusan tepat dua cabang Yes/No, simbol
     lain satu garis keluar, semua simbol terjangkau dari Mulai dan punya jalan
-    ke Selesai, konektor berpasangan, teks yang bisa dijalankan. Klik
-    temuan untuk menyorot simbolnya;
+    ke Selesai, konektor berpasangan, teks yang bisa dijalankan, dan **saran
+    bentuk baku Cambridge** (mis. "tulis INPUT, bukan Baca"). Klik temuan untuk
+    menyorot simbolnya;
   - **Jalankan** (tab Jalankan): flowchart dieksekusi langkah demi langkah —
     simbol aktif menyala, garis yang dilewati beranimasi, tabel **variabel**
     (yang baru berubah disorot), **keluaran**, dan narasi tiap langkah.
-    Putar/jeda/langkah/mundur/sampai akhir, kecepatan 0,5×–4×. Simbol **Baca**
+    Putar/jeda/langkah/mundur/sampai akhir, kecepatan 0,5×–4×. Simbol **INPUT**
     memakai masukan yang diisi di muka (mis. `4, 5`) atau berhenti meminta
     nilainya. Perulangan tak berujung dihentikan setelah 5.000 langkah;
-  - bahasanya pseudocode kelas: `x = x + 1` (juga `←`, `+=`, `++`), kondisi
-    `n mod 2 = 0?`, `dan`/`atau`/`tidak`, `div`, `^`, teks dalam kutip, fungsi
-    `akar`, `abs`, `bulat`, `min`, `max`; `Baca a, b` dan
-    `Tampilkan "Luas =", luas`. Subproses bernama, Dokumen, dan Data
-    dilewati (dikatakan di narasi);
+  - **bentuk baku penulisan = gaya Cambridge** (silabus IGCSE 0478 / O Level
+    2210 menetapkan enam simbol flowchart dan penulisan yang tepat; isinya
+    pseudocode Cambridge, sama dengan Lab 05): `START`/`STOP`, `INPUT X`,
+    `OUTPUT "Luas = ", Luas` (nilai disambung tanpa spasi), `Total ← Total + X`
+    (ketik `<-`), kondisi `X MOD 2 = 0?` atau `Is X > 0?`, `AND`/`OR`/`NOT`,
+    `<>`, `&`, `MOD(X, 2)`/`DIV(X, 2)`, fungsi `INT`, `ROUND(X, n)`, `LENGTH`,
+    `UCASE`, `LCASE`, dan cabang **Yes/No**. Bentuk Indonesia/lama tetap
+    berjalan (Baca, Tampilkan, `x = 1`, `+=`, `++`, `dan`/`atau`/`tidak`, `==`,
+    `!=`, `mod`, Ya/Tidak, akar/abs/bulat/min/max) dan hanya mendapat saran di
+    tab Periksa. Tab **Panduan** di panel kanan berisi daftar lengkap perintah,
+    operator, padanan bentuk lama, dan kesalahan yang sering terjadi.
+    Subproses bernama, Dokumen, dan Data dilewati (dikatakan di narasi);
   - **contoh** siap pakai: luas persegi panjang, genap/ganjil, jumlah 1 sampai n;
   - **menyimpan**: tombol Bagikan membuat tautan (diagram dipadatkan), menu
     Berkas menyimpan/membuka `.json` (untuk flowchart besar) dan mengekspor

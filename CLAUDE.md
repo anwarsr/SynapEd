@@ -815,9 +815,35 @@ materi array terbuka.
     server, browser, dan berkas ekspor membungkus identik (tanpa hydration mismatch).
   - `flowEdit.ts`: operasi murni (diagram baru, tidak mutasi; ditolak = diagram
     sama). `sambung` dari Keputusan otomatis memberi label Ya lalu Tidak.
+    Menaruh, menggeser, dan menggandakan menjepret TITIK TENGAH simbol ke grid
+    (`tepiDariPusat`), bukan tepi kirinya: lebar bawaan berbeda per jenis (140/160/170)
+    dan garis tersambung di tengah sisi, jadi tepi yang dijepret membuat tengah
+    meleset 5px dan garis berbelok kecil (bug yang dilaporkan pemilik). Pratinjau seret
+    di `FlowCanvas` memanggil `pindahkan` yang sama — pratinjau = hasil.
+  - Garis LURUS untuk selisih kecil: `ujungGaris` (dipakai `titikGaris` & pratinjau
+    menyambung) menggeser satu ujung sepanjang bagian DATAR sisinya (`ruangGeser`;
+    puncak ketupat, busur kapsul/lingkaran/silinder, sisi miring jajar genjang =
+    0) bila dua simbol berhadapan dan tengahnya meleset ≤ `TOLERANSI_LURUS` (20px);
+    ujung tujuan diutamakan. Ini juga meluruskan diagram LAMA tanpa memindahkan
+    simbolnya. Selisih lebih besar = belokan yang disengaja.
   - `flowEkspresi.ts`: Pratt parser sendiri — **jangan pernah `eval`/`Function`**
     (tautan flowchart dari siapa saja). Variabel di `Map` (aman dari `__proto__`).
     Di kondisi, `=` berarti sama dengan. Galat = `GalatEkspresi` berbahasa Indonesia.
+    **Bentuk baku = gaya Cambridge** (keputusan pemilik; silabus IGCSE 0478 / O Level
+    2210 menetapkan enam simbol & penulisan tepat, isinya pseudocode Cambridge):
+    START/STOP, INPUT, OUTPUT, ←, Yes/No, AND/OR/NOT, MOD/DIV (operator & bentuk
+    fungsi `MOD(a, b)`), `&`, INT/ROUND/LENGTH/UCASE/LCASE, kondisi boleh diawali
+    "Is"/"Apakah" (`bersihkanKondisi`). Bentuk lama/Indonesia TETAP diterima (flowchart
+    lama harus jalan) — `saranGaya` (flowPeriksa) + `gayaEkspresi` (flowEkspresi)
+    hanya memberi temuan SARAN `gaya-cambridge`, satu per simbol. `OUTPUT` menyambung
+    nilai TANPA pemisah (seperti pseudocode); Tampilkan/Cetak/Print tetap dengan spasi
+    (`PerintahIo.pemisah`) supaya keluaran flowchart lama tidak berubah. Teks bawaan
+    simbol (`INFO_JENIS`), label otomatis, dan contoh semuanya baku (diuji: contoh &
+    teks bawaan tanpa saran). Tab "Panduan" (`PanduanFlow.tsx`) = daftar perintah yang
+    dilihat siswa — WAJIB diperbarui bila mesin menerima bentuk baru.
+    Token operator menyimpan `asli` (ejaan siswa: "mod", "<>") di samping bentuk baku
+    (`%`, `!=`); pesan galat WAJIB memakai `asli` — dulu "x > mod 2" dilaporkan sebagai
+    '"%" tidak boleh berada di sini'. Dua operator berurutan disebut keduanya.
   - `flowJalan.ts`: mesin jalan murni; "aktif" = simpul yang BARU dijalankan,
     Keputusan menyimpan `cabang` untuk langkah berikutnya, konektor tanpa garis
     keluar melompat ke konektor berlabel sama, input dari antrean atau
@@ -849,6 +875,14 @@ materi array terbuka.
     sesi (`SplashLoader`, ±4 dtk) — uji browser harus menunggunya.
   - Tombol/ikon/`Kelompok`/`Menu`/`unduh` bilah alat ada di `components/lab/LabAlat.tsx`,
     dipakai bersama flowchart & lab kode.
+  - Panel Properti: Teks simbol & label garis diterapkan PER KETUKAN (isian terkendali
+    dari diagram), BUKAN saat blur — dulu hanya saat blur, dan mengeklik kanvas
+    mengganti panel lebih dulu sehingga blur tak pernah datang dan ketikan hilang
+    (bug yang dilaporkan pemilik). Satu sesi mengetik tetap SATU undo: `terapkan(…,
+    sesi)` di FlowWorkspace — ketukan pertama sesi `pushHistory`, berikutnya
+    `gantiPuncakHistory` (labHistory.ts); operasi lain, blur (`onSelesaiKetik`),
+    undo, dan redo memutus sesi. Kunci `PropertiSimpul`/`PropertiGaris` TIDAK boleh
+    memuat teks/label (panel terpasang ulang tiap ketukan → fokus hilang).
 - **Lab kode — Python (Lab 04) & Pseudocode (Lab 05)**:
   - Satu ruang kerja untuk keduanya (`components/lab/kode/KodeWorkspace.tsx`);
     yang berbeda hanya `MesinKode` (`jalankan(kode, masukan, rekam) → JejakKode`,
