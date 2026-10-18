@@ -52,7 +52,9 @@ export const PENGETAHUAN_SITUS = `## Akun
   educator dulu. Sertifikat dilihat & dicetak dari /profil; siapa pun bisa
   memeriksa keasliannya di /verify/{kode} tanpa masuk akun.
 - Peserta yang sudah menyelesaikan kursus bisa memberi ulasan bintang dan
-  komentar.
+  komentar. Semua komentar peserta bisa dibaca di /komentar.
+- /dashboard merangkum kursus dan kelas yang sedang diikuti (dan, untuk
+  educator, yang dibuatnya).
 
 ## Membeli kursus
 - Pembelian lewat Midtrans membuka akses otomatis begitu pembayaran masuk.
@@ -69,12 +71,12 @@ export const PENGETAHUAN_SITUS = `## Akun
   /pengembalian-dana — jangan menjanjikan pengembalian di luar itu.
 
 ## Kode referral & pendapatan
-- Setiap akun bisa membuat SATU kode referral di /dashboard. Kode tidak bisa
+- Setiap akun bisa membuat SATU kode referral di /dashboard/pendapatan. Kode tidak bisa
   diganti setelah dibuat.
 - Tombol "Bagikan dengan kode referral" di halaman kursus mana pun membuat
   tautan berisi kode itu. Pemilik kode mendapat bagian dari setiap pembelian
   lewat tautannya (persentasenya lihat "Info terkini").
-- /dashboard menampilkan total pendapatan (royalti + referral), riwayat per
+- /dashboard/pendapatan menampilkan total pendapatan (royalti + referral), riwayat per
   penjualan, dan kursus tempat ia berkontribusi. Data pembeli tidak pernah
   ditampilkan.
 - Penarikan dana BELUM tersedia; dashboard hanya mencatat pendapatan.
@@ -135,6 +137,14 @@ export const PENGETAHUAN_SITUS = `## Akun
   merge, dan quick sort.
 - Papan bisa dibagikan lewat tautan, tetapi tidak tersimpan di server —
   menutup tab berarti papannya hilang. Ada juga mode presentasi.
+- Flowchart (Lab 03): menggambar flowchart dengan simbol standar
+  (Mulai/Selesai, Proses, Input/Output, Keputusan, Persiapan, Subproses,
+  Konektor, Dokumen, Data, Catatan), menyambungnya dengan menyeret bulatan di
+  sisi simbol, lalu memeriksa aturannya (tab Periksa) dan MENJALANKANNYA langkah
+  demi langkah (tab Jalankan) dengan variabel, masukan, dan keluaran.
+  Teks ditulis seperti pseudocode: "x = x + 1", "Baca n", "Tampilkan total",
+  kondisi "n mod 2 = 0?". Flowchart bisa dibagikan lewat tautan, disimpan/dibuka
+  sebagai berkas .json, dan diekspor ke PNG atau SVG. Ada contoh siap pakai.
 
 ## Yang belum tersedia
 Penarikan dana pendapatan, notifikasi email, pengembalian dana otomatis,

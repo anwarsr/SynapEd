@@ -577,9 +577,9 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
 
 Papan sandbox untuk memvisualisasikan materi. **Tanpa Firestore, tanpa Server
 Action, tanpa login** — seluruh keadaan hidup di memori browser dan di URL.
-Dua materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
-**3D** (`array3d`), **N-D** (`arrayNd`) — dan **Linked List** (`linkedList`,
-singly). Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
+Tiga materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
+**3D** (`array3d`), **N-D** (`arrayNd`) — **Linked List** (`linkedList`,
+singly), dan **Flowchart** (`"flowchart"`, BUKAN `LabId` — lihat bagian Flowchart). Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
 MENIMPA halaman (fixed + latar gelap, `inert` saat tertutup, fokus dikurung,
 gulir `body` dikunci, `Esc` ditangkap di fase capture supaya tidak ikut menutup
 mode presentasi). Komponennya generik — hanya menerima `BagianNavigasi[]`
@@ -787,6 +787,52 @@ ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
     berlaku — itu tata letak, bukan animasi).
 - Tautan "Lab" di navbar bertanda `sempit: true` → `hidden lg:block`. Diukur:
   di 820px, menambahkannya mendorong tombol "Daftar Gratis" keluar layar.
+- **Flowchart** (`lib/lab/flow*.ts` netral + `components/lab/flow/`):
+  - TIDAK memakai `LabKit`/`LabWorkspace`: disunting langsung di kanvas, dan
+    "langkah"-nya eksekusi program, bukan animasi operasi. `LabShell` mengenalnya
+    sebagai `PilihanLab = LabId | "flowchart"`; yang dipakai bersama hanya
+    `labHistory` dan gaya.
+  - Data: `flowTypes.ts` (`Simpul{id,jenis,x,y,w,h,teks}`, `Garis{id,dari,ke,
+    dariSisi,keSisi,label}`, satu `nextId` untuk keduanya, batas 120 simpul/240
+    garis/teks 200). Mulai & Selesai dua JENIS berbeda (jangan ditebak dari teks).
+  - `flowGeometri.ts`: bentuk tiap jenis sebagai path, titik sambung per sisi,
+    `ruteGaris` siku ala draw.io (keluar lurus 20px dulu; sisi sama → "kurung"),
+    `bungkusTeks` dengan PERKIRAAN lebar huruf — sengaja tanpa measureText supaya
+    server, browser, dan berkas ekspor membungkus identik (tanpa hydration mismatch).
+  - `flowEdit.ts`: operasi murni (diagram baru, tidak mutasi; ditolak = diagram
+    sama). `sambung` dari Keputusan otomatis memberi label Ya lalu Tidak.
+  - `flowEkspresi.ts`: Pratt parser sendiri — **jangan pernah `eval`/`Function`**
+    (tautan flowchart dari siapa saja). Variabel di `Map` (aman dari `__proto__`).
+    Di kondisi, `=` berarti sama dengan. Galat = `GalatEkspresi` berbahasa Indonesia.
+  - `flowJalan.ts`: mesin jalan murni; "aktif" = simpul yang BARU dijalankan,
+    Keputusan menyimpan `cabang` untuk langkah berikutnya, konektor tanpa garis
+    keluar melompat ke konektor berlabel sama, input dari antrean atau
+    `tunggu-input`, berhenti di `FLOW_MAKS_LANGKAH` 5000. Subproses bernama/
+    Dokumen/Data dilewati dengan narasi jujur.
+  - `flowPeriksa.ts`: temuan `galat`/`saran` + id simbol/garis untuk disorot
+    (sorotan kanvas hanya saat tab Periksa terbuka). Keterjangkauan & "jalan ke
+    Selesai" ikut menghitung lompatan konektor.
+  - `flowUrl.ts`: `?f=` = digit versi + base64url(deflate-raw(JSON ringkas)) via
+    `CompressionStream` (sama di browser & Node), maks 8000 karakter; dibaca di
+    SERVER (`app/lab/page.tsx`, async). `sahkanDiagram` = satu-satunya pintu data
+    luar (tautan & berkas `.json`), semua-atau-tidak; dekompresi dibatasi 512 KB
+    (bom kompresi). `verify-flowchart` membuktikan batas itu dengan JSON SAH 2 MB —
+    muatan rusak sudah gagal di JSON.parse dan tidak menguji batasnya.
+  - `flowSvg.ts`: ekspor SVG dari DATA (bukan DOM — variabel CSS tema tidak ikut,
+    `foreignObject` membuat kanvas PNG tercemar), selalu latar putih. PNG = SVG itu
+    digambar ke canvas 2×.
+  - Kanvas (`FlowCanvas.tsx`): SVG + pointer capture; seret = pratinjau di state
+    lokal, diterapkan SEKALI saat dilepas (satu entri undo). `wheel` dipasang manual
+    (`passive:false`). Klik ganda memakai `document.elementFromPoint`, BUKAN
+    `e.target` — selama pointer capture klik diarahkan ke `<svg>`. Warna = rona
+    jenis (`RONA_JENIS`) dicampur `--color-paper-card`, jadi ikut tema gelap/terang.
+  - Ruang kerja (`FlowWorkspace.tsx`): mode Jalankan MENGUNCI penyuntingan;
+    pemutar `setTimeout` berantai dari event handler (bukan effect); viewport awal
+    dihitung dari data (bukan diukur) supaya render server = klien; draf
+    `localStorage` (`synaplab-flowchart-draf`) dibaca lewat `useSyncExternalStore`.
+    Menu `<details>` menutup lewat klik di wadahnya (lint `react-hooks/refs` menolak
+    fungsi pembaca ref yang dioper saat render). Situs punya layar intro sekali per
+    sesi (`SplashLoader`, ±4 dtk) — uji browser harus menunggunya.
 
 ## Pengujian (`scripts/`)
 
@@ -797,7 +843,7 @@ ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
   `settings/payments` harus menyalin & memulihkan dokumennya **persis**
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
-- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office

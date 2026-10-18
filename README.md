@@ -106,7 +106,7 @@ penyusun kursus tidak pernah berkurang.
 
 ### Kode referral
 
-- Setiap akun bisa membuat **satu kode** di `/dashboard`. Kode tidak bisa
+- Setiap akun bisa membuat **satu kode** di `/dashboard/pendapatan`. Kode tidak bisa
   diganti setelah dibuat, supaya tautan yang sudah tersebar tetap berfungsi.
 - Tombol **Bagikan dengan kode referral** di halaman kursus mana pun
   menghasilkan tautan yang memuat kode itu. Siapa pun yang membeli lewat
@@ -136,7 +136,7 @@ penyusun kursus tidak pernah berkurang.
 Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
 orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
 tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
-(Lab 01 — 1D, 2D, 3D, N-D) dan **Linked List** (Lab 02). Laci menimpa halaman
+(Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), dan **Flowchart** (Lab 03). Laci menimpa halaman
 tanpa menggesernya. Array punya empat versi lagi — **1D · 2D · 3D · N-D**.
 Tiap lab punya papan, operasi, dan tautan bagikannya sendiri; berpindah lab
 tidak menghapus papan lab lain.
@@ -204,6 +204,37 @@ tidak menghapus papan lab lain.
 - **Batalkan & ulangi** untuk setiap operasi.
 - **Mode presentasi** (sel membesar, layar penuh, `Esc` untuk keluar) dan
   tombol pintas keyboard.
+- **Flowchart** (Lab 03) — menggambar ala draw.io lalu **menjalankannya**:
+  - **simbol ANSI/ISO 5807**: Mulai, Selesai, Proses, Input/Output, Keputusan,
+    Persiapan, Subproses, Konektor, Dokumen, Data tersimpan, dan Catatan —
+    diseret dari panel Simbol (atau diklik untuk ditaruh di tengah);
+  - **menyambung**: arahkan ke simbol, seret bulatan biru di sisinya ke simbol
+    lain; garis siku digambar otomatis, cabang Keputusan otomatis berlabel
+    **Ya** lalu **Tidak**. Sisi keluar/masuk dan label bisa diubah di Properti;
+  - menyunting: klik ganda untuk mengubah teks/label di tempat, seret sudut
+    untuk mengubah ukuran, Shift+seret untuk memilih banyak, salin (Ctrl+D),
+    hapus (Del), undo/redo, geser kanvas & zoom (Ctrl+roda), grid, layar penuh;
+  - **pemeriksa aturan** (tab Periksa, berupa peringatan — tetap boleh
+    menggambar bebas): satu Mulai, ada Selesai, Mulai tanpa garis masuk,
+    Selesai tanpa garis keluar, Keputusan tepat dua cabang Ya/Tidak, simbol
+    lain satu garis keluar, semua simbol terjangkau dari Mulai dan punya jalan
+    ke Selesai, konektor berpasangan, teks yang bisa dijalankan. Klik
+    temuan untuk menyorot simbolnya;
+  - **Jalankan** (tab Jalankan): flowchart dieksekusi langkah demi langkah —
+    simbol aktif menyala, garis yang dilewati beranimasi, tabel **variabel**
+    (yang baru berubah disorot), **keluaran**, dan narasi tiap langkah.
+    Putar/jeda/langkah/mundur/sampai akhir, kecepatan 0,5×–4×. Simbol **Baca**
+    memakai masukan yang diisi di muka (mis. `4, 5`) atau berhenti meminta
+    nilainya. Perulangan tak berujung dihentikan setelah 5.000 langkah;
+  - bahasanya pseudocode kelas: `x = x + 1` (juga `←`, `+=`, `++`), kondisi
+    `n mod 2 = 0?`, `dan`/`atau`/`tidak`, `div`, `^`, teks dalam kutip, fungsi
+    `akar`, `abs`, `bulat`, `min`, `max`; `Baca a, b` dan
+    `Tampilkan "Luas =", luas`. Subproses bernama, Dokumen, dan Data
+    dilewati (dikatakan di narasi);
+  - **contoh** siap pakai: luas persegi panjang, genap/ganjil, jumlah 1 sampai n;
+  - **menyimpan**: tombol Bagikan membuat tautan (diagram dipadatkan), menu
+    Berkas menyimpan/membuka `.json` (untuk flowchart besar) dan mengekspor
+    **PNG/SVG** berlatar putih untuk laporan. Draf terakhir juga diingat browser.
 - **Linked list (singly)** — materi tersendiri, terpisah dari array:
   - setiap simpul digambar `[nilai | next]` lengkap dengan **alamat memorinya**,
     disambung panah; kotak `head` menunjuk simpul pertama, dan tabel **Memori**
@@ -421,6 +452,7 @@ cd frontend && npx tsc --noEmit   # aplikasi
 cd frontend && npm run lint
 npm run verify:royalty            # contoh; daftar lengkap di package.json
 npm run verify:lab                # SynapLab — murni, tanpa dev server & kredensial
+npm run verify:flowchart          # flowchart: ekspresi, mesin jalan, pemeriksa, tautan (murni)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
@@ -435,6 +467,9 @@ npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman s
 - Soal kuis selain pilihan tunggal.
 - Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
+- Flowchart: titik belok garis yang diatur manual, pinch-zoom di layar sentuh,
+  subproses yang benar-benar memanggil flowchart lain, dan perulangan `for` di
+  simbol Persiapan (sekarang ditulis sebagai penugasan + Keputusan).
 - Tugas kelas: mengembalikan tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
   rekap nilai per kelas, dan koreksi AI untuk semua siswa sekaligus.
 - Koreksi AI untuk PDF hasil pindai dan isi arsip ZIP.

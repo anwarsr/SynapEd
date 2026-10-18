@@ -2,12 +2,24 @@
 import { useCallback, useState } from "react";
 import LabNavigasi, { type BagianNavigasi } from "./LabNavigasi";
 import LabWorkspace from "./LabWorkspace";
+import FlowWorkspace from "./flow/FlowWorkspace";
 import { KIT_ARRAY_1D, KIT_ARRAY_2D, KIT_ARRAY_3D, KIT_ARRAY_ND, KIT_LINKED_LIST } from "./labKits";
 import type { LabSnapshot } from "@/lib/lab/labUrl";
 import type { LabId } from "@/lib/lab/labTypes";
+import type { Diagram } from "@/lib/lab/flowTypes";
 import { cn } from "@/lib/cn";
 
-type Materi = "array" | "list";
+type Materi = "array" | "list" | "flowchart";
+
+/**
+ * Flowchart BUKAN `LabId`: ia tidak memakai skema tautan `?s=` maupun
+ * `LabWorkspace`, jadi tidak ikut tipe lab berbasis operasi. Kerangka ini
+ * cukup mengenalnya sebagai satu pilihan tambahan.
+ */
+type PilihanLab = LabId | "flowchart";
+
+const RINGKAS_FLOWCHART =
+  "Gambar flowchart, periksa aturannya, lalu jalankan langkah demi langkah dengan variabel dan masukan.";
 
 const DIMENSI_ARRAY: readonly { id: LabId; nama: string; ringkas: string }[] = [
   KIT_ARRAY_1D,
@@ -20,6 +32,7 @@ const DIMENSI_ARRAY: readonly { id: LabId; nama: string; ringkas: string }[] = [
 const MATERI: readonly { id: Materi; nomor: string; nama: string }[] = [
   { id: "array", nomor: "01", nama: "Array" },
   { id: "list", nomor: "02", nama: "Linked List" },
+  { id: "flowchart", nomor: "03", nama: "Flowchart" },
 ];
 
 /**
@@ -43,11 +56,16 @@ const NAVIGASI: readonly BagianNavigasi[] = [
     nama: "Linked List",
     item: [{ id: "linkedList", nama: "Singly linked list", ket: KIT_LINKED_LIST.ringkas }],
   },
+  {
+    nomor: "03",
+    nama: "Flowchart",
+    item: [{ id: "flowchart", nama: "Flowchart", ket: RINGKAS_FLOWCHART }],
+  },
 ];
 
 const ID_LAB: ReadonlySet<string> = new Set(NAVIGASI.flatMap((b) => b.item.map((it) => it.id)));
 
-const materiDari = (id: LabId): Materi => (id === "linkedList" ? "list" : "array");
+const materiDari = (id: PilihanLab): Materi => (id === "flowchart" ? "flowchart" : id === "linkedList" ? "list" : "array");
 
 /**
  * Pengalih materi (Array · Linked List) dan, untuk array, pengalih dimensinya
@@ -58,12 +76,22 @@ const materiDari = (id: LabId): Materi => (id === "linkedList" ? "list" : "array
  * untuk menunjukkan sesuatu lalu kembali ke 1D tidak boleh menghapus papan
  * dan riwayat 1D yang sedang dipakai mengajar.
  */
-export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | null; tautanRusak: boolean }) {
-  const [aktif, setAktif] = useState<LabId>(awal?.lab ?? "array1d");
-  const [dibuka, setDibuka] = useState<ReadonlySet<LabId>>(() => new Set([awal?.lab ?? "array1d"]));
+export default function LabShell({
+  awal,
+  awalFlow,
+  tautanRusak,
+}: {
+  awal: LabSnapshot | null;
+  /** Flowchart dari tautan `?f=`, sudah dibaca di server. */
+  awalFlow: Diagram | null;
+  tautanRusak: boolean;
+}) {
+  const labAwal: PilihanLab = awalFlow ? "flowchart" : (awal?.lab ?? "array1d");
+  const [aktif, setAktif] = useState<PilihanLab>(labAwal);
+  const [dibuka, setDibuka] = useState<ReadonlySet<PilihanLab>>(() => new Set([labAwal]));
   const [beritahuRusak, setBeritahuRusak] = useState(tautanRusak);
 
-  const pilih = useCallback((id: LabId) => {
+  const pilih = useCallback((id: PilihanLab) => {
     setAktif(id);
     setDibuka((s) => (s.has(id) ? s : new Set([...s, id])));
   }, []);
@@ -72,7 +100,12 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
 
   const materi = materiDari(aktif);
   const infoMateri = MATERI.find((m) => m.id === materi)!;
-  const lab = aktif === "linkedList" ? KIT_LINKED_LIST : (DIMENSI_ARRAY.find((l) => l.id === aktif) ?? DIMENSI_ARRAY[0]);
+  const lab =
+    aktif === "flowchart"
+      ? { nama: "Flowchart", ringkas: RINGKAS_FLOWCHART }
+      : aktif === "linkedList"
+        ? KIT_LINKED_LIST
+        : (DIMENSI_ARRAY.find((l) => l.id === aktif) ?? DIMENSI_ARRAY[0]);
 
   const judul = (
     <header className="flex flex-col gap-3">
@@ -147,7 +180,7 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
         bagian={NAVIGASI}
         aktif={aktif}
         onPilih={(id) => {
-          if (ID_LAB.has(id)) pilih(id as LabId);
+          if (ID_LAB.has(id)) pilih(id as PilihanLab);
         }}
       />
       <div className="min-w-0 lg:h-full lg:flex-1">
@@ -193,6 +226,11 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
             aktif={aktif === "linkedList"}
             onJalan={sembunyikanPemberitahuan}
           />
+        </div>
+      )}
+      {dibuka.has("flowchart") && (
+        <div hidden={aktif !== "flowchart"} className="lg:h-full">
+          <FlowWorkspace awal={awalFlow} judul={judul} aktif={aktif === "flowchart"} />
         </div>
       )}
       {dibuka.has("arrayNd") && (

@@ -2,12 +2,13 @@ import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import LabShell from "@/components/lab/LabShell";
 import { decodeLabSnapshot, LAB_URL_PARAM } from "@/lib/lab/labUrl";
+import { decodeFlow, FLOW_URL_PARAM } from "@/lib/lab/flowUrl";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "SynapLab – SynapEd",
   description:
-    "Papan coba-coba untuk memvisualisasikan array (1D, 2D, 3D, N-dimensi) dan linked list: isi, telusuri, urutkan, sisip, hapus, dan jalankan langkahnya satu per satu.",
+    "Papan coba-coba untuk memvisualisasikan array (1D, 2D, 3D, N-dimensi), linked list, dan flowchart: isi, telusuri, urutkan, gambar alur, lalu jalankan langkahnya satu per satu.",
 };
 
 interface Props {
@@ -34,9 +35,16 @@ interface Props {
  * halaman yang justru ingin dihilangkan.
  */
 export default async function LabPage({ searchParams }: Props) {
-  const mentah = (await searchParams)[LAB_URL_PARAM];
+  const params = await searchParams;
+  const mentah = params[LAB_URL_PARAM];
   const kode = typeof mentah === "string" ? mentah : null;
   const dibaca = kode ? decodeLabSnapshot(kode) : null;
+
+  // Flowchart punya parameternya sendiri (`?f=`, dipadatkan) — lihat flowUrl.ts.
+  const mentahFlow = params[FLOW_URL_PARAM];
+  const kodeFlow = typeof mentahFlow === "string" ? mentahFlow : null;
+  const flow = kodeFlow ? await decodeFlow(kodeFlow) : null;
+  const rusak = (kode !== null && dibaca === null) || (kodeFlow !== null && flow === null);
 
   return (
     <>
@@ -44,7 +52,7 @@ export default async function LabPage({ searchParams }: Props) {
 
       <main className="bg-paper pt-28 pb-20 lg:h-dvh lg:overflow-hidden lg:pt-[100px] lg:pb-5">
         <div className="container-page lg:h-full">
-          <LabShell awal={dibaca} tautanRusak={kode !== null && dibaca === null} />
+          <LabShell awal={dibaca} awalFlow={flow} tautanRusak={rusak} />
         </div>
       </main>
 
