@@ -343,6 +343,14 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 5. **Semua koleksi Firestore tertutup dari klien** (`allow read, write: if false`),
    kecuali `courses/{slug}` baca publik dan `users/{uid}` baca oleh pemiliknya.
    Klien tidak menulis Firestore sama sekali.
+6. **Kode Python Lab 04 hanya berjalan di `public/lab/python-worker.js`**, yang
+   punya CSP SENDIRI di `next.config.ts` (`headers()`): `default-src 'none'`,
+   script & connect HANYA ke direktori Pyodide berversi (`pythonVersi.ts`),
+   `'wasm-unsafe-eval'` (BUKAN `'unsafe-eval'`), `worker-src 'none'`. Kode itu
+   bisa datang dari tautan siapa saja dan berjalan di origin SynapEd — CSP inilah
+   yang mencegahnya memanggil API/Server Action sebagai pembuka tautan. Jangan
+   dilonggarkan, jangan jalankan Pyodide di utas utama atau worker blob/bundel
+   (keduanya mewarisi CSP halaman yang kosong). `verify-kode` menjaga isi CSP-nya.
 
 ## Konvensi Firestore
 
@@ -577,9 +585,11 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
 
 Papan sandbox untuk memvisualisasikan materi. **Tanpa Firestore, tanpa Server
 Action, tanpa login** — seluruh keadaan hidup di memori browser dan di URL.
-Tiga materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
+Lima materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
 **3D** (`array3d`), **N-D** (`arrayNd`) — **Linked List** (`linkedList`,
-singly), dan **Flowchart** (`"flowchart"`, BUKAN `LabId` — lihat bagian Flowchart). Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
+singly), **Flowchart** (`"flowchart"`), **Python** (`"python"`, Lab 04) dan
+**Pseudocode** (`"pseudocode"`, Lab 05). Tiga yang terakhir BUKAN `LabId` (lihat
+bagian Flowchart & Lab kode); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode"`. Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
 MENIMPA halaman (fixed + latar gelap, `inert` saat tertutup, fokus dikurung,
 gulir `body` dikunci, `Esc` ditangkap di fase capture supaya tidak ikut menutup
 mode presentasi). Komponennya generik — hanya menerima `BagianNavigasi[]`
@@ -833,6 +843,71 @@ ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
     Menu `<details>` menutup lewat klik di wadahnya (lint `react-hooks/refs` menolak
     fungsi pembaca ref yang dioper saat render). Situs punya layar intro sekali per
     sesi (`SplashLoader`, ±4 dtk) — uji browser harus menunggunya.
+  - Tombol/ikon/`Kelompok`/`Menu`/`unduh` bilah alat ada di `components/lab/LabAlat.tsx`,
+    dipakai bersama flowchart & lab kode.
+- **Lab kode — Python (Lab 04) & Pseudocode (Lab 05)**:
+  - Satu ruang kerja untuk keduanya (`components/lab/kode/KodeWorkspace.tsx`);
+    yang berbeda hanya `MesinKode` (`jalankan(kode, masukan, rekam) → JejakKode`,
+    `hentikan`, `status`), contoh, dan panduan (`Panduan.tsx`). Bentuk jejak bersama
+    di `lib/lab/kodeTypes.ts`: satu langkah = keadaan SEBELUM `baris` dijalankan,
+    langkah terakhir `baris: null` (selesai) atau baris galat; `panjangKeluaran`
+    (angka, bukan salinan teks) → keluaran langkah = `jejak.keluaran.slice(0, n)`.
+    "Langkah demi langkah" = MEMUTAR ULANG jejak yang sudah direkam (maju-mundur
+    gratis); mode langkah mengunci editor (`Sunting` membuka).
+  - Editor (`KodeEditor.tsx`): `<textarea>` transparan di atas `<pre>` berwarna,
+    huruf/ukuran/`leading-6`/bantalan HARUS sama (selisih = kursor melayang); gulir
+    disinkronkan lewat `transform` langsung di DOM. Sisip teks lewat
+    `execCommand("insertText")` supaya Ctrl+Z bawaan tetap jalan. Esc lalu Tab =
+    keluar editor. Warna token = kelas `.kode-*` / variabel `--kode-*` di globals.css
+    (ada versi tema terang), BUKAN hex di kelas Tailwind. Penyorot `kodeSorot.ts`
+    toleran (tak pernah melempar) dan token per baris HARUS menyusun ulang barisnya
+    persis (diuji).
+  - Draf `localStorage` (`synaplab-python-draf` / `synaplab-pseudocode-draf`)
+    ditulis dari PENANGAN ketik, bukan efek — memuat contoh tidak boleh menimpa
+    draf (itulah jalan pulang); dibaca lewat `useSyncExternalStore`, tawaran
+    "Buka draf" muncul setelah hidrasi.
+  - Tautan `?py=`/`?ps=` (`kodeUrl.ts`): digit versi + padatan `{k, m}` lewat
+    `labKompres.ts` (dipakai juga `flowUrl.ts`), maks 8000 karakter, dekompresi
+    dibatasi 256 KB, semua-atau-tidak; dibaca di server (`app/lab/page.tsx`). Kode
+    dari tautan HANYA ditampilkan, tidak pernah dijalankan otomatis. Berkas
+    `.py`/`.txt` = kode polos (tanpa masukan).
+  - **Pseudocode** (`lib/lab/pseudo/`, netral): `pseudoLexer` → `pseudoParser`
+    (AST bernomor baris, Pratt) → `pseudoJalan` (interpreter GENERATOR: `yield`
+    baris sebelum tiap pernyataan, `yield*` menembus pemanggilan fungsi, jadi
+    langkah di dalam rekursi ikut terekam). Dialek = Pseudocode Guide 9618
+    (diverifikasi dengan panduan resmi 2026): kata kunci huruf besar (huruf kecil =
+    galat yang menjelaskan), nama tak membedakan besar-kecil (Map berkunci HURUF
+    BESAR), BYREF/BYVAL berlaku untuk parameter sesudahnya sampai diganti
+    (contoh SWAP panduan), FUNCTION tanpa BYREF, CONSTANT hanya literal, `/`
+    selalu REAL, DIV/MOD INTEGER (juga bentuk fungsi lama), `&` untuk teks,
+    AND/OR hubung-singkat, REAL ditampilkan bertitik (`5.0`). DECLARE WAJIB
+    (panduan: "praktik baik"; lab mewajibkan agar tipe bisa diperiksa — pesan
+    galatnya mengatakan itu). Batas: 10.000 langkah, rekursi 200, array 10.000
+    sel, teks 10.000, keluaran 50.000. INPUT TIDAK menggemakan nilai. Tanda `−`/`–`
+    dan kutip `ꞌ` dari PDF panduan diterima.
+  - **Python** — Pyodide dari jsDelivr (versi di `python/pythonVersi.ts`, SATU
+    sumber untuk worker & CSP) di Web Worker berkas statis (lihat invarian
+    keamanan 6). Worker = cangkang: memuat Pyodide, memasang `KODE_PELACAK`
+    (`python/pythonPelacak.ts`, kode Python sebagai teks), menghapus API jaringan &
+    penyimpanan dari global + prototipenya, lalu meneruskan pesan. Penghalang impor
+    `js`/`pyodide` di pelacak hanya lapisan SOPAN (bisa ditembus lewat gc) — yang
+    menahan adalah CSP + penghapusan API. Hasil worker selalu lewat `sahkanJejak`.
+  - Pelacak: `sys.settrace` hanya untuk berkas `<siswa>`; rekam ≤ `KODE_MAKS_REKAM`
+    (2000), program dihentikan di 100.000 event baris (galat "Batas langkah",
+    bukan layar beku); `input()` diganti versi yang MENGGEMAKAN nilainya (seperti
+    terminal); stdout dikabarkan ke utas utama PER POTONGAN (delta), supaya
+    keluaran sebelum perulangan tak berujung selamat saat worker dimatikan;
+    `builtins` & batas rekursi dipulihkan setiap jalan.
+  - `usePythonMesin.ts`: satu worker per halaman di luar React (status lewat
+    `useSyncExternalStore`), baru dibuat saat lab Python DIBUKA (bukan saat /lab
+    dimuat). Batas waktu 10 dtk dihitung setelah siap; batas waktu/Stop =
+    `terminate()` + worker baru (Pyodide dari cache ±2 dtk). Saran galat Indonesia
+    ditambahkan di utas utama (`python/pythonGalat.ts`); traceback asli tetap tampil.
+  - Uji browser lab kode (puppeteer, tunggu SplashLoader) memeriksa: Pyodide tidak
+    diunduh sebelum lab dibuka, langkah & variabel fungsi, galat bersaran,
+    `import js` ditolak, API jaringan tidak bisa dipanggil dari Python, tidak ada
+    permintaan jaringan dari kode siswa, `import()` dinamis di worker diblokir CSP,
+    Stop/batas waktu/batas langkah, builtins pulih, tautan `?py=`.
 
 ## Pengujian (`scripts/`)
 
@@ -843,7 +918,7 @@ ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
   `settings/payments` harus menyalin & memulihkan dokumennya **persis**
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
-- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office

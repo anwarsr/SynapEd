@@ -1952,3 +1952,33 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
     .flow-aktif { animation: none; opacity: 0.45; }
     .flow-garis-jalan { animation: none; }
 }
+
+/* ══ Lab kode (Python & Pseudocode): warna sintaks editor ═══════════════
+   Variabel sendiri, bukan hex di kelas Tailwind: warna pastel yang terbaca di
+   latar malam hilang di latar terang, jadi tema terang mendefinisikan ulang
+   semuanya dengan nada yang lebih gelap (kontras ≥ 4.5:1 di #F5F8FD). */
+:root {
+    --kode-kunci: #8AB4FF;
+    --kode-tipe: #7FD1B9;
+    --kode-fungsi: #E8B86D;
+    --kode-teks: #E59A7A;
+    --kode-angka: #B9A3F5;
+    --kode-galat: #E0795A;
+}
+html[data-theme="light"] {
+    --kode-kunci: #1D4ED8;
+    --kode-tipe: #0F766E;
+    --kode-fungsi: #8A5300;
+    --kode-teks: #B4441F;
+    --kode-angka: #6D28D9;
+    --kode-galat: #C2410C;
+}
+.kode-kunci { color: var(--kode-kunci); font-weight: 600; }
+.kode-tipe { color: var(--kode-tipe); }
+.kode-fungsi { color: var(--kode-fungsi); }
+.kode-teks { color: var(--kode-teks); }
+.kode-angka { color: var(--kode-angka); }
+.kode-baris-galat {
+    background: color-mix(in srgb, var(--kode-galat) 20%, transparent);
+    box-shadow: inset 3px 0 0 var(--kode-galat);
+}

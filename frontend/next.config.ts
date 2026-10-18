@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+import { PYTHON_WORKER_CSP, PYTHON_WORKER_URL } from "./src/lib/lab/python/pythonVersi";
 
 /**
  * Akar proyek dipatok ke folder ini.
@@ -37,6 +38,28 @@ const nextConfig: NextConfig = {
     root: projectRoot,
   },
   outputFileTracingRoot: projectRoot,
+
+  /**
+   * CSP KHUSUS worker Python SynapLab — lapisan keamanan terkuat lab itu.
+   *
+   * Worker berkas sendiri memakai CSP dari respons berkasnya, jadi kode Python
+   * siswa (yang bisa datang dari tautan siapa saja) tidak bisa menghubungi
+   * API SynapEd atau server lain. Isi kebijakannya (PYTHON_WORKER_CSP) dan
+   * versinya hidup di pythonVersi.ts — modul yang SAMA dengan yang dimuat
+   * worker, jadi keduanya tidak bisa berbeda. Lihat juga
+   * public/lab/python-worker.js.
+   */
+  async headers() {
+    return [
+      {
+        source: PYTHON_WORKER_URL,
+        headers: [
+          { key: "Content-Security-Policy", value: PYTHON_WORKER_CSP },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
+      },
+    ];
+  },
 
   images: {
     remotePatterns: [

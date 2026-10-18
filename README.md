@@ -136,7 +136,8 @@ penyusun kursus tidak pernah berkurang.
 Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
 orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
 tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
-(Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), dan **Flowchart** (Lab 03). Laci menimpa halaman
+(Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), **Flowchart** (Lab 03),
+**Python** (Lab 04), dan **Pseudocode** (Lab 05). Laci menimpa halaman
 tanpa menggesernya. Array punya empat versi lagi — **1D · 2D · 3D · N-D**.
 Tiap lab punya papan, operasi, dan tautan bagikannya sendiri; berpindah lab
 tidak menghapus papan lab lain.
@@ -235,6 +236,54 @@ tidak menghapus papan lab lain.
   - **menyimpan**: tombol Bagikan membuat tautan (diagram dipadatkan), menu
     Berkas menyimpan/membuka `.json` (untuk flowchart besar) dan mengekspor
     **PNG/SVG** berlatar putih untuk laporan. Draf terakhir juga diingat browser.
+- **Python** (Lab 04) — menulis dan menjalankan Python 3.14 sungguhan di
+  browser (CPython lewat Pyodide), tanpa install dan tanpa akun:
+  - editor berwarna dengan nomor baris; Tab menjorokkan 4 spasi, Enter
+    meneruskan jorokan (dan menambahnya setelah `:`), Ctrl+Enter menjalankan;
+  - **Masukan diisi di muka**: kotak Masukan, satu nilai per baris, dibaca
+    `input()` berurutan; nilai yang dibaca ikut tampil di keluaran seperti di
+    terminal;
+  - **Langkah demi langkah** ala Python Tutor: program direkam lalu diputar
+    maju-mundur (tombol, panah ←/→, Home/End, penggeser, kecepatan 0,5×–4×).
+    Baris berikutnya disorot biru, baris yang baru dijalankan samar; tabel
+    **variabel** per lingkup (global & setiap fungsi yang sedang dipanggil,
+    termasuk rekursi), yang berubah disorot; keluaran tumbuh per langkah;
+  - **galat** ditampilkan dengan nomor baris, traceback asli, dan **saran
+    berbahasa Indonesia** (mis. "hasil input() selalu teks — pakai
+    int(input())");
+  - batas: satu kali jalan 10 detik (lalu dihentikan; ada tombol **Stop**),
+    mode langkah merekam 2.000 langkah dan menghentikan program di 100.000
+    langkah (perulangan tak berujung jadi galat yang bisa ditelusuri), keluaran
+    100.000 karakter;
+  - aman: kode berjalan di Web Worker terpisah tanpa akses ke halaman, akun,
+    maupun jaringan (kode dari tautan orang lain tidak bisa memanggil SynapEd
+    atas nama Anda). Pustaka standar tersedia; paket seperti numpy belum;
+  - Python (±12 MB) baru diunduh saat lab Python dibuka, lalu dari cache.
+- **Pseudocode** (Lab 05) — pseudocode gaya **Cambridge International AS & A
+  Level Computer Science 9618** (mengikuti *Pseudocode Guide for Teachers*),
+  dengan editor, Jalankan, dan langkah demi langkah yang sama seperti Python:
+  - `DECLARE`/`CONSTANT`, tipe `INTEGER REAL CHAR STRING BOOLEAN`,
+    `ARRAY[1:n]` dan 2D `ARRAY[1:n, 1:m]`, `←` (atau `<-`), `INPUT`, `OUTPUT`;
+  - `IF … THEN … ELSE … ENDIF`, `CASE OF … OTHERWISE … ENDCASE` (nilai, daftar,
+    rentang `TO`), `FOR … TO … STEP … NEXT`, `WHILE … ENDWHILE`,
+    `REPEAT … UNTIL`;
+  - `PROCEDURE`/`CALL` dengan `BYVAL`/`BYREF` (BYREF berlaku sampai diganti,
+    sesuai panduan), `FUNCTION … RETURNS … RETURN`, rekursi;
+  - operator `& MOD DIV AND OR NOT`, fungsi `LENGTH LEFT RIGHT MID UCASE LCASE
+    TO_UPPER TO_LOWER NUM_TO_STR STR_TO_NUM IS_NUM ASC CHR INT RAND`;
+  - **tipe diperiksa** seperti di ujian: REAL tidak boleh masuk INTEGER, teks
+    disambung dengan `&` (bukan `+`), indeks array diperiksa batasnya, setiap
+    variabel wajib di-DECLARE (panduan menyebutnya praktik yang baik; lab
+    mewajibkannya agar tipe bisa diperiksa). Kesalahan umum dijawab dengan
+    bentuk 9618 yang benar: `PRINT` → `OUTPUT`, `x = 5` → `x ← 5`, `ELSEIF`,
+    `END IF`, `ENDFOR`, kata kunci huruf kecil;
+  - teks yang disalin dari PDF panduan (tanda `−` dan kutip `ꞌ`) tetap terbaca;
+  - panel **Panduan** berisi ringkasan dialeknya.
+- Kedua lab kode: **contoh** siap pakai (luas, genap/ganjil, jumlah 1..n,
+  CASE, array, validasi masukan, rekursi, BYREF/dictionary), **Bagikan**
+  (tautan berisi kode + masukan; kode dari tautan hanya ditampilkan, tidak
+  dijalankan otomatis), menu **Berkas** (simpan/buka `.py`/`.txt`), **draf**
+  terakhir diingat browser, layar penuh, tema terang/gelap, dan ponsel.
 - **Linked list (singly)** — materi tersendiri, terpisah dari array:
   - setiap simpul digambar `[nilai | next]` lengkap dengan **alamat memorinya**,
     disambung panah; kotak `head` menunjuk simpul pertama, dan tabel **Memori**
@@ -453,6 +502,8 @@ cd frontend && npm run lint
 npm run verify:royalty            # contoh; daftar lengkap di package.json
 npm run verify:lab                # SynapLab — murni, tanpa dev server & kredensial
 npm run verify:flowchart          # flowchart: ekspresi, mesin jalan, pemeriksa, tautan (murni)
+npm run verify:pseudocode         # interpreter pseudocode 9618: bahasa, galat & baris, jejak (murni)
+npm run verify:kode               # lab kode: tautan, berkas, penyorot, saran Python, CSP worker (murni)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
@@ -473,6 +524,12 @@ npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman s
 - Tugas kelas: mengembalikan tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
   rekap nilai per kelas, dan koreksi AI untuk semua siswa sekaligus.
 - Koreksi AI untuk PDF hasil pindai dan isi arsip ZIP.
+- Lab Python: paket di luar pustaka standar (numpy, dll.), grafik/turtle, dan
+  input interaktif saat program berjalan (masukan diisi di muka). Pyodide
+  masih dari CDN — tanpa internet lab Python tidak bisa dibuka.
+- Lab Pseudocode: `TYPE` (record, enum, pointer, set), operasi berkas
+  (`OPENFILE` dkk.), OOP, tipe `DATE` dan fungsi tanggal.
+- Menghubungkan lab kode ke tugas kelas (mengumpulkan & menilai kode).
 
 ---
 

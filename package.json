@@ -43,6 +43,8 @@
     "verify:royalty-split": "tsx scripts/verify-royalty-split.ts",
     "verify:lab": "tsx scripts/verify-lab.ts",
     "verify:flowchart": "tsx scripts/verify-flowchart.ts",
+    "verify:pseudocode": "tsx scripts/verify-pseudocode.ts",
+    "verify:kode": "tsx scripts/verify-kode.ts",
     "verify:wheel": "tsx scripts/verify-wheel.ts",
     "verify:chat-knowledge": "tsx scripts/verify-chat-knowledge.ts",
     "verify:royalty": "tsx scripts/verify-royalty.ts",

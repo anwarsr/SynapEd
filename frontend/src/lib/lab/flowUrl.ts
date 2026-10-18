@@ -10,6 +10,8 @@
  * `null`, tidak pernah setengah diagram. Berkas `.json` melewati pemeriksa
  * yang SAMA — berkas dari luar sama tidak tepercayanya dengan tautan.
  *
+ * Pemadatan di `labKompres.ts` (dipakai bersama lab kode).
+ *
  * Modul netral (async karena kompresi); diuji `verify-flowchart`.
  */
 import {
@@ -28,6 +30,7 @@ import {
   type Simpul,
   type Sisi,
 } from "./flowTypes";
+import { bukaPadatan, padatkan } from "./labKompres";
 
 export const FLOW_URL_PARAM = "f";
 /** Di atas ini tautan ditolak dengan saran memakai berkas. Aman untuk WhatsApp & peramban. */
@@ -115,69 +118,21 @@ function dariRingkas(raw: unknown): Diagram | null {
   return sahkanDiagram({ simpul, garis, nextId: r.n });
 }
 
-// ── base64url & kompresi ────────────────────────────────────────────────
-
-function keBase64Url(b: Uint8Array): string {
-  let s = "";
-  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
-  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function dariBase64Url(s: string): Uint8Array | null {
-  if (!/^[A-Za-z0-9_-]*$/.test(s)) return null;
-  try {
-    const biner = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4));
-    const out = new Uint8Array(biner.length);
-    for (let i = 0; i < biner.length; i++) out[i] = biner.charCodeAt(i);
-    return out;
-  } catch {
-    return null;
-  }
-}
-
-async function aliran(data: Uint8Array, ubah: CompressionStream | DecompressionStream, batas: number): Promise<Uint8Array | null> {
-  const tulis = ubah.writable.getWriter();
-  void tulis.write(data as BufferSource).then(() => tulis.close()).catch(() => undefined);
-  const baca = ubah.readable.getReader();
-  const potong: Uint8Array[] = [];
-  let total = 0;
-  for (;;) {
-    const { done, value } = await baca.read();
-    if (done) break;
-    total += value.length;
-    // Bom kompresi: tautan beberapa KB yang mengembang jadi ratusan MB.
-    if (total > batas) {
-      await baca.cancel().catch(() => undefined);
-      return null;
-    }
-    potong.push(value);
-  }
-  const out = new Uint8Array(total);
-  let o = 0;
-  for (const p of potong) {
-    out.set(p, o);
-    o += p.length;
-  }
-  return out;
-}
-
 /** Kode tautan, atau null bila diagram terlalu besar untuk tautan (pakai berkas). */
 export async function encodeFlow(d: Diagram): Promise<string | null> {
-  const json = new TextEncoder().encode(JSON.stringify(keRingkas(d)));
-  const padat = await aliran(json, new CompressionStream("deflate-raw"), Infinity);
+  const padat = await padatkan(JSON.stringify(keRingkas(d)));
   if (!padat) return null;
-  const kode = VERSI + keBase64Url(padat);
+  const kode = VERSI + padat;
   return kode.length <= FLOW_MAX_URL ? kode : null;
 }
 
 export async function decodeFlow(kode: string): Promise<Diagram | null> {
   if (typeof kode !== "string" || kode.length < 2 || kode.length > FLOW_MAX_URL || kode[0] !== VERSI) return null;
-  const biner = dariBase64Url(kode.slice(1));
-  if (!biner) return null;
+  // 512 KB menahan bom kompresi (lihat labKompres.ts).
+  const json = await bukaPadatan(kode.slice(1), 512 * 1024);
+  if (json === null) return null;
   try {
-    const json = await aliran(biner, new DecompressionStream("deflate-raw"), 512 * 1024);
-    if (!json) return null;
-    return dariRingkas(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(json)));
+    return dariRingkas(JSON.parse(json));
   } catch {
     return null;
   }

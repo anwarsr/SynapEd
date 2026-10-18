@@ -127,8 +127,8 @@ export const PENGETAHUAN_SITUS = `## Akun
   meninjau dan menyimpannya sendiri.
 
 ## SynapLab
-- /lab adalah papan untuk memahami struktur data sambil mencobanya, terbuka
-  untuk siapa saja tanpa login.
+- /lab adalah papan untuk memahami struktur data dan pemrograman sambil
+  mencobanya, terbuka untuk siapa saja tanpa login.
 - Materi: Array (1D, 2D, 3D yang tampil sebagai kubus yang bisa diputar, dan
   N-dimensi) serta Linked List (singly). Operasi dijalankan lewat tombol dan
   form, bukan menulis kode, lalu diputar langkah demi langkah dengan narasi
@@ -145,6 +145,24 @@ export const PENGETAHUAN_SITUS = `## Akun
   Teks ditulis seperti pseudocode: "x = x + 1", "Baca n", "Tampilkan total",
   kondisi "n mod 2 = 0?". Flowchart bisa dibagikan lewat tautan, disimpan/dibuka
   sebagai berkas .json, dan diekspor ke PNG atau SVG. Ada contoh siap pakai.
+- Python (Lab 04): menulis dan menjalankan Python 3 sungguhan langsung di
+  browser (tanpa install, tanpa akun). Masukan untuk input() diisi di muka di
+  kotak Masukan, satu nilai per baris. Tombol "Langkah demi langkah" memutar
+  ulang program baris per baris: baris aktif disorot, tabel variabel (termasuk
+  variabel di dalam fungsi), dan keluaran. Galat ditampilkan dengan nomor
+  baris dan saran berbahasa Indonesia. Pustaka standar tersedia; paket
+  tambahan seperti numpy belum bisa dipasang, dan akses internet dari kode
+  dimatikan. Satu kali jalan maksimal 10 detik (ada tombol Stop). Pertama kali
+  dibuka perlu mengunduh Python ±12 MB.
+- Pseudocode (Lab 05): pseudocode gaya Cambridge International AS & A Level
+  9618 (DECLARE, INPUT/OUTPUT, IF/CASE, FOR/WHILE/REPEAT, ARRAY 1D & 2D,
+  PROCEDURE/FUNCTION dengan BYVAL/BYREF, fungsi teks seperti LENGTH, MID,
+  LEFT). Bisa dijalankan dan diikuti langkah demi langkah seperti lab Python.
+  Kata kunci ditulis huruf besar dan setiap variabel wajib di-DECLARE dengan
+  tipenya; galat menyebut barisnya dan cara memperbaikinya. Belum mendukung
+  TYPE (record), operasi berkas, dan OOP. Panduan singkat ada di panel lab.
+- Kode Python dan pseudocode bisa dibagikan lewat tautan atau disimpan/dibuka
+  sebagai berkas (.py/.txt). Masing-masing punya contoh siap pakai.
 
 ## Yang belum tersedia
 Penarikan dana pendapatan, notifikasi email, pengembalian dana otomatis,
