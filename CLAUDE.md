@@ -599,7 +599,11 @@ kerja mana pun, jadi tidak bergantung pada halaman materi yang sedang dibuka
 kolom sempit di kiri judul — `LabShell` membungkus `[LabNavigasi | ruang kerja]`
 dalam `lg:flex`, jadi tombol sejajar judul dan tidak ikut tergulir; di layar
 sempit pil mengambang di tengah bawah. Materi/lab baru = satu entri di `NAVIGASI` + `MATERI` + cabang
-ruang kerjanya. Untuk Array, pengalih dimensi tetap ada di kepala halaman.
+ruang kerjanya. Array di laci hanya SATU item (`ID_ARRAY` = `"array"`, bukan `LabId`;
+atas permintaan pemilik): dimensinya dipilih lewat pengalih 1D/2D/3D/N-D di kepala
+halaman, dan item laci membuka dimensi yang TERAKHIR dipakai (`arrayTerakhir`),
+bukan selalu 1D. `aktif` yang dikirim ke `LabNavigasi` dipetakan ke `"array"` selama
+materi array terbuka.
 
 - **Logika murni di `lib/lab/`** (semuanya netral; `scripts/verify-lab.ts`
   mengimpornya lewat path relatif):

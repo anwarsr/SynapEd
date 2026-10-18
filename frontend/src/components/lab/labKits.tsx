@@ -271,7 +271,7 @@ export const KIT_ARRAY_ND: LabKit<NdLabState, NdOp, number[]> = {
 export const KIT_LINKED_LIST: LabKit<ListLabState, ListOp, number> = {
   id: "linkedList",
   nama: "Linked list",
-  ringkas: "Simpul-simpul tersebar di memori, disambung pointer next — sisip, hapus, cari, dan balik langkah demi langkah.",
+  ringkas: "Simpul-simpul tersebar di memori, disambung pointer next - sisip, hapus, cari, dan balik langkah demi langkah.",
   kosong: emptyListState,
   terapkan: applyListOp,
   katalog: Object.values(LIST_OP_CATALOG),

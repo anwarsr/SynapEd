@@ -49,16 +49,17 @@ const MATERI: readonly { id: Materi; nomor: string; nama: string }[] = [
  * menambah satu bagian di sini (dan cabang ruang kerjanya di bawah) — lacinya
  * sendiri tidak perlu disentuh.
  */
+/** Id item laci untuk materi Array — bukan `LabId`; dipetakan ke dimensi terakhir. */
+const ID_ARRAY = "array";
+const RINGKAS_ARRAY = "1D, 2D, 3D, dan N-dimensi - indeks, penelusuran, transformasi, dan pengurutan. Dimensinya dipilih di kepala halaman.";
+
 const NAVIGASI: readonly BagianNavigasi[] = [
   {
     nomor: "01",
     nama: "Array",
-    item: [
-      { id: "array1d", nama: "Array 1D", ket: KIT_ARRAY_1D.ringkas },
-      { id: "array2d", nama: "Array 2D", ket: KIT_ARRAY_2D.ringkas },
-      { id: "array3d", nama: "Array 3D", ket: KIT_ARRAY_3D.ringkas },
-      { id: "arrayNd", nama: "Array N-dimensi", ket: KIT_ARRAY_ND.ringkas },
-    ],
+    // Satu item saja: dimensinya (1D · 2D · 3D · N-D) dipilih di kepala
+    // halaman, jadi empat item di laci hanya mengulang pengalih yang sama.
+    item: [{ id: ID_ARRAY, nama: "Array", ket: RINGKAS_ARRAY }],
   },
   {
     nomor: "02",
@@ -113,10 +114,16 @@ export default function LabShell({
   const [aktif, setAktif] = useState<PilihanLab>(labAwal);
   const [dibuka, setDibuka] = useState<ReadonlySet<PilihanLab>>(() => new Set([labAwal]));
   const [beritahuRusak, setBeritahuRusak] = useState(tautanRusak);
+  // Dimensi array yang terakhir dipakai: item "Array" di laci kembali ke sana,
+  // bukan selalu ke 1D (papan 3D yang sedang dipakai mengajar tidak hilang dari layar).
+  const [arrayTerakhir, setArrayTerakhir] = useState<LabId>(
+    DIMENSI_ARRAY.some((l) => l.id === labAwal) ? (labAwal as LabId) : "array1d",
+  );
 
   const pilih = useCallback((id: PilihanLab) => {
     setAktif(id);
     setDibuka((s) => (s.has(id) ? s : new Set([...s, id])));
+    if (DIMENSI_ARRAY.some((l) => l.id === id)) setArrayTerakhir(id as LabId);
   }, []);
 
   const sembunyikanPemberitahuan = useCallback(() => setBeritahuRusak(false), []);
@@ -205,9 +212,10 @@ export default function LabShell({
       {/* Navigasi materi dirender SEKALI di sini, di luar ruang kerja mana pun. */}
       <LabNavigasi
         bagian={NAVIGASI}
-        aktif={aktif}
+        aktif={materi === "array" ? ID_ARRAY : aktif}
         onPilih={(id) => {
-          if (ID_LAB.has(id)) pilih(id as PilihanLab);
+          if (id === ID_ARRAY) pilih(materi === "array" ? aktif : arrayTerakhir);
+          else if (ID_LAB.has(id)) pilih(id as PilihanLab);
         }}
       />
       <div className="min-w-0 lg:h-full lg:flex-1">

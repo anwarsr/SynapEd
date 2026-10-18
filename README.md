@@ -138,7 +138,9 @@ orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
 tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
 (Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), **Flowchart** (Lab 03),
 **Python** (Lab 04), dan **Pseudocode** (Lab 05). Laci menimpa halaman
-tanpa menggesernya. Array punya empat versi lagi — **1D · 2D · 3D · N-D**.
+tanpa menggesernya. Array tampil sebagai satu materi di laci; empat versinya
+— **1D · 2D · 3D · N-D** — dipilih lewat pengalih di kepala halaman, dan laci
+kembali ke dimensi yang terakhir dipakai.
 Tiap lab punya papan, operasi, dan tautan bagikannya sendiri; berpindah lab
 tidak menghapus papan lab lain.
 
