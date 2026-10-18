@@ -86,10 +86,14 @@ export default function LabNavigasi({
     tombolRef.current?.focus();
   };
 
+  // Tiga garis: saat tombol di-hover, garis teratas & terbawah menjauh sedikit dari garis tengah
+  // (tanpa perubahan warna). Garis ditulis sebagai kotak 1.5px, bukan SVG, agar mudah bergeser.
   const ikonMenu = (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-    </svg>
+    <span aria-hidden="true" className="flex h-5 w-5 flex-col items-center justify-center gap-[5px]">
+      <span className="block h-[1.5px] w-5 bg-current transition-transform duration-500 ease-warm group-hover:-translate-y-[3px]" />
+      <span className="block h-[1.5px] w-5 bg-current" />
+      <span className="block h-[1.5px] w-5 bg-current transition-transform duration-500 ease-warm group-hover:translate-y-[3px]" />
+    </span>
   );
 
   return (
@@ -105,9 +109,9 @@ export default function LabNavigasi({
           aria-expanded={buka}
           onClick={() => setBuka(true)}
           className={cn(
-            "pointer-events-auto flex items-center gap-2 rounded-full border border-rule bg-paper-card px-4 py-2.5 text-sm font-semibold text-ink shadow-lift",
-            "transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700",
-            "lg:h-10 lg:w-10 lg:justify-center lg:rounded-xl lg:px-0 lg:py-0 lg:shadow-soft",
+            "group pointer-events-auto flex items-center gap-3 bg-paper-card px-4 py-3 text-[12px] font-semibold uppercase tracking-[0.22em] text-ink",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+            "lg:h-11 lg:w-11 lg:justify-center lg:px-0 lg:py-0",
           )}
         >
           {ikonMenu}
@@ -120,7 +124,8 @@ export default function LabNavigasi({
         aria-hidden="true"
         onClick={tutup}
         className={cn(
-          "fixed inset-0 z-[60] bg-ink/35 transition-opacity duration-300 ease-out-soft",
+          // Seluruh laman di belakang laci diburamkan, bukan sekadar digelapkan.
+          "fixed inset-0 z-[60] bg-black/30 backdrop-blur-md transition-opacity duration-500 ease-out-soft",
           buka ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
@@ -133,20 +138,22 @@ export default function LabNavigasi({
         // masuk), tapi tidak bisa difokus atau dibaca pembaca layar.
         inert={!buka}
         className={cn(
-          "fixed inset-y-0 left-0 z-[61] flex w-[min(340px,88vw)] flex-col border-r border-rule bg-paper shadow-lift",
-          "transition-transform duration-300 ease-out-soft motion-reduce:transition-none",
+          "fixed inset-y-0 left-0 z-[61] flex w-[min(360px,88vw)] flex-col bg-header",
+          "transition-transform duration-500 ease-warm motion-reduce:transition-none",
           buka ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between border-b border-rule px-5 py-4">
-          <p className="t-h3 text-xl">
-            Synap<span className="text-blue-600">Lab</span>
-          </p>
+        <div className="flex items-center justify-between px-7 pb-4 pt-7">
+          <p className="sr-only">SynapLab</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/SynapLab.png" alt="" width={157} height={30} className="logo-on-dark h-7 w-auto" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/SynapLab Black.png" alt="" width={157} height={30} className="logo-on-light h-7 w-auto" />
           <button
             type="button"
             aria-label="Tutup daftar materi"
             onClick={tutup}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-paper-alt hover:text-ink"
+            className="flex h-10 w-10 items-center justify-center bg-white/[0.06] text-ink-body transition-colors duration-200 hover:bg-white/10 hover:text-white"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -154,18 +161,19 @@ export default function LabNavigasi({
           </button>
         </div>
 
-        <nav aria-label="Materi" className="lab-pane flex-1 overflow-y-auto px-5 py-5">
-          <p className="mb-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-faint">
-            <span aria-hidden="true" className="h-px w-5 bg-rule-strong" />
-            Daftar materi
-          </p>
+        <nav aria-label="Materi" className="lab-pane flex-1 overflow-y-auto px-7 pb-8 pt-6">
+          <p className="mb-8 text-[11px] font-semibold uppercase tracking-[0.3em] text-ink-muted">Daftar materi</p>
           {bagian.map((b) => (
-            <section key={b.nomor} className="mb-6">
-              <h2 className="mb-2 flex items-baseline gap-2.5">
-                <span className="t-numeral text-sm tabular-nums text-ink-faint">{b.nomor}</span>
-                <span className="text-base font-medium text-ink">{b.nama}</span>
+            <section key={b.nomor} className="mb-9">
+              <h2 className="mb-3 flex items-end gap-3">
+                <span className="text-[2.4rem] font-black leading-[0.8] tracking-[-0.06em] tabular-nums text-white/15" style={{ fontFamily: "var(--font-sans)" }}>
+                  {b.nomor}
+                </span>
+                <span className="pb-0.5 text-[1.05rem] font-bold tracking-[-0.01em] text-white" style={{ fontFamily: "var(--font-sans)" }}>
+                  {b.nama}
+                </span>
               </h2>
-              <ul className="space-y-0.5">
+              <ul className="space-y-1">
                 {b.item.map((it) => {
                   const dipilih = it.id === aktif;
                   return (
@@ -178,19 +186,15 @@ export default function LabNavigasi({
                           tutup();
                         }}
                         className={cn(
-                          "flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-150",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-                          dipilih ? "bg-blue-50 text-blue-700" : "text-ink-body hover:bg-paper-alt hover:text-ink",
+                          "block w-full px-5 py-3.5 text-left transition-colors duration-300",
+                          "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500",
+                          dipilih
+                            ? "bg-white/[0.07] shadow-[inset_3px_0_0_var(--color-blue-500)]"
+                            : "hover:bg-white/[0.04]",
                         )}
                       >
-                        <span
-                          aria-hidden="true"
-                          className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", dipilih ? "bg-blue-600" : "border border-rule-strong")}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold">{it.nama}</span>
-                          <span className={cn("block text-xs leading-relaxed", dipilih ? "text-blue-700/80" : "text-ink-muted")}>{it.ket}</span>
-                        </span>
+                        <span className={cn("block text-[15px] font-semibold", dipilih ? "text-white" : "text-ink-body")}>{it.nama}</span>
+                        <span className="mt-1 block text-xs leading-[1.65] text-ink-muted">{it.ket}</span>
                       </button>
                     </li>
                   );

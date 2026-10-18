@@ -72,9 +72,10 @@ export default async function EducatorClassPage({ params, searchParams }: Props)
             <div className="mt-5 flex flex-wrap items-center gap-5">
               <Link
                 href={`/educator/classes/${id}/members`}
-                className="text-[13px] text-blue-700 hover:underline underline-offset-4"
+                className="group inline-flex items-center gap-2.5 bg-blue-600 px-5 py-2.5 text-sm font-semibold text-[#fff]"
               >
-                Kelola anggota →
+                Kelola anggota
+                <span aria-hidden="true" className="transition-transform duration-300 ease-warm group-hover:translate-x-1">→</span>
               </Link>
 
               <DeleteButton target={{ kind: "class", classId: id }} after="/educator/classes" />

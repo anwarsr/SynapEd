@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { AVATARS } from "@/lib/storagePaths";
+import { AVATARS, CLASS_FILES } from "@/lib/storagePaths";
 import { deleteObjects } from "@/lib/storageCleanup";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
@@ -15,14 +15,12 @@ import {
   listPostSubmissions,
   periksaBerkas,
 } from "@/lib/classAssignments";
-import { deleteObjects } from "@/lib/storageCleanup";
 import {
   MAX_ASSIGNMENT_TITLE,
   MAX_FILES_PER_POST,
   MIME_KELAS,
   validasiPengaturan,
 } from "@/lib/classAssignmentRules";
-import { CLASS_FILES } from "@/lib/storagePaths";
 import {
   CLASS_MEMBERS,
   MAX_CLASS_DESC,

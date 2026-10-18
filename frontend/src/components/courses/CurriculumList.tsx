@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CHECK_ICON, LOCK_ICON, lessonIcons } from "@/lib/courseUi";
 import type { Section } from "@/lib/courses";
 import { cn } from "@/lib/cn";
 
@@ -66,30 +65,6 @@ export default function CurriculumList({
               const isi = (
                 <>
                   <span className="flex items-center gap-3 min-w-0">
-                    <svg
-                      className={cn(
-                        "w-4 h-4 flex-shrink-0",
-                        bisaBuka ? "text-blue-600" : "text-ink-faint",
-                      )}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.75}
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d={
-                          !bisaBuka
-                            ? LOCK_ICON
-                            : sudah
-                              ? CHECK_ICON
-                              : lessonIcons[lesson.type] ?? lessonIcons.reading
-                        }
-                      />
-                    </svg>
-
                     <span
                       className={cn(
                         // Membungkus di ponsel, dipotong mulai sm.
@@ -113,7 +88,10 @@ export default function CurriculumList({
                     )}
                   </span>
 
-                  <span className="text-xs text-ink-muted flex-shrink-0">{lesson.duration}</span>
+                  <span className="text-xs text-ink-muted flex-shrink-0">
+                    {sudah ? "Selesai · " : ""}
+                    {lesson.duration}
+                  </span>
                 </>
               );
 

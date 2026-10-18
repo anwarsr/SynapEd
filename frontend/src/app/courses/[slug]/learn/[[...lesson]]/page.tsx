@@ -3,7 +3,7 @@ import LearnShell from "@/components/learn/LearnShell";
 import { flattenLessons, getCourse } from "@/lib/courses";
 import { canViewLesson, requireCourseAccess } from "@/lib/courseAccess";
 import { getSubmission, passingGradeOf, submissionId } from "@/lib/submissions";
-import { progressOf } from "@/lib/enrollments";
+import { pastikanEnrollmentStaf, progressOf } from "@/lib/enrollments";
 import { getPublicQuizForViewer } from "@/lib/quiz";
 import type { Metadata } from "next";
 
@@ -30,7 +30,16 @@ export default async function LearnPage({ params }: Props) {
   // Masuk DAN berhak. Sebelumnya di sini hanya ada pemeriksaan login, yang
   // berarti siapa pun yang punya akun bisa membuka kursus mana pun.
   const access = await requireCourseAccess(slug, `/courses/${slug}/learn`);
-  const { course, enrollment } = access;
+  const { course } = access;
+
+  // Educator/admin membuka kursus tanpa mendaftar, tetapi mereka juga belajar:
+  // beri mereka dokumen pendaftaran supaya kemajuan, kuis, dan sertifikatnya
+  // tercatat. Hanya saat aksesnya penuh (bukan pratinjau).
+  const enrollment =
+    access.enrollment ??
+    (canViewLesson(access) && (access.reason === "owner" || access.reason === "admin")
+      ? await pastikanEnrollmentStaf(course, access.user.uid)
+      : null);
 
   // Kurikulum diratakan sekali; urutan section & lesson sudah dijamin
   // oleh kolom `position` di database.
@@ -45,12 +54,12 @@ export default async function LearnPage({ params }: Props) {
   // memang ada, dan di sanalah tempat memperoleh aksesnya.
   if (!canViewLesson(access)) redirect(`/courses/${slug}`);
 
-  // Progres hanya berarti untuk peserta sungguhan — pratinjau admin/pemilik
-  // kursus tidak punya dokumen enrollment untuk dilacak.
-  const canTrackProgress = access.reason === "enrolled";
+  // Progres dilacak selama ada dokumen pendaftaran (peserta, atau
+  // educator/admin yang dibuatkan di atas).
+  const canTrackProgress = enrollment !== null;
 
-  // Pengumpulan hanya relevan pada penugasan & kuis, dan hanya untuk peserta
-  // sungguhan — pemilik kursus tidak mengumpulkan tugas ke kursusnya sendiri.
+  // Pengumpulan hanya relevan pada penugasan & kuis, dan hanya bila
+  // pendaftarannya ada.
   const butuhPengumpulan =
     flat[index].type === "assignment" || flat[index].type === "quiz";
   const submission =

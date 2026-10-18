@@ -350,7 +350,7 @@ export default function HeroStars({ mulai }: { mulai: boolean }) {
       const [r, g, b] = warna;
       for (const p of bintang) {
         if (p.muncul <= 0.01) continue;
-        // Berkedip: tiap bintang punya fase & kecepatan sendiri.
+        // Berkedip: tiap bintang punya fase & kecepatan sendiri. Hanya titik bulat - tanpa kilau silang (+).
         const kedip = hemat ? 0.75 : 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * p.kec + p.fase));
         const a = Math.min(1, kedip * Math.min(1, p.muncul) + p.patah * 0.25 + Math.max(0, p.muncul - 1));
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a.toFixed(3)})`;
@@ -358,18 +358,6 @@ export default function HeroStars({ mulai }: { mulai: boolean }) {
         ctx.arc(p.x, p.y, p.r * (0.85 + a * 0.4), 0, Math.PI * 2);
         ctx.fill();
 
-        // Kilau silang tipis pada bintang yang sedang paling terang.
-        if (a > 0.92 && p.r > 1.4) {
-          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${(a * 0.45).toFixed(3)})`;
-          ctx.lineWidth = 0.7;
-          const s = p.r * 3.2;
-          ctx.beginPath();
-          ctx.moveTo(p.x - s, p.y);
-          ctx.lineTo(p.x + s, p.y);
-          ctx.moveTo(p.x, p.y - s);
-          ctx.lineTo(p.x, p.y + s);
-          ctx.stroke();
-        }
       }
     };
 

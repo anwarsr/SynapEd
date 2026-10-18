@@ -37,12 +37,12 @@ export default function Lampiran({
           <li key={f.path} className="min-w-0">
             <a
               href={hrefs[i]}
-              className="group flex min-w-0 items-center gap-3 rounded-xl border border-rule bg-paper px-3 py-2.5 transition-colors duration-200 hover:border-blue-300 hover:bg-blue-50/40"
+              className="group flex min-w-0 items-center gap-3 bg-white/[0.06] px-3 py-2.5 transition-colors duration-200 hover:bg-blue-50/40"
             >
               <span
                 aria-hidden="true"
                 className={cn(
-                  "flex h-9 w-11 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold uppercase tracking-wide",
+                  "flex h-9 w-11 shrink-0 items-center justify-center text-[10px] font-bold uppercase tracking-wide",
                   nadaLencana(ext),
                 )}
               >

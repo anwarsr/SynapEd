@@ -1,5 +1,5 @@
 import Link from "next/link";
-import UserAvatar from "@/components/ui/UserAvatar";
+import AvatarMini from "@/components/profile/AvatarMini";
 import ProfileLink from "@/components/ui/ProfileLink";
 import Reveal from "@/components/ui/Reveal";
 import DeleteButton from "@/components/classes/DeleteButton";
@@ -80,7 +80,7 @@ export default function PostFeed({
         return (
           <li key={post.id}>
             <Reveal delay={i * 90}>
-              <article className="bg-paper-card p-6 transition-all duration-200 ease-out-soft hover:bg-card-hover">
+              <article className="bg-paper-card p-6">
                 <div className="flex flex-wrap items-center gap-3">
                   <AvatarMini uid={post.authorUid} name={nama} photoURL={penulis?.photoURL ?? null} />
 
@@ -92,8 +92,8 @@ export default function PostFeed({
                     {nama}
                   </ProfileLink>
 
-                  <Tag tone="blue">Pengajar</Tag>
-                  {post.kind === "assignment" && <Tag tone="amber">Tugas</Tag>}
+                  <span className="text-[12px] font-bold uppercase tracking-[0.28em] text-blue-300">Pengajar</span>
+                  {post.kind === "assignment" && <span className="text-[12px] font-bold uppercase tracking-[0.28em] text-white/55">Tugas</span>}
 
                   <span className="ml-auto text-[13px] text-ink-muted">
                     {formatDate(post.createdAt)}
@@ -104,9 +104,9 @@ export default function PostFeed({
                 {post.kind === "assignment" && post.assignment && (
                   <Link
                     href={`${basePath}/tugas/${post.id}`}
-                    className="group mt-4 block rounded-xl border border-amber-500/30 bg-amber-100/40 px-4 py-3.5 transition-colors duration-200 hover:border-amber-500/60"
+                    className="group mt-4 block bg-white/[0.06] px-5 py-4 shadow-[inset_3px_0_0_var(--color-blue-500)]"
                   >
-                    <span className="block text-[17px] font-medium text-ink group-hover:text-blue-700">
+                    <span className="block text-[17px] font-semibold text-ink">
                       {post.title}
                     </span>
                     <span className="mt-1 block text-[13px] text-ink-muted">
@@ -114,8 +114,9 @@ export default function PostFeed({
                       {" · "}
                       {ringkasFormat(post.assignment.formats)}
                     </span>
-                    <span className="mt-2 inline-block text-[13px] font-semibold text-blue-700">
-                      Buka tugas →
+                    <span className="mt-3 inline-flex items-center gap-2 bg-blue-600 px-4 py-2 text-[13px] font-semibold text-[#fff]">
+                      Buka tugas
+                      <span aria-hidden="true" className="transition-transform duration-300 ease-warm group-hover:translate-x-1">→</span>
                     </span>
                   </Link>
                 )}

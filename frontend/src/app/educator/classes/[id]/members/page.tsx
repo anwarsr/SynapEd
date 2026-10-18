@@ -54,7 +54,7 @@ export default async function ClassMembersPage({ params }: Props) {
         </p>
 
         {anggota.length === 0 ? (
-          <div className="bg-paper-card border border-rule rounded-2xl p-12 text-center">
+          <div className="bg-paper-card p-12 text-center">
             <p className="t-body text-ink-muted">
               Anggota akan muncul di sini begitu ada yang memakai kode undangannya.
             </p>
@@ -68,7 +68,7 @@ export default async function ClassMembersPage({ params }: Props) {
               return (
                 <li
                   key={a.id}
-                  className="bg-paper-card border border-rule rounded-2xl p-6 flex flex-wrap items-center gap-3"
+                  className="bg-paper-card p-6 flex flex-wrap items-center gap-3"
                 >
                   <ProfileLink uid={a.uid} name={nama} secondary className="shrink-0">
                     <UserAvatar name={nama} photoURL={orang?.photoURL ?? null} />

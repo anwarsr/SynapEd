@@ -105,7 +105,7 @@ function Kartu({ k }: { k: KomentarItem }) {
 
       {k.reply && (
         <div className="relative mt-5 bg-white/[0.04] px-4 py-3 shadow-[inset_3px_0_0_var(--color-blue-500)]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan {k.reply.by}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan</p>
           <p className="mt-1.5 whitespace-pre-line break-words text-[13px] leading-[1.6] text-ink-muted">{k.reply.body}</p>
         </div>
       )}

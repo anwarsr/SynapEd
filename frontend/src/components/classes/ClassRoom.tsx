@@ -217,9 +217,9 @@ export default function ClassRoom({
                   href={t.id === "pengumuman" ? basePath : `${basePath}?tab=${t.id}`}
                   aria-current={aktif ? "page" : undefined}
                   className={cn(
-                    "shrink-0 rounded-t-xl px-[22px] py-3 text-sm font-semibold transition-colors duration-200 max-sm:px-4",
+                    "shrink-0 px-[22px] py-3 text-sm font-semibold transition-colors duration-200 max-sm:px-4",
                     aktif
-                      ? "bg-paper text-white"
+                      ? "bg-white/[0.06] text-white shadow-[inset_0_-3px_0_var(--color-blue-500)]"
                       : "bg-white/10 text-white/72 hover:bg-white/20 hover:text-white",
                   )}
                 >
@@ -231,7 +231,7 @@ export default function ClassRoom({
         </div>
       </section>
 
-      <div className="bg-paper py-12">
+      <div className="bg-white/[0.06] py-12">
         <div className="container-page grid gap-9 grid-cols-[minmax(0,1fr)_320px] max-lg:grid-cols-1 max-lg:gap-6">
           <div className="min-w-0">
             {tab === "pengumuman" && (
@@ -268,7 +268,7 @@ export default function ClassRoom({
             {tab === "anggota" && (
               <div className="overflow-hidden bg-paper-card">
                 <ul className="divide-y divide-rule">
-                  <li className="flex flex-wrap items-center gap-3 bg-paper px-6 py-4">
+                  <li className="flex flex-wrap items-center gap-3 bg-white/[0.06] px-6 py-4">
                     <AvatarMini uid={kelas.ownerUid} name={namaPengajar} photoURL={ownerCard?.photoURL ?? null} />
                     <ProfileLink
                       uid={kelas.ownerUid}
@@ -286,7 +286,7 @@ export default function ClassRoom({
                     return (
                       <li
                         key={m.id}
-                        className="flex flex-wrap items-center gap-3 px-6 py-4 transition-colors duration-200 hover:bg-paper"
+                        className="flex flex-wrap items-center gap-3 px-6 py-4 transition-colors duration-200 hover:bg-white/[0.06]"
                       >
                         <AvatarMini uid={m.uid} name={nama} photoURL={kartu?.photoURL ?? null} />
                         <div className="min-w-0 flex-1">
@@ -398,6 +398,17 @@ export default function ClassRoom({
             </div>
 
             {joinCode && <JoinCodePanel classId={kelas.id} joinCode={joinCode} />}
+
+            {/* Pintasan pemilik: roda pemilih siswa yang menjawab (hanya pemilik/admin yang punya joinCode). */}
+            {joinCode && (
+              <Link
+                href={`/educator/classes/${kelas.id}/wheel`}
+                className="group flex items-center justify-between gap-3 bg-paper-card px-6 py-4"
+              >
+                <span className="text-[15px] font-semibold text-ink">Roda pemilih</span>
+                <span aria-hidden="true" className="text-lg text-blue-300 transition-transform duration-300 ease-warm group-hover:translate-x-1">→</span>
+              </Link>
+            )}
 
             {isMember && (
               <div className="pt-1">

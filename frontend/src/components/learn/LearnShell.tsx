@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { CourseDetail, Lesson } from "@/lib/courses";
 import type { Progress } from "@/lib/enrollments";
 import type { PublicQuiz } from "@/lib/quiz";
-import { CHECK_ICON, LOCK_ICON, lessonIcons } from "@/lib/courseUi";
+import { lessonIcons } from "@/lib/courseUi";
 import { formatBytes, lessonAssetUrl, previewKind, toEmbedUrl } from "@/lib/videoEmbed";
 import { cn } from "@/lib/cn";
 import { useChatLessonContext } from "@/components/ui/ChatContext";
@@ -141,7 +141,7 @@ export default function LearnShell({
        masing-masing punya area gulirnya sendiri. */
     <div className="h-screen overflow-hidden bg-paper flex flex-col">
       {/* ── Bilah atas ─────────────────────────────────────── */}
-      <header className="z-40 shrink-0 bg-header text-white">
+      <header className="z-40 shrink-0 bg-header text-white shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]">
         <div className="flex items-center gap-4 px-4 sm:px-6 h-14">
           {/* Ponsel: buka/tutup panel melayang. Layar lebar: ciutkan railnya. */}
           <button
@@ -182,33 +182,59 @@ export default function LearnShell({
             </svg>
           </button>
 
-                    <Link
+          {/* Tautan keluar: kapital kecil berjarak, panah bergeser ke kiri saat
+              disorot - tenang, tanpa kotak. */}
+          <Link
             href={`/courses/${course.slug}`}
-            className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors shrink-0"
+            className="group flex items-center gap-2 shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60 transition-colors hover:text-white"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              className="w-3.5 h-3.5 transition-transform duration-200 ease-out-soft group-hover:-translate-x-0.5"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              aria-hidden="true"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
             <span className="hidden sm:inline">Keluar dari kelas</span>
+            <span className="sm:hidden sr-only">Keluar dari kelas</span>
           </Link>
 
-          <span className="hidden md:block text-sm font-medium truncate">{course.title}</span>
+          <span aria-hidden="true" className="hidden md:block h-5 w-px bg-white/15" />
 
-          <div className="ml-auto flex items-center gap-3 shrink-0">
+          <span
+            className="hidden md:block min-w-0 truncate text-[15px] font-bold tracking-[-0.02em] text-white"
+            style={{ fontFamily: "var(--font-sans)" }}
+          >
+            {course.title}
+          </span>
+
+          <div className="ml-auto flex items-center gap-4 shrink-0">
             {canTrackProgress ? (
               <>
-                <span className="text-xs text-white/70 tabular-nums">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55 tabular-nums">
                   {progress.done} / {progress.total} selesai
                 </span>
-                <div className="w-24 sm:w-40 h-1.5 rounded-full bg-white/15 overflow-hidden" role="presentation">
+                <div
+                  className="w-24 sm:w-44 h-[3px] bg-white/10 overflow-hidden"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={progress.percent}
+                  aria-label="Kemajuan belajar"
+                >
                   <div
-                    className="h-full rounded-full bg-blue-400 transition-all duration-500 ease-warm"
+                    className="h-full bg-blue-400 transition-all duration-500 ease-warm"
                     style={{ width: `${progress.percent}%` }}
                   />
                 </div>
+                <span className="w-9 text-right text-sm font-bold tabular-nums text-white">
+                  {progress.percent}%
+                </span>
               </>
             ) : (
-              <span className="text-xs text-white/70">Pratinjau</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">
+                Pratinjau
+              </span>
             )}
           </div>
         </div>
@@ -257,7 +283,6 @@ export default function LearnShell({
                   {section.lessons.map((lesson) => {
                     const active = lesson.slug === current.slug;
                     const isLocked = lockedSet.has(lesson.slug);
-                    const isDone = doneSet.has(lesson.slug);
 
                     // Pelajaran terkunci dirender sebagai teks, bukan tautan.
                     // Servernya tetap menolak, tapi tautan yang mengalihkan
@@ -265,26 +290,6 @@ export default function LearnShell({
                     // membingungkan.
                     const inner = (
                       <>
-                        <svg
-                          className={cn(
-                            "w-4 h-4 mt-0.5 shrink-0",
-                            active ? "text-white" : isLocked ? "text-white/30" : "text-blue-300",
-                          )}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d={
-                              isLocked
-                                ? LOCK_ICON
-                                : isDone
-                                  ? CHECK_ICON
-                                  : lessonIcons[lesson.type] ?? lessonIcons.reading
-                            }
-                          />
-                        </svg>
                         <span className="flex-1 leading-snug">{lesson.title}</span>
                         <span className={cn("text-[11px] shrink-0 mt-0.5", active ? "text-white/80" : "text-ink-faint")}>
                           {lesson.duration}
@@ -479,15 +484,7 @@ export default function LearnShell({
                         submission={submission}
                       />
                     </div>
-                  ) : (
-                    <div className="mb-8 flex justify-end">
-                      <LessonCompleteButton
-                        slug={course.slug}
-                        lessonSlug={current.slug}
-                        done={doneSet.has(current.slug)}
-                      />
-                    </div>
-                  ))}
+                  ) : null)}
               </>
             )}
 
@@ -505,6 +502,19 @@ export default function LearnShell({
                 </Link>
               ) : (
                 <span className="flex-1" />
+              )}
+
+              {/* Tandai selesai berdampingan dengan "Berikutnya", supaya
+                  selesai-lalu-lanjut satu gerakan. Tidak ada untuk
+                  penugasan & kuis (selesainya lewat pengumpulan). */}
+              {!butuhPengumpulan && (
+                <div className="flex items-center">
+                  <LessonCompleteButton
+                    slug={course.slug}
+                    lessonSlug={current.slug}
+                    done={doneSet.has(current.slug)}
+                  />
+                </div>
               )}
 
               {next && !lockedSet.has(next.slug) ? (

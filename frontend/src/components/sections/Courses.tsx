@@ -26,6 +26,12 @@ const CARD_TITLE: React.CSSProperties = {
 export default function Courses({ courses, categories }: Props) {
   const [filter, setFilter] = useState("semua");
 
+  // Kotak jenis materi dibatasi 5; sisanya dilipat ke satu kotak "Jenis Lain"
+  // yang membuka katalog lengkap, supaya batang filter tidak melebar di ponsel.
+  const MAKS_JENIS = 5;
+  const tampil = categories.slice(0, MAKS_JENIS);
+  const adaLain = categories.length > MAKS_JENIS;
+
   const filtered =
     filter === "semua"
       ? courses
@@ -70,7 +76,7 @@ export default function Courses({ courses, categories }: Props) {
           <Reveal delay={180}>
             <div className="mt-10 flex justify-center">
               <div className="inline-flex max-w-full flex-wrap justify-center bg-paper-card">
-              {categories.map((cat) => {
+              {tampil.map((cat) => {
                 const active = filter === cat.slug;
 
                 return (
@@ -94,6 +100,19 @@ export default function Courses({ courses, categories }: Props) {
                   </button>
                 );
               })}
+              {adaLain && (
+                <Link
+                  href="/courses"
+                  className="px-6 py-3 text-sm text-ink-muted transition-colors duration-300 ease-out-soft hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500"
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 600,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Jenis Lain
+                </Link>
+              )}
               </div>
             </div>
           </Reveal>

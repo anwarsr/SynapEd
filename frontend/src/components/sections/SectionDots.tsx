@@ -147,6 +147,7 @@ export default function SectionDots() {
                     className={cn(
                       "font-sans text-[11px] font-semibold uppercase tracking-wider transition-all duration-500 ease-warm",
                       isActive && hover && !terbuka && "dots-pantul",
+                      terbuka && "relative px-3 py-1.5",
                       terbuka
                         ? cn("translate-x-0 opacity-100", isActive ? "text-blue-600" : "text-white group-hover:text-blue-400")
                         : isActive
@@ -156,6 +157,13 @@ export default function SectionDots() {
                     style={{ transitionDelay: terbuka ? `${i * 55 + 120}ms` : "0ms" }}
                   >
                     {String(i + 1).padStart(2, "0")} {s.label}
+                    {/* Garis yang memutari kata (mengikuti bentuk kotak katanya) saat di-hover/difokus,
+                        dan tetap tergambar pada section yang sedang aktif. */}
+                    {terbuka && (
+                      <svg aria-hidden="true" className={cn("dots-garis pointer-events-none absolute inset-0 h-full w-full", isActive && "dots-garis-aktif")}>
+                        <rect pathLength={1} fill="none" strokeWidth="1.5" />
+                      </svg>
+                    )}
                   </span>
                   <span
                     aria-hidden="true"

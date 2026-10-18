@@ -75,11 +75,11 @@ function LearningPathMobile() {
 
   return (
     <ol ref={listRef} className="relative pl-11" style={{ ...SANS, "--rp": 0 } as React.CSSProperties}>
-      {/* Rel (warna pejal) + isian biru yang tumbuh mengikuti gulir */}
+      {/* Rel (warna pejal) + isian putih yang tumbuh mengikuti gulir */}
       <span aria-hidden="true" className="absolute bottom-6 left-[7px] top-6 w-px bg-[var(--lp-rel)]" />
       <span
         aria-hidden="true"
-        className="absolute left-[7px] top-6 w-px bg-blue-400"
+        className="absolute left-[7px] top-6 w-px bg-white"
         style={{ height: "calc((100% - 3rem) * var(--rp))" }}
       />
 
@@ -91,15 +91,15 @@ function LearningPathMobile() {
               aria-hidden="true"
               className={cn(
                 "absolute -left-11 top-[2.35rem] block h-[15px] w-[15px] transition-[background-color,transform] duration-500 ease-warm",
-                on ? "lp-m-denyut scale-100 bg-blue-500" : "scale-75 bg-[var(--lp-simpul)]",
+                on ? "lp-m-denyut scale-100 bg-white" : "scale-75 bg-[var(--lp-simpul)]",
               )}
             />
 
             <div className="lp-m-kartu" data-on={on}>
               <span
                 className={cn(
-                  "block text-[2.6rem] font-extralight leading-none tracking-[-0.05em] tabular-nums transition-colors duration-700",
-                  on ? "text-blue-300" : "text-white/20",
+                  "block text-[2.6rem] font-black leading-none tracking-[-0.05em] tabular-nums transition-colors duration-700",
+                  on ? "text-white" : "text-white/30",
                 )}
                 style={SANS}
               >

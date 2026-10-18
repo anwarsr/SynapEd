@@ -78,11 +78,7 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
     <header className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
-          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
-            <span aria-hidden="true" className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-60 motion-reduce:hidden" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
-            </span>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
             Lab {infoMateri.nomor} · {infoMateri.nama}
             {materi === "array" ? ` ${lab.nama}` : ""}
           </p>
@@ -90,7 +86,9 @@ export default function LabShell({ awal, tautanRusak }: { awal: LabSnapshot | nu
             <span className="sr-only">SynapLab</span>
             {/* 157×30 — gambar logo, bukan tulisan; tinggi dipatok, lebar mengikuti rasio */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/SynapLab.png" alt="" width={157} height={30} className="h-8 w-auto lg:h-9" />
+            <img src="/images/SynapLab.png" alt="" width={157} height={30} className="logo-on-dark h-8 w-auto lg:h-9" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/SynapLab Black.png" alt="" width={157} height={30} className="logo-on-light h-8 w-auto lg:h-9" />
           </h1>
         </div>
 

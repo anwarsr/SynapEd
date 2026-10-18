@@ -73,7 +73,7 @@ export default function ReviewList({
 
                 {r.reply && (
                   <div className="mt-4 bg-white/[0.04] px-4 py-3 shadow-[inset_3px_0_0_var(--color-blue-500)]">
-                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan {r.reply.by}</p>
+                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan</p>
                     <p className="mt-1.5 whitespace-pre-line break-words text-sm leading-[1.7] text-ink-body">{r.reply.body}</p>
                   </div>
                 )}

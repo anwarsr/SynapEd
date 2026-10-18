@@ -98,7 +98,7 @@ export default function AiGradingSettings({
   ];
 
   return (
-    <form onSubmit={simpan} className="rounded-2xl border border-rule bg-paper-card p-6">
+    <form onSubmit={simpan} className="bg-paper-card p-6">
       <p className="t-label mb-1 text-ink-muted">Koreksi AI</p>
       <p className="mb-4 text-xs leading-relaxed text-ink-muted">
         Tombol “Koreksi dengan AI” di tiap siswa mengisi nilai otomatis. Anda tetap meninjau dan menyimpannya sendiri.
@@ -111,8 +111,8 @@ export default function AiGradingSettings({
             <label
               key={p.id}
               className={cn(
-                "flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2 transition-colors",
-                source === p.id ? "border-blue-300 bg-blue-50/50" : "border-rule hover:border-rule-strong",
+                "flex cursor-pointer items-start gap-2.5 px-3 py-2 transition-colors",
+                source === p.id ? "bg-blue-50/50" : "",
               )}
             >
               <input
@@ -137,7 +137,7 @@ export default function AiGradingSettings({
           {lama.length > 0 && (
             <ul className="mb-3 space-y-2">
               {lama.map((f) => (
-                <li key={f.path} className="flex min-w-0 items-center gap-3 rounded-xl border border-rule bg-paper px-3 py-2">
+                <li key={f.path} className="flex min-w-0 items-center gap-3 bg-white/[0.06] px-3 py-2">
                   <span className="w-11 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-ink-muted">
                     {ekstensiOf(f.name).replace(".", "")}
                   </span>
@@ -183,7 +183,7 @@ export default function AiGradingSettings({
       <button
         type="submit"
         disabled={sibuk}
-        className="mt-5 w-full rounded-lg border border-rule px-5 py-2.5 text-sm font-semibold text-ink-body transition-colors duration-200 hover:border-blue-500 hover:text-blue-700 disabled:opacity-60"
+        className="mt-5 w-full px-5 py-2.5 text-sm font-semibold text-ink-body transition-colors duration-200 hover:text-blue-700 disabled:opacity-60"
       >
         {mengunggah ? "Mengunggah…" : pending ? "Menyimpan…" : "Simpan pengaturan AI"}
       </button>
