@@ -104,9 +104,12 @@ export const PENGETAHUAN_SITUS = `## Akun
 - Pengajar bisa menekan "Koreksi dengan AI" pada kiriman tiap siswa: AI mengisi
   nilai (dan komentar, kalau pengajar memintanya), lalu pengajar meninjau,
   boleh mengubah, dan menyimpannya sendiri. Nilai baru terlihat siswa setelah
-  disimpan pengajar. AI membaca soal dari instruksi & lampiran tugas atau dari
-  berkas konteks khusus milik pengajar (misalnya kunci jawaban) yang tidak
-  pernah terlihat siswa. Jawaban ZIP dan PDF hasil pindai belum bisa dibaca AI.
+  disimpan pengajar. Di kartu Koreksi AI, pengajar bisa menulis "Konteks untuk
+  AI" secara bebas (soal, kunci jawaban, rubrik, rentang nilai, panjang atau
+  gaya komentar) dan/atau mengunggah berkas konteks; AI memahami isinya
+  sendiri, dan konteks ini tidak pernah terlihat siswa. AI bisa ikut membaca
+  instruksi & lampiran tugas, atau hanya konteks dari pengajar. Jawaban ZIP dan
+  PDF hasil pindai belum bisa dibaca AI.
 
 ## Menjadi educator
 - Ajukan diri lewat tombol "Jadi Educator" di navbar atau halaman /educator.

@@ -366,10 +366,13 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   - centang **"AI juga mengisi komentar"** (bawaannya diatur per tugas, bisa
     diubah per siswa). Kalau tidak dicentang, catatan AI tetap ditampilkan
     sebagai petunjuk dengan tombol *Pakai sebagai komentar*;
-  - kartu **Koreksi AI** menentukan dari mana AI membaca soal: **instruksi &
-    lampiran tugas**, atau **berkas konteks terpisah** (maks. 3 berkas PDF,
-    gambar, atau Office — misalnya kunci jawaban) yang **tidak pernah terlihat
-    siswa**;
+  - kartu **Koreksi AI** berisi **Konteks untuk AI**: satu kotak teks bebas
+    (maks. 4.000 karakter) plus berkas opsional (maks. 3 PDF, gambar, atau
+    Office). Isinya boleh apa saja dan tanpa format khusus — soal, kunci
+    jawaban, rubrik & bobot, rentang nilai, panjang atau gaya komentar — AI
+    memahami maksudnya sendiri (skala nilai lain dikonversi ke nilai maksimal
+    tugas). Konteks **tidak pernah terlihat siswa**. Pengajar juga memilih apakah
+    AI ikut membaca **instruksi & lampiran tugas** atau **hanya konteks** itu;
   - AI bisa membaca jawaban teks, PDF ketikan, gambar JPG/PNG, dan dokumen
     DOCX/PPTX/XLSX. ZIP dan PDF hasil pindai tidak terbaca — pengajar diberi
     tahu berkas mana yang dilewati;

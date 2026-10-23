@@ -558,11 +558,21 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
     pengajar menyimpan lewat `gradeClassSubmission`. Penjaga `requireOwnedClass`;
     pembatas laju `grade-ai:{uid}` yang SAMA dengan kursus (satu kuota OpenRouter).
   - Pengaturan per tugas di field `aiGrading {source: "assignment"|"separate", files,
-    fillComment}` pada dokumen post, dibaca HANYA lewat `getPengaturanAi` —
+    notes, fillComment}` pada dokumen post, dibaca HANYA lewat `getPengaturanAi` —
     `toPost`/`KelasPost` sengaja tidak memuatnya (berkasnya bisa kunci jawaban;
     tipe yang tidak memuatnya membuat halaman siswa mustahil membocorkannya).
     Berkas konteks di `class-files/{uid}/{classId}/ai-{postId}/`, BUKAN lampiran,
     jadi `/api/classes/attachment` tidak bisa menyajikannya.
+  - **Konteks dari pengajar** = `notes` (teks bebas, maks `MAX_AI_NOTES` 4000) + `files`,
+    dipakai di KEDUA mode: `assignment` = instruksi & lampiran tugas + konteks;
+    `separate` = HANYA konteks (sah dengan teks saja ATAU berkas saja). SENGAJA satu
+    kotak bebas, bukan kolom rubrik/kunci/panjang komentar/rentang nilai (permintaan
+    pemilik): prompt (`classGradingPrompt.ts`) menyuruh model memahami sendiri maksud
+    tiap bagian, mengonversi skala lain ke 0..`maxPoints`, dan tidak mengutip kunci di
+    FEEDBACK. `notes` rahasia sama seperti berkas (tidak ada di `KelasPost`; diuji
+    tidak muncul di halaman siswa). Gambar soal maks 2 TOTAL, konteks pengajar didahulukan.
+    Uji action lewat HTTP harus mencocokkan pesan galat PERSIS: respons action yang
+    keliru menerima membawa render ulang halaman yang memuat kata umum ("maksimal").
   - `saveAiGradingSettings`: `keep` (berkas lama) dicocokkan dengan daftar di server,
     `files` (unggahan baru) lewat `periksaBerkas` + `MIME_AI_KONTEKS` (tanpa ZIP),
     maks `MAX_AI_CONTEXT_FILES` 3; berkas lama yang dibuang dihapus SETELAH tersimpan.

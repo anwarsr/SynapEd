@@ -53,7 +53,7 @@ import {
 } from "../frontend/src/lib/classAssignmentRules";
 import { extractOfficeText } from "../frontend/src/lib/officeText";
 import { parseGradingResponse } from "../frontend/src/lib/gradingPrompt";
-import { teksBagianJawaban, teksBagianSoal } from "../frontend/src/lib/classGradingPrompt";
+import { buildClassGradingSystemPrompt, teksBagianJawaban, teksBagianSoal } from "../frontend/src/lib/classGradingPrompt";
 
 const db = getFirestore(app);
 const bucket = getStorage(app).bucket(readEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"));
@@ -252,8 +252,34 @@ function aturanAiMurni() {
   );
   check("kecocokan TERAKHIR yang dipakai", parseGradingResponse("contoh GRADE: 10\nGRADE: 42\nFEEDBACK: akhir", 100, 50)?.grade === 42, "42");
 
-  const soal = teksBagianSoal({ judul: "T", teks: "kunci", tidakTerbaca: ["x.zip"], jumlahGambar: 1, maxPoints: 50, sumber: "separate" });
-  check("prompt konteks terpisah menyebut siswa tidak melihatnya + nilai maksimal", soal.includes("TIDAK melihat") && soal.includes("50") && soal.includes("x.zip"), "teksBagianSoal");
+  // Konteks dari pengajar = SATU teks bebas (+ isi berkas); AI yang memahami
+  // mana kunci, rubrik, rentang nilai, atau aturan komentar.
+  const soal = teksBagianSoal({
+    judul: "T",
+    maxPoints: 50,
+    instruksi: null,
+    catatan: "Kunci: B. Komentar maks 2 kalimat.",
+    teksBerkasKonteks: "isi berkas kunci",
+    tidakTerbaca: ["x.zip"],
+    jumlahGambar: 1,
+  });
+  check(
+    "prompt mode 'hanya konteks': teks + isi berkas pengajar, siswa tidak melihatnya, nilai maksimal, TANPA instruksi tugas",
+    soal.includes("TIDAK melihat") && soal.includes("Kunci: B") && soal.includes("isi berkas kunci") && soal.includes("50") && soal.includes("x.zip") && !soal.includes("Soal / instruksi"),
+    "teksBagianSoal",
+  );
+  const soalTugas = teksBagianSoal({ judul: "T", maxPoints: 50, instruksi: "Kerjakan nomor 1", catatan: "  ", teksBerkasKonteks: "", tidakTerbaca: [], jumlahGambar: 0 });
+  check(
+    "prompt mode tugas tanpa konteks: instruksi saja, tanpa bagian konteks kosong",
+    soalTugas.includes("Kerjakan nomor 1") && !soalTugas.includes("Konteks dari pengajar"),
+    "teksBagianSoal",
+  );
+  const sistem = buildClassGradingSystemPrompt(50, 2000);
+  check(
+    "prompt sistem: konteks bebas dipahami sendiri, skala lain dikonversi ke 0-50, kunci dirahasiakan, batas komentar",
+    sistem.includes("Pahami sendiri") && sistem.includes("0-50") && sistem.includes("konversikan") && sistem.includes("RAHASIA") && sistem.includes("2000 karakter"),
+    "buildClassGradingSystemPrompt",
+  );
   check(
     "prompt jawaban melarang menghukum berkas tak terbaca",
     teksBagianJawaban({ teks: "", tidakTerbaca: ["a.zip"], jumlahGambar: 0 }).includes("Jangan menghukum"),
@@ -551,7 +577,17 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
       check("siswa tidak bisa mengatur koreksi AI", (await atur(siswa.cookie, { source: "assignment" })).includes("tidak berhak"), "penjaga");
       check("siswa tidak bisa meminta saran nilai", (await saran(siswa.cookie, A, siswa.uid)).includes("tidak berhak"), "penjaga");
       check("sumber tak dikenal ditolak", (await atur(owner.cookie, { source: "apa" })).includes("tidak valid"), "validasi");
-      check("konteks terpisah tanpa berkas ditolak", (await atur(owner.cookie, { source: "separate", files: [] })).includes("minimal satu berkas"), "validasi");
+      // Pesan galat dicocokkan PERSIS: bila action keliru menerima, responsnya
+      // ikut membawa render ulang halaman yang memuat kata umum seperti "maksimal".
+      const KOSONG = "Isi konteks untuk AI (teks atau berkas)";
+      check("mode 'hanya konteks' tanpa teks DAN tanpa berkas ditolak", (await atur(owner.cookie, { source: "separate", files: [], notes: "   " })).includes(KOSONG), "validasi");
+      const panjang = await atur(owner.cookie, { source: "assignment", notes: "x".repeat(4001) });
+      const dPanjang = (await db.collection("classes").doc(classId).collection("posts").doc(A).get()).data();
+      check(
+        "konteks teks lebih dari 4.000 karakter ditolak (dan tidak tersimpan)",
+        panjang.includes("Konteks teks untuk AI maksimal 4.000 karakter") && (dPanjang?.aiGrading?.notes ?? "").length !== 4001,
+        "MAX_AI_NOTES",
+      );
       check(
         "berkas konteks dari folder orang lain ditolak",
         (await atur(owner.cookie, { source: "separate", files: [{ path: `class-files/${siswa.uid}/${classId}/ai-${A}/palsu.pdf`, name: "k.pdf" }] })).includes("Berkas tidak sah"),
@@ -564,7 +600,7 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
       );
       check(
         "path asing di daftar keep diabaikan",
-        (await atur(owner.cookie, { source: "separate", keep: [`class-files/${siswa.uid}/${classId}/ai-${A}/palsu.pdf`], files: [] })).includes("minimal satu berkas"),
+        (await atur(owner.cookie, { source: "separate", keep: [`class-files/${siswa.uid}/${classId}/ai-${A}/palsu.pdf`], files: [] })).includes(KOSONG),
         "keep dicocokkan dengan data server",
       );
 
@@ -585,6 +621,22 @@ async function run(owner: TestUser, siswa: TestUser, siswa2: TestUser, luar: Tes
       check("nama berkas kunci TIDAK muncul di halaman siswa", !halSiswa.html.includes("kunci-jawaban-rahasia"), "kerahasiaan");
       const halGuru = await probeText(jalurAi, owner.cookie);
       check("halaman pengajar menampilkan berkas konteksnya", halGuru.html.includes("kunci-jawaban-rahasia"), "kartu Koreksi AI");
+
+      // Konteks TEKS: cukup sendirian di mode "hanya konteks", disimpan bersama
+      // berkas, dan sama rahasianya dengan berkas kunci jawaban.
+      const rahasia = "RUBRIK-RAHASIA-7731: kunci B, nilai minimal 40, komentar maks 2 kalimat.";
+      const okTeks = await atur(owner.cookie, { source: "separate", keep: [berkasAi], files: [], notes: `  ${rahasia}\r\n` , fillComment: true });
+      check("mode 'hanya konteks' sah dengan konteks teks", okTeks.includes("disimpan"), okTeks.slice(-120));
+      const dTeks = (await db.collection("classes").doc(classId).collection("posts").doc(A).get()).data();
+      check(
+        "konteks teks tersimpan (dirapikan) bersama berkas yang dipertahankan",
+        dTeks?.aiGrading?.notes === rahasia && dTeks?.aiGrading?.files?.[0]?.path === berkasAi,
+        JSON.stringify(dTeks?.aiGrading?.notes),
+      );
+      const halSiswaTeks = await probeText(`/kelas/${classId}/tugas/${A}`, siswa.cookie);
+      check("konteks teks TIDAK muncul di halaman siswa", !halSiswaTeks.html.includes("RUBRIK-RAHASIA-7731"), "kerahasiaan");
+      const halGuruTeks = await probeText(jalurAi, owner.cookie);
+      check("kartu Koreksi AI pengajar memuat konteks teksnya", halGuruTeks.html.includes("RUBRIK-RAHASIA-7731"), "kartu Koreksi AI");
       const lampiranKe0 = await unduh(`/api/classes/attachment?class=${classId}&post=${A}&i=0`, siswa.cookie);
       const lampiranKe1 = await unduh(`/api/classes/attachment?class=${classId}&post=${A}&i=1`, siswa.cookie);
       check(

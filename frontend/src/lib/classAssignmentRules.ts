@@ -364,18 +364,30 @@ export function pernahDiedit(p: { createdAt: string; updatedAt: string }): boole
 // menampilkannya, sekalipun ada yang kelak mengoper seluruh postingan ke
 // komponen klien.
 
-/** "assignment" = instruksi + lampiran tugas; "separate" = berkas khusus AI. */
+/**
+ * "assignment" = instruksi + lampiran tugas DITAMBAH konteks dari pengajar;
+ * "separate" = HANYA konteks dari pengajar (teks dan/atau berkas).
+ */
 export type SumberKonteksAi = "assignment" | "separate";
 
 export interface PengaturanAi {
   source: SumberKonteksAi;
-  /** Berkas konteks khusus AI (dipakai bila `source === "separate"`). */
+  /** Berkas konteks khusus AI (kunci jawaban, rubrik, …) — dipakai di KEDUA mode. */
   files: KelasBerkas[];
+  /**
+   * Konteks teks bebas dari pengajar: soal, kunci jawaban, rubrik & bobot,
+   * rentang nilai, panjang/gaya komentar, … SENGAJA satu kotak, bukan kolom
+   * per jenis (permintaan pemilik): AI yang memahami maksud tiap bagiannya.
+   * Rahasia seperti berkasnya — tidak pernah sampai ke siswa.
+   */
+  notes: string;
   /** Bawaan centang "AI juga mengisi komentar" di formulir nilai. */
   fillComment: boolean;
 }
 
 export const MAX_AI_CONTEXT_FILES = 3;
+/** Panjang maksimal konteks teks untuk AI. */
+export const MAX_AI_NOTES = 4000;
 
 /** Jenis yang isinya bisa dibaca AI. ZIP tidak — arsip tidak dibongkar. */
 export const MIME_AI_KONTEKS: readonly string[] = MIME_KELAS.filter((m) => m !== "application/zip");
@@ -388,6 +400,8 @@ export function toPengaturanAi(raw: unknown): PengaturanAi {
   return {
     source: r.source === "separate" ? "separate" : "assignment",
     files: toBerkasList(r.files),
+    // Pengaturan lama tidak punya `notes`.
+    notes: typeof r.notes === "string" ? r.notes.slice(0, MAX_AI_NOTES) : "",
     fillComment: r.fillComment === true,
   };
 }

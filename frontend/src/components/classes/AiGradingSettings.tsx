@@ -8,6 +8,7 @@ import { pesanGagalUnggah, unggahKonteksAi } from "@/lib/classUpload";
 import {
   FORMAT_AI_KONTEKS,
   MAX_AI_CONTEXT_FILES,
+  MAX_AI_NOTES,
   ekstensiOf,
   type PengaturanAi,
   type SumberKonteksAi,
@@ -15,12 +16,17 @@ import {
 import { cn } from "@/lib/cn";
 
 /**
- * Kartu "Koreksi AI" di halaman tugas pengajar: dari mana AI membaca soal,
- * dan apakah AI juga mengisi komentar secara bawaan.
+ * Kartu "Koreksi AI" di halaman tugas pengajar: apakah AI ikut membaca
+ * instruksi tugas, KONTEKS dari pengajar (teks bebas + berkas), dan apakah AI
+ * juga mengisi komentar secara bawaan.
  *
- * Berkas konteks terpisah biasanya kunci jawaban — karena itu ia tidak
- * pernah menjadi lampiran postingan, dan kartu ini hanya dirender di halaman
- * pengelola. Hanya NAMA berkasnya yang sampai ke sini, tanpa tautan unduh.
+ * Konteks sengaja SATU kotak teks bebas, bukan kolom per jenis (permintaan
+ * pemilik): kunci jawaban, rubrik, rentang nilai, panjang komentar, … ditulis
+ * sesukanya dan AI yang memahami maksudnya (lihat classGradingPrompt.ts).
+ *
+ * Konteks biasanya kunci jawaban — karena itu tidak pernah menjadi lampiran
+ * postingan, dan kartu ini hanya dirender di halaman pengelola. Hanya NAMA
+ * berkasnya yang sampai ke sini, tanpa tautan unduh.
  */
 export default function AiGradingSettings({
   classId,
@@ -38,6 +44,7 @@ export default function AiGradingSettings({
   const [source, setSource] = useState<SumberKonteksAi>(awal.source);
   const [lama, setLama] = useState(awal.files);
   const [baru, setBaru] = useState<File[]>([]);
+  const [catatan, setCatatan] = useState(awal.notes);
   const [isiKomentar, setIsiKomentar] = useState(awal.fillComment);
   const [mengunggah, setMengunggah] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -50,8 +57,8 @@ export default function AiGradingSettings({
     e.preventDefault();
     setPesan(null);
 
-    if (source === "separate" && lama.length + baru.length === 0) {
-      return setPesan({ ok: false, teks: "Unggah minimal satu berkas konteks." });
+    if (source === "separate" && lama.length + baru.length === 0 && !catatan.trim()) {
+      return setPesan({ ok: false, teks: "Isi konteks untuk AI (teks atau berkas), atau pilih “Instruksi & lampiran tugas”." });
     }
 
     let files: { path: string; name: string }[] = [];
@@ -73,6 +80,7 @@ export default function AiGradingSettings({
         source,
         keep: lama.map((f) => f.path),
         files,
+        notes: catatan,
         fillComment: isiKomentar,
       });
       if (!res.ok) return setPesan({ ok: false, teks: res.error });
@@ -87,13 +95,13 @@ export default function AiGradingSettings({
       id: "assignment",
       label: "Instruksi & lampiran tugas",
       ket: adaLampiranTugas
-        ? "AI membaca teks instruksi dan lampiran yang Anda unggah di tugas ini."
-        : "AI membaca teks instruksi tugas ini (tugas ini tidak berlampiran).",
+        ? "AI membaca instruksi dan lampiran tugas ini, ditambah konteks Anda di bawah."
+        : "AI membaca instruksi tugas ini (tidak berlampiran), ditambah konteks Anda di bawah.",
     },
     {
       id: "separate",
-      label: "Berkas konteks terpisah",
-      ket: "Misalnya soal lengkap atau kunci jawaban. Tidak terlihat oleh siswa.",
+      label: "Hanya konteks dari saya",
+      ket: "Instruksi tugas diabaikan; AI hanya membaca konteks di bawah. Cocok bila soal lengkap ada di sana.",
     },
   ];
 
@@ -132,39 +140,63 @@ export default function AiGradingSettings({
         </div>
       </fieldset>
 
-      {source === "separate" && (
-        <div className="mt-4">
-          {lama.length > 0 && (
-            <ul className="mb-3 space-y-2">
-              {lama.map((f) => (
-                <li key={f.path} className="flex min-w-0 items-center gap-3 bg-white/[0.06] px-3 py-2">
-                  <span className="w-11 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-ink-muted">
-                    {ekstensiOf(f.name).replace(".", "")}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-ink">{f.name}</span>
-                  <button
-                    type="button"
-                    disabled={sibuk}
-                    onClick={() => setLama((x) => x.filter((y) => y.path !== f.path))}
-                    className="shrink-0 text-xs font-medium text-ink-muted transition-colors hover:text-rust-700 disabled:opacity-50"
-                  >
-                    Buang
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <PemilihBerkas
-            files={baru}
-            onChange={setBaru}
-            formats={FORMAT_AI_KONTEKS}
-            maks={Math.max(0, sisaSlot)}
-            disabled={sibuk || sisaSlot <= 0}
-            label="Tambah berkas konteks"
-          />
-          <p className="mt-2 text-xs text-ink-muted">PDF, gambar, atau dokumen Office. ZIP tidak bisa dibaca AI.</p>
-        </div>
-      )}
+      <div className="mt-5">
+        <label htmlFor={`konteks-ai-${postId}`} className="block text-sm font-medium text-ink">
+          Konteks untuk AI
+        </label>
+        <p className="mb-2 mt-0.5 text-xs leading-relaxed text-ink-muted">
+          Tulis bebas apa saja yang perlu diketahui AI: soal, kunci jawaban, rubrik & bobot nilai, rentang nilai, panjang atau
+          gaya komentar. Tidak perlu format khusus, AI memahaminya sendiri. Tidak terlihat oleh siswa.
+        </p>
+        <textarea
+          id={`konteks-ai-${postId}`}
+          value={catatan}
+          onChange={(e) => setCatatan(e.target.value)}
+          disabled={sibuk}
+          maxLength={MAX_AI_NOTES}
+          rows={6}
+          placeholder={"Contoh:\nKunci: 1) B  2) 45 cm²  3) gaya gesek\nRubrik: konsep 60%, langkah 30%, kerapian 10%.\nYang sudah mencoba minimal dapat 50.\nKomentar singkat, maks 3 kalimat, nada menyemangati."}
+          className="w-full resize-y bg-white/[0.06] px-3 py-2 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] disabled:opacity-60"
+        />
+        <p className="mt-1 text-right text-[11px] tabular-nums text-ink-faint">
+          {catatan.length.toLocaleString("id-ID")} / {MAX_AI_NOTES.toLocaleString("id-ID")}
+        </p>
+      </div>
+
+      <div className="mt-3">
+        <p className="mb-2 text-sm font-medium text-ink">
+          Berkas konteks <span className="font-normal text-ink-muted">(opsional)</span>
+        </p>
+        {lama.length > 0 && (
+          <ul className="mb-3 space-y-2">
+            {lama.map((f) => (
+              <li key={f.path} className="flex min-w-0 items-center gap-3 bg-white/[0.06] px-3 py-2">
+                <span className="w-11 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-ink-muted">
+                  {ekstensiOf(f.name).replace(".", "")}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm text-ink">{f.name}</span>
+                <button
+                  type="button"
+                  disabled={sibuk}
+                  onClick={() => setLama((x) => x.filter((y) => y.path !== f.path))}
+                  className="shrink-0 text-xs font-medium text-ink-muted transition-colors hover:text-rust-700 disabled:opacity-50"
+                >
+                  Buang
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <PemilihBerkas
+          files={baru}
+          onChange={setBaru}
+          formats={FORMAT_AI_KONTEKS}
+          maks={Math.max(0, sisaSlot)}
+          disabled={sibuk || sisaSlot <= 0}
+          label="Tambah berkas konteks"
+        />
+        <p className="mt-2 text-xs text-ink-muted">PDF, gambar, atau dokumen Office. ZIP tidak bisa dibaca AI.</p>
+      </div>
 
       <label className="mt-4 flex items-start gap-2.5 text-sm text-ink-body">
         <input

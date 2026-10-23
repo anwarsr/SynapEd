@@ -11,6 +11,7 @@ import {
 } from "@/lib/classAssignments";
 import {
   MAX_AI_CONTEXT_FILES,
+  MAX_AI_NOTES,
   MAX_CLASS_FEEDBACK,
   MIME_AI_KONTEKS,
   type KelasBerkas,
@@ -76,17 +77,28 @@ export async function suggestClassGrade(
   if (!sub) return { ok: false, error: "Siswa ini belum mengumpulkan." };
 
   const ai = await getPengaturanAi(classId, postId);
-  if (ai.source === "separate" && ai.files.length === 0) {
+  if (ai.source === "separate" && ai.files.length === 0 && !ai.notes.trim()) {
     return {
       ok: false,
-      error: "Belum ada berkas konteks untuk AI. Unggah di kartu Koreksi AI, atau pilih sumber “Instruksi & lampiran tugas”.",
+      error: "Belum ada konteks untuk AI. Isi teks atau unggah berkas di kartu Koreksi AI, atau pilih sumber “Instruksi & lampiran tugas”.",
     };
   }
 
-  const [soal, jawaban] = await Promise.all([
-    bacaBerkasAi(ai.source === "separate" ? ai.files : post.attachments, { maxChars: 8000, maxGambar: 2 }),
+  // Lampiran tugas hanya dibaca di mode "assignment"; berkas konteks pengajar
+  // selalu dibaca. Gambar soal maks 2 SECARA TOTAL, diutamakan konteks pengajar
+  // (biasanya kunci jawaban — paling menentukan nilai).
+  const pakaiTugas = ai.source === "assignment";
+  const [konteks, jawaban] = await Promise.all([
+    bacaBerkasAi(ai.files, { maxChars: 8000, maxGambar: 2 }),
     bacaBerkasAi(sub.files, { maxChars: 12000, maxGambar: 3 }),
   ]);
+  const lampiran = pakaiTugas
+    ? await bacaBerkasAi(post.attachments, { maxChars: 8000, maxGambar: Math.max(0, 2 - konteks.gambar.length) })
+    : { teks: "", gambar: [] as string[], tidakTerbaca: [] as string[] };
+  const soal = {
+    gambar: [...konteks.gambar, ...lampiran.gambar],
+    tidakTerbaca: [...lampiran.tidakTerbaca, ...konteks.tidakTerbaca],
+  };
 
   const teksJawaban = [sub.text, jawaban.teks].filter(Boolean).join("\n\n");
   if (!teksJawaban.trim() && jawaban.gambar.length === 0) {
@@ -96,13 +108,14 @@ export async function suggestClassGrade(
 
   const bagianSoal = teksBagianSoal({
     judul: post.title,
-    // Mode "separate" sengaja HANYA berkas konteks: pengajar memilihnya justru
+    maxPoints: p.maxPoints,
+    // Mode "separate" sengaja TANPA instruksi tugas: pengajar memilihnya justru
     // karena instruksi tugas tidak cukup (atau berbeda) sebagai acuan penilaian.
-    teks: ai.source === "separate" ? soal.teks : [post.body, soal.teks].filter(Boolean).join("\n\n"),
+    instruksi: pakaiTugas ? [post.body, lampiran.teks].filter(Boolean).join("\n\n") : null,
+    catatan: ai.notes,
+    teksBerkasKonteks: konteks.teks,
     tidakTerbaca: soal.tidakTerbaca,
     jumlahGambar: soal.gambar.length,
-    maxPoints: p.maxPoints,
-    sumber: ai.source,
   });
   const bagianJawaban = teksBagianJawaban({
     teks: teksJawaban,
@@ -115,7 +128,7 @@ export async function suggestClassGrade(
     urls.map((url) => ({ type: "image_url", image_url: { url } }));
 
   const messages: OpenRouterMessage[] = [
-    { role: "system", content: buildClassGradingSystemPrompt(p.maxPoints) },
+    { role: "system", content: buildClassGradingSystemPrompt(p.maxPoints, MAX_CLASS_FEEDBACK) },
     {
       role: "user",
       // Gambar diselipkan tepat setelah teks bagiannya, supaya model tahu
@@ -207,12 +220,16 @@ export async function saveAiGradingSettings(
   if (files.length > MAX_AI_CONTEXT_FILES) {
     return { ok: false, error: `Maksimal ${MAX_AI_CONTEXT_FILES} berkas konteks.` };
   }
-  if (source === "separate" && files.length === 0) {
-    return { ok: false, error: "Unggah minimal satu berkas konteks, atau pilih “Instruksi & lampiran tugas”." };
+  const notes = typeof r.notes === "string" ? r.notes.replace(/\r\n?/g, "\n").trim() : "";
+  if (notes.length > MAX_AI_NOTES) {
+    return { ok: false, error: `Konteks teks untuk AI maksimal ${MAX_AI_NOTES.toLocaleString("id-ID")} karakter.` };
+  }
+  if (source === "separate" && files.length === 0 && !notes) {
+    return { ok: false, error: "Isi konteks untuk AI (teks atau berkas), atau pilih “Instruksi & lampiran tugas”." };
   }
 
   await postsRef(classId).doc(postId).update({
-    aiGrading: { source, files, fillComment: r.fillComment === true, updatedAt: new Date().toISOString() },
+    aiGrading: { source, files, notes, fillComment: r.fillComment === true, updatedAt: new Date().toISOString() },
   });
 
   // Dibuang SETELAH tersimpan: gagal di tengah tidak boleh meninggalkan
