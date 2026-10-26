@@ -57,6 +57,7 @@ interface Props {
     description: string;
     ownerUid: string;
     imageURL?: string | null;
+    bannerURL?: string | null;
     memberCount: number;
     postCount: number;
     createdAt: string;
@@ -151,8 +152,22 @@ export default function ClassRoom({
   return (
     <>
       <section
-        className={cn("relative overflow-hidden bg-header pb-0", overlayNav ? "-mt-14 pt-40" : "-mt-12 pt-10")}
+        // Dengan banner, kepala dinaikkan sampai tepi atas layar (di panel educator main berbantalan pt-36)
+        // supaya gambarnya tidak terpotong di belakang navbar; isi kepala tetap pada ketinggian semula.
+        className={cn(
+          "relative overflow-hidden bg-header pb-0",
+          overlayNav ? "-mt-14 pt-40" : kelas.bannerURL ? "-mt-36 pt-[8.5rem]" : "-mt-12 pt-10",
+        )}
       >
+        {kelas.bannerURL && (
+          <>
+            {/* Banner kelas: gambar penuh di belakang kepala, digelapkan supaya teks putih tetap terbaca
+                dan menyatu ke warna kepala di tepi bawah (tab di bawahnya). */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={kelas.bannerURL} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/50 to-[#081520]" />
+          </>
+        )}
         <div className="container-page relative">
           {/* Tautan kembali: garis penunjuk yang memanjang saat di-hover */}
           <Link

@@ -58,21 +58,31 @@ export default async function QuizSiswaPage({ params }: Props) {
     <>
       <Navbar />
 
-      <main className="kelas-jakarta min-h-screen bg-paper pb-28 pt-32">
+      <main className="kelas-jakarta min-h-screen font-medium bg-paper pb-28 pt-32">
         <div className="container-page">
           <BackLink href={`/kelas/${id}?tab=quiz`}>{akses.kelas.name}</BackLink>
 
           <div className="mx-auto mt-14 max-w-[720px]">
             {/* Kepala: judul besar + petunjuk */}
-            <header>
-              <h1 className="break-words text-[44px] font-semibold leading-[1.08] tracking-[-0.01em] text-ink max-sm:text-[32px]">
-                {quiz.title}
-              </h1>
-              {quiz.description && (
-                <p className="mt-5 max-w-[60ch] whitespace-pre-line break-words text-[16.5px] leading-[1.8] text-ink-body">
-                  {quiz.description}
-                </p>
+            {/* Kepala: judul + deskripsi. Dengan banner, gambar melatari seluruh kepala (menembus lebar kolom). */}
+            <header className={quiz.bannerURL ? "relative -mx-6 overflow-hidden px-6 py-10 max-sm:-mx-4 max-sm:px-4" : undefined}>
+              {quiz.bannerURL && (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={quiz.bannerURL} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/60 to-black/35" />
+                </>
               )}
+              <div className="relative">
+                <h1 className={`break-words text-[44px] font-semibold leading-[1.08] tracking-[-0.01em] max-sm:text-[32px] ${quiz.bannerURL ? "text-[#fff]" : "text-ink"}`}>
+                  {quiz.title}
+                </h1>
+                {quiz.description && (
+                  <p className={`mt-5 max-w-[60ch] whitespace-pre-line break-words text-[16.5px] leading-[1.8] ${quiz.bannerURL ? "text-[#fff]/85" : "text-ink-body"}`}>
+                    {quiz.description}
+                  </p>
+                )}
+              </div>
             </header>
 
             {p === null && (
@@ -86,7 +96,7 @@ export default async function QuizSiswaPage({ params }: Props) {
                   ].map((x) => (
                     <div key={x.l} className="flex flex-col items-center px-4 text-center first:pl-0 last:pr-0">
                       <dt className="order-2 mt-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-muted">{x.l}</dt>
-                      <dd className="flex h-[46px] items-center text-[46px] font-extralight leading-none tabular-nums text-ink max-sm:h-[34px] max-sm:text-[34px]">
+                      <dd className="flex h-[46px] items-center text-[46px] font-semibold leading-none text-ink max-sm:h-[34px] max-sm:text-[34px]">
                         {x.n ?? (
                           <svg className="h-9 w-14 max-sm:h-7 max-sm:w-11" viewBox="0 0 56 28" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-label="tanpa batas">
                             <path d="M28 14c-4-7-8-9-12-9a9 9 0 000 18c4 0 8-2 12-9zm0 0c4 7 8 9 12 9a9 9 0 000-18c-4 0-8 2-12 9z" />
@@ -119,7 +129,7 @@ export default async function QuizSiswaPage({ params }: Props) {
                         ...(quiz.settings.shuffleQuestions ? ["Urutan soal diacak untuk tiap siswa."] : []),
                       ].map((t, i) => (
                         <li key={i} className="flex items-center gap-5 py-4">
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-white/[0.08] text-[13px] font-semibold tabular-nums text-ink">{String(i + 1).padStart(2, "0")}</span>
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-white/[0.08] text-[13px] font-semibold text-ink">{String(i + 1).padStart(2, "0")}</span>
                           <span className="text-[15.5px] leading-[1.75] text-ink-body">{t}</span>
                         </li>
                       ))}

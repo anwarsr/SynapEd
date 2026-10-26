@@ -153,6 +153,7 @@ export async function createClass(
   nameRaw: string,
   descRaw: string,
   imageRaw?: string | null,
+  bannerRaw?: string | null,
 ): Promise<ClassResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
@@ -175,6 +176,9 @@ export async function createClass(
   const description = clean(descRaw, MAX_CLASS_DESC);
   const imageURL = imageRaw ? fotoKelasSah(imageRaw, user.uid) : null;
   if (imageRaw && !imageURL) return { ok: false, error: "Foto kelas tidak valid." };
+  // Banner memakai penjaga path yang SAMA dengan foto kelas (folder avatars/{uid-SESI}/class-<hex>.jpg).
+  const bannerURL = bannerRaw ? fotoKelasSah(bannerRaw, user.uid) : null;
+  if (bannerRaw && !bannerURL) return { ok: false, error: "Banner kelas tidak valid." };
   const waktu = now();
 
   const ref = adminDb().collection("classes").doc();
@@ -183,6 +187,7 @@ export async function createClass(
     description,
     ownerUid: user.uid,
     imageURL,
+    bannerURL,
     joinCode: await freshJoinCode(),
     memberCount: 0,
     postCount: 0,
@@ -195,12 +200,13 @@ export async function createClass(
   return { ok: true, message: "Kelas berhasil dibuat." };
 }
 
-/** `imageRaw`: undefined = foto tak diubah, null = dihapus, string = foto baru. */
+/** `imageRaw`/`bannerRaw`: undefined = tak diubah, null = dihapus, string = gambar baru. */
 export async function updateClass(
   classId: string,
   nameRaw: string,
   descRaw: string,
   imageRaw?: string | null,
+  bannerRaw?: string | null,
 ): Promise<ClassResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
@@ -224,6 +230,14 @@ export async function updateClass(
     // Foto lama dibuang (upaya terbaik) agar tak menumpuk di Storage.
     const lama = pathFotoKelas(kelas.imageURL);
     if (lama && kelas.imageURL !== baru) void deleteObjects([lama]).catch(() => 0);
+  }
+
+  if (bannerRaw !== undefined) {
+    const baru = bannerRaw === null ? null : fotoKelasSah(bannerRaw, user.uid);
+    if (bannerRaw !== null && !baru) return { ok: false, error: "Banner kelas tidak valid." };
+    patch.bannerURL = baru;
+    const lama = pathFotoKelas(kelas.bannerURL);
+    if (lama && kelas.bannerURL !== baru) void deleteObjects([lama]).catch(() => 0);
   }
 
   await classRef(classId).update(patch);
@@ -282,6 +296,10 @@ export async function deleteClass(classId: string): Promise<ClassResult> {
 
   // Percobaan quiz juga koleksi terpisah (subkoleksi quiz-nya sendiri sudah ikut recursiveDelete).
   await hapusPercobaanKelas(classId);
+
+  // Foto & banner kelas di Storage tidak ikut terhapus bersama dokumennya (upaya terbaik).
+  const gambar = [pathFotoKelas(kelas.imageURL), pathFotoKelas(kelas.bannerURL)].filter((x): x is string => x !== null);
+  if (gambar.length > 0) void deleteObjects(gambar).catch(() => 0);
 
   revalidatePath("/educator/classes");
   revalidatePath("/admin/classes");

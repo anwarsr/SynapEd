@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { requireClassAccess, requireOwnedClass } from "@/lib/classGuards";
+import { deleteObjects } from "@/lib/storageCleanup";
+import { pathGambar, urlGambarSah } from "@/lib/gambarKelas";
 import {
   getPercobaan,
   getQuiz,
@@ -92,6 +94,15 @@ export async function saveQuiz(classId: string, quizId: string | null, input: un
 
   const waktu = now();
 
+  // Banner: tak dikirim = tak diubah, null = dibuang, string = gambar baru (path wajib milik uid SESI).
+  const r = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  let banner: string | null | undefined = undefined;
+  if (r.bannerURL === null) banner = null;
+  else if (r.bannerURL !== undefined) {
+    banner = urlGambarSah(r.bannerURL, user.uid);
+    if (!banner) return { ok: false, error: "Banner quiz tidak valid." };
+  }
+
   if (quizId) {
     const lama = await getQuiz(classId, quizId);
     if (!lama) return { ok: false, error: "Quiz tidak ditemukan." };
@@ -109,7 +120,12 @@ export async function saveQuiz(classId: string, quizId: string | null, input: un
       }
     }
 
-    await quizzesRef(classId).doc(quizId).update({ ...isi.value, published: terbitkan === true, updatedAt: waktu });
+    await quizzesRef(classId)
+      .doc(quizId)
+      .update({ ...isi.value, ...(banner !== undefined ? { bannerURL: banner } : {}), published: terbitkan === true, updatedAt: waktu });
+    // Banner lama dibuang (upaya terbaik) setelah yang baru tersimpan.
+    const lamaBanner = pathGambar(lama.bannerURL);
+    if (banner !== undefined && lamaBanner && lama.bannerURL !== banner) void deleteObjects([lamaBanner]).catch(() => 0);
     segarkan(classId, quizId);
     return { ok: true, message: terbitkan ? "Quiz diterbitkan." : "Draf quiz disimpan.", quizId };
   }
@@ -121,6 +137,7 @@ export async function saveQuiz(classId: string, quizId: string | null, input: un
   const ref = quizzesRef(classId).doc();
   await ref.set({
     ...isi.value,
+    bannerURL: banner ?? null,
     classId,
     authorUid: user.uid,
     published: terbitkan === true,
@@ -144,6 +161,8 @@ export async function deleteQuiz(classId: string, quizId: string): Promise<QuizR
   // Percobaan hidup di koleksi terpisah: dihapus lebih dulu, baru quiznya.
   await hapusPercobaanQuiz(classId, quizId);
   await quizzesRef(classId).doc(quizId).delete();
+  const banner = pathGambar(quiz.bannerURL);
+  if (banner) void deleteObjects([banner]).catch(() => 0);
   segarkan(classId, quizId);
   return { ok: true, message: "Quiz dihapus." };
 }

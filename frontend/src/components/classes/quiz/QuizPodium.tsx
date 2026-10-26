@@ -14,31 +14,23 @@ import { cn } from "@/lib/cn";
 function Piala() {
   const g = useId().replace(/:/g, "");
   return (
-    <svg className="relative h-[74px] w-[74px]" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+    <svg className="relative h-[68px] w-[68px]" viewBox="0 0 64 64" fill="none" aria-hidden="true">
       <defs>
         <linearGradient id={`${g}-e`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f8dd85" />
-          <stop offset="0.55" stopColor="#e0aa2e" />
-          <stop offset="1" stopColor="#a8780f" />
-        </linearGradient>
-        <linearGradient id={`${g}-s`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#a8780f" />
-          <stop offset="0.5" stopColor="#f2cf6a" />
-          <stop offset="1" stopColor="#a8780f" />
+          <stop offset="0" stopColor="#e3cc94" />
+          <stop offset="1" stopColor="#9c7f3e" />
         </linearGradient>
       </defs>
-      {/* gagang */}
-      <path d="M17 13H10c0 9 3 14 10 15M47 13h7c0 9-3 14-10 15" stroke={`url(#${g}-e)`} strokeWidth="2.2" strokeLinecap="round" />
-      {/* cangkir */}
-      <path d="M16 9h32v14c0 9-7 15-16 15S16 32 16 23V9z" fill={`url(#${g}-e)`} />
-      <path d="M16 9h32" stroke="#fbe8a6" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M21 12v11c0 5 3 9 7 11" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.6" strokeLinecap="round" />
-      {/* bintang */}
-      <path d="M32 14.5l2.3 4.7 5.2.75-3.75 3.65.9 5.15L32 26.3l-4.65 2.45.9-5.15-3.75-3.65 5.2-.75L32 14.5z" fill="#7a5508" fillOpacity="0.55" />
+      {/* gagang: garis tipis, tanpa isi */}
+      <path d="M21 14h-5.5c0 6.5 2.8 10 7.5 11M43 14h5.5c0 6.5-2.8 10-7.5 11" stroke="#b39556" strokeWidth="1.4" strokeLinecap="round" />
+      {/* cangkir ramping */}
+      <path d="M20 9h24v12.5c0 8.2-5.2 13.5-12 13.5S20 29.7 20 21.5V9z" fill={`url(#${g}-e)`} />
+      <path d="M20 9h24" stroke="#f0e2b8" strokeWidth="1" strokeLinecap="round" />
+      <path d="M25.5 13v8.5c0 4 2.2 7 5.2 8.2" stroke="#fff" strokeOpacity="0.28" strokeWidth="1.2" strokeLinecap="round" />
       {/* tangkai & alas */}
-      <path d="M29 38h6v8h-6z" fill={`url(#${g}-s)`} />
-      <path d="M24 46h16l2 4H22l2-4z" fill={`url(#${g}-e)`} />
-      <rect x="19" y="50" width="26" height="5" rx="1" fill={`url(#${g}-s)`} />
+      <path d="M30.8 35h2.4v9h-2.4z" fill="#b39556" />
+      <path d="M26 44h12l1.5 3.5h-15L26 44z" fill="#a98b4b" />
+      <rect x="22.5" y="47.5" width="19" height="3.5" fill={`url(#${g}-e)`} />
     </svg>
   );
 }
@@ -79,7 +71,7 @@ export default function QuizPodium({
   const [buka, setBuka] = useState(false);
 
   return (
-    <div className={cn("podium relative h-[218px] w-full overflow-hidden bg-white/[0.05] lg:w-[236px]", className)} data-buka={buka}>
+    <div className={cn("podium relative min-h-[218px] w-full shrink-0 overflow-hidden bg-paper-card", className)} data-buka={buka}>
       {/* Isi di balik pintu: podium (atau pesan kosong). */}
       <div className="absolute inset-0" aria-hidden={!buka}>
         {baris.length === 0 ? (
@@ -107,7 +99,7 @@ export default function QuizPodium({
                         <span className="mt-1.5 block max-w-[68px] truncate text-[11px] font-semibold text-ink" title={b.nama}>
                           {b.nama}
                         </span>
-                        <span className="block text-[9.5px] tabular-nums text-ink-muted">{formatDurasi(b.detik)}</span>
+                        <span className="block text-[9.5px] text-ink-muted">{formatDurasi(b.detik)}</span>
                       </>
                     )}
                   </div>
@@ -134,21 +126,13 @@ export default function QuizPodium({
       {/* Pintu bergambar piala: naik penuh ke atas (-100%) = terbuka. */}
       <span
         aria-hidden="true"
-        className="podium-pintu absolute inset-0 z-[1] flex flex-col items-center justify-center gap-4 bg-paper-alt"
+        className="podium-pintu absolute inset-0 z-[1] flex flex-col items-center justify-center gap-4 bg-paper-card"
         style={{ transform: buka ? "translateY(-100%)" : "translateY(0)" }}
       >
         <Piala />
         <span className="relative flex flex-col items-center gap-1.5">
           <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-body">Peringkat</span>
         </span>
-        {/* Sekat panel pintu garasi */}
-        <span
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(to bottom, transparent 0, transparent calc(25% - 1px), rgb(0 0 0 / 0.28) calc(25% - 1px), rgb(0 0 0 / 0.28) 25%)",
-          }}
-        />
       </span>
 
       {/* Satu-satunya sasaran klik/papan ketik: seluruh kotak. */}

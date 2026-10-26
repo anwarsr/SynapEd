@@ -24,11 +24,11 @@ export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: 
   const asli = new Map(quiz.questions.map((s) => [s.id, s]));
 
   return (
-    <div className="mx-auto max-w-[760px]">
+    <div className="mx-auto max-w-[760px] font-medium">
       <div className="bg-paper-card p-6 shadow-[inset_0_3px_0_var(--color-blue-500)]">
         <p className="t-label text-ink-muted">Hasil Anda</p>
         <p className="mt-3 flex items-baseline gap-2">
-          <span className="text-[56px] font-extralight leading-none tabular-nums text-ink">{n.total}</span>
+          <span className="text-[56px] font-semibold leading-none text-ink">{n.total}</span>
           <span className="text-lg text-ink-muted">/ {TOTAL_POIN}</span>
         </p>
         {n.esaiBelumDinilai > 0 && (
@@ -59,8 +59,8 @@ export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: 
           return (
             <li key={s.id} className="bg-paper-card p-5">
               <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="flex h-8 w-8 items-center justify-center bg-white/[0.08] text-[13px] font-semibold tabular-nums text-ink">{String(i + 1).padStart(2, "0")}</span>
-                <span className="text-xs tabular-nums text-ink-muted">
+                <span className="flex h-8 w-8 items-center justify-center bg-white/[0.08] text-[13px] font-semibold text-ink">{String(i + 1).padStart(2, "0")}</span>
+                <span className="text-xs text-ink-muted">
                   {belumDinilai ? `menunggu / ${s.points}` : `${dapat} / ${s.points}`} poin
                 </span>
               </div>

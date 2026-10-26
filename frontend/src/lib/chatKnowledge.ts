@@ -101,6 +101,10 @@ export const PENGETAHUAN_SITUS = `## Akun
   kali, tiap quiz punya papan peringkat 1-3 (nilai tertinggi, seri dipilih yang tercepat),
   dan kunci jawaban baru terbuka setelah pengajar menutup quiz. Pengajar memantau siswa lewat tombol Pantau
   pada tiap quiz.
+  Tampilan situs bisa Gelap, Terang, atau Kustom (profil, Pengaturan Laman): pengguna menyusun palet sendiri
+  dari empat warna (latar, kartu, teks, aksen); pilihan tersimpan di perangkat itu saja.
+  Quiz juga bisa diberi banner yang melatari judul dan deskripsinya.
+  Pengajar bisa memasang banner kelas (gambar lebar di kepala ruang kelas) lewat Pengaturan kelas.
   Pengajar bisa mengeluarkan siswa dari kelas (tab Anggota); jawaban siswa tetap tersimpan.
   Pengajar bisa mengedit pengumuman dan tugas setelah terbit
   (judul, instruksi, lampiran, format, tenggat, nilai maksimal); kiriman siswa

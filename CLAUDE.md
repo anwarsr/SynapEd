@@ -591,6 +591,33 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
     `parseGradingResponse(raw, max, maxGrade=100)` — regex 4 digit + `(?!\d)`:
     dengan 3 digit, "GRADE: 1000" terbaca 100 dan lolos diam-diam.
 
+## Tema kustom
+
+- Pilihan ketiga di `ThemeSwitch` (`synaped_theme` = `custom`). `lib/customTheme.ts` (NETRAL): empat warna `PaletKustom`
+  {latar, kartu, teks, aksen} → `hitungTema` menurunkan 25 variabel CSS (`NAMA_VARIABEL`) yang dipasang INLINE di `<html>`
+  (menang atas blok `html[data-theme]`). Latar terang (kecerahan > 0,4) = struktur tema TERANG (`data-theme="light"` +
+  `--color-white` dibalik jadi warna Teks); latar gelap = struktur gelap bawaan (`--color-white` TIDAK disentuh). Aksen terlalu
+  terang digelapkan agar tulisan putih di tombol (`blue-600`) tetap ≥3,2:1; `peringatan` bila kontras Teks/Latar <4,5.
+- Disimpan sebagai CSS jadi di localStorage (`synaped_theme_css`, `_mode`, `_palet`); skrip <head> di layout.tsx memasangnya
+  sebelum cat pertama (`d.style.cssText = css`). Memilih Gelap/Terang memanggil `lepasTemaKustom` (hapus tiap variabel, bukan
+  seluruh `style`). Data dari localStorage untuk UI selalu lewat `sahkanPalet` (hanya `#RRGGBB`). Tes: `npm run verify:tema-kustom` (murni).
+- Footer/navy/`bg-blue-*`/`keep-white` tetap memakai aturan tema terang yang sudah ada (mendeklarasi ulang `--color-white: #fff`).
+
+## Banner kelas
+
+- `Kelas.bannerURL` (null = tanpa). Diunggah dari `ClassForm` lewat `compressBanner` (≤1600px JPEG <2MB) + `uploadClassImage`
+  ke `avatars/{uid}/class-<hex16>.jpg` - folder & pola nama SAMA dengan foto kelas, jadi storage.rules tak perlu dideploy dan
+  `pruneAvatarFolder` tak membuangnya. `createClass(name, desc, image, banner)` / `updateClass(..., image, banner)`:
+  undefined = tak diubah, null = hapus (berkas lama dibuang), string = divalidasi `fotoKelasSah` (path HARUS milik uid SESI).
+  `deleteClass` ikut membuang foto & banner (upaya terbaik). Tampil di hero `ClassRoom` (`<img>` absolut + gradasi gelap
+  ke `#081520`; teks hero tetap putih). Uji: bagian "Banner kelas" di `verify-class-quiz`.
+- **Banner quiz**: `Quiz.bannerURL` (diunggah dari `QuizBuilder` lewat `compressBanner` + `uploadClassImage`, folder & pola nama
+  SAMA dengan foto/banner kelas). `saveQuiz`: `bannerURL` di input tak ada = tak diubah, null = dibuang, string = divalidasi
+  `urlGambarSah` (`lib/gambarKelas.ts`; path wajib milik uid SESI); berkas lama dibuang saat diganti/quiz dihapus. Tampil sebagai latar
+  kepala kartu (`QuizTab`) dan kepala halaman quiz siswa; teks di atasnya `#fff` (bukan `text-white`, terbalik di tema terang).
+- Tombol "Izinkan mengulang" (Pantau) = `TOMBOL_KOTAK` bersama Tutup quiz (ikon `ulang`).
+- Kartu quiz (`QuizTab`) RINGKAS: tingginya ditentukan kotak peringkat (`QuizPodium` `min-h-[218px]`, lebar 236px, flush kanan di lg); kiri = status + "n/m terkumpul" (pengelola), judul, tiga angka `font-bold` sebaris, tombol. Garis status tepi kiri (`garisStatus`). Angka/judul bagian quiz (kartu, halaman mulai, hasil, pantau) minimal `font-semibold` (permintaan pemilik; jangan `font-extralight`), teks lain `font-medium` lewat akar. Kotak peringkat BERWARNA SAMA dengan kartu (`bg-paper-card`, pintu juga), tanpa garis sekat, piala emas champagne ramping.
+
 ## Mengeluarkan anggota & dialog konfirmasi
 
 - `removeClassMember(classId, uid)` (classActions; pemilik/admin lewat `requireOwnedClass`): transaksi hapus

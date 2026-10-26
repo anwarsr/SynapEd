@@ -47,7 +47,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              'try{var d=document.documentElement;if(sessionStorage.getItem("synaped_intro_seen_v2")==="1")d.classList.add("intro-skip");if(localStorage.getItem("synaped_theme")==="light")d.dataset.theme="light"}catch(e){}',
+              'try{var d=document.documentElement;if(sessionStorage.getItem("synaped_intro_seen_v2")==="1")d.classList.add("intro-skip");var t=localStorage.getItem("synaped_theme");if(t==="light")d.dataset.theme="light";else if(t==="custom"){var c=localStorage.getItem("synaped_theme_css");if(c){d.style.cssText=c;if(localStorage.getItem("synaped_theme_mode")==="light")d.dataset.theme="light"}}}catch(e){}',
           }}
         />
       </head>

@@ -34,6 +34,7 @@
     "verify:model3d": "tsx scripts/verify-model3d.ts",
     "verify:class-archive": "tsx scripts/verify-class-archive.ts",
     "verify:class-quiz": "tsx scripts/verify-class-quiz.ts",
+    "verify:tema-kustom": "tsx scripts/verify-tema-kustom.ts",
     "verify:google": "tsx scripts/verify-google-account.ts",
     "verify:manual-payment": "tsx scripts/verify-manual-payment.ts",
     "verify:material": "tsx scripts/verify-material.ts",

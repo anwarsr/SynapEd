@@ -83,7 +83,7 @@ export default function ConfirmDialog({
           <button
             autoFocus
             onClick={onCancel}
-            className="bg-white/[0.07] px-5 py-2.5 text-sm font-semibold text-ink shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] transition-colors duration-300 hover:bg-white/[0.13] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.32)]"
+            className="bg-white/[0.07] px-5 py-2.5 text-sm font-semibold text-ink transition-colors duration-300 hover:bg-white/[0.14]"
           >
             {cancelLabel}
           </button>

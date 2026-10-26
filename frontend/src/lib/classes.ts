@@ -35,6 +35,7 @@ function toKelas(id: string, d: FirebaseFirestore.DocumentData): Kelas {
     description: (d.description as string | undefined) ?? "",
     ownerUid: (d.ownerUid as string | undefined) ?? "",
     imageURL: typeof d.imageURL === "string" && d.imageURL ? d.imageURL : null,
+    bannerURL: typeof d.bannerURL === "string" && d.bannerURL ? d.bannerURL : null,
     joinCode: (d.joinCode as string | undefined) ?? "",
     memberCount: (d.memberCount as number | undefined) ?? 0,
     postCount: (d.postCount as number | undefined) ?? 0,

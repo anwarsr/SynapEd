@@ -56,7 +56,7 @@ function quizUji(over: Partial<Quiz> = {}): Quiz {
     id: "q1", classId: "c1", authorUid: "o", title: "Uji", description: "",
     questions: [soalMcq("s1", 30), soalMcq("s2", 30), soalEsai("s3", 40)],
     settings: { shuffleQuestions: true, shuffleOptions: true, durationMin: 10 },
-    published: true, opensAt: null, closed: false, extraMin: 0, createdAt: "", updatedAt: "", ...over,
+    published: true, bannerURL: null, opensAt: null, closed: false, extraMin: 0, createdAt: "", updatedAt: "", ...over,
   };
 }
 
@@ -332,6 +332,37 @@ async function alur() {
     check("pemilik menghapus quiz + percobaannya", (await callAction(jalur, hapusId, [classId, quizId], owner.cookie)).includes("Quiz dihapus"), "ok");
     const sisaPercobaan = await db.collection("classQuizAttempts").where("quizId", "==", quizId).get();
     check("tak ada percobaan yatim", sisaPercobaan.empty, `${sisaPercobaan.size} tersisa`);
+
+    console.log("\nBanner kelas");
+    const ubahId = await actionId("educator/classes/[id]", "updateClass");
+    const urlGambar = (uid: string, nama = "class-0123456789abcdef.jpg") =>
+      `https://firebasestorage.googleapis.com/v0/b/synap-ed.appspot.com/o/avatars%2F${uid}%2F${nama}?alt=media&token=x`;
+    const ubahKelas = (cookie: string, banner: unknown) => callAction(jalur, ubahId, [classId, "Uji Quiz", "", undefined, banner], cookie);
+    const bannerDb = async () => (await db.collection("classes").doc(classId).get()).data()?.bannerURL ?? null;
+    check("siswa tak bisa mengubah banner", (await ubahKelas(s1.cookie, urlGambar(s1.uid))).includes("tidak berhak"), "penjaga pemilik");
+    check("URL sembarang ditolak", (await ubahKelas(owner.cookie, "https://example.com/x.jpg")).includes("Banner kelas tidak valid"), "bukan Storage proyek");
+    check("path milik orang lain ditolak", (await ubahKelas(owner.cookie, urlGambar(s1.uid))).includes("Banner kelas tidak valid"), "uid sesi wajib");
+    check("nama berkas ngawur ditolak", (await ubahKelas(owner.cookie, urlGambar(owner.uid, "banner.png"))).includes("Banner kelas tidak valid"), "pola class-<hex>.jpg");
+    check("banner sah disimpan", (await ubahKelas(owner.cookie, urlGambar(owner.uid))).includes("Kelas diperbarui") && (await bannerDb()) === urlGambar(owner.uid), "tersimpan");
+    check("banner tampil di ruang kelas siswa", (await probeText(`/kelas/${classId}`, s1.cookie)).html.includes("class-0123456789abcdef.jpg"), "hero memuat gambar");
+    check("tanpa argumen banner = tak diubah", (await callAction(jalur, ubahId, [classId, "Uji Quiz", "", undefined], owner.cookie)).includes("Kelas diperbarui") && (await bannerDb()) === urlGambar(owner.uid), "undefined");
+    check("banner bisa dihapus", (await ubahKelas(owner.cookie, null)).includes("Kelas diperbarui") && (await bannerDb()) === null, "null");
+
+    console.log("\nBanner quiz");
+    const urlBanner = (uid: string, nama = "class-abcdef0123456789.jpg") =>
+      `https://firebasestorage.googleapis.com/v0/b/synap-ed.appspot.com/o/avatars%2F${uid}%2F${nama}?alt=media&token=x`;
+    const bannerQuiz = async (qid: string) => (await db.collection("classes").doc(classId).collection("quizzes").doc(qid).get()).data()?.bannerURL ?? null;
+    const idBq = (await db.collection("classes").doc(classId).collection("quizzes").get()).docs[0]?.id ?? "";
+    // quiz uji sudah dihapus di atas; buat satu lagi lewat aksi supaya banner diuji di jalur sungguhan
+    await simpan(owner.cookie, null, isi({ title: "Quiz Berbanner" }), true);
+    const bq = (await db.collection("classes").doc(classId).collection("quizzes").get()).docs.find((d) => d.data().title === "Quiz Berbanner")?.id ?? idBq;
+    check("banner milik orang lain ditolak", (await simpan(owner.cookie, bq, isi({ title: "Quiz Berbanner", bannerURL: urlBanner(s1.uid) }), true)).includes("Banner quiz tidak valid"), "uid sesi wajib");
+    check("URL sembarang ditolak", (await simpan(owner.cookie, bq, isi({ title: "Quiz Berbanner", bannerURL: "https://example.com/x.jpg" }), true)).includes("Banner quiz tidak valid"), "bukan Storage proyek");
+    check("banner sah disimpan", (await simpan(owner.cookie, bq, isi({ title: "Quiz Berbanner", bannerURL: urlBanner(owner.uid) }), true)).includes("Quiz diterbitkan") && (await bannerQuiz(bq)) === urlBanner(owner.uid), "tersimpan");
+    check("tanpa field banner = tak diubah", (await simpan(owner.cookie, bq, isi({ title: "Quiz Berbanner" }), true)).includes("Quiz diterbitkan") && (await bannerQuiz(bq)) === urlBanner(owner.uid), "undefined");
+    check("banner tampil di halaman quiz siswa", (await probeText(`/kelas/${classId}/quiz/${bq}`, s1.cookie)).html.includes("class-abcdef0123456789.jpg"), "kepala memuat gambar");
+    check("banner bisa dibuang", (await simpan(owner.cookie, bq, isi({ title: "Quiz Berbanner", bannerURL: null }), true)).includes("Quiz diterbitkan") && (await bannerQuiz(bq)) === null, "null");
+    await callAction(jalur, hapusId, [classId, bq], owner.cookie);
 
     console.log("\nMengeluarkan siswa dari kelas");
     const keluarId = await actionId("educator/classes/[id]", "removeClassMember");

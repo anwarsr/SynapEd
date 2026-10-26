@@ -2,6 +2,8 @@
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveQuiz } from "@/lib/classQuizActions";
+import { firebaseAuth } from "@/lib/firebase/client";
+import { compressBanner, uploadClassImage } from "@/lib/profile";
 import { inputWibKeIso, isoKeInputWib } from "@/lib/classAssignmentRules";
 import {
   MAX_DESKRIPSI_QUIZ,
@@ -84,6 +86,34 @@ export default function QuizBuilder({
   const [terjadwal, setTerjadwal] = useState(awal?.opensAt != null);
   const [mulaiText, setMulaiText] = useState(isoKeInputWib(awal?.opensAt ?? null));
 
+  const bannerRef = useRef<HTMLInputElement>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(awal?.bannerURL ?? null);
+  const [hapusBanner, setHapusBanner] = useState(false);
+
+  function pilihBanner(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    if (!f.type.startsWith("image/")) return setError("Berkas harus berupa gambar.");
+    setError(null);
+    setBannerFile(f);
+    setHapusBanner(false);
+    setBannerPreview((lama) => {
+      if (lama?.startsWith("blob:")) URL.revokeObjectURL(lama);
+      return URL.createObjectURL(f);
+    });
+  }
+
+  function buangBanner() {
+    setBannerPreview((lama) => {
+      if (lama?.startsWith("blob:")) URL.revokeObjectURL(lama);
+      return null;
+    });
+    setBannerFile(null);
+    setHapusBanner(true);
+  }
+
   const total = useMemo(() => jumlahPoin(soal), [soal]);
   const terbit = awal?.published === true;
 
@@ -145,15 +175,38 @@ export default function QuizBuilder({
       if (!opensAt) return setError("Isi tanggal dan jam mulai quiz.");
     }
     startTransition(async () => {
+      // undefined = banner tak diubah, null = dibuang, string = unggahan baru (dikecilkan di browser dulu).
+      let bannerURL: string | null | undefined = undefined;
+      if (bannerFile) {
+        const sesi = firebaseAuth().currentUser;
+        if (!sesi) return setError("Sesi berakhir. Muat ulang halaman ini.");
+        try {
+          bannerURL = await uploadClassImage(sesi, await compressBanner(bannerFile));
+        } catch {
+          return setError("Banner gagal diunggah. Coba gambar lain atau ulangi.");
+        }
+      } else if (hapusBanner) {
+        bannerURL = null;
+      }
+
       const res = await saveQuiz(
         classId,
         awal?.id ?? null,
-        { title: judul, description: deskripsi, opensAt, questions: soal, settings: { ...setelan, durationMin: menit } },
+        {
+          title: judul,
+          description: deskripsi,
+          opensAt,
+          questions: soal,
+          settings: { ...setelan, durationMin: menit },
+          ...(bannerURL !== undefined ? { bannerURL } : {}),
+        },
         terbitkan,
       );
       if (!res.ok) return setError(res.error);
       if (!awal && res.quizId) return router.replace(`/educator/classes/${classId}/quiz/${res.quizId}`);
       setInfo(res.message);
+      setBannerFile(null);
+      setHapusBanner(false);
       router.refresh();
     });
   }
@@ -170,8 +223,45 @@ export default function QuizBuilder({
         </p>
       )}
 
-      {/* Judul */}
+      {/* Judul & deskripsi - bagian ini ikut dilatari banner di kartu quiz dan halaman quiz. */}
       <div className="bg-paper-card p-6 shadow-[inset_0_3px_0_var(--color-blue-500)]">
+        <div className="mb-4">
+          <p className="mb-2 text-sm font-semibold text-ink">Banner quiz</p>
+          <div className="relative flex h-[110px] w-full items-center justify-center overflow-hidden bg-white/[0.08]">
+            {bannerPreview ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={bannerPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/35 to-black/60" />
+                <span className="relative px-4 text-center text-[15px] font-bold text-[#fff]">{judul || "Judul quiz"}</span>
+              </>
+            ) : (
+              <span className="px-4 text-center text-xs text-ink-muted">Belum ada banner. Gambar ini melatari judul dan deskripsi quiz.</span>
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <input ref={bannerRef} type="file" accept="image/*" onChange={pilihBanner} className="hidden" aria-label="Pilih gambar banner quiz" />
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => bannerRef.current?.click()}
+              className="bg-white/10 px-4 py-2 text-[13px] font-semibold text-ink transition-colors duration-200 hover:bg-white/15 disabled:opacity-60"
+            >
+              {bannerPreview ? "Ganti banner" : "Pilih banner"}
+            </button>
+            {bannerPreview && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={buangBanner}
+                className="px-1 text-[12.5px] font-semibold text-error-text underline-offset-4 hover:underline disabled:opacity-60"
+              >
+                Hapus banner
+              </button>
+            )}
+          </div>
+        </div>
+
         <label htmlFor="quiz-judul" className="sr-only">
           Judul quiz
         </label>
@@ -564,7 +654,7 @@ function PilihJenis({
           id={idDaftar}
           role="listbox"
           aria-label={label}
-          className="absolute left-0 top-full z-30 mt-1 min-w-full bg-paper-card py-1 shadow-[0_14px_36px_rgba(0,0,0,0.45),inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+          className="absolute left-0 top-full z-30 mt-1 min-w-full bg-paper-card py-1 shadow-[0_14px_36px_rgba(0,0,0,0.45)]"
         >
           {JENIS.map((j, n) => (
             <li

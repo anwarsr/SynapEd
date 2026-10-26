@@ -331,6 +331,15 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - Di dalam kelas ada pengumuman/postingan dan balasan. Pengumuman boleh
   berlampiran berkas (atau berkas saja tanpa teks), dan isi serta lampirannya
   bisa diedit setelah terbit.
+- **Tema kustom** (profil → Pengaturan Laman → Tampilan → *Kustom*): selain Gelap & Terang, pengguna menyusun
+  palet sendiri dari empat warna (Latar, Kartu, Teks, Aksen) lewat pemilih warna atau kode `#RRGGBB`, atau memulai
+  dari contoh (Samudra, Hutan, Senja, Kertas, Es). Seluruh situs berubah seketika, bertahan setelah muat ulang
+  (tersimpan di perangkat ini), dan ada peringatan bila kontras tulisan terlalu rendah.
+- **Banner kelas** (pengajar/admin): di tab Tentang → Pengaturan kelas (juga saat membuat kelas) ada isian
+  *Banner kelas*. Gambar lebar dikecilkan otomatis (maks 1600 px, JPEG < 2 MB) dan tampil penuh di belakang
+  kepala ruang kelas (digelapkan agar tulisan tetap terbaca) bagi semua anggota. Bisa diganti atau dihapus.
+- **Banner quiz**: di pembuat quiz ada isian *Banner quiz*; gambarnya melatari judul + deskripsi quiz, baik di
+  kartu quiz maupun di halaman quiz siswa (digelapkan agar tulisan tetap terbaca). Bisa diganti atau dibuang.
 - **Mengeluarkan siswa** (pengajar/admin): tombol *Keluarkan* di tab Anggota kelas dan di halaman
   Kelola anggota, dengan dialog konfirmasi. Hanya keanggotaan yang dihapus (jawaban tugas & quiz
   tetap tersimpan); siswa bisa bergabung lagi dengan kode undangan selama kodenya belum diganti.

@@ -20,8 +20,6 @@ import { cn } from "@/lib/cn";
  * peran & kepemilikan ada di action-nya, bukan di sini.
  */
 
-const TEKS_TOMBOL = "text-xs font-medium text-ink-muted transition-colors duration-200 hover:text-blue-700 disabled:opacity-60";
-
 function useAksi() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -118,7 +116,8 @@ export function TambahWaktuForm({ classId, quizId, uid, label }: { classId: stri
 
   if (!buka) {
     return (
-      <button type="button" onClick={() => setBuka(true)} className={TEKS_TOMBOL}>
+      <button type="button" onClick={() => setBuka(true)} className={TOMBOL_KOTAK}>
+        <QuizIkon nama="waktu" />
         {label}
       </button>
     );
@@ -145,10 +144,10 @@ export function TambahWaktuForm({ classId, quizId, uid, label }: { classId: stri
         className="w-16 bg-white/[0.08] px-2 py-1 text-xs text-ink outline-none"
       />
       <span className="text-xs text-ink-muted">menit</span>
-      <button type="submit" disabled={pending} className="bg-blue-600 px-3 py-1 text-xs font-semibold text-[#fff] disabled:opacity-60">
+      <button type="submit" disabled={pending} className="bg-blue-600 px-4 py-2.5 text-[12.5px] font-semibold text-[#fff] transition-colors hover:bg-blue-700 disabled:opacity-60">
         {pending ? "…" : "Tambah"}
       </button>
-      <button type="button" onClick={() => setBuka(false)} className={TEKS_TOMBOL}>
+      <button type="button" onClick={() => setBuka(false)} className={TOMBOL_KOTAK}>
         Batal
       </button>
       <Pesan error={error} info={info} />
@@ -161,7 +160,8 @@ export function ResetPercobaanButton({ classId, quizId, uid }: { classId: string
   const [buka, setBuka] = useState(false);
   return (
     <>
-      <button type="button" disabled={pending} onClick={() => setBuka(true)} className={cn(TEKS_TOMBOL, "hover:!text-rust-700")}>
+      <button type="button" disabled={pending} onClick={() => setBuka(true)} className={TOMBOL_KOTAK}>
+        <QuizIkon nama="ulang" />
         Izinkan mengulang
       </button>
       <ConfirmDialog

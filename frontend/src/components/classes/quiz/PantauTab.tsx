@@ -147,7 +147,7 @@ export default async function PantauTab({
   const totalDetik = quiz.settings.durationMin !== null ? (quiz.settings.durationMin + quiz.extraMin) * 60 : null;
 
   return (
-    <div>
+    <div className="font-medium">
       {adaBerjalan && <SegarkanOtomatis detik={15} />}
 
       <BackLink href={`${basePath}?tab=quiz`}>Daftar quiz</BackLink>
@@ -167,8 +167,8 @@ export default async function PantauTab({
               {quiz.closed && <span className="text-blue-300">ditutup</span>}
             </p>
             <p className="mt-3 flex items-baseline gap-3">
-              <span className="text-[76px] font-extralight leading-none tabular-nums text-ink">{selesai.length}</span>
-              <span className="text-[26px] font-extralight tabular-nums text-ink-muted">/ {total}</span>
+              <span className="text-[76px] font-semibold leading-none text-ink">{selesai.length}</span>
+              <span className="text-[26px] font-semibold text-ink-muted">/ {total}</span>
               <span className="pb-2 text-sm text-ink-muted">sudah mengumpulkan</span>
             </p>
           </div>
@@ -176,7 +176,7 @@ export default async function PantauTab({
           <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.24em] text-ink-muted">Rata-rata nilai</p>
-              <p className="mt-1 text-[40px] font-extralight leading-none tabular-nums text-ink">{rata ?? "-"}</p>
+              <p className="mt-1 text-[40px] font-semibold leading-none text-ink">{rata ?? "-"}</p>
             </div>
             <div className="pb-1 text-[13px] leading-[1.9] text-ink-muted">
               <p>
@@ -187,7 +187,7 @@ export default async function PantauTab({
               </p>
               <p className="flex flex-wrap items-center gap-x-5">
                 {quiz.settings.durationMin !== null && !quiz.closed && (
-                  <TambahWaktuForm classId={classId} quizId={quiz.id} uid={null} label="+ Tambah waktu semua" />
+                  <TambahWaktuForm classId={classId} quizId={quiz.id} uid={null} label="Tambah waktu semua" />
                 )}
                 <TutupBukaQuizButton classId={classId} quizId={quiz.id} ditutup={quiz.closed} />
               </p>
@@ -209,7 +209,7 @@ export default async function PantauTab({
           {SEGMEN.map((g) => (
             <li key={g.s} className="inline-flex items-center gap-2">
               <span className={cn("h-2 w-2", g.kelas)} aria-hidden="true" />
-              {g.label} <strong className="tabular-nums text-ink">{hitung(g.s)}</strong>
+              {g.label} <strong className="text-ink">{hitung(g.s)}</strong>
             </li>
           ))}
         </ul>
@@ -242,7 +242,7 @@ export default async function PantauTab({
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-ink">
                           {b.nama}
-                          {b.keluar && <span className="ml-1.5 text-xs font-normal text-ink-muted">(keluar)</span>}
+                          {b.keluar && <span className="ml-1.5 text-xs font-medium text-ink-muted">(keluar)</span>}
                         </p>
                         <p className={cn("flex items-center gap-1.5 text-xs", WARNA_STATUS[b.status])}>
                           {b.status === "berlangsung" && <span className="pantau-titik h-1.5 w-1.5 rounded-full bg-blue-300" aria-hidden="true" />}
@@ -261,7 +261,7 @@ export default async function PantauTab({
                               <span className={cn("absolute inset-y-0 left-0 w-full opacity-40", warna)} />
                             )}
                           </div>
-                          <p className="mt-1.5 flex flex-wrap gap-x-3 text-[11px] tabular-nums text-ink-muted">
+                          <p className="mt-1.5 flex flex-wrap gap-x-3 text-[11px] text-ink-muted">
                             <span>{jamWib(p.startedAt).split(", ").pop()}</span>
                             <span aria-hidden="true">→</span>
                             <span>{p.submittedAt ? jamWib(p.submittedAt).split(", ").pop() : sisa !== null ? `sisa ${formatDurasi(sisa)}` : "berjalan"}</span>
@@ -278,25 +278,25 @@ export default async function PantauTab({
                     <p className="text-right sm:order-none">
                       {nilai ? (
                         <>
-                          <span className="block text-[30px] font-extralight leading-none tabular-nums text-ink">{nilai.total}</span>
+                          <span className="block text-[30px] font-semibold leading-none text-ink">{nilai.total}</span>
                           {nilai.esaiBelumDinilai > 0 && <span className="text-[10px] uppercase tracking-[0.16em] text-blue-300">sementara</span>}
                         </>
                       ) : (
-                        <span className="text-[22px] font-extralight text-ink-muted/50">-</span>
+                        <span className="text-[22px] font-semibold text-ink-muted/50">-</span>
                       )}
                     </p>
                   </div>
 
                   {p && (
                     <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 sm:pl-[220px]">
-                      {bisaTambah && <TambahWaktuForm classId={classId} quizId={quiz.id} uid={b.uid} label="+ Tambah waktu" />}
+                      {bisaTambah && <TambahWaktuForm classId={classId} quizId={quiz.id} uid={b.uid} label="Tambah waktu" />}
                       <ResetPercobaanButton classId={classId} quizId={quiz.id} uid={b.uid} />
                     </div>
                   )}
 
                   {p?.submittedAt && essay.length > 0 && (
                     <details className="group mt-3 sm:ml-[220px]">
-                      <summary className="inline-flex cursor-pointer list-none items-center gap-3 bg-white/[0.07] px-4 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-ink shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] transition-colors duration-300 hover:bg-white/[0.13] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.32)] group-open:bg-white/[0.12] group-open:shadow-[inset_0_-2px_0_var(--color-blue-500),inset_0_0_0_1px_rgba(255,255,255,0.2)] [&::-webkit-details-marker]:hidden">
+                      <summary className="inline-flex cursor-pointer list-none items-center gap-3 bg-white/[0.07] px-4 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-ink transition-colors duration-300 hover:bg-white/[0.14] group-open:bg-white/[0.12] group-open:shadow-[inset_0_-2px_0_var(--color-blue-500)] [&::-webkit-details-marker]:hidden">
                         <svg className="h-3.5 w-3.5 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M16.86 4.49l1.69-1.69a1.88 1.88 0 112.65 2.65L10.58 16.07a4.5 4.5 0 01-1.9 1.13L6 18l.8-2.69a4.5 4.5 0 011.13-1.9l8.93-8.92z" />
                         </svg>
@@ -344,7 +344,7 @@ export default async function PantauTab({
                     className={cn("absolute -left-5 top-[5px] h-[7px] w-[7px]", e.jenis === "mulai" ? "bg-blue-300" : e.jenis === "waktu" ? "bg-blue-400" : "bg-blue-600")}
                   />
                   <p className="text-[13px] leading-[1.5] text-ink-body">{e.teks}</p>
-                  <p className="mt-0.5 text-[11px] tabular-nums text-ink-muted">{jamWib(e.pada)}</p>
+                  <p className="mt-0.5 text-[11px] text-ink-muted">{jamWib(e.pada)}</p>
                 </li>
               ))}
             </ol>

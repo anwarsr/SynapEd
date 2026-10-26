@@ -76,6 +76,8 @@ export interface Quiz {
   questions: SoalQuiz[];
   settings: SetelanQuiz;
   published: boolean;
+  /** Banner di belakang judul & deskripsi (URL Storage `avatars/{uid}/class-*.jpg`); null = tanpa. */
+  bannerURL: string | null;
   /** ISO. null = mulai begitu diterbitkan; selain itu jadwal mulai (siswa belum bisa Mulai sebelumnya). */
   opensAt: string | null;
   /** Ditutup manual pengajar: tak ada yang bisa mulai/mengumpulkan lagi, kunci dibuka. */
@@ -526,6 +528,7 @@ export function toQuiz(id: string, d: Record<string, unknown>): Quiz {
     questions: soalDari(d.questions),
     settings: { shuffleQuestions: s.shuffleQuestions === true, shuffleOptions: s.shuffleOptions === true, durationMin: dur },
     published: d.published === true,
+    bannerURL: typeof d.bannerURL === "string" && d.bannerURL ? d.bannerURL : null,
     opensAt: typeof d.opensAt === "string" && Number.isFinite(Date.parse(d.opensAt)) ? d.opensAt : null,
     closed: d.closed === true,
     extraMin: typeof d.extraMin === "number" && d.extraMin > 0 ? Math.floor(d.extraMin) : 0,
