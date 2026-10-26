@@ -12,6 +12,7 @@ import {
   type KelasReply,
 } from "@/lib/classTypes";
 import { toBerkasList, toPengaturan } from "@/lib/classAssignmentRules";
+import { toModel3D } from "@/lib/model3dRules";
 
 // Diekspor ulang supaya modul server cukup mengimpor dari satu tempat.
 export * from "@/lib/classTypes";
@@ -62,6 +63,8 @@ function toPost(id: string, d: FirebaseFirestore.DocumentData): KelasPost {
     title: (d.title as string | undefined) ?? "",
     body: (d.body as string | undefined) ?? "",
     attachments: toBerkasList(d.attachments),
+    model3d: kind === "announcement" ? toModel3D(d.model3d) : null,
+    archived: d.archived === true,
     assignment: kind === "assignment" ? toPengaturan(d.assignment) : null,
     replyCount: (d.replyCount as number | undefined) ?? 0,
     createdAt: (d.createdAt as string | undefined) ?? "",

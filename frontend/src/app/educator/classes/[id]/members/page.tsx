@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import EducatorShell from "@/components/educator/EducatorShell";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ProfileLink from "@/components/ui/ProfileLink";
+import KeluarkanAnggota from "@/components/classes/KeluarkanAnggota";
 import { formatDate } from "@/lib/adminUsers";
 import { listClassMembers } from "@/lib/classes";
 import { requireOwnedClass } from "@/lib/classGuards";
@@ -82,6 +83,8 @@ export default async function ClassMembersPage({ params }: Props) {
                       Bergabung {formatDate(a.joinedAt)}
                     </p>
                   </div>
+
+                  <KeluarkanAnggota classId={id} uid={a.uid} nama={nama} />
                 </li>
               );
             })}

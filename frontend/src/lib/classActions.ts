@@ -7,6 +7,8 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { requireClassAccess, requireOwnedClass } from "@/lib/classGuards";
 import { normalizeInviteCode } from "@/lib/inviteCode";
+import { hapusPercobaanKelas } from "@/lib/classQuizzes";
+import type { Model3D } from "@/lib/model3dRules";
 import {
   berkasAiKelas,
   bersihkanKelas,
@@ -14,6 +16,7 @@ import {
   getPengaturanAi,
   listPostSubmissions,
   periksaBerkas,
+  periksaModel3D,
 } from "@/lib/classAssignments";
 import {
   MAX_ASSIGNMENT_TITLE,
@@ -277,6 +280,9 @@ export async function deleteClass(classId: string): Promise<ClassResult> {
   // pernah ikut terhapus bersama dokumen apa pun.
   await bersihkanKelas(classId, posts, berkasAi);
 
+  // Percobaan quiz juga koleksi terpisah (subkoleksi quiz-nya sendiri sudah ikut recursiveDelete).
+  await hapusPercobaanKelas(classId);
+
   revalidatePath("/educator/classes");
   revalidatePath("/admin/classes");
   revalidatePath("/kelas");
@@ -333,6 +339,41 @@ export async function joinClass(codeRaw: string): Promise<JoinResult> {
   return { ok: true, message: `Berhasil bergabung ke ${kelas.name}.`, classId: kelas.id };
 }
 
+/**
+ * Pengajar/admin mengeluarkan seorang siswa dari kelas.
+ *
+ * Hanya pemilik kelas atau admin; uid siswa dari argumen HANYA dipakai sebagai
+ * sasaran dan wajib berupa anggota kelas ini (pemilik tidak punya dokumen
+ * keanggotaan, jadi tak bisa "dikeluarkan"). Yang dihapus hanya keanggotaan:
+ * jawaban tugas & quiz miliknya tetap tersimpan sebagai catatan pengajar.
+ * Ia bisa bergabung lagi lewat kode undangan selama kodenya belum diganti.
+ */
+export async function removeClassMember(classId: string, studentUid: string): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Anda tidak berhak mengelola anggota kelas ini." };
+
+  if (typeof studentUid !== "string" || !studentUid) return { ok: false, error: "Anggota tidak sah." };
+
+  const dihapus = await adminDb().runTransaction(async (tx) => {
+    const mRef = memberRef(studentUid, classId);
+    const mSnap = await tx.get(mRef);
+    if (!mSnap.exists) return false;
+    tx.delete(mRef);
+    tx.update(classRef(classId), { memberCount: FieldValue.increment(-1) });
+    return true;
+  });
+  if (!dihapus) return { ok: false, error: "Siswa itu bukan anggota kelas ini." };
+
+  revalidatePath("/kelas");
+  revalidatePath(`/kelas/${classId}`);
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/educator/classes/${classId}/members`);
+  return { ok: true, message: "Siswa dikeluarkan dari kelas." };
+}
+
 export async function leaveClass(classId: string): Promise<ClassResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
@@ -380,6 +421,7 @@ export async function createPost(
   classId: string,
   bodyRaw: string,
   lampiranRaw?: unknown,
+  model3dRaw?: unknown,
 ): Promise<ClassResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
@@ -398,7 +440,15 @@ export async function createPost(
   );
   if (!lampiran.ok) return { ok: false, error: lampiran.error };
 
-  if (!body && lampiran.files.length === 0) {
+  // Objek 3D: berkasnya wajib ada di folder milik pengirim untuk kelas ini.
+  let model3d: Model3D | null = null;
+  if (model3dRaw !== undefined && model3dRaw !== null) {
+    const m = await periksaModel3D(model3dRaw, `${CLASS_FILES}/${user.uid}/${classId}/`, null);
+    if (!m.ok) return { ok: false, error: m.error };
+    model3d = m.value;
+  }
+
+  if (!body && lampiran.files.length === 0 && !model3d) {
     return { ok: false, error: "Isi postingan tidak boleh kosong." };
   }
 
@@ -409,6 +459,7 @@ export async function createPost(
     title: "",
     body,
     attachments: lampiran.files,
+    model3d,
     assignment: null,
   });
 
@@ -509,6 +560,7 @@ export async function editPost(classId: string, postId: string, input: unknown):
   }
 
   let perubahan: Record<string, unknown>;
+  let berkasModelDibuang: string[] = [];
   if (post.kind === "assignment") {
     const title = clean(r.title, MAX_ASSIGNMENT_TITLE);
     if (title.length < 3) return { ok: false, error: "Judul tugas minimal 3 karakter." };
@@ -529,20 +581,60 @@ export async function editPost(classId: string, postId: string, input: unknown):
 
     perubahan = { title, body, attachments, assignment: pengaturan.value };
   } else {
-    if (!body && attachments.length === 0) return { ok: false, error: "Isi postingan tidak boleh kosong." };
-    perubahan = { body, attachments };
+    // `model3d`: tidak dikirim = tak diubah, null = dibuang, objek = model/keterangan baru.
+    let model3d = post.model3d;
+    if (r.model3d === null) {
+      model3d = null;
+    } else if (r.model3d !== undefined) {
+      const m = await periksaModel3D(r.model3d, `${CLASS_FILES}/${user.uid}/${classId}/`, post.model3d);
+      if (!m.ok) return { ok: false, error: m.error };
+      model3d = m.value;
+    }
+
+    if (!body && attachments.length === 0 && !model3d) return { ok: false, error: "Isi postingan tidak boleh kosong." };
+    perubahan = { body, attachments, model3d };
+    berkasModelDibuang = post.model3d && post.model3d.file.path !== model3d?.file.path ? [post.model3d.file.path] : [];
   }
 
   await postsRef(classId).doc(postId).update({ ...perubahan, updatedAt: now() });
 
   const tetap = new Set(attachments.map((a) => a.path));
-  await deleteObjects(post.attachments.map((a) => a.path).filter((x) => !tetap.has(x))).catch(() => 0);
+  await deleteObjects([...post.attachments.map((a) => a.path).filter((x) => !tetap.has(x)), ...berkasModelDibuang]).catch(() => 0);
 
   revalidatePath(`/educator/classes/${classId}`);
   revalidatePath(`/kelas/${classId}`);
   revalidatePath(`/educator/classes/${classId}/tugas/${postId}`);
   revalidatePath(`/kelas/${classId}/tugas/${postId}`);
   return { ok: true, message: post.kind === "assignment" ? "Tugas diperbarui." : "Pengumuman diperbarui." };
+}
+
+/**
+ * Mengarsipkan / memulihkan postingan (pengumuman maupun tugas).
+ *
+ * Hanya pemilik/admin. Data tidak dihapus: balasan, lampiran, dan pengumpulan
+ * tugas tetap ada. Yang berubah hanya keterlihatannya bagi siswa (lihat
+ * `archived` di classTypes).
+ */
+export async function setPostArchived(classId: string, postId: string, archived: boolean): Promise<ClassResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+
+  const kelas = await requireOwnedClass(user, classId);
+  if (!kelas) return { ok: false, error: "Anda tidak berhak mengubah postingan ini." };
+
+  const post = await getPost(classId, postId);
+  if (!post) return { ok: false, error: "Postingan tidak ditemukan." };
+
+  // Disimpan sebagai boolean eksplisit + stempel; `updatedAt` TIDAK disentuh supaya
+  // penanda "diedit" tak muncul hanya karena diarsipkan.
+  await postsRef(classId).doc(postId).update(
+    archived ? { archived: true, archivedAt: now() } : { archived: false, archivedAt: null },
+  );
+
+  revalidatePath(`/educator/classes/${classId}`);
+  revalidatePath(`/kelas/${classId}`);
+  revalidatePath(`/kelas/${classId}/tugas/${postId}`);
+  return { ok: true, message: archived ? "Dipindahkan ke arsip." : "Dipulihkan dari arsip." };
 }
 
 export async function deletePost(classId: string, postId: string): Promise<ClassResult> {
@@ -584,7 +676,8 @@ export async function createReply(
   if (!akses) return { ok: false, error: "Anda bukan anggota kelas ini." };
 
   const post = await getPost(classId, postId);
-  if (!post) return { ok: false, error: "Postingan tidak ditemukan." };
+  // Postingan terarsip tak ada bagi siswa: tak bisa dibalas.
+  if (!post || (post.archived && !akses.isOwner)) return { ok: false, error: "Postingan tidak ditemukan." };
 
   const body = clean(bodyRaw, MAX_REPLY_BODY);
   if (!body) return { ok: false, error: "Balasan tidak boleh kosong." };

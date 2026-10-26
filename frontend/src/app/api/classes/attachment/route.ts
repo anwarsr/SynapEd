@@ -31,7 +31,9 @@ export async function GET(request: Request) {
   }
 
   const akses = await requireClassAccess(user, classId);
-  const post = akses ? await getPost(classId, postId) : null;
+  const dokumen = akses ? await getPost(classId, postId) : null;
+  // Postingan terarsip tak ada bagi siswa.
+  const post = dokumen && !(dokumen.archived && !akses?.isOwner) ? dokumen : null;
   const berkas = post?.attachments[i];
   if (!post || !berkas) {
     return NextResponse.json({ message: "Berkas tidak ditemukan." }, { status: 404 });

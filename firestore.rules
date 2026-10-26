@@ -181,6 +181,11 @@ service cloud.firestore {
       // courses/{slug}/quizzes ditulis terpisah. Keduanya sudah tertutup oleh
       // penolakan menyeluruh di bawah; blok ini penegasan sekaligus jaga-jaga
       // terhadap wildcard yang mungkin ditambahkan seseorang kelak.
+      // Quiz memuat KUNCI JAWABAN: tak boleh terbaca klien sama sekali.
+      match /quizzes/{quizId} {
+        allow read, write: if false;
+      }
+
       match /posts/{postId} {
         allow read, write: if false;
 
@@ -203,6 +208,14 @@ service cloud.firestore {
     // siswa bisa memberi nilai pada jawabannya sendiri; kalau boleh membaca,
     // jawaban teman bisa disalin cukup dengan menebak ID-nya.
     match /classSubmissions/{id} {
+      allow read, write: if false;
+    }
+
+    // ── Percobaan quiz kelas ───────────────────────────────────────────
+    // ID dokumen = "{classId}_{quizId}_{uid}". Berisi jawaban & nilai: klien
+    // yang boleh menulis bisa mengubah nilainya, yang boleh membaca bisa
+    // menyalin jawaban teman.
+    match /classQuizAttempts/{id} {
       allow read, write: if false;
     }
 

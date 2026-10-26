@@ -2,10 +2,12 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import PemilihBerkas from "@/components/classes/PemilihBerkas";
+import LampiranModel3D, { bebaskanModel, type IsianModel3D } from "@/components/classes/model3d/LampiranModel3D";
 import IsianTugas, { KOLOM_KELAS, type NilaiIsianTugas } from "@/components/classes/IsianTugas";
 import { editPost } from "@/lib/classActions";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { pesanGagalUnggah, unggahLampiranKelas } from "@/lib/classUpload";
+import { pesanGagalUnggah, unggahLampiranKelas, unggahModel3D } from "@/lib/classUpload";
+import { hrefModel3D } from "@/lib/model3dRules";
 import { MAX_POST_BODY, type KelasPost } from "@/lib/classTypes";
 import {
   MAX_ASSIGNMENT_TITLE,
@@ -16,7 +18,13 @@ import {
 } from "@/lib/classAssignmentRules";
 import { cn } from "@/lib/cn";
 
-type DataPost = Pick<KelasPost, "id" | "kind" | "title" | "body" | "attachments" | "assignment">;
+type DataPost = Pick<KelasPost, "id" | "kind" | "title" | "body" | "attachments" | "assignment" | "model3d" | "updatedAt">;
+
+function modelDari(post: DataPost): IsianModel3D | null {
+  return post.model3d
+    ? { file: null, url: null, lama: post.model3d.file, title: post.model3d.title, annotations: post.model3d.annotations }
+    : null;
+}
 
 function isianDari(post: DataPost): NilaiIsianTugas {
   const p = post.assignment;
@@ -57,6 +65,7 @@ export default function EditPost({
   const [body, setBody] = useState(post.body);
   const [lama, setLama] = useState(post.attachments);
   const [baru, setBaru] = useState<File[]>([]);
+  const [model, setModel] = useState<IsianModel3D | null>(() => modelDari(post));
   const [isian, setIsian] = useState<NilaiIsianTugas>(() => isianDari(post));
 
   const [mengunggah, setMengunggah] = useState(false);
@@ -75,6 +84,8 @@ export default function EditPost({
     setBody(post.body);
     setLama(post.attachments);
     setBaru([]);
+    bebaskanModel(model);
+    setModel(modelDari(post));
     setIsian(isianDari(post));
     setError(null);
   }
@@ -94,13 +105,25 @@ export default function EditPost({
       if (!dueAt) return setError("Isi tanggal dan jam tenggat.");
     }
 
+    if (!tugas && model?.annotations.some((a) => a.title.trim().length === 0)) {
+      return setError("Setiap keterangan objek 3D wajib diberi judul.");
+    }
+
     let unggahan: { path: string; name: string }[] = [];
-    if (baru.length > 0) {
+    // undefined = objek 3D tak diubah, null = dibuang, objek = model/keterangan.
+    let model3d: { file?: { path: string; name: string }; title: string; annotations: IsianModel3D["annotations"] } | null | undefined;
+    if (!tugas) {
+      if (model === null) model3d = post.model3d ? null : undefined;
+      else model3d = { title: model.title, annotations: model.annotations };
+    }
+    const perluUnggah = baru.length > 0 || (!tugas && model?.file != null);
+    if (perluUnggah) {
       const uid = firebaseAuth().currentUser?.uid;
       if (!uid) return setError("Sesi Anda berakhir. Muat ulang halaman ini.");
       setMengunggah(true);
       try {
-        unggahan = await unggahLampiranKelas(uid, classId, baru);
+        if (baru.length > 0) unggahan = await unggahLampiranKelas(uid, classId, baru);
+        if (!tugas && model?.file && model3d) model3d.file = await unggahModel3D(uid, classId, model.file);
       } catch (err) {
         setMengunggah(false);
         return setError(pesanGagalUnggah(err));
@@ -114,6 +137,7 @@ export default function EditPost({
         body,
         keepAttachments: lama.map((a) => a.path),
         attachments: unggahan,
+        ...(model3d !== undefined ? { model3d } : {}),
         formats: isian.formats,
         dueAt,
         acceptLate: isian.terimaTerlambat,
@@ -121,6 +145,8 @@ export default function EditPost({
       });
       if (!res.ok) return setError(res.error);
       setBaru([]);
+      bebaskanModel(model);
+      setModel(null);
       setBuka(false);
       router.refresh();
     });
@@ -214,6 +240,18 @@ export default function EditPost({
           label="Tambah lampiran"
         />
       </div>
+
+      {!tugas && (
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium text-ink">Objek 3D</p>
+          <LampiranModel3D
+            nilai={model}
+            ubah={setModel}
+            disabled={sibuk}
+            hrefLama={post.model3d ? hrefModel3D(classId, post.id, post.updatedAt) : undefined}
+          />
+        </div>
+      )}
 
       {tugas && (
         <div className="mt-5">

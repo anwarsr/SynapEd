@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; quiz?: string }>;
 }
 
 export const metadata: Metadata = { title: "Kelas – SynapEd" };
@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
  * memoderasinya. Halaman sunting kursus sudah menempuh jalan yang sama.
  */
 export default async function EducatorClassPage({ params, searchParams }: Props) {
-  const [{ id }, { tab }] = await Promise.all([params, searchParams]);
+  const [{ id }, { tab, quiz }] = await Promise.all([params, searchParams]);
   const user = await requireUser(`/educator/classes/${id}`);
 
   const kelas = await requireOwnedClass(user, id);
@@ -58,6 +58,7 @@ export default async function EducatorClassPage({ params, searchParams }: Props)
         isOwner
         isMember={false}
         tab={toTab(tab)}
+        quizId={quiz}
         basePath={`/educator/classes/${id}`}
         joinCode={kelas.joinCode}
         kembali={{ href: "/educator/classes", label: "Kelas Saya" }}

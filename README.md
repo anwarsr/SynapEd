@@ -331,6 +331,36 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - Di dalam kelas ada pengumuman/postingan dan balasan. Pengumuman boleh
   berlampiran berkas (atau berkas saja tanpa teks), dan isi serta lampirannya
   bisa diedit setelah terbit.
+- **Mengeluarkan siswa** (pengajar/admin): tombol *Keluarkan* di tab Anggota kelas dan di halaman
+  Kelola anggota, dengan dialog konfirmasi. Hanya keanggotaan yang dihapus (jawaban tugas & quiz
+  tetap tersimpan); siswa bisa bergabung lagi dengan kode undangan selama kodenya belum diganti.
+- **Quiz kelas** (tab **Quiz**, di kanan Tugas): pengajar/admin membuat quiz ala Google Form di
+  `/educator/classes/<id>/quiz/new` - tiap nomor bisa **pilihan ganda** (dengan kunci) atau **esai**,
+  punya poin sendiri, total TEPAT 100 saat diterbitkan (ada tombol *Bagi rata poin*). Setelan: **jadwal mulai**
+  (hari/tanggal/jam WIB, atau langsung terbuka begitu diterbitkan), acak
+  urutan soal & pilihan per siswa (sulit mencontek), batas waktu pengerjaan (habis → otomatis
+  dikumpulkan; jawaban tersimpan otomatis), tambahan waktu untuk semua atau satu siswa, tutup/buka
+  quiz. Pilihan ganda dinilai otomatis, esai dinilai pengajar. Tiap quiz punya **papan peringkat
+  1-3** di kanannya (nilai tertinggi, seri → tercepat; hanya yang sudah dinilai penuh). Setelah
+  quiz ditutup siswa melihat nilai & kunci jawaban. Setelah ada yang mengerjakan, soal terkunci
+  (poin masih bisa diubah, nilai dihitung ulang). Halaman **Pantau** (dibuka dengan tombol *Pantau* pada tiap quiz, pengelola saja; bukan tab):
+  siapa belum/sedang/sudah mengerjakan, jam mulai-selesai, lama, nilai, umpan aktivitas, nilai esai,
+  izinkan mengulang. Satu percobaan per siswa.
+- **Arsip** (pengajar/admin): tombol *Arsipkan* di tiap pengumuman/tugas memindahkannya ke
+  tab **Arsip** (di kanan tab Tugas; hanya pengelola yang melihatnya). Yang terarsip
+  hilang total bagi siswa (umpan, daftar tugas, lampiran, balasan, pengumpulan baru) tetapi
+  datanya utuh; di zona Arsip bisa dibuka, **Pulihkan**, atau dihapus permanen.
+- **Objek 3D di pengumuman** (educator/admin pemilik kelas): lampirkan berkas
+  `.glb` (maks 20 MB) dari kotak tulis, lengkap dengan **judul** objek. Di umpan, murid
+  melihat kotak berjudul dulu; diklik, kotaknya memanjang ke bawah (itulah "pintunya")
+  dan memperlihatkan objeknya (berkas baru diunduh saat dibuka pertama kali) -
+  diputar dengan seret atau tombol putar (per sisi: depan → kanan → belakang → kiri), di-zoom dengan gulir/tombol +/-, bisa layar penuh. Pengajar
+  menambah keterangan dengan mengeklik bagian objek (judul + penjelasan per titik/komponen);
+  tab **Pratinjau** menampilkan persis apa yang dilihat murid. Saat murid mengeklik
+  titik/komponen berketerangan (komponen tanpa keterangan tidak bisa disentuh), muncul kartu **hologram** yang ditarik garis ke titik itu,
+  dan komponennya menyala. Objek & keterangan bisa diedit atau dibuang setelah terbit.
+  Satu komponen hanya boleh punya satu keterangan (komponen yang sudah berketerangan
+  hanya dipilih saat diklik di editor, tidak menambah yang baru).
 - **Tugas** (mirip Google Classroom), diterbitkan pengajar dari kotak tulis yang
   sama dengan memilih "Tugas":
   - judul, instruksi, dan lampiran berkas (opsional);

@@ -3,10 +3,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/ui/UserAvatar";
 import PemilihBerkas from "@/components/classes/PemilihBerkas";
+import LampiranModel3D, { bebaskanModel, type IsianModel3D } from "@/components/classes/model3d/LampiranModel3D";
 import IsianTugas, { KOLOM_KELAS as KOLOM, type NilaiIsianTugas } from "@/components/classes/IsianTugas";
 import { createAssignment, createPost } from "@/lib/classActions";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { pesanGagalUnggah, unggahLampiranKelas } from "@/lib/classUpload";
+import { pesanGagalUnggah, unggahLampiranKelas, unggahModel3D } from "@/lib/classUpload";
 import { MAX_POST_BODY } from "@/lib/classTypes";
 import {
   DEFAULT_MAX_POINTS,
@@ -46,6 +47,7 @@ export default function PostComposer({
   const [judul, setJudul] = useState("");
   const [body, setBody] = useState("");
   const [berkas, setBerkas] = useState<File[]>([]);
+  const [model, setModel] = useState<IsianModel3D | null>(null);
   const [isian, setIsian] = useState<NilaiIsianTugas>(ISIAN_AWAL);
 
   const [mengunggah, setMengunggah] = useState(false);
@@ -59,6 +61,8 @@ export default function PostComposer({
     setJudul("");
     setBody("");
     setBerkas([]);
+    bebaskanModel(model);
+    setModel(null);
     // Format dipertahankan: pengajar biasanya memakai format yang sama untuk tugas berikutnya.
     setIsian((x) => ({ ...ISIAN_AWAL, formats: x.formats }));
   }
@@ -75,14 +79,23 @@ export default function PostComposer({
       if (!dueAt) return setError("Isi tanggal dan jam tenggat.");
     }
 
+    const pakaiModel = !tugas && model?.file != null;
+    if (!tugas && model?.annotations.some((a) => a.title.trim().length === 0)) {
+      return setError("Setiap keterangan objek 3D wajib diberi judul.");
+    }
+
     const uid = firebaseAuth().currentUser?.uid;
-    if (berkas.length > 0 && !uid) return setError("Sesi Anda berakhir. Muat ulang halaman ini.");
+    if ((berkas.length > 0 || pakaiModel) && !uid) return setError("Sesi Anda berakhir. Muat ulang halaman ini.");
 
     let lampiran: { path: string; name: string }[] = [];
-    if (berkas.length > 0 && uid) {
+    let model3d: { file: { path: string; name: string }; title: string; annotations: IsianModel3D["annotations"] } | undefined;
+    if ((berkas.length > 0 || pakaiModel) && uid) {
       setMengunggah(true);
       try {
-        lampiran = await unggahLampiranKelas(uid, classId, berkas);
+        if (berkas.length > 0) lampiran = await unggahLampiranKelas(uid, classId, berkas);
+        if (pakaiModel && model?.file) {
+          model3d = { file: await unggahModel3D(uid, classId, model.file), title: model.title, annotations: model.annotations };
+        }
       } catch (e) {
         setMengunggah(false);
         return setError(pesanGagalUnggah(e));
@@ -101,7 +114,7 @@ export default function PostComposer({
             acceptLate: isian.terimaTerlambat,
             maxPoints: Number(isian.poin),
           })
-        : await createPost(classId, body, lampiran);
+        : await createPost(classId, body, lampiran, model3d);
 
       if (!res.ok) return setError(res.error);
       reset();
@@ -110,7 +123,7 @@ export default function PostComposer({
   }
 
   const sisa = MAX_POST_BODY - body.length;
-  const bisaKirim = tugas ? judul.trim().length >= 3 && isian.formats.length > 0 : body.trim().length > 0 || berkas.length > 0;
+  const bisaKirim = tugas ? judul.trim().length >= 3 && isian.formats.length > 0 : body.trim().length > 0 || berkas.length > 0 || model !== null;
 
   return (
     <form onSubmit={onSubmit} className="bg-paper-card p-6">
@@ -186,6 +199,12 @@ export default function PostComposer({
               disabled={sibuk}
             />
           </div>
+
+          {!tugas && (
+            <div className="mt-3">
+              <LampiranModel3D nilai={model} ubah={setModel} disabled={sibuk} />
+            </div>
+          )}
 
           {tugas && (
             <div className="mt-5">

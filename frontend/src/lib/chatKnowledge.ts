@@ -88,7 +88,21 @@ export const PENGETAHUAN_SITUS = `## Akun
   bisa keluar dari kelas kapan saja.
 - Di dalam kelas ada tab Pengumuman (pengumuman pengajar, boleh berlampiran;
   anggota bisa membalas), Tugas, Anggota, dan Tentang. Hanya pengajar yang
-  bisa memposting. Pengajar bisa mengedit pengumuman dan tugas setelah terbit
+  bisa memposting. Pengajar juga bisa melampirkan objek 3D (berkas .glb) di
+  pengumuman: tampil sebagai kotak berjudul yang dibuka murid dengan mengeklik
+  judulnya (kotaknya memanjang ke bawah), lalu murid bisa memutar, memperbesar, dan
+  mengeklik komponen yang diberi keterangan untuk membaca keterangannya dalam kartu hologram; pengajar menulis keterangan tiap
+  komponen dan punya mode Pratinjau sebelum mengirim.
+  Pengajar juga bisa mengarsipkan pengumuman atau tugas (hilang dari tampilan siswa,
+  tersimpan di tab Arsip (di kanan tab Tugas) yang hanya terlihat pengajar, bisa dipulihkan).
+  Tab Quiz (di kanan Tugas): pengajar membuat quiz pilihan ganda dan esai seperti
+  Google Form dengan poin tiap nomor (total 100), setelan jadwal mulai (hari, tanggal, jam; atau langsung dibuka), acak urutan soal per siswa,
+  batas waktu (habis waktu otomatis dikumpulkan) dan tambahan waktu. Siswa mengerjakan satu
+  kali, tiap quiz punya papan peringkat 1-3 (nilai tertinggi, seri dipilih yang tercepat),
+  dan kunci jawaban baru terbuka setelah pengajar menutup quiz. Pengajar memantau siswa lewat tombol Pantau
+  pada tiap quiz.
+  Pengajar bisa mengeluarkan siswa dari kelas (tab Anggota); jawaban siswa tetap tersimpan.
+  Pengajar bisa mengedit pengumuman dan tugas setelah terbit
   (judul, instruksi, lampiran, format, tenggat, nilai maksimal); kiriman siswa
   yang sudah masuk tidak berubah.
 - Tugas kelas: pengajar menentukan format jawaban yang diterima, satu per

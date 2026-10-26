@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { heroHref, type HeroPrompt } from "@/lib/heroPrompts";
 import HeroStars from "@/components/sections/HeroStars";
+import { useAuth } from "@/lib/useAuth";
 
 type LetterPosition = {
   x: number;
@@ -31,6 +32,10 @@ const KUNCI_TERAKHIR = "synaped_hero_prompt";
  * ke atas. Anak panah membawa ke /courses?q=… sesuai kalimat yang tampil.
  */
 export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
+  // Tombol "Mulai Belajar": sudah masuk → langsung ke katalog kursus; belum → halaman masuk.
+  const { status: statusAuth } = useAuth();
+  const tujuanMulai = statusAuth === "authenticated" ? "/courses" : "/login";
+
   // =========================================================
   // SCROLL → TOMBOL BERUBAH JADI BILAH
   // Progres scroll (0..1) ditulis ke variabel CSS --p langsung di DOM, bukan
@@ -459,7 +464,7 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
         >
           {/* Wajah tombol */}
           <Link
-            href="/register"
+            href={tujuanMulai}
             tabIndex={bar ? -1 : 0}
             data-fase={mulaiFase}
             onPointerEnter={() => setMulaiFase("masuk")}

@@ -13,6 +13,7 @@
  * Aturan tugas (format, tenggat, nilai) tinggal di classAssignmentRules.ts.
  */
 import type { JenisPost, KelasBerkas, PengaturanTugas } from "./classAssignmentRules";
+import type { Model3D } from "./model3dRules";
 
 /** Batas panjang, diperiksa ulang di server — bukan hanya di formulir. */
 export const MAX_CLASS_NAME = 80;
@@ -59,6 +60,13 @@ export interface KelasPost {
   title: string;
   body: string;
   attachments: KelasBerkas[];
+  /** Objek 3D interaktif berketerangan; hanya pengumuman. null = tanpa objek. */
+  model3d: Model3D | null;
+  /**
+   * Diarsipkan pengajar: hilang dari umpan & daftar tugas, tak terlihat siswa
+   * sama sekali (tanpa balasan/pengumpulan baru), dan tampil di zona Arsip pengelola.
+   */
+  archived: boolean;
   /** Hanya terisi bila `kind === "assignment"`. */
   assignment: PengaturanTugas | null;
   replyCount: number;

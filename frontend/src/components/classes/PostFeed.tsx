@@ -3,8 +3,11 @@ import AvatarMini from "@/components/profile/AvatarMini";
 import ProfileLink from "@/components/ui/ProfileLink";
 import Reveal from "@/components/ui/Reveal";
 import DeleteButton from "@/components/classes/DeleteButton";
+import ArsipButton from "@/components/classes/ArsipButton";
 import ReplyForm from "@/components/classes/ReplyForm";
 import Lampiran, { hrefLampiran } from "@/components/classes/Lampiran";
+import GerbangModel3D from "@/components/classes/model3d/GerbangModel3D";
+import { hrefModel3D } from "@/lib/model3dRules";
 import { formatDate } from "@/lib/adminUsers";
 import EditPost from "@/components/classes/EditPost";
 import { formatWib, pernahDiedit, ringkasFormat } from "@/lib/classAssignmentRules";
@@ -129,6 +132,16 @@ export default function PostFeed({
                   </p>
                 )}
 
+                {post.model3d && (
+                  <GerbangModel3D
+                    className="mt-4"
+                    judul={post.model3d.title}
+                    url={hrefModel3D(classId, post.id, post.updatedAt)}
+                    nama={post.model3d.file.name}
+                    annotations={post.model3d.annotations}
+                  />
+                )}
+
                 <Lampiran
                   files={post.attachments}
                   hrefs={post.attachments.map((_, j) => hrefLampiran(classId, post.id, j))}
@@ -138,6 +151,7 @@ export default function PostFeed({
                 {canModerate && (
                   <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
                     <EditPost classId={classId} post={post} />
+                    <ArsipButton classId={classId} postId={post.id} arsip={false} />
                     <DeleteButton target={{ kind: "post", classId, postId: post.id }} />
                   </div>
                 )}

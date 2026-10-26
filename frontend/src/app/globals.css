@@ -1982,3 +1982,149 @@ html[data-theme="light"] {
     background: color-mix(in srgb, var(--kode-galat) 20%, transparent);
     box-shadow: inset 3px 0 0 var(--kode-galat);
 }
+
+/* ══ Objek 3D di pengumuman kelas: panggung & kartu HOLOGRAM ═════════════
+   Panggung SELALU gelap (juga di tema terang) supaya cahaya cyan tetap
+   terbaca; teksnya memakai hex sendiri karena `--color-white` terbalik di
+   tema terang. Kartu & garis diposisikan Model3DStage lewat DOM langsung. */
+.holo-panggung {
+    background: linear-gradient(180deg, #05121a 0%, #071b26 100%);
+    touch-action: none;
+}
+.holo-panggung canvas { cursor: grab; }
+.holo-panggung canvas:active { cursor: grabbing; }
+.holo-memuat { animation: holo-kedip 1.2s ease-in-out infinite; }
+@keyframes holo-kedip { 50% { opacity: 0.35; } }
+
+.holo-bar {
+    display: flex; flex-direction: column;
+    background: rgba(5, 18, 26, 0.6); backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.holo-tombol {
+    display: flex; height: 38px; width: 38px; align-items: center; justify-content: center;
+    color: rgba(255, 255, 255, 0.7); transition: background-color 0.2s, color 0.2s;
+}
+.holo-tombol + .holo-tombol { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+.holo-tombol:hover, .holo-tombol:focus-visible { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.holo-tombol:active { background: rgba(255, 255, 255, 0.2); }
+
+.holo-garis {
+    stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 400; stroke-dashoffset: 400;
+    filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.9));
+    animation: holo-tarik 0.5s 0.05s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes holo-tarik { to { stroke-dashoffset: 0; } }
+.holo-titik { fill: #fff; filter: drop-shadow(0 0 6px #22d3ee); }
+
+.holo-kartu {
+    position: relative; overflow: hidden; padding: 12px 16px 14px;
+    color: #e6fbff; font-family: var(--font-sans);
+    background:
+        repeating-linear-gradient(0deg, rgba(34, 211, 238, 0.07) 0 1px, transparent 1px 3px),
+        linear-gradient(135deg, rgba(8, 70, 90, 0.34), rgba(5, 36, 50, 0.4));
+    box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.7), 0 0 22px rgba(34, 211, 238, 0.35), inset 0 0 28px rgba(34, 211, 238, 0.12);
+    backdrop-filter: blur(2px);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    animation: holo-muncul 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes holo-muncul {
+    0% { opacity: 0; clip-path: inset(50% 0 50% 0); transform: scaleX(0.9); }
+    35% { opacity: 1; clip-path: inset(0 0 0 0); transform: translateX(-3px); filter: hue-rotate(40deg); }
+    50% { transform: translateX(3px); opacity: 0.55; }
+    65% { transform: translateX(0); opacity: 1; filter: none; }
+    100% { opacity: 1; }
+}
+
+.holo-judul { font-size: 16px; font-weight: 700; line-height: 1.3; color: #fff; text-shadow: 0 0 10px rgba(34, 211, 238, 0.6); overflow-wrap: anywhere; }
+.holo-isi { margin-top: 6px; font-size: 13px; line-height: 1.6; color: #c9f4fb; white-space: pre-line; overflow-wrap: anywhere; }
+
+.holo-daftar { background: #05121a; }
+.holo-chip {
+    display: inline-flex; align-items: center; gap: 9px; padding: 7px 12px; font-size: 12.5px; font-weight: 500; letter-spacing: 0.01em;
+    color: rgba(255, 255, 255, 0.7); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+    transition: color 0.2s, box-shadow 0.25s, background-color 0.2s;
+}
+.holo-chip:hover { color: #fff; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+.holo-chip-aktif, .holo-chip-aktif:hover { color: #fff; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 -2px 0 #67e8f9, inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+.holo-chip-no { font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; color: #67e8f9; }
+
+@media (prefers-reduced-motion: reduce) {
+    .holo-kartu, .holo-garis, .holo-memuat { animation: none; }
+    .holo-garis { stroke-dashoffset: 0; }
+    .holo-kartu::after { display: none; }
+}
+.holo-bungkus { filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.45)); }
+
+/* ══ Gerbang objek 3D: kotak berjudul yang memanjang ke bawah ═══════════
+   Kotaknya SENDIRI yang menjadi pintu: ruang di bawah judul membuka lewat
+   grid-template-rows 0fr→1fr, lalu isinya memudar masuk. */
+.gerbang-kepala { transition: background-color 0.25s; }
+.gerbang-kepala:hover { background: rgba(255, 255, 255, 0.1); }
+.gerbang[data-buka="true"] .gerbang-panah { transform: rotate(180deg); }
+
+.gerbang-ruang {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.gerbang[data-buka="true"] .gerbang-ruang { grid-template-rows: 1fr; }
+.gerbang-dalam { min-height: 0; overflow: hidden; }
+.gerbang-dalam > div { opacity: 0; transform: translateY(-8px); transition: opacity 0.35s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.gerbang[data-buka="true"] .gerbang-dalam > div { opacity: 1; transform: none; transition-delay: 0.25s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .gerbang-ruang, .gerbang-dalam > div, .gerbang-panah { transition: none !important; }
+}
+
+/* ══ Podium juara quiz: kotak piala → pintu tergulung ke atas → balok tumbuh ═
+   Pintu memakai gerak yang sama dengan sampul kartu kursus (900ms, motor menarik
+   lalu mengendap). Balok juara 3 → 2 → 1 tumbuh setelah pintu terangkat. */
+.podium-pintu { transition: transform 900ms cubic-bezier(0.65, 0, 0.25, 1); box-shadow: 0 6px 14px rgb(0 0 0 / 0.35); }
+.podium-panggung { display: flex; height: 100%; align-items: flex-end; justify-content: center; gap: 4px; padding: 8px 6px 0; }
+.podium-kolom { display: flex; width: 70px; flex-direction: column; align-items: center; }
+.podium-juara {
+    position: relative; display: flex; min-height: 20px; flex-direction: column; align-items: center; padding-bottom: 5px; text-align: center;
+    opacity: 0; transform: translateY(-26px);
+    transition: opacity 0.3s, transform 0.6s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.podium-foto { display: inline-flex; border-radius: 9999px; }
+.podium-mahkota { width: 18px; height: 18px; margin-bottom: 2px; color: #bbd5ff; }
+.podium-blok {
+    position: relative; display: flex; width: 100%; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 5px 0 6px; transform: scaleY(0); transform-origin: bottom;
+    transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.podium-angka { font-size: 26px; font-weight: 300; line-height: 1; color: rgba(255, 255, 255, 0.85); opacity: 0; transition: opacity 0.3s; }
+.podium-nilai { display: flex; flex-direction: column; align-items: center; font-size: 15px; font-weight: 700; line-height: 1; color: #fff; opacity: 0; transition: opacity 0.3s; }
+.podium-nilai small { margin-top: 1px; font-size: 7px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; }
+
+/* Urutan: pintu naik (≈0,55 dtk), lalu juara 3 tumbuh, lalu 2, lalu 1; sosok mendarat setelah bloknya. */
+.podium[data-buka="true"] .podium-blok { transform: scaleY(1); transition-delay: calc(0.5s + (2 - var(--i)) * 0.18s); }
+.podium[data-buka="true"] .podium-angka, .podium[data-buka="true"] .podium-nilai { opacity: 1; transition-delay: calc(0.9s + (2 - var(--i)) * 0.18s); }
+.podium[data-buka="true"] .podium-juara { opacity: 1; transform: none; transition-delay: calc(0.95s + (2 - var(--i)) * 0.18s); }
+.podium[data-buka="true"] .podium-mahkota { animation: podium-goyang 2.6s 1.9s ease-in-out infinite; }
+@keyframes podium-goyang { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-3px) rotate(4deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .podium-pintu, .podium-juara, .podium-blok, .podium-angka, .podium-nilai { transition: none !important; }
+    .podium-mahkota { animation: none !important; }
+}
+
+/* ══ Ruang pantau quiz: garis bergerak & titik "langsung" ══════════════ */
+.pantau-garis {
+    background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.38) 0 8px, transparent 8px 16px);
+    background-size: 22px 100%; animation: pantau-geser 1.1s linear infinite;
+}
+@keyframes pantau-geser { to { background-position: 22px 0; } }
+.pantau-titik { animation: pantau-denyut 1.6s ease-in-out infinite; }
+@keyframes pantau-denyut { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+@media (prefers-reduced-motion: reduce) { .pantau-garis, .pantau-titik { animation: none; } }
+
+/* Seluruh teks laman kelas & quiz memakai Plus Jakarta Sans (satu keluarga font situs),
+   termasuk isian/tombol/pilihan yang di sebagian peramban tak mewarisi font. */
+.kelas-jakarta, .kelas-jakarta :where(*) { font-family: var(--font-sans); }
+
+/* Isian angka di laman kelas/quiz: diketik saja, tanpa panah naik-turun. */
+.kelas-jakarta input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.kelas-jakarta input[type="number"]::-webkit-outer-spin-button,
+.kelas-jakarta input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

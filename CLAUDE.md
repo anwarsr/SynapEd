@@ -279,7 +279,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   kursusnya); anak panah di bilah menuju `/courses?q=<q>` (`heroHref`), dan `/courses` meneruskan `?q` ke
   `CourseCatalog` sebagai `initialQuery`. Indeks diundi sekali setelah mount (HTML server = klien), tidak pernah sama
   dengan kalimat sebelumnya (`sessionStorage` `synaped_hero_prompt`, jadi muat ulang selalu berganti), dan diundi
-  ulang saat pengunjung kembali ke atas. Tombol wajah "Mulai Belajar" tetap ke /register. Fitur bilah → panel
+  ulang saat pengunjung kembali ke atas. Tombol wajah "Mulai Belajar" → /courses bila sudah masuk (`useAuth`), /login bila belum. Fitur bilah → panel
   rekomendasi kursus dan bilah yang melebar sendiri sudah DIHAPUS atas permintaan pemilik - jangan dikembalikan tanpa
   diminta; `Hero` kini hanya menerima `prompts`.
 - **Latar section landing** semuanya `bg-ivory` (alias `paper`, kini gelap).
@@ -590,6 +590,114 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
     jawaban siswa dinyatakan sebagai DATA (abaikan perintah di dalamnya).
     `parseGradingResponse(raw, max, maxGrade=100)` — regex 4 digit + `(?!\d)`:
     dengan 3 digit, "GRADE: 1000" terbaca 100 dan lolos diam-diam.
+
+## Mengeluarkan anggota & dialog konfirmasi
+
+- `removeClassMember(classId, uid)` (classActions; pemilik/admin lewat `requireOwnedClass`): transaksi hapus
+  `classMembers/{uid}_{classId}` + `memberCount -1`; uid sasaran WAJIB anggota (kalau tidak: "bukan anggota").
+  Jawaban tugas/quiz TIDAK dihapus. UI: `KeluarkanAnggota` di tab Anggota (`ClassRoom`, hanya `isOwner`) & `/members`.
+- `ConfirmDialog` (dipakai 16 tempat) kini PERSEGI: tanpa border & radius; Batal = kotak berlatar putih transparan
+  bergaris tipis, konfirmasi = kotak biru. Gaya tombol kotak bersama ada di `lib/quizUi.ts` (`TOMBOL_KOTAK*`).
+
+## Quiz kelas
+
+Tab "Quiz" (semua anggota; kanan "Tugas"). "Pantau" BUKAN tab di bilah (dihapus atas permintaan pemilik): ia
+`?tab=pantau&quiz=<id>` yang dibuka lewat tombol "Pantau" tiap quiz (HANYA pengelola; tab Quiz tetap menyala;
+tanpa pemilih quiz & tanpa judul quiz; quiz tak ada → pesan + tautan ke daftar). Urutan tab:
+Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`/`PantauTab`
+(komponen server async) langsung hanya saat tabnya aktif; `?quiz=` memilih quiz di Pantau.
+
+- **Data**: `classes/{id}/quizzes/{quizId}` (soal + KUNCI `correct` + setelan; `published`, `closed`,
+  `extraMin`) dan percobaan di koleksi TERPISAH `classQuizAttempts/{classId}_{quizId}_{uid}` (satu per
+  siswa; `answers`, `order` per siswa, `extraSec`, `essayScores`, `submittedAt`, `finalizedBy` siswa|waktu|ditutup).
+  Firestore.rules menutup keduanya. Penghapusan kelas memanggil `hapusPercobaanKelas`; `deleteQuiz` menghapus percobaannya.
+- **Aturan NETRAL** `lib/classQuizRules.ts` (validasi, `bagiRataPoin`, acak bersemai per siswa
+  `urutanUntukSiswa`, `hitungNilai`, waktu, `peringkatTeratas`); server `lib/classQuizzes.ts`;
+  action `lib/classQuizActions.ts`. Total poin TEPAT 100 hanya saat terbit (draf boleh ≤100).
+- **Nilai tidak disimpan**: `hitungNilai` menghitung ulang dari jawaban + kunci + poin SEKARANG,
+  jadi mengubah poin menghitung ulang semuanya; poin esai dijepit ke poin soal. Soal terkunci
+  (`strukturSama`) begitu ada satu percobaan: hanya poin/judul/deskripsi/setelan yang boleh berubah.
+- **Jadwal mulai**: `Quiz.opensAt` (ISO; null = langsung terbuka saat diterbitkan, lampau = sudah terbuka;
+  `sudahDibuka`). Server menolak `startQuiz` sebelum jamnya (jam SERVER, bukan perangkat siswa); siswa tetap
+  melihat quiz berlabel "Dijadwalkan" tanpa tombol Mulai. Builder memakai `inputWibKeIso`/`isoKeInputWib` (WIB tetap).
+- **Waktu**: batas = mulai + (durasi + `extraMin`) + `extraSec`. Server berwenang: `selesaikanBilaPerlu`
+  (transaksi) menutup percobaan yang kedaluwarsa, DICATAT TEPAT di batas (bukan saat dibuka); jawaban yang
+  dinilai = yang TERSIMPAN (autosave 1,5 dtk di `QuizPengerja`), kiriman terlambat > 5 dtk ditolak.
+  Penghitung mundur klien memakai sisa detik server - `performance.now`, bukan jam dinding. Menambah waktu
+  (`addQuizTime`) / membuka kembali quiz membuka lagi percobaan `waktu`/`ditutup` yang belum punya nilai esai.
+- **Kunci jawaban**: soal dikirim ke klien lewat `soalUntukSiswa` (urutan siswa, TANPA `correct`);
+  `QuizHasil` (server) baru menampilkan kunci bila `quiz.closed` - jangan percepat, siswa cepat bisa membagi kunci.
+- **Papan peringkat = `QuizPodium`** (client): KOTAK bergambar piala di KANAN kotak quiz (kolom 236px; HANYA di tab Quiz -
+  halaman quiz siswa sengaja tanpa papan, tampil editorial: kicker, judul besar, tiga angka tipis, daftar bernomor). Ditekan → pintunya tergulung KE ATAS seperti sampul kartu kursus (`translateY(-100%)` 900ms, bersekat),
+  menyingkap podium 2-1-3 dengan balok makin tinggi makin tinggi peringkatnya + foto profil (balok 3→2→1 tumbuh, sosok
+  mendarat, mahkota goyang; CSS `.podium-*`).
+  KEMBANG API: bila PEMBACA adalah juara 1 (`rayakan`, dihitung server di `QuizTab`), tiap membuka papan menyalakan kanvas layar penuh
+  ±5 dtk (`lib/kembangApi.ts`); satu pertunjukan sekaligus - membuka lagi saat masih berjalan TIDAK menumpuk/memulai baru; hemat gerak = tak tampil. WARNA bagian quiz HANYA keluarga biru (permintaan pemilik): tanpa amber/kuning/oranye kecuali gambar PIALA di pintu; balok podium, status, batang pantau, dan kembang api semuanya biru-putih. Isian angka di `.kelas-jakarta` tanpa panah spinner (CSS). Versi "tombol kecil + ruang memanjang" dan kolom `QuizPapanPeringkat` sudah dihapus.
+- **Halaman Pantau sengaja BERBEDA dari gaya kartu profil**: ruang kendali (angka besar "n / total", batang sebaran
+  status, rata-rata), "lintasan" per siswa (batang waktu terpakai vs batas; batang bergaris-gerak `.pantau-garis` untuk yang
+  sedang mengerjakan, amber bila waktu habis), dan garis waktu aktivitas bertitik. Tautan kembali = `BackLink`.
+- **Peringkat**: nilai tertinggi → durasi tercepat → mulai lebih dulu; hanya percobaan terkumpul dengan
+  esai dinilai penuh; tiga teratas (nama+foto+nilai+waktu) dilihat siswa, selebihnya hanya pengelola.
+- **Tes**: `npm run verify:class-quiz` (aturan murni + alur penuh; dev server).
+
+## Arsip postingan kelas
+
+- Field `archived` (boolean, + `archivedAt`) pada dokumen post; `KelasPost.archived` (`toPost` → false bila hilang).
+  `setPostArchived(classId, postId, archived)` di classActions (pemilik/admin; `updatedAt` TIDAK disentuh).
+- Terarsip = tak ada bagi siswa di SETIAP jalur: `ClassRoom` menyaringnya sendiri (jangan hanya andalkan
+  pemanggil), halaman tugas siswa 404, `/api/classes/attachment` & `/model` 404 untuk non-pemilik,
+  `createReply` dan `ambilTugas` (kirim/batal kirim) menolak untuk siswa; `gradeClassSubmission` memakai
+  `ambilTugas(..., true)` agar pengajar tetap bisa menilai tugas terarsip.
+- UI: `ArsipButton` (di `PostFeed` bersama Edit/Hapus, tanpa konfirmasi) dan `ArsipZona` (TAB "Arsip" di kanan "Tugas",
+  HANYA `isOwner`; siswa dengan `?tab=arsip` jatuh ke Pengumuman; `<details>` per item: isi, lampiran, tautan tugas, Pulihkan, Hapus). Tes: `npm run verify:class-archive`.
+
+## Objek 3D di pengumuman kelas
+
+Pengumuman (BUKAN tugas) boleh membawa satu model `.glb` + keterangan per titik.
+Pustaka: `three`, `@react-three/fiber`, `@react-three/drei` (+ `@types/three`).
+
+- **Data**: field `model3d` pada dokumen post `{file:{name,path,size,mime}, title, annotations:[{id,title,text,mesh,meshName,point:[x,y,z]}]}`
+  (`KelasPost.model3d`, null = tanpa). Aturan & validasi NETRAL di `lib/model3dRules.ts`
+  (`title` gerbang ≤80, kosong/dokumen lama → dari nama berkas via `validasiJudulModel`; maks 30 keterangan, judul ≤60 wajib, teks ≤400, koordinat dibatasi). `point` = koordinat
+  scene glTF SEBELUM penskalaan tampilan; `mesh` = urutan komponen menurut `traverse` (hanya untuk
+  menyorot; titik tetap tampil walau indeksnya tak cocok).
+- **Berkas**: `class-files/{uid}/{classId}/…`. Browser mengunggah dengan MIME `application/zip`
+  (`MIME_UNGGAH_MODEL3D`) karena itu SUDAH diizinkan rules yang ter-deploy - versi awal memakai
+  `model/gltf-binary` dan gagal `storage/unauthorized` karena rules tak ikut deploy otomatis. Server menerima
+  kedua MIME dan mencatat `mime` sebagai `model/gltf-binary`. `storage.rules` tetap punya `isModel3d()`
+  (opsional, hanya `class-files`); keabsahan GLB dijaga penanda `glTF`, bukan MIME.
+  Server (`periksaBerkasModel` di classAssignments.ts) membaca ulang ukuran/MIME dari Storage DAN
+  12 byte pertama (ajaib `glTF`, versi 2) - nama `.glb` saja tidak dipercaya. `periksaModel3D`:
+  berkas tak dikirim ulang = pertahankan berkas lama (path dari browser tak pernah menunjuk
+  berkas yang bukan milik post). Satu komponen = satu keterangan (`adaMeshGanda`, ditolak
+  saat MENULIS saja; data lama tak dibuang). Di editor, mengeklik komponen berketerangan hanya memilihnya.
+- **Action**: `createPost(classId, body, lampiran, model3d)` dan `editPost` (`model3d`: tak ada =
+  tak diubah, `null` = dibuang, objek = keterangan baru + opsional `file` baru). Berkas yang
+  diganti/dibuang/ikut post/kelas yang dihapus ikut dihapus (`bersihkanPost/Kelas`, `editPost`).
+  Pengumuman yang hanya berisi objek 3D sah (tanpa teks).
+- **Penyaji**: `/api/classes/model?class&post&v` (anggota/pemilik/admin; bukan anggota 404) -
+  inline `model/gltf-binary` + `nosniff` + CSP `sandbox`; dibaca `fetch` pemuat, bukan diunduh.
+- **UI** (`components/classes/model3d/`): `Model3DStage` (client; pembungkus: lazy-load lewat
+  IntersectionObserver, `frameloop` dijeda saat di luar layar, kartu hologram HTML + garis SVG
+  yang posisinya ditulis ke DOM tiap bingkai lewat `onProject` - BUKAN state), `Model3DScene`
+  (adegan R3F; dimuat `next/dynamic` `ssr:false`; klon scene (bahan TIDAK diklon/di-dispose: dipakai bersama cache
+  `useGLTF`); sorotan komponen (terpilih/hover) = garis tepi biru yang mengalir (`EdgesGeometry` + `LineDashedMaterial`
+  dengan uniform fase lewat `onBeforeCompile`, karena material itu tak punya `dashOffset`; `raycast` garis dimatikan
+  agar tak mencegat klik) - BUKAN emissive; TANPA penanda bola/cincin dan TANPA cahaya biru latar panggung (gradasi radial & lampu cyan dihapus); tombol putar = `putar()` per sisi 90° (tween BERBASIS WAKTU 1,1 dtk ease-in-out sinus di useFrame `putaran`, bukan pelunakan per bingkai yang terasa patah; tekan lagi saat berjalan = lanjut dari posisi sekarang; seret manual membatalkan), bukan reset; TANPA penanda bola/cincin di mana pun (dihapus atas permintaan pemilik, jangan dikembalikan; gantinya: di editor/mode sunting SEMUA komponen berketerangan selalu bergaris biru mengalir, di tampilan murid & Pratinjau garis hanya saat di-hover, TANPA garis untuk komponen terpilih), kartu hologram = nama komponen + keterangan saja (tanpa nomor, TANPA glitch/sapuan cahaya - dihapus), latar dibuat transparan (alfa ≈0,35), memakai `TeksAcak` (teks acak sejenis yang mengunci kiri→kanan); model dinormalisasi ke ukuran 2; uji halangan raycast tiap 6
+  bingkai meredupkan kartu bila titik di balik model), `LampiranModel3D` (editor: tab
+  Sunting/Pratinjau; Pratinjau = Stage mode `lihat` yang sama dengan murid). `GerbangModel3D` = pembungkus di umpan (`PostFeed`)
+  DAN di tab Pratinjau editor: kotak berjudul → ruang memanjang ke bawah (`grid-template-rows` 0fr→1fr; kotak ini
+  SENDIRI pintunya - daun pintu sudah dihapus atas permintaan pemilik, jangan dikembalikan), isi memudar masuk;
+  `Model3DStage` baru DIPASANG pada klik pertama (lazy; jangan pasang saat tertutup: IntersectionObserver
+  menganggap elemen berukuran nol "terlihat"). Mode `lihat`: komponen TANPA keterangan tak merespons
+  (tanpa hover/sorotan/klik) dan tetap menghalangi yang di belakangnya (`sasaranKena`). Dipasang di
+  `PostComposer`, `EditPost`, `PostFeed`. Zoom gulir baru aktif setelah panggung ditekan (supaya
+  umpan tetap bisa digulir); tombol +/-/reset/layar penuh selalu ada. CSS `.holo-*` di globals.css;
+  panggung SELALU gelap (hex sendiri; `keep-white` karena `--color-white` terbalik di tema terang).
+- Jebakan: `Model3DScene` mematikan lint `react-hooks/immutability` per berkas (graf three.js
+  imperatif). URL objek dari `createObjectURL` TIDAK dilepas di cleanup efek (StrictMode memanggil
+  cleanup palsu dan merusak URL yang masih dipakai) - dilepas lewat `bebaskanModel`.
+- Tes: `npm run verify:model3d` (aturan murni + penerbitan/penolakan/penyaji/edit/pembersihan; butuh dev server).
 
 ## SynapLab (`/lab`)
 
@@ -966,6 +1074,7 @@ materi array terbuka.
   `settings/payments` harus menyalin & memulihkan dokumennya **persis**
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
+- `verify-model3d` (butuh dev server) menulis GLB uji langsung ke bucket (melewati rules, jadi TIDAK menguji `storage.rules`) lalu membersihkannya.
 - Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).

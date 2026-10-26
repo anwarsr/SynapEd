@@ -36,7 +36,7 @@ export default async function TugasSiswaPage({ params }: Props) {
   if (akses.isOwner) redirect(`/educator/classes/${id}/tugas/${postId}`);
 
   const post = await getPost(id, postId);
-  if (!post || post.kind !== "assignment" || !post.assignment) notFound();
+  if (!post || post.archived || post.kind !== "assignment" || !post.assignment) notFound();
 
   const [sub, kartu] = await Promise.all([
     getClassSubmission(classSubmissionId(id, postId, user.uid)),

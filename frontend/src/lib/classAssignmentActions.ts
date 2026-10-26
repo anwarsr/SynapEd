@@ -51,8 +51,10 @@ function segarkan(classId: string, postId: string) {
 }
 
 /** Tugas di kelas ini, atau null kalau postingannya bukan tugas. */
-async function ambilTugas(classId: string, postId: string) {
+async function ambilTugas(classId: string, postId: string, termasukArsip = false) {
   const post = await getPost(classId, postId);
+  // Tugas terarsip tak ada bagi siswa (tak bisa dikumpulkan/dibatalkan); pengajar tetap bisa menilai.
+  if (post?.archived && !termasukArsip) return null;
   return post && post.kind === "assignment" && post.assignment ? { post, p: post.assignment } : null;
 }
 
@@ -71,7 +73,7 @@ export async function gradeClassSubmission(
   const kelas = await requireOwnedClass(user, classId);
   if (!kelas) return { ok: false, error: "Anda tidak berhak menilai tugas ini." };
 
-  const tugas = await ambilTugas(classId, postId);
+  const tugas = await ambilTugas(classId, postId, true);
   if (!tugas) return { ok: false, error: "Tugas tidak ditemukan." };
 
   const grade = validasiNilai(gradeRaw, tugas.p.maxPoints);

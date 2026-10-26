@@ -3,6 +3,7 @@ import { ref, uploadBytes } from "firebase/storage";
 import { firebaseStorage } from "@/lib/firebase/client";
 import { CLASS_FILES, CLASS_SUBMISSION_FILES } from "@/lib/storagePaths";
 import { mimeOfName } from "@/lib/classAssignmentRules";
+import { MIME_UNGGAH_MODEL3D, adalahNamaGlb } from "@/lib/model3dRules";
 
 /** Yang dikirim ke Server Action. Ukuran & MIME sengaja tidak — server membacanya sendiri. */
 export interface BerkasTerunggah {
@@ -58,6 +59,21 @@ export function pesanGagalUnggah(e: unknown): string {
 /** Lampiran pengajar: `class-files/{uid}/{classId}/…`. */
 export function unggahLampiranKelas(uid: string, classId: string, files: readonly File[]) {
   return Promise.all(files.map((f) => unggah(`${CLASS_FILES}/${uid}/${classId}`, f)));
+}
+
+/**
+ * Objek 3D (.glb): folder yang sama dengan lampiran (rules-nya sudah ada),
+ * tetapi MIME-nya `model/gltf-binary` — butuh storage.rules terbaru.
+ */
+export async function unggahModel3D(uid: string, classId: string, file: File): Promise<BerkasTerunggah> {
+  if (!adalahNamaGlb(file.name)) throw new Error(`"${file.name}" bukan berkas .glb.`);
+  const acak = Math.random().toString(36).slice(2, 7);
+  const path = `${CLASS_FILES}/${uid}/${classId}/${Date.now()}-${acak}-${safeName(file.name)}`;
+  // Diunggah dengan MIME ZIP, yang sudah diizinkan storage.rules yang ter-deploy,
+  // sehingga fitur ini tak bergantung pada deploy rules baru. Keabsahan GLB dijaga
+  // server lewat penanda "glTF" di awal berkas (periksaBerkasModel), bukan lewat MIME.
+  await uploadBytes(ref(firebaseStorage(), path), file, { contentType: MIME_UNGGAH_MODEL3D });
+  return { path, name: file.name };
 }
 
 /**

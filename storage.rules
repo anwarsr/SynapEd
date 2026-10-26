@@ -147,7 +147,7 @@ service firebase.storage {
                    && request.auth.uid == uid
                    && request.auth.token.role in ['educator', 'admin']
                    && request.resource.size < 20 * 1024 * 1024
-                   && isClassFile();
+                   && (isClassFile() || isModel3d());
     }
 
     match /class-submissions/{uid}/{allPaths=**} {
@@ -170,6 +170,12 @@ service firebase.storage {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/zip'
       ];
+    }
+
+    // Objek 3D (GLB) untuk pengumuman kelas. Hanya folder pengajar
+    // (class-files); folder jawaban siswa TIDAK menerimanya.
+    function isModel3d() {
+      return request.resource.contentType == 'model/gltf-binary';
     }
 
     // Hanya PDF.

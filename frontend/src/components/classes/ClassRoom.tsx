@@ -7,6 +7,10 @@ import PostFeed from "@/components/classes/PostFeed";
 import PostComposer from "@/components/classes/PostComposer";
 import AssignmentList, { type SudutTugas } from "@/components/classes/AssignmentList";
 import DeleteButton from "@/components/classes/DeleteButton";
+import ArsipZona from "@/components/classes/ArsipZona";
+import KeluarkanAnggota from "@/components/classes/KeluarkanAnggota";
+import QuizTab from "@/components/classes/quiz/QuizTab";
+import PantauTab from "@/components/classes/quiz/PantauTab";
 import JoinCodePanel from "@/components/classes/JoinCodePanel";
 import { ClassPlate } from "@/components/classes/ClassPlate";
 import { nadaKelas } from "@/lib/classColor";
@@ -15,10 +19,10 @@ import type { KelasMember, KelasPost, KelasReply } from "@/lib/classTypes";
 import type { UserCard } from "@/lib/userCards";
 import { cn } from "@/lib/cn";
 
-export type TabKelas = "pengumuman" | "tugas" | "anggota" | "tentang";
+export type TabKelas = "pengumuman" | "tugas" | "quiz" | "pantau" | "arsip" | "anggota" | "tentang";
 
 export function toTab(raw: unknown): TabKelas {
-  return raw === "tugas" || raw === "anggota" || raw === "tentang" ? raw : "pengumuman";
+  return raw === "tugas" || raw === "quiz" || raw === "pantau" || raw === "arsip" || raw === "anggota" || raw === "tentang" ? raw : "pengumuman";
 }
 
 const DISPLAY_JUDUL = {
@@ -39,6 +43,9 @@ const DISPLAY_SEKSI = {
 const TABS: readonly { id: TabKelas; label: string }[] = [
   { id: "pengumuman", label: "Pengumuman" },
   { id: "tugas", label: "Tugas" },
+  { id: "quiz", label: "Quiz" },
+  { id: "pantau", label: "Pantau" },
+  { id: "arsip", label: "Arsip" },
   { id: "anggota", label: "Anggota" },
   { id: "tentang", label: "Tentang" },
 ];
@@ -87,6 +94,8 @@ interface Props {
   pengaturan?: ReactNode;
   /** Status tugas milik siswa, atau hitungan pengumpulan untuk pengajar. */
   sudutTugas: SudutTugas;
+  /** Quiz terpilih di tab Pantau (?quiz=). */
+  quizId?: string;
   /** Jam server saat render, supaya seluruh status tenggat memakai satu "sekarang". */
   saat: number;
 }
@@ -105,7 +114,7 @@ interface Props {
  */
 export default function ClassRoom({
   kelas,
-  posts,
+  posts: semuaPosts,
   repliesByPost,
   cards,
   members,
@@ -116,7 +125,8 @@ export default function ClassRoom({
   mePhoto,
   isOwner,
   isMember,
-  tab,
+  tab: tabMinta,
+  quizId,
   basePath,
   joinCode,
   kembali,
@@ -125,6 +135,15 @@ export default function ClassRoom({
   sudutTugas,
   saat,
 }: Props) {
+  // Siswa tak pernah menerima postingan terarsip - disaring di sini juga, bukan hanya
+  // mengandalkan pemanggil. Pengelola mendapatkannya terpisah untuk zona Arsip.
+  const posts = semuaPosts.filter((p) => !p.archived);
+  const arsip = isOwner ? semuaPosts.filter((p) => p.archived) : [];
+  // Tab Arsip hanya ada untuk pengelola; siswa yang membuka ?tab=arsip jatuh ke Pengumuman.
+  const hanyaPengelola = (t: TabKelas) => t === "arsip" || t === "pantau";
+  const tab: TabKelas = hanyaPengelola(tabMinta) && !isOwner ? "pengumuman" : tabMinta;
+  // Pantau TIDAK punya tab: dibuka lewat tombol "Pantau" di tiap quiz (tab Quiz tetap tampak aktif).
+  const tabTampil = TABS.filter((t) => t.id !== "pantau" && (!hanyaPengelola(t.id) || isOwner));
   const namaPengajar = ownerCard?.name ?? "Pengajar";
   const tumpukan = members.slice(0, 5);
   const sisa = Math.max(0, kelas.memberCount - tumpukan.length);
@@ -209,8 +228,8 @@ export default function ClassRoom({
               bekerja tanpa JavaScript, dan tidak menahan daftar anggota di
               memori halaman yang sedang membaca umpan. */}
           <nav className="mt-9 flex gap-1.5 overflow-x-auto scrollbar-hide" aria-label="Bagian kelas">
-            {TABS.map((t) => {
-              const aktif = t.id === tab;
+            {tabTampil.map((t) => {
+              const aktif = t.id === tab || (t.id === "quiz" && tab === "pantau");
               return (
                 <Link
                   key={t.id}
@@ -224,6 +243,9 @@ export default function ClassRoom({
                   )}
                 >
                   {t.label}
+                  {t.id === "arsip" && arsip.length > 0 && (
+                    <span className="ml-2 text-xs font-normal text-white/60">{arsip.length}</span>
+                  )}
                 </Link>
               );
             })}
@@ -231,7 +253,7 @@ export default function ClassRoom({
         </div>
       </section>
 
-      <div className="bg-white/[0.06] py-12">
+      <div className="kelas-jakarta bg-white/[0.06] py-12">
         <div className="container-page grid gap-9 grid-cols-[minmax(0,1fr)_320px] max-lg:grid-cols-1 max-lg:gap-6">
           <div className="min-w-0">
             {tab === "pengumuman" && (
@@ -264,6 +286,22 @@ export default function ClassRoom({
             {tab === "tugas" && (
               <AssignmentList posts={posts} basePath={basePath} sudut={sudutTugas} saat={saat} />
             )}
+
+            {tab === "quiz" && (
+              <QuizTab
+                classId={kelas.id}
+                basePath={basePath}
+                currentUid={currentUid}
+                isOwner={isOwner}
+                jumlahAnggota={kelas.memberCount}
+              />
+            )}
+
+            {tab === "pantau" && isOwner && (
+              <PantauTab classId={kelas.id} basePath={basePath} quizId={quizId} members={members} cards={memberCards} />
+            )}
+
+            {tab === "arsip" && <ArsipZona classId={kelas.id} basePath={basePath} posts={arsip} />}
 
             {tab === "anggota" && (
               <div className="overflow-hidden bg-paper-card">
@@ -301,6 +339,7 @@ export default function ClassRoom({
                             Bergabung {formatDate(m.joinedAt)}
                           </p>
                         </div>
+                        {isOwner && <KeluarkanAnggota classId={kelas.id} uid={m.uid} nama={nama} />}
                       </li>
                     );
                   })}

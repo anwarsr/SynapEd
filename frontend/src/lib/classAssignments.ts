@@ -10,6 +10,7 @@ import {
   type PengaturanAi,
 } from "@/lib/classAssignmentRules";
 import type { KelasPost } from "@/lib/classTypes";
+import { MIME_MODEL3D, MIME_UNGGAH_MODEL3D, adaMeshGanda, validasiAnotasi, validasiJudulModel, type Hasil3D, type Model3D } from "@/lib/model3dRules";
 import { postsRef } from "@/lib/classes";
 
 /**
@@ -193,6 +194,70 @@ export async function periksaBerkas(
   return { ok: true, files };
 }
 
+/**
+ * Memeriksa berkas .glb kiriman browser dan membacanya ulang dari Storage.
+ *
+ * Selain ukuran & MIME (lewat `periksaBerkas`), 12 byte pertama dibaca:
+ * berkas GLB sah selalu diawali ajaib "glTF" dan versi 2. Tanpa ini siapa
+ * pun bisa menamai berkas apa saja `.glb` dan membuat peramban murid
+ * menguraikannya sebagai model.
+ */
+export async function periksaBerkasModel(raw: unknown, awalan: string): Promise<Hasil3D<Model3D["file"]>> {
+  const hasil = await periksaBerkas(raw === undefined || raw === null ? [] : [raw], awalan, [MIME_MODEL3D, MIME_UNGGAH_MODEL3D], 1);
+  if (!hasil.ok) return { ok: false, error: hasil.error };
+  const berkas = hasil.files[0];
+  if (!berkas) return { ok: false, error: "Berkas objek 3D belum terunggah. Coba lagi." };
+  if (!berkas.name.toLowerCase().endsWith(".glb")) return { ok: false, error: "Objek 3D harus berkas .glb." };
+
+  const kepala = await new Promise<Buffer>((resolve, reject) => {
+    const potong: Buffer[] = [];
+    adminStorage()
+      .bucket()
+      .file(berkas.path)
+      .createReadStream({ start: 0, end: 11 })
+      .on("data", (c: Buffer) => potong.push(c))
+      .on("end", () => resolve(Buffer.concat(potong)))
+      .on("error", reject);
+  });
+  if (kepala.length < 12 || kepala.toString("latin1", 0, 4) !== "glTF" || kepala.readUInt32LE(4) !== 2) {
+    return { ok: false, error: "Berkas itu bukan GLB (glTF 2.0) yang sah." };
+  }
+  return { ok: true, value: { ...berkas, mime: MIME_MODEL3D } };
+}
+
+/**
+ * Bentuk `model3d` dari formulir → yang disimpan.
+ *
+ * `lama` = model yang sudah tersimpan di postingan (untuk edit). Berkas yang
+ * tidak dikirim ulang hanya boleh berarti "pertahankan berkas lama" — path
+ * dari browser tidak pernah dipercaya untuk menunjuk berkas yang tak dimiliki
+ * postingan ini.
+ */
+export async function periksaModel3D(
+  raw: unknown,
+  awalan: string,
+  lama: Model3D | null,
+): Promise<Hasil3D<Model3D>> {
+  const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+
+  const anotasi = validasiAnotasi(r.annotations);
+  if (!anotasi.ok) return anotasi;
+  if (adaMeshGanda(anotasi.value)) return { ok: false, error: "Satu komponen hanya boleh punya satu keterangan." };
+
+  let file: Model3D["file"];
+  if (r.file !== undefined && r.file !== null) {
+    const baru = await periksaBerkasModel(r.file, awalan);
+    if (!baru.ok) return baru;
+    file = baru.value;
+  } else if (lama) {
+    file = lama.file;
+  } else {
+    return { ok: false, error: "Berkas objek 3D belum dipilih." };
+  }
+
+  return { ok: true, value: { file, title: validasiJudulModel(r.title, file.name), annotations: anotasi.value } };
+}
+
 // ── Pembersihan ─────────────────────────────────────────────────────────
 
 /** Menghapus dokumen pengumpulan beserta berkasnya. Kegagalan berkas tidak dilempar. */
@@ -218,7 +283,7 @@ async function hapusPengumpulan(subs: readonly KelasSubmission[]): Promise<void>
  */
 export async function bersihkanPost(classId: string, post: KelasPost, berkasAi: readonly string[] = []): Promise<void> {
   await hapusPengumpulan(await listPostSubmissions(classId, post.id));
-  await deleteObjects([...post.attachments.map((a) => a.path), ...berkasAi]).catch(() => 0);
+  await deleteObjects([...post.attachments.map((a) => a.path), ...(post.model3d ? [post.model3d.file.path] : []), ...berkasAi]).catch(() => 0);
 }
 
 /** Sama, untuk seluruh kelas. `posts` & `berkasAi` dibaca SEBELUM kelasnya dihapus. */
@@ -228,5 +293,8 @@ export async function bersihkanKelas(
   berkasAi: readonly string[] = [],
 ): Promise<void> {
   await hapusPengumpulan(await listClassSubmissions(classId));
-  await deleteObjects([...posts.flatMap((p) => p.attachments.map((a) => a.path)), ...berkasAi]).catch(() => 0);
+  await deleteObjects([
+    ...posts.flatMap((p) => [...p.attachments.map((a) => a.path), ...(p.model3d ? [p.model3d.file.path] : [])]),
+    ...berkasAi,
+  ]).catch(() => 0);
 }

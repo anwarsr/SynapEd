@@ -12,7 +12,7 @@ import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; quiz?: string }>;
 }
 
 export const metadata: Metadata = { title: "Kelas – SynapEd" };
@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
  * biasa, dan kode itu kunci untuk mengajak orang lain masuk.
  */
 export default async function ClassPage({ params, searchParams }: Props) {
-  const [{ id }, { tab }] = await Promise.all([params, searchParams]);
+  const [{ id }, { tab, quiz }] = await Promise.all([params, searchParams]);
   const user = await requireUser(`/kelas/${id}`);
 
   const akses = await requireClassAccess(user, id);
@@ -75,6 +75,7 @@ export default async function ClassPage({ params, searchParams }: Props) {
           isOwner={isOwner}
           isMember={isMember}
           tab={toTab(tab)}
+          quizId={quiz}
           basePath={`/kelas/${id}`}
           kembali={{ href: "/kelas", label: "Kelas Saya" }}
           overlayNav
