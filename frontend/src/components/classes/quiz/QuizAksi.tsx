@@ -90,7 +90,7 @@ export function HapusQuizButton({ classId, quizId }: { classId: string; quizId: 
 
 /**
  * Pengelola memperingatkan siswa yang belum memulai: layar mereka ditutupi
- * peringatan + sirene 2 detik. Dikonfirmasi dulu karena tak bisa ditarik kembali.
+ * peringatan + alarm 2 detik. Dikonfirmasi dulu karena tak bisa ditarik kembali.
  */
 export function PeringatkanMuridButton({ classId, quizId, jumlah }: { classId: string; quizId: string; jumlah: number }) {
   const { pending, error, info, jalankan } = useAksi();
@@ -105,7 +105,7 @@ export function PeringatkanMuridButton({ classId, quizId, jumlah }: { classId: s
       <ConfirmDialog
         open={buka}
         title={`Peringatkan ${jumlah} siswa?`}
-        description="Siswa yang belum memulai quiz akan melihat peringatan selebar layar disertai bunyi sirene 2 detik di perangkat mereka."
+        description="Siswa yang belum memulai quiz akan melihat peringatan selebar layar disertai bunyi alarm 2 detik di perangkat mereka."
         confirmLabel="Kirim peringatan"
         onConfirm={() => {
           setBuka(false);

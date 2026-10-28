@@ -102,7 +102,7 @@ export const PENGETAHUAN_SITUS = `## Akun
   dan kunci jawaban baru terbuka setelah pengajar menutup quiz. Pengajar memantau siswa lewat tombol Pantau
   pada tiap quiz. Di halaman Pantau ada analisis soal (soal yang paling banyak salah, jawaban terbanyak,
   kunci, dalam persen), ekspor spreadsheet nama dan poin (setelah semua esai dinilai), dan tombol
-  Peringatkan murid (siswa yang belum mengerjakan melihat peringatan layar penuh dengan bunyi sirene 2 detik).
+  Peringatkan murid (siswa yang belum mengerjakan melihat peringatan layar penuh dengan bunyi alarm 2 detik).
   Alamat web yang ditulis di pengumuman otomatis bisa diklik.
   Tampilan situs bisa Gelap, Terang, atau Kustom (profil, Pengaturan Laman): pengguna menyusun palet sendiri
   dari empat warna (latar, kartu, teks, aksen); pilihan tersimpan di perangkat itu saja.

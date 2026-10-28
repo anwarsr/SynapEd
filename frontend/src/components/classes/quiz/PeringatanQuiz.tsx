@@ -10,9 +10,9 @@ interface Peringatan {
 }
 
 const JEDA_POLL_MS = 8000;
-const LAMA_SIRENE_MS = 2000;
+const LAMA_ALARM_MS = 2000;
 
-/** Kunci "sudah ditampilkan" per peringatan - muat ulang halaman tak mengulang sirene yang sama. */
+/** Kunci "sudah ditampilkan" per peringatan - muat ulang halaman tak mengulang alarm yang sama. */
 const kunciLihat = (quizId: string) => `synaped_quiz_alert_${quizId}`;
 
 function sudahDilihat(p: Peringatan): boolean {
@@ -31,29 +31,45 @@ function tandaiDilihat(p: Peringatan) {
   }
 }
 
-/** Sirene 2 detik: dua nada bergantian (880/620 Hz) dengan gelombang gergaji, volume dijaga. */
-function bunyikanSirene(ctx: AudioContext) {
+/**
+ * Alarm 2 detik: beep persegi keras 1000/1400 Hz bergantian, 8 denyut (250 ms) seperti alarm
+ * kebakaran. Tiap denyut punya tepi naik-turun singkat supaya tak berdetak di speaker.
+ */
+function bunyikanAlarm(ctx: AudioContext) {
   const t0 = ctx.currentTime;
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.0001, t0);
-  gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.05);
-  gain.gain.setValueAtTime(0.35, t0 + LAMA_SIRENE_MS / 1000 - 0.15);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + LAMA_SIRENE_MS / 1000);
-  gain.connect(ctx.destination);
+  const master = ctx.createGain();
+  master.gain.value = 0.55;
+  master.connect(ctx.destination);
 
   const osc = ctx.createOscillator();
-  osc.type = "sawtooth";
-  for (let i = 0; i < 8; i++) osc.frequency.setValueAtTime(i % 2 === 0 ? 880 : 620, t0 + i * 0.25);
-  osc.connect(gain);
+  osc.type = "square";
+  const kunci = ctx.createGain();
+  kunci.gain.setValueAtTime(0, t0);
+  const denyut = 0.25;
+  for (let i = 0; i < LAMA_ALARM_MS / 1000 / denyut; i++) {
+    const t = t0 + i * denyut;
+    osc.frequency.setValueAtTime(i % 2 === 0 ? 1000 : 1400, t);
+    kunci.gain.setValueAtTime(0, t);
+    kunci.gain.linearRampToValueAtTime(1, t + 0.01);
+    kunci.gain.setValueAtTime(1, t + denyut * 0.8);
+    kunci.gain.linearRampToValueAtTime(0, t + denyut * 0.8 + 0.01);
+  }
+  osc.connect(kunci);
+  kunci.connect(master);
   osc.start(t0);
-  osc.stop(t0 + LAMA_SIRENE_MS / 1000);
+  osc.stop(t0 + LAMA_ALARM_MS / 1000);
+  try {
+    navigator.vibrate?.([250, 100, 250, 100, 250, 100, 250]);
+  } catch {
+    /* perangkat tanpa getar */
+  }
 }
 
 /**
  * Peringatan layar penuh untuk siswa yang belum mengerjakan quiz. Memoll
  * /api/classes/quiz-alert selagi tab terlihat; ada peringatan baru → bilah
- * selebar layar berdenyut + sirene 2 detik. Peramban boleh menahan suara sebelum
- * pengguna menyentuh halaman: bila begitu, sirene dibunyikan pada sentuhan pertama
+ * selebar layar berdenyut + alarm 2 detik. Peramban boleh menahan suara sebelum
+ * pengguna menyentuh halaman: bila begitu, alarm dibunyikan pada sentuhan pertama
  * di atas peringatan (selama layarnya masih ada).
  */
 export default function PeringatanQuiz({ classId, basePath }: { classId: string; basePath: string }) {
@@ -68,11 +84,32 @@ export default function PeringatanQuiz({ classId, basePath }: { classId: string;
       const ctx = (ctxRef.current ??= new Ctor());
       if (ctx.state === "suspended") await ctx.resume();
       if (ctx.state !== "running") return false;
-      bunyikanSirene(ctx);
+      bunyikanAlarm(ctx);
       return true;
     } catch {
       return true; // tanpa suara pun peringatan visual tetap tampil
     }
+  }, []);
+
+  // Peramban menahan suara sampai ada gestur: buka konteks audio pada sentuhan pertama di halaman,
+  // supaya alarm dari peringatan yang datang sendiri nanti langsung berbunyi.
+  useEffect(() => {
+    const buka = () => {
+      try {
+        const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Ctor) return;
+        const ctx = (ctxRef.current ??= new Ctor());
+        if (ctx.state === "suspended") void ctx.resume();
+      } catch {
+        /* tanpa audio */
+      }
+    };
+    window.addEventListener("pointerdown", buka, { once: true });
+    window.addEventListener("keydown", buka, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", buka);
+      window.removeEventListener("keydown", buka);
+    };
   }, []);
 
   // Poll
@@ -103,7 +140,7 @@ export default function PeringatanQuiz({ classId, basePath }: { classId: string;
     };
   }, [classId]);
 
-  // Sirene saat peringatan muncul
+  // Alarm saat peringatan muncul
   useEffect(() => {
     if (!aktif) return;
     let batal = false;
@@ -140,8 +177,7 @@ export default function PeringatanQuiz({ classId, basePath }: { classId: string;
       <div className="peringatan-bilah h-4 w-full bg-rust-700 sm:h-6" aria-hidden="true" />
 
       <div className="container-page flex flex-1 flex-col items-center justify-center text-center">
-        <p className="text-[12px] font-bold uppercase tracking-[0.5em] text-[#fff]/60">Peringatan dari pengajar</p>
-        <h2 id="peringatan-quiz-judul" className="mt-6 text-[clamp(44px,11vw,150px)] font-black uppercase leading-[0.95] tracking-[-0.02em] text-[#fff]">
+        <h2 id="peringatan-quiz-judul" className="text-[clamp(44px,11vw,150px)] font-black uppercase leading-[0.95] tracking-[-0.02em] text-[#fff]">
           Ayo kerjakan
           <br />
           quiz sekarang

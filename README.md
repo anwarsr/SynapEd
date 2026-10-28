@@ -323,6 +323,9 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - Educator (dan admin) membuat kelas, memberinya **foto profil** (tampil di kotak
   identitas kelas), dan membagikan **kode undangan**.
 - Anggota bergabung dengan kode itu di `/kelas`.
+- **Perlindungan salin**: di halaman publik teks tidak bisa diblok/disalin dan klik kanan serta pintasan lihat-sumber
+  ditahan (kolom isian, editor SynapLab, dan area admin/educator dikecualikan). Situs juga tak bisa dibingkai situs lain,
+  dan source map produksi dimatikan. Catatan: ini penghalang untuk pengunjung awam, bukan jaminan mutlak.
 - **Roda pemilih** (`/educator/classes/<id>/wheel`, pintasan di bawah kotak kode undangan):
   roda untuk mengundi siswa yang menjawab. Bisa membuat beberapa roda per kelas, mengisinya
   dengan anggota kelas dan/atau nama sendiri, dan menyesuaikan nama, warna, lama putaran, serta
@@ -358,7 +361,7 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   izinkan mengulang. Satu percobaan per siswa. Di Pantau juga ada: **Analisis soal** (soal mana paling banyak
   tidak benar, jawaban paling banyak dipilih, kunci jawaban, semuanya dalam persen), **Ekspor spreadsheet**
   (.xlsx berisi nama & poin, aktif setelah semua esai dinilai), dan **Peringatkan murid** (siswa yang belum
-  memulai melihat peringatan selebar layar + sirene 2 detik; ada jeda 20 detik antar kiriman).
+  memulai melihat peringatan selebar layar + alarm 2 detik; ada jeda 20 detik antar kiriman).
 - **Arsip** (pengajar/admin): tombol *Arsipkan* di tiap pengumuman/tugas memindahkannya ke
   tab **Arsip** (di kanan tab Tugas; hanya pengelola yang melihatnya). Yang terarsip
   hilang total bagi siswa (umpan, daftar tugas, lampiran, balasan, pengumpulan baru) tetapi

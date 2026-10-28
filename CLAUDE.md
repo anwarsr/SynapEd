@@ -660,6 +660,19 @@ Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`
   mendarat, mahkota goyang; CSS `.podium-*`).
   KEMBANG API: bila PEMBACA adalah juara 1 (`rayakan`, dihitung server di `QuizTab`), tiap membuka papan menyalakan kanvas layar penuh
   ±5 dtk (`lib/kembangApi.ts`); satu pertunjukan sekaligus - membuka lagi saat masih berjalan TIDAK menumpuk/memulai baru; hemat gerak = tak tampil. WARNA bagian quiz HANYA keluarga biru (permintaan pemilik): tanpa amber/kuning/oranye kecuali gambar PIALA di pintu; balok podium, status, batang pantau, dan kembang api semuanya biru-putih. Isian angka di `.kelas-jakarta` tanpa panah spinner (CSS). Versi "tombol kecil + ruang memanjang" dan kolom `QuizPapanPeringkat` sudah dihapus.
+- **About - warna & Sources (revisi)**: panel 02 memakai `color-mix(paper 90%, blue-600)` supaya tiga panel membentuk satu tangga rona biru
+  (01 `deep` gelap, 02 biru menengah, 03 `paper-card`); peraga Ticker diwarnai tangga biru `TANGGA_BIRU` (blue-200→500, satu rona,
+  kecerahan naik per kata) + label & garis biru. `Sources`: tanda "+" DIHAPUS; penjelasan poin = `text-xl font-semibold` (SAMA dengan
+  judul & nomor poin) dan tetap `text-blue-300`.
+- **Perlindungan kode & salin** (jujur soal batasnya: kode yang dikirim ke peramban selalu bisa diambil): (1) `next.config.ts` -
+  `productionBrowserSourceMaps:false`, `poweredByHeader:false`, header global (kecuali `/lab/python-worker.js`, yang punya CSP sendiri):
+  `frame-ancestors 'self'` + `X-Frame-Options SAMEORIGIN` (situs tak bisa dibingkai), nosniff, Referrer-Policy, HSTS, COOP
+  `same-origin-allow-popups` (popup Google/Midtrans tetap jalan), Permissions-Policy. CSP penuh SENGAJA tak dipasang (Midtrans Snap,
+  Firebase, Google Translate, Pyodide - tanpa daftar sumber lengkap akan merusak situs). (2) `ui/PerlindunganSalin.tsx` (dipasang di
+  layout): `html[data-lindungi]` mematikan blok teks (`user-select:none`), menahan `copy/cut/contextmenu/dragstart` dan pintasan
+  F12 / Ctrl+Shift+I,J,C / Ctrl+U / Ctrl+S, KECUALI di kolom isian/editor dan elemen `data-boleh-salin`, serta seluruh `/admin` & `/educator`.
+  Tombol "Salin" memakai Clipboard API (tak terpengaruh). Ini hanya penghalang pengunjung awam; keamanan sungguhan = server (kode server &
+  rahasia tak dikirim ke klien, aturan akses, sesi).
 - **Tambahan Pantau (uji: `npm run verify:quiz-tambahan`, murni + dev server)**:
   - **Analisis soal**: `analisisSoal(quiz, percobaan)` (rules, murni) menghitung dari percobaan TERKUMPUL saja, diurut
     `persenSalah` menurun; MCQ = persen tiap opsi + `terbanyakId`, esai = rata-rata skor % (`persenSalah` esai = 100 - rata).
@@ -674,7 +687,7 @@ Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`
     untuk uid SESI, tanpa daftar sasaran) - lolos bila `peringatanBerlaku` (sasaran, belum mulai, quiz terbit/terbuka/tak ditutup,
     dalam `MASA_PERINGATAN_DETIK` 120). Klien `quiz/PeringatanQuiz.tsx` (dipasang di `ClassRoom` untuk siswa dan di halaman quiz siswa
     selama belum mulai): poll 8 dtk saat tab terlihat, layar penuh `z-[300]` + bilah selebar layar berdenyut (`.peringatan-bilah`),
-    sirene WebAudio 2 dtk; peramban boleh menahan suara sebelum ada sentuhan, jadi sirene dibunyikan pada sentuhan pertama bila tertahan.
+    alarm WebAudio 2 dtk; peramban boleh menahan suara sebelum ada sentuhan, jadi alarm dibunyikan pada sentuhan pertama bila tertahan.
     Sudah-dilihat dicatat di localStorage `synaped_quiz_alert_<quizId>` = `at`.
 - **Tautan di teks pengumuman/tugas/balasan**: `lib/linkify.ts` (netral, `pecahTeksTautan`; hanya http(s)/www, menolak userinfo
   & host tanpa titik, memangkas tanda baca ujung) + `classes/TeksBertaut.tsx` (`target=_blank`, `noopener noreferrer nofollow ugc`).

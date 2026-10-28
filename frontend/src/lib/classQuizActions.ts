@@ -369,7 +369,7 @@ export async function submitQuiz(classId: string, quizId: string, answers: unkno
 /**
  * "Peringatkan murid": menyimpan peringatan untuk siswa yang BELUM memulai quiz.
  * Siswa mengambilnya lewat /api/classes/quiz-alert (poll) dan layarnya ditutupi
- * peringatan + sirene 2 detik. Hanya pengelola; sasaran dihitung SERVER saat ini
+ * peringatan + alarm 2 detik. Hanya pengelola; sasaran dihitung SERVER saat ini
  * (anggota tanpa percobaan), dan ada jeda antar kiriman supaya tak jadi teror.
  */
 export async function warnQuizStudents(classId: string, quizId: string): Promise<QuizResult> {

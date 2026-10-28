@@ -2120,6 +2120,12 @@ html[data-theme="light"] {
 @keyframes pantau-denyut { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
 @media (prefers-reduced-motion: reduce) { .pantau-garis, .pantau-titik { animation: none; } }
 
+/* Penghalang salin (ui/PerlindunganSalin.tsx): teks tak bisa diblok di halaman publik, kecuali kolom isian
+   dan elemen berpenanda data-boleh-salin. Penanda dipasang skrip, jadi tanpa JS situs tetap normal. */
+html[data-lindungi="true"] body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+html[data-lindungi="true"] :is(input, textarea, select, [contenteditable="true"], [data-boleh-salin]) { -webkit-user-select: text; user-select: text; }
+html[data-lindungi="true"] img { -webkit-user-drag: none; }
+
 /* Peringatan quiz: bilah selebar layar berdenyut (hemat gerak = diam) */
 .peringatan-bilah { animation: peringatan-denyut 0.5s ease-in-out infinite alternate; }
 @keyframes peringatan-denyut { from { opacity: 1; } to { opacity: 0.25; } }

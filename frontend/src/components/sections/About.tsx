@@ -28,7 +28,7 @@ const points: Point[] = [
     num: "02",
     title: "Interaktif",
     desc: "Belajar melalui aktivitas dan kuis yang membuat materi lebih mudah dipahami.",
-    bg: "var(--color-paper)",
+    bg: "color-mix(in srgb, var(--color-paper) 90%, var(--color-blue-600))",
   },
   {
     num: "03",
@@ -299,6 +299,11 @@ function LearningPath({ open }: { open: boolean }) {
   );
 }
 
+/** Tangga warna Ticker: SATU rona biru (token blue-*) dengan kecerahan naik bertahap, jadi kata-kata
+ *  berurutan terbaca sebagai satu proses (jawab → coba → diskusi → umpan balik) dan senada dengan
+ *  panel 01 (garis blue-400) dan 03 (blue-300). Kata terakhir mengulang yang pertama agar putarannya mulus. */
+const TANGGA_BIRU = ["text-blue-200", "text-blue-300", "text-blue-400", "text-blue-500"] as const;
+
 /** 02 — papan kata berputar: kegiatan belajar bergantian naik ke tengah. */
 function Ticker() {
   const items = ["Jawab kuis", "Coba langsung", "Diskusi kelas", "Dapat umpan balik"];
@@ -306,13 +311,14 @@ function Ticker() {
 
   return (
     <div className="flex items-center gap-4">
-      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/60">Sambil</span>
-      <div className="h-[1.5em] overflow-hidden text-2xl font-bold tracking-tight text-white sm:text-3xl" aria-hidden="true">
+      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-300/80">Sambil</span>
+      <span aria-hidden="true" className="h-px w-8 bg-blue-400/60" />
+      <div className="h-[1.5em] overflow-hidden text-2xl font-bold tracking-tight sm:text-3xl" aria-hidden="true">
         <ul className="about-ticker">
           {loop.map((item, i) => (
-            <li key={i} className="h-[1.5em] whitespace-nowrap leading-[1.5]">
+            <li key={i} className={cn("h-[1.5em] whitespace-nowrap leading-[1.5]", TANGGA_BIRU[i % TANGGA_BIRU.length])}>
               {item}
-              <span className="text-blue-400">.</span>
+              <span className="text-blue-500">.</span>
             </li>
           ))}
         </ul>
@@ -326,7 +332,7 @@ function Ticker() {
  *  Penjelasan HANYA muncul saat poinnya ditekan, dan keluar dari ujung teks
  *  poin itu sendiri (melebar ke kanan sambil bergeser keluar & memudar masuk).
  *  Tekan lagi untuk menutup; menekan poin lain memindahkan penjelasan.
- *  Judul & penjelasan Plus Jakarta Sans; nomor font mono. */
+ *  Judul, penjelasan, dan nomor sama ukuran & gaya (text-xl semibold, Plus Jakarta Sans); penjelasan biru. */
 function Sources({ open }: { open: boolean }) {
   const rows = [
     { k: "Jurnal", note: "artikel ilmiah yang ditelaah sejawat" },
@@ -336,7 +342,7 @@ function Sources({ open }: { open: boolean }) {
   const [sel, setSel] = useState<number | null>(null);
 
   return (
-    <ul className="about-pop max-w-xl font-sans" style={{ "--d": "900ms" } as React.CSSProperties}>
+    <ul className="about-pop max-w-2xl font-sans" style={{ "--d": "900ms" } as React.CSSProperties}>
       {rows.map((r, i) => {
         const on = open && sel === i;
 
@@ -365,24 +371,14 @@ function Sources({ open }: { open: boolean }) {
                 <span
                   aria-hidden={!on}
                   className={cn(
-                    "overflow-hidden whitespace-nowrap text-sm text-blue-200 transition-[max-width,opacity,transform] duration-700 ease-warm motion-reduce:transition-none",
-                    on ? "max-w-80 translate-x-0 opacity-100" : "max-w-0 -translate-x-3 opacity-0",
+                    "overflow-hidden whitespace-nowrap text-xl font-semibold text-blue-300 transition-[max-width,opacity,transform] duration-700 ease-warm motion-reduce:transition-none",
+                    on ? "max-w-[30rem] translate-x-0 opacity-100" : "max-w-0 -translate-x-3 opacity-0",
                   )}
                 >
                   {r.note}
                 </span>
               </span>
 
-              {/* Petunjuk bisa ditekan: plus yang berputar jadi silang saat terbuka */}
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "ml-4 text-lg leading-none text-white/35 transition-transform duration-500 ease-warm group-hover/row:text-white/70",
-                  on && "rotate-45",
-                )}
-              >
-                +
-              </span>
             </button>
           </li>
         );

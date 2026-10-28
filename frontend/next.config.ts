@@ -37,6 +37,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+
+  /** Kode sumber asli TIDAK boleh bisa dipulihkan dari peramban: tanpa source map & tanpa header X-Powered-By. */
+  productionBrowserSourceMaps: false,
+  poweredByHeader: false,
   outputFileTracingRoot: projectRoot,
 
   /**
@@ -51,6 +55,24 @@ const nextConfig: NextConfig = {
    */
   async headers() {
     return [
+      {
+        /**
+         * Header keamanan untuk semua halaman KECUALI worker Python (CSP-nya sendiri, di bawah).
+         * `frame-ancestors 'self'` + X-Frame-Options: situs tak bisa dibingkai di situs lain
+         * (mencegah clickjacking dan "menyalin" tampilan lewat iframe). COOP `same-origin-allow-popups`
+         * mempertahankan popup masuk Google/Firebase dan Midtrans.
+         */
+        source: "/((?!lab/python-worker\\.js).*)",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(self)" },
+        ],
+      },
       {
         source: PYTHON_WORKER_URL,
         headers: [
