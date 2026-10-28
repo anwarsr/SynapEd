@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { getUserCards } from "@/lib/userCards";
 
 export const COURSE_REQUESTS = "courseChangeRequests";
 
@@ -47,6 +48,25 @@ function toRequest(id: string, d: FirebaseFirestore.DocumentData): CourseChangeR
   };
 }
 
+/**
+ * Nama pengaju & pemutus dibaca HIDUP dari Auth (salinan di dokumen tak ikut
+ * berubah saat nama akun diganti). Akun yang sudah dihapus memakai salinannya.
+ */
+async function denganNamaHidup(daftar: CourseChangeRequest[]): Promise<CourseChangeRequest[]> {
+  if (daftar.length === 0) return daftar;
+  const uids = new Set<string>();
+  for (const r of daftar) {
+    if (r.requestedByUid) uids.add(r.requestedByUid);
+    if (r.decidedByUid) uids.add(r.decidedByUid);
+  }
+  const kartu = await getUserCards([...uids]);
+  return daftar.map((r) => ({
+    ...r,
+    requestedByName: kartu.get(r.requestedByUid)?.name ?? r.requestedByName,
+    decidedByName: (r.decidedByUid ? kartu.get(r.decidedByUid)?.name : undefined) ?? r.decidedByName,
+  }));
+}
+
 export function requestRef(id: string) {
   return adminDb().collection(COURSE_REQUESTS).doc(id);
 }
@@ -87,8 +107,7 @@ export async function pendingRequestFor(courseSlug: string): Promise<CourseChang
 export async function listRequests(): Promise<CourseChangeRequest[]> {
   const snap = await adminDb().collection(COURSE_REQUESTS).get();
 
-  return snap.docs
-    .map((d) => toRequest(d.id, d.data()))
+  return (await denganNamaHidup(snap.docs.map((d) => toRequest(d.id, d.data()))))
     .sort((a, b) => {
       if ((a.status === "pending") !== (b.status === "pending")) {
         return a.status === "pending" ? -1 : 1;
@@ -104,8 +123,7 @@ export async function listRequestsByEducator(uid: string): Promise<CourseChangeR
     .where("requestedByUid", "==", uid)
     .get();
 
-  return snap.docs
-    .map((d) => toRequest(d.id, d.data()))
+  return (await denganNamaHidup(snap.docs.map((d) => toRequest(d.id, d.data()))))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 

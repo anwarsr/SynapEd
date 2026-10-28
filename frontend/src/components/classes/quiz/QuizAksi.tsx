@@ -9,6 +9,7 @@ import {
   resetQuizAttempt,
   setQuizClosed,
   startQuiz,
+  warnQuizStudents,
 } from "@/lib/classQuizActions";
 import QuizIkon from "@/components/classes/quiz/QuizIkon";
 import { MAX_TAMBAH_MENIT } from "@/lib/classQuizRules";
@@ -83,6 +84,36 @@ export function HapusQuizButton({ classId, quizId }: { classId: string; quizId: 
         onCancel={() => setBuka(false)}
       />
       <Pesan error={error} />
+    </>
+  );
+}
+
+/**
+ * Pengelola memperingatkan siswa yang belum memulai: layar mereka ditutupi
+ * peringatan + sirene 2 detik. Dikonfirmasi dulu karena tak bisa ditarik kembali.
+ */
+export function PeringatkanMuridButton({ classId, quizId, jumlah }: { classId: string; quizId: string; jumlah: number }) {
+  const { pending, error, info, jalankan } = useAksi();
+  const [buka, setBuka] = useState(false);
+  return (
+    <>
+      <button type="button" disabled={pending || jumlah === 0} onClick={() => setBuka(true)} className={TOMBOL_KOTAK} title={jumlah === 0 ? "Semua siswa sudah memulai quiz ini" : undefined}>
+        <QuizIkon nama="lonceng" />
+        {pending ? "Mengirim…" : "Peringatkan murid"}
+        {jumlah > 0 && <span className="text-ink-muted">· {jumlah}</span>}
+      </button>
+      <ConfirmDialog
+        open={buka}
+        title={`Peringatkan ${jumlah} siswa?`}
+        description="Siswa yang belum memulai quiz akan melihat peringatan selebar layar disertai bunyi sirene 2 detik di perangkat mereka."
+        confirmLabel="Kirim peringatan"
+        onConfirm={() => {
+          setBuka(false);
+          jalankan(() => warnQuizStudents(classId, quizId));
+        }}
+        onCancel={() => setBuka(false)}
+      />
+      <Pesan error={error} info={info} />
     </>
   );
 }

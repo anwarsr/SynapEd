@@ -6,6 +6,7 @@ import DeleteButton from "@/components/classes/DeleteButton";
 import ArsipButton from "@/components/classes/ArsipButton";
 import ReplyForm from "@/components/classes/ReplyForm";
 import Lampiran, { hrefLampiran } from "@/components/classes/Lampiran";
+import TeksBertaut from "@/components/classes/TeksBertaut";
 import GerbangModel3D from "@/components/classes/model3d/GerbangModel3D";
 import { hrefModel3D } from "@/lib/model3dRules";
 import { formatDate } from "@/lib/adminUsers";
@@ -26,7 +27,8 @@ const DISPLAY_KOSONG = {
  * satu panggilan getUserCards untuk SELURUH halaman. Membaca nama penulis di
  * dalam komponen ini berarti satu permintaan Auth per postingan.
  *
- * Isi postingan dirender sebagai TEKS POLOS (`whitespace-pre-line`), bukan
+ * Isi postingan dirender sebagai TEKS POLOS (`whitespace-pre-line`; hanya alamat web yang jadi tautan
+ * lewat `TeksBertaut`), bukan
  * markdown. Menafsirkan tulisan peserta sebagai markup adalah permukaan
  * serangan yang tidak dibayar oleh manfaat apa pun di tahap teks-saja ini.
  */
@@ -128,7 +130,7 @@ export default function PostFeed({
                     metadata yang menyertainya. */}
                 {post.body && (
                   <p className="mt-4 whitespace-pre-line break-words text-[15.5px] leading-[1.75] text-ink-body">
-                    {post.body}
+                    <TeksBertaut teks={post.body} />
                   </p>
                 )}
 
@@ -193,7 +195,7 @@ export default function PostFeed({
                                 </div>
 
                                 <p className="mt-1 whitespace-pre-line break-words text-sm leading-[1.7] text-ink-body">
-                                  {r.body}
+                                  <TeksBertaut teks={r.body} />
                                 </p>
 
                                 {bolehHapus && (

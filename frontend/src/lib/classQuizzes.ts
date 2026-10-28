@@ -173,3 +173,8 @@ export async function muatPapanPeringkat(quiz: Quiz, daftar: readonly PercobaanQ
     foto: kartu.get(b.uid)?.photoURL ?? null,
   }));
 }
+
+/** Peringatan terakhir per quiz: `classes/{id}/quizAlerts/{quizId}` (satu dokumen, ditimpa tiap kirim). */
+export function peringatanRef(classId: string) {
+  return classRef(classId).collection("quizAlerts");
+}

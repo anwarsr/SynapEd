@@ -11,15 +11,19 @@ import {
   hapusPercobaanQuiz,
   listPercobaan,
   listQuizzes,
+  peringatanRef,
   percobaanRef,
   quizzesRef,
   selesaikanBilaPerlu,
 } from "@/lib/classQuizzes";
+import { listClassMembers } from "@/lib/classes";
 import { formatWib } from "@/lib/classAssignmentRules";
 import {
   MAX_QUIZ_PER_KELAS,
   MAX_TAMBAH_MENIT,
   TOLERANSI_DETIK,
+  sisaJedaPeringatan,
+  toPeringatan,
   sudahDibuka,
   bersihkanJawaban,
   batasWaktuMs,
@@ -360,4 +364,34 @@ export async function submitQuiz(classId: string, quizId: string, answers: unkno
   if (hasil === "sudah") return { ok: false, error: "Quiz ini sudah dikumpulkan." };
   if (hasil === "habis") return { ok: false, error: "Waktu habis. Jawaban terakhir yang tersimpan sudah dikumpulkan otomatis." };
   return { ok: false, error: "Mulai quiz dulu." };
+}
+
+/**
+ * "Peringatkan murid": menyimpan peringatan untuk siswa yang BELUM memulai quiz.
+ * Siswa mengambilnya lewat /api/classes/quiz-alert (poll) dan layarnya ditutupi
+ * peringatan + sirene 2 detik. Hanya pengelola; sasaran dihitung SERVER saat ini
+ * (anggota tanpa percobaan), dan ada jeda antar kiriman supaya tak jadi teror.
+ */
+export async function warnQuizStudents(classId: string, quizId: string): Promise<QuizResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+  if (!(await requireOwnedClass(user, classId))) return { ok: false, error: "Anda tidak berhak mengubah quiz ini." };
+
+  const quiz = await getQuiz(classId, quizId);
+  if (!quiz || !quiz.published) return { ok: false, error: "Quiz tidak ditemukan atau belum diterbitkan." };
+  if (quiz.closed) return { ok: false, error: "Quiz sudah ditutup." };
+  const sekarang = Date.now();
+  if (!sudahDibuka(quiz, sekarang)) return { ok: false, error: "Quiz belum dibuka. Peringatan bisa dikirim setelah jadwal mulai." };
+
+  const ref = peringatanRef(classId).doc(quizId);
+  const lama = await ref.get();
+  const sisa = sisaJedaPeringatan(lama.exists ? toPeringatan(quizId, lama.data() ?? {}) : null, sekarang);
+  if (sisa > 0) return { ok: false, error: `Tunggu ${sisa} detik sebelum memperingatkan lagi.` };
+
+  const sudah = new Set((await listPercobaan(classId, quizId)).map((p) => p.uid));
+  const sasaran = (await listClassMembers(classId)).map((m) => m.uid).filter((uid) => !sudah.has(uid));
+  if (sasaran.length === 0) return { ok: false, error: "Semua siswa sudah memulai quiz ini." };
+
+  await ref.set({ at: new Date(sekarang).toISOString(), uids: sasaran, byUid: user.uid });
+  return { ok: true, message: `Peringatan dikirim ke ${sasaran.length} siswa.` };
 }

@@ -660,6 +660,28 @@ Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`
   mendarat, mahkota goyang; CSS `.podium-*`).
   KEMBANG API: bila PEMBACA adalah juara 1 (`rayakan`, dihitung server di `QuizTab`), tiap membuka papan menyalakan kanvas layar penuh
   ±5 dtk (`lib/kembangApi.ts`); satu pertunjukan sekaligus - membuka lagi saat masih berjalan TIDAK menumpuk/memulai baru; hemat gerak = tak tampil. WARNA bagian quiz HANYA keluarga biru (permintaan pemilik): tanpa amber/kuning/oranye kecuali gambar PIALA di pintu; balok podium, status, batang pantau, dan kembang api semuanya biru-putih. Isian angka di `.kelas-jakarta` tanpa panah spinner (CSS). Versi "tombol kecil + ruang memanjang" dan kolom `QuizPapanPeringkat` sudah dihapus.
+- **Tambahan Pantau (uji: `npm run verify:quiz-tambahan`, murni + dev server)**:
+  - **Analisis soal**: `analisisSoal(quiz, percobaan)` (rules, murni) menghitung dari percobaan TERKUMPUL saja, diurut
+    `persenSalah` menurun; MCQ = persen tiap opsi + `terbanyakId`, esai = rata-rata skor % (`persenSalah` esai = 100 - rata).
+    UI `quiz/AnalisisSoal.tsx` (server, biru; kunci ditandai "Kunci", terfavorit "Terbanyak").
+  - **Ekspor**: `GET /api/classes/quiz-export?class&quiz` (`requireOwnedClass`; 409 bila `alasanTakBisaEkspor`: tak ada yang
+    mengumpulkan / ada esai belum dinilai). Berkas dibuat `lib/xlsxMini.ts` (NETRAL; ZIP "stored" + CRC32 sendiri, `inlineStr`,
+    karakter kontrol XML dibuang; tanpa dependensi). Poin berupa ANGKA, belum mengerjakan = sel kosong (bukan 0). Tombol di Pantau
+    nonaktif + alasan bila belum boleh. Setiap XML baru harus tetap terbaca `extractOfficeText`.
+  - **Peringatkan murid**: `warnQuizStudents` (classQuizActions; pemilik/admin) menulis `classes/{id}/quizAlerts/{quizId}`
+    `{at, uids, byUid}` (sasaran = anggota TANPA percobaan saat itu; ditolak bila ditutup / belum dibuka / jeda
+    `JEDA_PERINGATAN_DETIK` 20 dtk). Siswa memoll `GET /api/classes/quiz-alert?class` (hanya anggota non-pemilik; jawaban hanya
+    untuk uid SESI, tanpa daftar sasaran) - lolos bila `peringatanBerlaku` (sasaran, belum mulai, quiz terbit/terbuka/tak ditutup,
+    dalam `MASA_PERINGATAN_DETIK` 120). Klien `quiz/PeringatanQuiz.tsx` (dipasang di `ClassRoom` untuk siswa dan di halaman quiz siswa
+    selama belum mulai): poll 8 dtk saat tab terlihat, layar penuh `z-[300]` + bilah selebar layar berdenyut (`.peringatan-bilah`),
+    sirene WebAudio 2 dtk; peramban boleh menahan suara sebelum ada sentuhan, jadi sirene dibunyikan pada sentuhan pertama bila tertahan.
+    Sudah-dilihat dicatat di localStorage `synaped_quiz_alert_<quizId>` = `at`.
+- **Tautan di teks pengumuman/tugas/balasan**: `lib/linkify.ts` (netral, `pecahTeksTautan`; hanya http(s)/www, menolak userinfo
+  & host tanpa titik, memangkas tanda baca ujung) + `classes/TeksBertaut.tsx` (`target=_blank`, `noopener noreferrer nofollow ugc`).
+  Isi tetap teks polos. Uji: `npm run verify:linkify`.
+- **Nama hidup di pengajuan**: `getApplication`/`listApplications` (educator.ts) dan `listRequests*` (courseRequests.ts) menimpa
+  nama/foto dengan data Auth saat ini (salinan dipakai bila akun terhapus), sehingga ganti nama oleh admin ikut tampil. Uji:
+  `npm run verify:admin-nama` (dev server).
 - **Halaman Pantau sengaja BERBEDA dari gaya kartu profil**: ruang kendali (angka besar "n / total", batang sebaran
   status, rata-rata), "lintasan" per siswa (batang waktu terpakai vs batas; batang bergaris-gerak `.pantau-garis` untuk yang
   sedang mengerjakan, amber bila waktu habis), dan garis waktu aktivitas bertitik. Tautan kembali = `BackLink`.

@@ -330,7 +330,8 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   tengah layar (layar diburamkan 2 detik). Roda tersimpan di peramban pengajar (tidak di server).
 - Di dalam kelas ada pengumuman/postingan dan balasan. Pengumuman boleh
   berlampiran berkas (atau berkas saja tanpa teks), dan isi serta lampirannya
-  bisa diedit setelah terbit.
+  bisa diedit setelah terbit. Alamat web (`https://…` / `www.…`) di isi pengumuman, tugas, dan balasan
+  otomatis menjadi tautan yang bisa diklik (dibuka di tab baru).
 - **Tema kustom** (profil → Pengaturan Laman → Tampilan → *Kustom*): selain Gelap & Terang, pengguna menyusun
   palet sendiri dari empat warna (Latar, Kartu, Teks, Aksen) lewat pemilih warna atau kode `#RRGGBB`, atau memulai
   dari contoh (Samudra, Hutan, Senja, Kertas, Es). Seluruh situs berubah seketika, bertahan setelah muat ulang
@@ -354,7 +355,10 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   quiz ditutup siswa melihat nilai & kunci jawaban. Setelah ada yang mengerjakan, soal terkunci
   (poin masih bisa diubah, nilai dihitung ulang). Halaman **Pantau** (dibuka dengan tombol *Pantau* pada tiap quiz, pengelola saja; bukan tab):
   siapa belum/sedang/sudah mengerjakan, jam mulai-selesai, lama, nilai, umpan aktivitas, nilai esai,
-  izinkan mengulang. Satu percobaan per siswa.
+  izinkan mengulang. Satu percobaan per siswa. Di Pantau juga ada: **Analisis soal** (soal mana paling banyak
+  tidak benar, jawaban paling banyak dipilih, kunci jawaban, semuanya dalam persen), **Ekspor spreadsheet**
+  (.xlsx berisi nama & poin, aktif setelah semua esai dinilai), dan **Peringatkan murid** (siswa yang belum
+  memulai melihat peringatan selebar layar + sirene 2 detik; ada jeda 20 detik antar kiriman).
 - **Arsip** (pengajar/admin): tombol *Arsipkan* di tiap pengumuman/tugas memindahkannya ke
   tab **Arsip** (di kanan tab Tugas; hanya pengelola yang melihatnya). Yang terarsip
   hilang total bagi siswa (umpan, daftar tugas, lampiran, balasan, pengumpulan baru) tetapi

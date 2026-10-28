@@ -100,7 +100,10 @@ export const PENGETAHUAN_SITUS = `## Akun
   batas waktu (habis waktu otomatis dikumpulkan) dan tambahan waktu. Siswa mengerjakan satu
   kali, tiap quiz punya papan peringkat 1-3 (nilai tertinggi, seri dipilih yang tercepat),
   dan kunci jawaban baru terbuka setelah pengajar menutup quiz. Pengajar memantau siswa lewat tombol Pantau
-  pada tiap quiz.
+  pada tiap quiz. Di halaman Pantau ada analisis soal (soal yang paling banyak salah, jawaban terbanyak,
+  kunci, dalam persen), ekspor spreadsheet nama dan poin (setelah semua esai dinilai), dan tombol
+  Peringatkan murid (siswa yang belum mengerjakan melihat peringatan layar penuh dengan bunyi sirene 2 detik).
+  Alamat web yang ditulis di pengumuman otomatis bisa diklik.
   Tampilan situs bisa Gelap, Terang, atau Kustom (profil, Pengaturan Laman): pengguna menyusun palet sendiri
   dari empat warna (latar, kartu, teks, aksen); pilihan tersimpan di perangkat itu saja.
   Quiz juga bisa diberi banner yang melatari judul dan deskripsinya.

@@ -484,6 +484,167 @@ export function peringkatTeratas(quiz: Pick<Quiz, "questions">, daftar: readonly
     .map(({ p, nilai, detik }) => ({ uid: p.uid, nilai, detik }));
 }
 
+// ── Peringatan untuk siswa yang belum mengerjakan ───────────────────────
+
+/** Jeda minimum antar peringatan pada quiz yang sama (detik) - mencegah teror ke siswa. */
+export const JEDA_PERINGATAN_DETIK = 20;
+/** Peringatan hanya tampil ke siswa bila dikirim dalam jangka ini (detik). */
+export const MASA_PERINGATAN_DETIK = 120;
+
+export interface PeringatanQuiz {
+  quizId: string;
+  /** ISO saat dikirim. */
+  at: string;
+  /** Siswa yang BELUM mengerjakan saat peringatan dikirim. */
+  uids: string[];
+}
+
+export function toPeringatan(id: string, d: Record<string, unknown>): PeringatanQuiz {
+  return {
+    quizId: id,
+    at: typeof d.at === "string" ? d.at : "",
+    uids: Array.isArray(d.uids) ? d.uids.filter((u): u is string => typeof u === "string") : [],
+  };
+}
+
+/** Sisa detik sebelum pengelola boleh mengirim lagi; 0 = boleh sekarang. */
+export function sisaJedaPeringatan(p: Pick<PeringatanQuiz, "at"> | null, sekarang: number): number {
+  const t = p ? Date.parse(p.at) : NaN;
+  if (!Number.isFinite(t)) return 0;
+  return Math.max(0, Math.ceil(JEDA_PERINGATAN_DETIK - (sekarang - t) / 1000));
+}
+
+/**
+ * Apakah peringatan ini harus ditampilkan ke siswa `uid` SEKARANG: ia termasuk
+ * sasaran, masih dalam masa tayang, quiz masih terbuka untuk dikerjakan, dan ia
+ * belum memulainya (sudah mulai = peringatannya sudah terjawab).
+ */
+export function peringatanBerlaku(
+  p: PeringatanQuiz,
+  quiz: Pick<Quiz, "published" | "closed" | "opensAt"> | null,
+  uid: string,
+  sudahMulai: boolean,
+  sekarang: number,
+): boolean {
+  const t = Date.parse(p.at);
+  if (!quiz || !quiz.published || quiz.closed || !sudahDibuka(quiz, sekarang)) return false;
+  if (!Number.isFinite(t) || sekarang < t || sekarang - t > MASA_PERINGATAN_DETIK * 1000) return false;
+  return p.uids.includes(uid) && !sudahMulai;
+}
+
+// ── Ekspor spreadsheet ──────────────────────────────────────────────────
+
+/**
+ * Ekspor boleh bila penilaian selesai: ada yang mengumpulkan dan tidak ada
+ * jawaban esai yang masih menunggu poin. Mengembalikan alasan penolakan atau null.
+ */
+export function alasanTakBisaEkspor(quiz: Pick<Quiz, "questions">, daftar: readonly PercobaanQuiz[]): string | null {
+  if (!daftar.some((p) => p.submittedAt)) return "Belum ada peserta yang mengumpulkan.";
+  const menunggu = daftar.filter((p) => statusQuizSiswa(quiz, p) === "perlu_dinilai").length;
+  if (menunggu > 0) return `${menunggu} jawaban esai belum dinilai.`;
+  return null;
+}
+
+export const JUDUL_EKSPOR = ["No", "Nama", "Poin", "Status"] as const;
+
+/**
+ * Baris lembar nilai: nama + poin (angka, bukan teks, supaya bisa dijumlah di
+ * spreadsheet). Urut poin tertinggi lalu nama; yang belum mengumpulkan di bawah
+ * dengan poin kosong - bukan 0, supaya tak tertukar dengan nilai nol sungguhan.
+ */
+export function barisEkspor(
+  quiz: Pick<Quiz, "questions">,
+  peserta: readonly { nama: string; p: PercobaanQuiz | null }[],
+): (string | number | null)[][] {
+  const urut = peserta
+    .map((x) => {
+      const status = statusQuizSiswa(quiz, x.p);
+      const poin = x.p?.submittedAt ? hitungNilai(quiz, x.p).total : null;
+      return { nama: x.nama, poin, status };
+    })
+    .sort((a, b) => (b.poin ?? -1) - (a.poin ?? -1) || a.nama.localeCompare(b.nama, "id"));
+  return [[...JUDUL_EKSPOR], ...urut.map((r, i) => [i + 1, r.nama, r.poin, LABEL_STATUS_QUIZ[r.status]])];
+}
+
+// ── Analisis soal ───────────────────────────────────────────────────────
+
+export interface AnalisisOpsi {
+  id: string;
+  teks: string;
+  jumlah: number;
+  /** 0..100, dibulatkan, terhadap jumlah peserta yang mengumpulkan. */
+  persen: number;
+  benar: boolean;
+}
+
+export interface AnalisisButir {
+  nomor: number;
+  id: string;
+  jenis: JenisSoal;
+  teks: string;
+  poin: number;
+  /** Peserta yang sudah mengumpulkan (penyebut semua persentase). */
+  peserta: number;
+  benar: number;
+  salah: number;
+  kosong: number;
+  /** Persen peserta yang TIDAK benar (salah + kosong). Esai: 100 - rata-rata skor %, bila ada yang dinilai. */
+  persenSalah: number;
+  /** Pilihan ganda: tiap opsi + berapa yang memilihnya. */
+  opsi: AnalisisOpsi[];
+  /** Opsi paling banyak dipilih (seri → urutan soal); null bila tak ada yang menjawab. */
+  terbanyakId: string | null;
+  /** Esai: rata-rata skor sebagai persen poin soal; null bila belum ada yang dinilai. */
+  rataSkorPersen: number | null;
+  /** Esai: jumlah jawaban yang sudah diberi poin. */
+  dinilai: number;
+}
+
+const persenDari = (n: number, dari: number) => (dari > 0 ? Math.round((n / dari) * 100) : 0);
+
+/**
+ * Soal mana yang paling sering salah, dari percobaan yang SUDAH terkumpul.
+ * Dihitung ulang dari jawaban + kunci sekarang (sama seperti `hitungNilai`),
+ * diurut dari yang paling banyak salah; seri → nomor soal.
+ */
+export function analisisSoal(quiz: Pick<Quiz, "questions">, daftar: readonly PercobaanQuiz[]): AnalisisButir[] {
+  const terkumpul = daftar.filter((p) => p.submittedAt);
+  const n = terkumpul.length;
+
+  return quiz.questions
+    .map((s, i): AnalisisButir => {
+      if (s.type === "essay") {
+        const skor = terkumpul.map((p) => p.essayScores[s.id]).filter((v): v is number => typeof v === "number");
+        const rata = skor.length > 0 && s.points > 0 ? Math.round((skor.reduce((a, v) => a + Math.min(Math.max(v, 0), s.points), 0) / skor.length / s.points) * 100) : null;
+        const kosong = terkumpul.filter((p) => !(p.answers[s.id] ?? "").trim()).length;
+        return {
+          nomor: i + 1, id: s.id, jenis: "essay", teks: s.text, poin: s.points, peserta: n,
+          benar: 0, salah: 0, kosong, persenSalah: rata === null ? 0 : 100 - rata,
+          opsi: [], terbanyakId: null, rataSkorPersen: rata, dinilai: skor.length,
+        };
+      }
+      const hitung = new Map<string, number>(s.options.map((o) => [o.id, 0]));
+      let benar = 0;
+      let kosong = 0;
+      for (const p of terkumpul) {
+        const j = p.answers[s.id];
+        if (j === undefined || !hitung.has(j)) kosong++;
+        else {
+          hitung.set(j, (hitung.get(j) ?? 0) + 1);
+          if (j === s.correct) benar++;
+        }
+      }
+      const opsi = s.options.map((o) => ({ id: o.id, teks: o.text, jumlah: hitung.get(o.id) ?? 0, persen: persenDari(hitung.get(o.id) ?? 0, n), benar: o.id === s.correct }));
+      const puncak = opsi.reduce<AnalisisOpsi | null>((a, o) => (o.jumlah > 0 && (!a || o.jumlah > a.jumlah) ? o : a), null);
+      return {
+        nomor: i + 1, id: s.id, jenis: "mcq", teks: s.text, poin: s.points, peserta: n,
+        benar, salah: n - benar - kosong, kosong, persenSalah: persenDari(n - benar, n),
+        opsi, terbanyakId: puncak?.id ?? null, rataSkorPersen: null, dinilai: 0,
+      };
+    })
+    .sort((a, b) => b.persenSalah - a.persenSalah || a.nomor - b.nomor);
+}
+
 // ── Normaliser (dipakai saat MEMBACA Firestore) ─────────────────────────
 
 function str(v: unknown, bawaan = ""): string {

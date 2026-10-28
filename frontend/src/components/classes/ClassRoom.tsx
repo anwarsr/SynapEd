@@ -11,6 +11,7 @@ import ArsipZona from "@/components/classes/ArsipZona";
 import KeluarkanAnggota from "@/components/classes/KeluarkanAnggota";
 import QuizTab from "@/components/classes/quiz/QuizTab";
 import PantauTab from "@/components/classes/quiz/PantauTab";
+import PeringatanQuiz from "@/components/classes/quiz/PeringatanQuiz";
 import JoinCodePanel from "@/components/classes/JoinCodePanel";
 import { ClassPlate } from "@/components/classes/ClassPlate";
 import { nadaKelas } from "@/lib/classColor";
@@ -151,6 +152,8 @@ export default function ClassRoom({
 
   return (
     <>
+      {/* Peringatan quiz dari pengajar: hanya siswa (anggota, bukan pemilik). */}
+      {isMember && !isOwner && <PeringatanQuiz classId={kelas.id} basePath={basePath} />}
       <section
         // Dengan banner, kepala dinaikkan sampai tepi atas layar (di panel educator main berbantalan pt-36)
         // supaya gambarnya tidak terpotong di belakang navbar; isi kepala tetap pada ketinggian semula.

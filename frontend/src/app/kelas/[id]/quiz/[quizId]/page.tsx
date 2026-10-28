@@ -16,6 +16,7 @@ import {
 import { formatWib } from "@/lib/classAssignmentRules";
 import { TOTAL_POIN, sisaDetik, sudahDibuka } from "@/lib/classQuizRules";
 import { requireUser } from "@/lib/firebase/session";
+import PeringatanQuiz from "@/components/classes/quiz/PeringatanQuiz";
 import type { Metadata } from "next";
 
 interface Props {
@@ -57,6 +58,8 @@ export default async function QuizSiswaPage({ params }: Props) {
   return (
     <>
       <Navbar />
+      {/* Belum mulai = masih bisa ditegur; yang sedang/sudah mengerjakan tak diganggu. */}
+      {p === null && <PeringatanQuiz classId={id} basePath={`/kelas/${id}`} />}
 
       <main className="kelas-jakarta min-h-screen font-medium bg-paper pb-28 pt-32">
         <div className="container-page">

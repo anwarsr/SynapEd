@@ -1,22 +1,29 @@
 import Link from "next/link";
 import UserAvatar from "@/components/ui/UserAvatar";
 import BackLink from "@/components/ui/BackLink";
+import AnalisisSoal from "@/components/classes/quiz/AnalisisSoal";
+import QuizIkon from "@/components/classes/quiz/QuizIkon";
 import {
   NilaiEsaiForm,
+  PeringatkanMuridButton,
   ResetPercobaanButton,
   SegarkanOtomatis,
   TambahWaktuForm,
   TutupBukaQuizButton,
 } from "@/components/classes/quiz/QuizAksi";
+import { TOMBOL_KOTAK } from "@/lib/quizUi";
 import { jamServer } from "@/lib/classAssignments";
 import { listPercobaan, listQuizzes, selesaikanSemua } from "@/lib/classQuizzes";
 import {
   LABEL_STATUS_QUIZ,
+  alasanTakBisaEkspor,
+  analisisSoal,
   durasiDetik,
   formatDurasi,
   hitungNilai,
   sisaDetik,
   statusQuizSiswa,
+  sudahDibuka,
   type PercobaanQuiz,
   type StatusQuizSiswa,
 } from "@/lib/classQuizRules";
@@ -128,6 +135,10 @@ export default async function PantauTab({
   const hitung = (s: StatusQuizSiswa) => baris.filter((b) => b.status === s).length;
   const selesai = baris.filter((b) => b.p?.submittedAt);
   const rata = selesai.length > 0 ? Math.round(selesai.reduce((n, b) => n + hitungNilai(quiz, b.p!).total, 0) / selesai.length) : null;
+  const belumMulai = baris.filter((b) => !b.p && !b.keluar).length;
+  const bisaPeringatkan = !quiz.closed && sudahDibuka(quiz, sekarang);
+  const alasanEkspor = alasanTakBisaEkspor(quiz, percobaan);
+  const analisis = analisisSoal(quiz, percobaan);
   const adaBerjalan = hitung("berlangsung") > 0 && !quiz.closed;
 
   const peristiwa = percobaan
@@ -185,12 +196,29 @@ export default async function PantauTab({
                   : "Tanpa batas waktu"}
                 {quiz.opensAt && ` · mulai ${jamWib(quiz.opensAt)} WIB`}
               </p>
-              <p className="flex flex-wrap items-center gap-x-5">
+              <div className="flex flex-wrap items-center gap-x-5">
                 {quiz.settings.durationMin !== null && !quiz.closed && (
                   <TambahWaktuForm classId={classId} quizId={quiz.id} uid={null} label="Tambah waktu semua" />
                 )}
                 <TutupBukaQuizButton classId={classId} quizId={quiz.id} ditutup={quiz.closed} />
-              </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2">
+                {bisaPeringatkan && <PeringatkanMuridButton classId={classId} quizId={quiz.id} jumlah={belumMulai} />}
+                {alasanEkspor === null ? (
+                  <a href={`/api/classes/quiz-export?class=${encodeURIComponent(classId)}&quiz=${encodeURIComponent(quiz.id)}`} download className={TOMBOL_KOTAK}>
+                    <QuizIkon nama="unduh" />
+                    Ekspor spreadsheet
+                  </a>
+                ) : (
+                  <span className="inline-flex flex-col gap-1">
+                    <span aria-disabled="true" className={`${TOMBOL_KOTAK} pointer-events-none opacity-45`}>
+                      <QuizIkon nama="unduh" />
+                      Ekspor spreadsheet
+                    </span>
+                    <span className="text-[11px] text-ink-muted">{alasanEkspor}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -351,6 +379,8 @@ export default async function PantauTab({
           )}
         </aside>
       </div>
+
+      <AnalisisSoal butir={analisis} peserta={selesai.length} />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import BackLink from "@/components/ui/BackLink";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Lampiran, { hrefLampiran } from "@/components/classes/Lampiran";
+import TeksBertaut from "@/components/classes/TeksBertaut";
 import { formatDate } from "@/lib/adminUsers";
 import { formatWib, lewatTenggat, pernahDiedit, ringkasFormat } from "@/lib/classAssignmentRules";
 import type { KelasPost } from "@/lib/classTypes";
@@ -91,7 +92,7 @@ export default function AssignmentDetail({
 
           {post.body ? (
             <p className="mt-6 whitespace-pre-line break-words text-[15.5px] leading-[1.75] text-ink-body">
-              {post.body}
+              <TeksBertaut teks={post.body} />
             </p>
           ) : (
             <p className="mt-6 text-sm text-ink-muted">Tidak ada instruksi tertulis.</p>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import ArsipButton from "@/components/classes/ArsipButton";
 import DeleteButton from "@/components/classes/DeleteButton";
 import Lampiran, { hrefLampiran } from "@/components/classes/Lampiran";
+import TeksBertaut from "@/components/classes/TeksBertaut";
 import { formatDate } from "@/lib/adminUsers";
 import type { KelasPost } from "@/lib/classTypes";
 
@@ -62,7 +63,9 @@ export default function ArsipZona({
 
                   <div className="px-3 pb-3">
                     {p.body && (
-                      <p className="whitespace-pre-line break-words text-[13.5px] leading-[1.7] text-ink-body">{p.body}</p>
+                      <p className="whitespace-pre-line break-words text-[13.5px] leading-[1.7] text-ink-body">
+                        <TeksBertaut teks={p.body} />
+                      </p>
                     )}
                     {p.model3d && (
                       <p className="mt-2 text-xs text-ink-muted">

@@ -2120,6 +2120,11 @@ html[data-theme="light"] {
 @keyframes pantau-denyut { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
 @media (prefers-reduced-motion: reduce) { .pantau-garis, .pantau-titik { animation: none; } }
 
+/* Peringatan quiz: bilah selebar layar berdenyut (hemat gerak = diam) */
+.peringatan-bilah { animation: peringatan-denyut 0.5s ease-in-out infinite alternate; }
+@keyframes peringatan-denyut { from { opacity: 1; } to { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .peringatan-bilah { animation: none; } }
+
 /* Seluruh teks laman kelas & quiz memakai Plus Jakarta Sans (satu keluarga font situs),
    termasuk isian/tombol/pilihan yang di sebagian peramban tak mewarisi font. */
 .kelas-jakarta, .kelas-jakarta :where(*) { font-family: var(--font-sans); }
