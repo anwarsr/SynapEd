@@ -18,6 +18,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  // Permintaan sopan agar tidak dipakai melatih AI (non-standar, dipatuhi sebagian perayap); lihat juga app/robots.ts.
+  other: { robots: "noai, noimageai" },
   title: "SynapEd – Platform Pembelajaran Online Terlengkap",
   description:
     "SynapEd – Platform pembelajaran online multi-disiplin. Belajar berbagai bidang ilmu secara terstruktur dan aplikatif.",

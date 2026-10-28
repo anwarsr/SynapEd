@@ -28,7 +28,7 @@ const points: Point[] = [
     num: "02",
     title: "Interaktif",
     desc: "Belajar melalui aktivitas dan kuis yang membuat materi lebih mudah dipahami.",
-    bg: "color-mix(in srgb, var(--color-paper) 90%, var(--color-blue-600))",
+    bg: "color-mix(in srgb, var(--color-deep) 50%, var(--color-paper-card))",
   },
   {
     num: "03",
@@ -299,26 +299,21 @@ function LearningPath({ open }: { open: boolean }) {
   );
 }
 
-/** Tangga warna Ticker: SATU rona biru (token blue-*) dengan kecerahan naik bertahap, jadi kata-kata
- *  berurutan terbaca sebagai satu proses (jawab → coba → diskusi → umpan balik) dan senada dengan
- *  panel 01 (garis blue-400) dan 03 (blue-300). Kata terakhir mengulang yang pertama agar putarannya mulus. */
-const TANGGA_BIRU = ["text-blue-200", "text-blue-300", "text-blue-400", "text-blue-500"] as const;
-
-/** 02 — papan kata berputar: kegiatan belajar bergantian naik ke tengah. */
+/** 02 — papan kata berputar: kegiatan belajar bergantian naik ke tengah. Palet sama dengan panel 01
+ *  dan 03: kata putih, hanya titik penutup yang biru (blue-400, seperti garis penanda panel 01). */
 function Ticker() {
   const items = ["Jawab kuis", "Coba langsung", "Diskusi kelas", "Dapat umpan balik"];
   const loop = [...items, items[0]];
 
   return (
     <div className="flex items-center gap-4">
-      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-300/80">Sambil</span>
-      <span aria-hidden="true" className="h-px w-8 bg-blue-400/60" />
-      <div className="h-[1.5em] overflow-hidden text-2xl font-bold tracking-tight sm:text-3xl" aria-hidden="true">
+      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/60">Sambil</span>
+      <div className="h-[1.5em] overflow-hidden text-2xl font-bold tracking-tight text-white sm:text-3xl" aria-hidden="true">
         <ul className="about-ticker">
           {loop.map((item, i) => (
-            <li key={i} className={cn("h-[1.5em] whitespace-nowrap leading-[1.5]", TANGGA_BIRU[i % TANGGA_BIRU.length])}>
+            <li key={i} className="h-[1.5em] whitespace-nowrap leading-[1.5]">
               {item}
-              <span className="text-blue-500">.</span>
+              <span className="text-blue-400">.</span>
             </li>
           ))}
         </ul>

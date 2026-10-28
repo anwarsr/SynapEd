@@ -661,10 +661,10 @@ Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`
   KEMBANG API: bila PEMBACA adalah juara 1 (`rayakan`, dihitung server di `QuizTab`), tiap membuka papan menyalakan kanvas layar penuh
   ±5 dtk (`lib/kembangApi.ts`); satu pertunjukan sekaligus - membuka lagi saat masih berjalan TIDAK menumpuk/memulai baru; hemat gerak = tak tampil. WARNA bagian quiz HANYA keluarga biru (permintaan pemilik): tanpa amber/kuning/oranye kecuali gambar PIALA di pintu; balok podium, status, batang pantau, dan kembang api semuanya biru-putih. Isian angka di `.kelas-jakarta` tanpa panah spinner (CSS). Versi "tombol kecil + ruang memanjang" dan kolom `QuizPapanPeringkat` sudah dihapus.
 - **About - warna & Sources (revisi)**: panel 02 memakai `color-mix(paper 90%, blue-600)` supaya tiga panel membentuk satu tangga rona biru
-  (01 `deep` gelap, 02 biru menengah, 03 `paper-card`); peraga Ticker diwarnai tangga biru `TANGGA_BIRU` (blue-200→500, satu rona,
-  kecerahan naik per kata) + label & garis biru. `Sources`: tanda "+" DIHAPUS; penjelasan poin = `text-xl font-semibold` (SAMA dengan
+  (01 `deep` gelap, 02 = titik tengah persis `deep`/`paper-card` (BUKAN dicampur biru: pernah terlalu biru), 03 `paper-card`); peraga Ticker =
+  kata putih + titik `blue-400`, sama seperti panel 01/03. `Sources`: tanda "+" DIHAPUS; penjelasan poin = `text-xl font-semibold` (SAMA dengan
   judul & nomor poin) dan tetap `text-blue-300`.
-- **Perlindungan kode & salin** (jujur soal batasnya: kode yang dikirim ke peramban selalu bisa diambil): (1) `next.config.ts` -
+- **Perlindungan kode & salin**; perayap AI diminta berhenti lewat `app/robots.ts` + meta `noai` (permintaan sopan, bukan penghalang) (jujur soal batasnya: kode yang dikirim ke peramban selalu bisa diambil): (1) `next.config.ts` -
   `productionBrowserSourceMaps:false`, `poweredByHeader:false`, header global (kecuali `/lab/python-worker.js`, yang punya CSP sendiri):
   `frame-ancestors 'self'` + `X-Frame-Options SAMEORIGIN` (situs tak bisa dibingkai), nosniff, Referrer-Policy, HSTS, COOP
   `same-origin-allow-popups` (popup Google/Midtrans tetap jalan), Permissions-Policy. CSP penuh SENGAJA tak dipasang (Midtrans Snap,
