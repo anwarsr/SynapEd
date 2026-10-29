@@ -110,6 +110,8 @@ export async function getUser(uid: string): Promise<AdminUserRow | null> {
 export function formatDate(iso: string | null): string {
   if (!iso) return "-";
   return new Intl.DateTimeFormat("id-ID", {
+    // WIB tetap: server App Hosting berjalan di UTC, tanpa ini jam bergabung geser 7 jam (06.31 WIB tampil 23.31).
+    timeZone: "Asia/Jakarta",
     dateStyle: "long",
     timeStyle: "short",
   }).format(new Date(iso));
@@ -124,5 +126,5 @@ export function formatDate(iso: string | null): string {
  */
 export function formatDateOnly(iso: string | null): string {
   if (!iso) return "-";
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date(iso));
+  return new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "long" }).format(new Date(iso));
 }

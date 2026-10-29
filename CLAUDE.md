@@ -539,6 +539,8 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
   props setiap kali dibuka — tanpa itu unggahan yang baru tersimpan hilang di simpanan
   berikutnya. `pernahDiedit` (> 1 menit) memberi tanda "diedit". `updateAssignment`
   (khusus tenggat) sudah DIHAPUS — jangan dihidupkan lagi; satu jalur edit saja.
+- **Setiap `Intl.DateTimeFormat`/`toLocale*` untuk waktu WAJIB `timeZone: "Asia/Jakarta"`**: server berjalan di UTC, tanpa itu jam geser 7 jam
+  (siswa yang bergabung 07.31 WIB tampil "00.31"). `formatDate`/`formatDateOnly` (adminUsers.ts), sertifikat, dan `joinedAtOf` sudah diperbaiki.
 - **WIB tetap** (`inputWibKeIso`, `isoKeInputWib`, `formatWib`): server App Hosting
   UTC. Komponen klien menerima waktu yang SUDAH diformat server (`waktuKirim`) —
   Intl Node vs browser bisa berbeda tanda baca → hydration mismatch.

@@ -1,7 +1,7 @@
 import type { Certificate } from "@/lib/certificates";
 
 function formatCertDate(iso: string): string {
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date(iso));
+  return new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "long" }).format(new Date(iso));
 }
 
 /** Hiasan sudut: dua garis siku yang saling menumpuk, diputar per sudut. */
