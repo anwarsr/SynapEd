@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { getUserCards } from "@/lib/userCards";
 
 export const APPLICATIONS = "educatorApplications";
 
@@ -34,10 +35,40 @@ function toApplication(id: string, data: FirebaseFirestore.DocumentData): Educat
   };
 }
 
+/**
+ * Nama & foto dibaca HIDUP dari Auth, bukan dari salinan di dokumen lamaran.
+ *
+ * Salinan itu dibuat sekali saat mengajukan dan tak pernah ikut berubah: admin
+ * (atau pemilik akun) yang mengganti nama membuat daftar pengajuan tetap
+ * memajang nama lama. Akun yang sudah dihapus tidak punya kartu, jadi salinannya
+ * dipertahankan. Nama admin pemutus (`decidedByName`) diperlakukan sama.
+ */
+async function denganIdentitasHidup(daftar: EducatorApplication[]): Promise<EducatorApplication[]> {
+  if (daftar.length === 0) return daftar;
+  const uids = new Set<string>();
+  for (const a of daftar) {
+    uids.add(a.uid);
+    if (a.decidedByUid) uids.add(a.decidedByUid);
+  }
+  const kartu = await getUserCards([...uids]);
+
+  return daftar.map((a) => {
+    const diri = kartu.get(a.uid);
+    const pemutus = a.decidedByUid ? kartu.get(a.decidedByUid) : undefined;
+    return {
+      ...a,
+      name: diri?.name ?? a.name,
+      photoURL: diri ? diri.photoURL : a.photoURL,
+      decidedByName: pemutus?.name ?? a.decidedByName,
+    };
+  });
+}
+
 export async function getApplication(uid: string): Promise<EducatorApplication | null> {
   const snap = await adminDb().collection(APPLICATIONS).doc(uid).get();
   const data = snap.data();
-  return data ? toApplication(snap.id, data) : null;
+  if (!data) return null;
+  return (await denganIdentitasHidup([toApplication(snap.id, data)]))[0];
 }
 
 /**
@@ -50,8 +81,7 @@ export async function getApplication(uid: string): Promise<EducatorApplication |
 export async function listApplications(): Promise<EducatorApplication[]> {
   const snap = await adminDb().collection(APPLICATIONS).get();
 
-  return snap.docs
-    .map((d) => toApplication(d.id, d.data()))
+  return (await denganIdentitasHidup(snap.docs.map((d) => toApplication(d.id, d.data()))))
     .sort((a, b) => {
       if ((a.status === "pending") !== (b.status === "pending")) {
         return a.status === "pending" ? -1 : 1;

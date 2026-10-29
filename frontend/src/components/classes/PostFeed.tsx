@@ -1,9 +1,17 @@
+import Link from "next/link";
 import AvatarMini from "@/components/profile/AvatarMini";
 import ProfileLink from "@/components/ui/ProfileLink";
 import Reveal from "@/components/ui/Reveal";
 import DeleteButton from "@/components/classes/DeleteButton";
+import ArsipButton from "@/components/classes/ArsipButton";
 import ReplyForm from "@/components/classes/ReplyForm";
+import Lampiran, { hrefLampiran } from "@/components/classes/Lampiran";
+import TeksBertaut from "@/components/classes/TeksBertaut";
+import GerbangModel3D from "@/components/classes/model3d/GerbangModel3D";
+import { hrefModel3D } from "@/lib/model3dRules";
 import { formatDate } from "@/lib/adminUsers";
+import EditPost from "@/components/classes/EditPost";
+import { formatWib, pernahDiedit, ringkasFormat } from "@/lib/classAssignmentRules";
 import type { KelasPost, KelasReply } from "@/lib/classTypes";
 import type { UserCard } from "@/lib/userCards";
 
@@ -19,12 +27,14 @@ const DISPLAY_KOSONG = {
  * satu panggilan getUserCards untuk SELURUH halaman. Membaca nama penulis di
  * dalam komponen ini berarti satu permintaan Auth per postingan.
  *
- * Isi postingan dirender sebagai TEKS POLOS (`whitespace-pre-line`), bukan
+ * Isi postingan dirender sebagai TEKS POLOS (`whitespace-pre-line`; hanya alamat web yang jadi tautan
+ * lewat `TeksBertaut`), bukan
  * markdown. Menafsirkan tulisan peserta sebagai markup adalah permukaan
  * serangan yang tidak dibayar oleh manfaat apa pun di tahap teks-saja ini.
  */
 export default function PostFeed({
   classId,
+  basePath,
   posts,
   repliesByPost,
   cards,
@@ -35,6 +45,8 @@ export default function PostFeed({
   canReply,
 }: {
   classId: string;
+  /** Akar rute kelas, untuk tautan ke halaman tugas. */
+  basePath: string;
   posts: readonly KelasPost[];
   repliesByPost: ReadonlyMap<string, KelasReply[]>;
   cards: ReadonlyMap<string, UserCard>;
@@ -73,7 +85,7 @@ export default function PostFeed({
         return (
           <li key={post.id}>
             <Reveal delay={i * 90}>
-              <article className="bg-paper-card p-6 transition-all duration-200 ease-out-soft hover:bg-card-hover">
+              <article className="bg-paper-card p-6">
                 <div className="flex flex-wrap items-center gap-3">
                   <AvatarMini uid={post.authorUid} name={nama} photoURL={penulis?.photoURL ?? null} />
 
@@ -85,21 +97,63 @@ export default function PostFeed({
                     {nama}
                   </ProfileLink>
 
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-blue-300">Pengajar</span>
+                  <span className="text-[12px] font-bold uppercase tracking-[0.28em] text-blue-300">Pengajar</span>
+                  {post.kind === "assignment" && <span className="text-[12px] font-bold uppercase tracking-[0.28em] text-white/55">Tugas</span>}
 
                   <span className="ml-auto text-[13px] text-ink-muted">
                     {formatDate(post.createdAt)}
+                    {pernahDiedit(post) && <span className="italic"> · diedit</span>}
                   </span>
                 </div>
 
+                {post.kind === "assignment" && post.assignment && (
+                  <Link
+                    href={`${basePath}/tugas/${post.id}`}
+                    className="group mt-4 block bg-white/[0.06] px-5 py-4 shadow-[inset_3px_0_0_var(--color-blue-500)]"
+                  >
+                    <span className="block text-[17px] font-semibold text-ink">
+                      {post.title}
+                    </span>
+                    <span className="mt-1 block text-[13px] text-ink-muted">
+                      {post.assignment.dueAt ? `Tenggat ${formatWib(post.assignment.dueAt)}` : "Tanpa tenggat"}
+                      {" · "}
+                      {ringkasFormat(post.assignment.formats)}
+                    </span>
+                    <span className="mt-3 inline-flex items-center gap-2 bg-blue-600 px-4 py-2 text-[13px] font-semibold text-[#fff]">
+                      Buka tugas
+                      <span aria-hidden="true" className="transition-transform duration-300 ease-warm group-hover:translate-x-1">→</span>
+                    </span>
+                  </Link>
+                )}
+
                 {/* 15.5px, bukan 14px: ini badan tulisan pengajar, bukan
                     metadata yang menyertainya. */}
-                <p className="mt-4 whitespace-pre-line break-words text-[15.5px] leading-[1.75] text-ink-body">
-                  {post.body}
-                </p>
+                {post.body && (
+                  <p className="mt-4 whitespace-pre-line break-words text-[15.5px] leading-[1.75] text-ink-body">
+                    <TeksBertaut teks={post.body} />
+                  </p>
+                )}
+
+                {post.model3d && (
+                  <GerbangModel3D
+                    className="mt-4"
+                    judul={post.model3d.title}
+                    url={hrefModel3D(classId, post.id, post.updatedAt)}
+                    nama={post.model3d.file.name}
+                    annotations={post.model3d.annotations}
+                  />
+                )}
+
+                <Lampiran
+                  files={post.attachments}
+                  hrefs={post.attachments.map((_, j) => hrefLampiran(classId, post.id, j))}
+                  className="mt-4"
+                />
 
                 {canModerate && (
-                  <div className="mt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <EditPost classId={classId} post={post} />
+                    <ArsipButton classId={classId} postId={post.id} arsip={false} />
                     <DeleteButton target={{ kind: "post", classId, postId: post.id }} />
                   </div>
                 )}
@@ -141,7 +195,7 @@ export default function PostFeed({
                                 </div>
 
                                 <p className="mt-1 whitespace-pre-line break-words text-sm leading-[1.7] text-ink-body">
-                                  {r.body}
+                                  <TeksBertaut teks={r.body} />
                                 </p>
 
                                 {bolehHapus && (

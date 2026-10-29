@@ -241,3 +241,30 @@ export function isActive(enrollment: Enrollment, now = new Date()): boolean {
   if (enrollment.expiresAt === null) return true;
   return new Date(enrollment.expiresAt) > now;
 }
+
+/**
+ * Pendaftaran untuk educator/admin yang belajar di kursus yang boleh mereka
+ * buka tanpa mendaftar (kursus buatan sendiri, atau admin di kursus mana pun).
+ *
+ * Tujuannya hanya agar kemajuan, kuis, dan sertifikat mereka tercatat seperti
+ * peserta lain. Beda dari `writeEnrollment`: `enrolledStudents` TIDAK dinaikkan,
+ * supaya angka "peserta" tetap jumlah pembelajar sungguhan dan pemilik tidak
+ * mengerek angka kursusnya sendiri. Idempoten: sudah ada = tidak berbuat apa-apa.
+ * Mengembalikan dokumen yang berlaku (yang sudah ada, atau yang baru dibuat).
+ */
+export async function pastikanEnrollmentStaf(course: CourseDetail, uid: string): Promise<Enrollment> {
+  const existing = await getEnrollment(uid, course.slug);
+  if (existing) return existing;
+
+  const baru = newEnrollment(uid, course, "granted", 0, null);
+  try {
+    await enrollmentRef(uid, course.slug).create(baru);
+    return baru;
+  } catch (err) {
+    // Dua tab membuka bersamaan: yang kalah membaca dokumen pemenang.
+    if ((err as { code?: unknown }).code === 6) {
+      return (await getEnrollment(uid, course.slug)) ?? baru;
+    }
+    throw err;
+  }
+}

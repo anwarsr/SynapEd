@@ -404,7 +404,7 @@ export default function NdBoard({
                   key={m.label}
                   type="button"
                   onClick={() => onMulai(m.op)}
-                  className="lab-fade-up rounded-full   bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:"
+                  className="lab-fade-up bg-white/[0.06] px-5 py-2.5 text-[13px] font-semibold tracking-[0.02em] text-ink-body transition-colors duration-300 ease-out-soft hover:bg-white/10 hover:text-white hover:shadow-[inset_0_-2px_0_var(--color-blue-500)]"
                   style={{ "--d": `${120 + i * 70}ms` } as React.CSSProperties}
                 >
                   {m.label}

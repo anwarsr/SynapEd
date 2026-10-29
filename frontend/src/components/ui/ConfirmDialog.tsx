@@ -58,7 +58,7 @@ export default function ConfirmDialog({
       aria-describedby="confirm-desc"
       className={cn(
         "dialog-panel m-auto w-[min(28rem,calc(100vw-2rem))] p-0",
-        "bg-paper-card border border-rule rounded-2xl shadow-lift",
+        "bg-paper-card shadow-lift",
         "text-ink",
       )}
     >
@@ -72,7 +72,7 @@ export default function ConfirmDialog({
         </p>
 
         {note && (
-          <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-100 px-4 py-3 text-sm text-amber-700">
+          <p className="mt-4 bg-amber-100 px-4 py-3 text-sm text-amber-700">
             {note}
           </p>
         )}
@@ -83,13 +83,13 @@ export default function ConfirmDialog({
           <button
             autoFocus
             onClick={onCancel}
-            className="rounded-lg border border-rule px-5 py-2.5 text-sm font-medium text-ink-body transition-colors duration-200 ease-out-soft hover:border-blue-500 hover:text-blue-700"
+            className="bg-white/[0.07] px-5 py-2.5 text-sm font-semibold text-ink transition-colors duration-300 hover:bg-white/[0.14]"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 ease-out-soft hover:bg-blue-700 hover:-translate-y-0.5"
+            className="bg-blue-600 px-6 py-2.5 text-sm font-semibold text-[#fff] transition-colors duration-300 hover:bg-blue-700"
           >
             {confirmLabel}
           </button>

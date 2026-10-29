@@ -306,7 +306,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
                     <span className="mt-auto block pt-5 text-left">
                       <span className="block bg-white/[0.04] px-4 py-3 shadow-[inset_3px_0_0_var(--color-blue-500)]">
                         <span className="block text-[10px] font-semibold uppercase tracking-[0.26em] text-blue-300">
-                          Balasan {t.reply.by}
+                          Balasan
                         </span>
                         <span className="mt-1.5 line-clamp-2 block text-[12.5px] leading-[1.6] text-ink-muted">
                           {t.reply.body}
@@ -364,7 +364,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
                 type="button"
                 onClick={() => setMini(true)}
                 aria-label={`Lihat profil ${current.name}`}
-                className="relative rounded-full transition-transform duration-300 ease-warm hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                className="foto-link relative rounded-full focus-visible:outline-none"
               >
                 <UserAvatar
                   name={current.name}
@@ -419,7 +419,7 @@ export default function Testimonials({ items }: { items: readonly TestimonialIte
 
             {current.reply && selesaiMengetik && (
               <div className="mini-masuk mt-6 bg-white/[0.04] px-5 py-4 text-left shadow-[inset_3px_0_0_var(--color-blue-500)]">
-                <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan {current.reply.by}</p>
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-blue-300">Balasan</p>
                 <p className="mt-2 whitespace-pre-line break-words text-sm leading-[1.7] text-ink-body">{current.reply.body}</p>
               </div>
             )}

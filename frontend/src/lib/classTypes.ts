@@ -10,7 +10,10 @@
  * halaman yang gagal dikompilasi dengan pesan tentang `node-fetch`.
  *
  * Pola yang sama sudah dipakai courseRequestTypes.ts dan profileTypes.ts.
+ * Aturan tugas (format, tenggat, nilai) tinggal di classAssignmentRules.ts.
  */
+import type { JenisPost, KelasBerkas, PengaturanTugas } from "./classAssignmentRules";
+import type { Model3D } from "./model3dRules";
 
 /** Batas panjang, diperiksa ulang di server — bukan hanya di formulir. */
 export const MAX_CLASS_NAME = 80;
@@ -25,6 +28,8 @@ export interface Kelas {
   ownerUid: string;
   /** Foto profil kelas (URL Storage, `avatars/{uid}/class-*.jpg`); null = tanpa foto, jatuh ke inisial. */
   imageURL: string | null;
+  /** Banner lebar di kepala ruang kelas (URL Storage, `avatars/{uid}/class-*.jpg`); null = tanpa banner. */
+  bannerURL: string | null;
   /**
    * Kode undangan. RAHASIA — setara kunci pintu.
    *
@@ -51,7 +56,21 @@ export interface KelasPost {
   id: string;
   classId: string;
   authorUid: string;
+  /** Postingan dari sebelum fitur tugas tidak punya field ini → pengumuman. */
+  kind: JenisPost;
+  /** Judul tugas. Pengumuman tidak berjudul (string kosong). */
+  title: string;
   body: string;
+  attachments: KelasBerkas[];
+  /** Objek 3D interaktif berketerangan; hanya pengumuman. null = tanpa objek. */
+  model3d: Model3D | null;
+  /**
+   * Diarsipkan pengajar: hilang dari umpan & daftar tugas, tak terlihat siswa
+   * sama sekali (tanpa balasan/pengumpulan baru), dan tampil di zona Arsip pengelola.
+   */
+  archived: boolean;
+  /** Hanya terisi bila `kind === "assignment"`. */
+  assignment: PengaturanTugas | null;
   replyCount: number;
   createdAt: string;
   updatedAt: string;

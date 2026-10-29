@@ -37,7 +37,7 @@ export default function AvatarMini({
         type="button"
         onClick={() => setBuka(true)}
         aria-label={`Lihat profil ${name}`}
-        className="shrink-0 rounded-full transition-transform duration-300 ease-warm hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+        className="foto-link shrink-0 rounded-full focus-visible:outline-none"
       >
         <UserAvatar name={name} photoURL={photoURL} size={size} className={className} />
       </button>

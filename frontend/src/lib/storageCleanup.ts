@@ -2,6 +2,8 @@ import "server-only";
 import { adminStorage } from "@/lib/firebase/admin";
 import {
   AVATARS,
+  CLASS_FILES,
+  CLASS_SUBMISSION_FILES,
   COURSE_ASSETS,
   COURSE_THUMBNAILS,
   SUBMISSION_FILES,
@@ -46,12 +48,17 @@ import type { Section } from "@/lib/courses";
  *
  * `payment-proofs/` SENGAJA tidak masuk: bukti bayar adalah catatan
  * transaksi yang harus bisa ditelusuri kembali, bukan berkas sementara.
+ *
+ * `class-files/` dan `class-submissions/` ikut karena menghapus postingan,
+ * membatalkan pengiriman, atau menghapus kelas harus ikut membuang berkasnya.
  */
 const MANAGED_PREFIXES = [
   `${COURSE_ASSETS}/`,
   `${COURSE_THUMBNAILS}/`,
   `${AVATARS}/`,
   `${SUBMISSION_FILES}/`,
+  `${CLASS_FILES}/`,
+  `${CLASS_SUBMISSION_FILES}/`,
 ];
 
 export function isManagedPath(path: unknown): path is string {

@@ -11,6 +11,8 @@ import {
   type KelasPublik,
   type KelasReply,
 } from "@/lib/classTypes";
+import { toBerkasList, toPengaturan } from "@/lib/classAssignmentRules";
+import { toModel3D } from "@/lib/model3dRules";
 
 // Diekspor ulang supaya modul server cukup mengimpor dari satu tempat.
 export * from "@/lib/classTypes";
@@ -33,6 +35,7 @@ function toKelas(id: string, d: FirebaseFirestore.DocumentData): Kelas {
     description: (d.description as string | undefined) ?? "",
     ownerUid: (d.ownerUid as string | undefined) ?? "",
     imageURL: typeof d.imageURL === "string" && d.imageURL ? d.imageURL : null,
+    bannerURL: typeof d.bannerURL === "string" && d.bannerURL ? d.bannerURL : null,
     joinCode: (d.joinCode as string | undefined) ?? "",
     memberCount: (d.memberCount as number | undefined) ?? 0,
     postCount: (d.postCount as number | undefined) ?? 0,
@@ -52,11 +55,18 @@ function toMember(id: string, d: FirebaseFirestore.DocumentData): KelasMember {
 }
 
 function toPost(id: string, d: FirebaseFirestore.DocumentData): KelasPost {
+  const kind = d.kind === "assignment" ? "assignment" : "announcement";
   return {
     id,
     classId: (d.classId as string | undefined) ?? "",
     authorUid: (d.authorUid as string | undefined) ?? "",
+    kind,
+    title: (d.title as string | undefined) ?? "",
     body: (d.body as string | undefined) ?? "",
+    attachments: toBerkasList(d.attachments),
+    model3d: kind === "announcement" ? toModel3D(d.model3d) : null,
+    archived: d.archived === true,
+    assignment: kind === "assignment" ? toPengaturan(d.assignment) : null,
     replyCount: (d.replyCount as number | undefined) ?? 0,
     createdAt: (d.createdAt as string | undefined) ?? "",
     updatedAt: (d.updatedAt as string | undefined) ?? "",

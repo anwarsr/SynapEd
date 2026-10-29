@@ -28,7 +28,7 @@ const points: Point[] = [
     num: "02",
     title: "Interaktif",
     desc: "Belajar melalui aktivitas dan kuis yang membuat materi lebih mudah dipahami.",
-    bg: "var(--color-paper)",
+    bg: "color-mix(in srgb, var(--color-deep) 50%, var(--color-paper-card))",
   },
   {
     num: "03",
@@ -299,7 +299,8 @@ function LearningPath({ open }: { open: boolean }) {
   );
 }
 
-/** 02 — papan kata berputar: kegiatan belajar bergantian naik ke tengah. */
+/** 02 — papan kata berputar: kegiatan belajar bergantian naik ke tengah. Palet sama dengan panel 01
+ *  dan 03: kata putih, hanya titik penutup yang biru (blue-400, seperti garis penanda panel 01). */
 function Ticker() {
   const items = ["Jawab kuis", "Coba langsung", "Diskusi kelas", "Dapat umpan balik"];
   const loop = [...items, items[0]];
@@ -326,7 +327,7 @@ function Ticker() {
  *  Penjelasan HANYA muncul saat poinnya ditekan, dan keluar dari ujung teks
  *  poin itu sendiri (melebar ke kanan sambil bergeser keluar & memudar masuk).
  *  Tekan lagi untuk menutup; menekan poin lain memindahkan penjelasan.
- *  Judul & penjelasan Plus Jakarta Sans; nomor font mono. */
+ *  Judul, penjelasan, dan nomor sama ukuran & gaya (text-xl semibold, Plus Jakarta Sans); penjelasan biru. */
 function Sources({ open }: { open: boolean }) {
   const rows = [
     { k: "Jurnal", note: "artikel ilmiah yang ditelaah sejawat" },
@@ -336,7 +337,7 @@ function Sources({ open }: { open: boolean }) {
   const [sel, setSel] = useState<number | null>(null);
 
   return (
-    <ul className="about-pop max-w-xl font-sans" style={{ "--d": "900ms" } as React.CSSProperties}>
+    <ul className="about-pop max-w-2xl font-sans" style={{ "--d": "900ms" } as React.CSSProperties}>
       {rows.map((r, i) => {
         const on = open && sel === i;
 
@@ -365,24 +366,14 @@ function Sources({ open }: { open: boolean }) {
                 <span
                   aria-hidden={!on}
                   className={cn(
-                    "overflow-hidden whitespace-nowrap text-sm text-blue-200 transition-[max-width,opacity,transform] duration-700 ease-warm motion-reduce:transition-none",
-                    on ? "max-w-80 translate-x-0 opacity-100" : "max-w-0 -translate-x-3 opacity-0",
+                    "overflow-hidden whitespace-nowrap text-xl font-semibold text-blue-300 transition-[max-width,opacity,transform] duration-700 ease-warm motion-reduce:transition-none",
+                    on ? "max-w-[30rem] translate-x-0 opacity-100" : "max-w-0 -translate-x-3 opacity-0",
                   )}
                 >
                   {r.note}
                 </span>
               </span>
 
-              {/* Petunjuk bisa ditekan: plus yang berputar jadi silang saat terbuka */}
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "ml-4 text-lg leading-none text-white/35 transition-transform duration-500 ease-warm group-hover/row:text-white/70",
-                  on && "rotate-45",
-                )}
-              >
-                +
-              </span>
             </button>
           </li>
         );

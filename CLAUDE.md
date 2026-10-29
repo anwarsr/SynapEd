@@ -13,6 +13,10 @@ Firestore, aturan bisnis, skrip, variabel lingkungan, atau langkah deploy
 
 - `README.md` — bahasa manusia: apa fiturnya, siapa memakainya, cara menjalankan.
 - `CLAUDE.md` (berkas ini) — detail teknis, invarian, jebakan, peta berkas.
+- `frontend/src/lib/chatKnowledge.ts` — pengetahuan Asisten SynapEd, kalau
+  perubahannya terlihat pengguna (asisten hanya tahu apa yang tertulis di
+  sana). Halaman baru/berubah alamat juga didaftarkan di `chatLinks.ts`;
+  `npm run verify:chat-knowledge` memerah sampai itu dilakukan.
 
 Kalau menemukan isi yang sudah tidak sesuai kode, betulkan saat itu juga.
 Sebutkan pembaruan dokumen ini di ringkasan akhir pekerjaan.
@@ -163,6 +167,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   Banner TIDAK disalin ke dokumen ulasan: `listFeaturedReviews` meng-join-nya dari `users`
   (`getBannerURLs`, satu getAll) sehingga ganti banner langsung tampil di komentar lama.
   Kartu komentar & dialog: banner di atas, foto profil menumpang tepi bawahnya.
+- **Tautan sekunder navbar** (Kursus Saya/Kelas Saya/Dashboard, konstanta `PIL`): teks polos TANPA kotak; hover = garis tipis melebar dari tengah di bawah kata + huruf merenggang (`.nav-aksi`). **Foto profil yang bisa diklik** (`.foto-link`: tombol `AvatarMini`, foto navbar, tautan foto `ProfileLink secondary`, foto dialog komentar): saat hover/fokus tergambar garis melingkar (`conic-gradient` dengan sudut `--sudut` ber-`@property` 0→360deg, dilubangi `mask` radial). Pembungkusnya WAJIB bulat & seukuran foto; foto yang bukan tautan tak diberi kelas ini.
 - **Navbar**: kapsul kaca pil (`bg-[#0B1A24]/35` → `/85` + bayangan saat scroll), tanpa garis tepi;
   penanda tautan aktif = garis kecil biru di bawah kata (bukan keping berlatar); tombol
   sekunder = pil `bg-white/10`. Seluruh situs gelap, jadi tak ada varian terang.
@@ -175,6 +180,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 - **/dashboard** (pendapatan): tanpa label "Akun Saya"; kartu/tabel persegi tanpa border, statistik dipisah celah 4px.
 - **Halaman profil** tanpa border/radius (kartu `bg-paper-card`, hover `#16324A`); `Tag`
   amber/rust kini tint transparan + teks terang (bukan kotak krem/oranye pucat).
+- **Filter jenis materi di beranda** (`Courses.tsx`): maksimal 5 kotak (`MAKS_JENIS`, termasuk "Semua Materi"); bila kategori lebih banyak, kotak ke-6 = tautan "Jenis Lain" ke `/courses`.
+- **Ruang belajar** (`LearnShell.tsx`): bilah atas = tautan "Keluar dari kelas" kapital kecil + garis pemisah tipis + judul kursus + bilah kemajuan 3px & persen. Daftar Materi TANPA ikon di kiri tiap pelajaran (begitu juga daftar kurikulum di detail kursus, `CurriculumList`; pelajaran selesai ditandai teks "Selesai ·" di dekat durasi). Tombol "Tandai Selesai" (`LessonCompleteButton`) ada di baris navigasi bawah, tepat di samping kartu "Berikutnya" (bukan di daftar materi; tidak ada untuk penugasan/kuis). Educator/admin juga punya dokumen pendaftaran: halaman belajar memanggil `pastikanEnrollmentStaf` (enrollments.ts; `source: granted`, idempoten, TANPA menaikkan `enrolledStudents`) saat mereka membuka kursus yang boleh dibuka tanpa mendaftar (milik sendiri / admin), sehingga kemajuan, kuis, dan sertifikat mereka tercatat dan tombol tampil seperti peserta biasa. Konsekuensi: mereka muncul di daftar siswa `/educator/courses/[slug]/students`.
+- **Sertifikat** (`certificates/CertificateCard.tsx`, dipakai `/dashboard/certificates/[id]` & `/verify/[id]`): selalu terang (`theme-day` dipasang di kartunya sendiri, jangan dibungkus lagi di halaman; JANGAN pakai `text-white`, di tema terang situs token itu terbalik). Bingkai ganda (biru + garis rambut `amber-700`), hiasan siku di empat sudut, logo `logotext.png` di atas (kanvasnya persegi berruang kosong, dipangkas dengan margin negatif), nama pemegang besar biru, pemisah belah ketupat, meterai SVG bertulisan melingkar merata (`textLength`), nama instruktur & nomor di kiri-kanannya (garis tanda tangan DIHAPUS atas permintaan pemilik, jangan dikembalikan), semburat biru tipis di atas. `printColorAdjust: exact` supaya warna ikut tercetak.
 - **Katalog /courses**: `CourseCatalog` (client) — bilah cari pil (judul, deskripsi, kategori,
   pengajar) + tombol Filter (jenis kursus + batas rating) yang membuka panel; penyaringan di
   browser terhadap daftar yang sudah dimuat server. Kartu = `CourseCard` (kotak tanpa border,
@@ -227,13 +235,14 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   DIHAPUS atas permintaan pemilik - jangan dikembalikan tanpa diminta.
 - **Dashboard untuk educator/admin** (`/dashboard`): selain kursus/kelas yang DIIKUTI, ada "Kursus yang Dibuat" (`listOwnedCourses` + `CreatedCourses own kelola`) dan "Kelas yang Dibuat" (`listOwnedClasses` + `ClassCard peran="Pengajar"`), plus dua angka ringkasan. `CreatedCourses` = "buku besar" tanpa ikon (nomor tipis-besar, judul, peserta sebagai angka utama, baris selang-seling menjorok, garis biru tumbuh saat hover); HANYA dipakai dashboard; profil memakai `OwnedCourses` (kartu berikon, DIKEMBALIKAN seperti semula atas permintaan pemilik, begitu juga tulisan peran & "Tentang Educator"). `/kelas` & `/educator/classes` memakai kepala yang sama dengan dashboard (judul besar, tanpa pita/ "Panel Educator"/tautan "buka panel educator"). Features: pencampuran cincin↔barisan memakai smoothstep + lerp 0,06, kartu bayangan baru terlihat saat `flat` > 0,55 (dulu tampak bertumpuk setengah transparan saat kembali ke cincin).
 - **Admin = educator + fitur admin**: `requireEducator` (session.ts), `createClass`, dan `requireEducator` di courseActions kini meloloskan `admin`; Navbar menampilkan "Kursus Saya"/"Kelas Saya" juga untuk admin. `AdminShell` (client) = `Navbar` + `Footer` beranda + sub-navigasi teks (`NAV`, lencana kotak amber, garis biru tumbuh untuk tautan aktif); halaman & komponen `admin/` diratakan massal (tanpa `rounded-*`/`border border-rule`, kartu = `bg-paper-card`, aksen kiri `shadow-[inset_3px_0_0_…]` untuk kartu peringatan, judul `h1` besar tanpa `.mark`).
+- **Roda pemilih** (`/educator/classes/[id]/wheel`, `WheelBoard.tsx`, logika netral `lib/wheel.ts`, `scripts/verify-wheel.ts`): judul halaman = `SectionTitle` di tengah; pintasan kotak kecil (hanya tulisan "Roda pemilih →", tanpa keterangan) di bawah `JoinCodePanel` (hanya pemilik/admin, bergantung `joinCode`). Beberapa roda per kelas (maks 12, ≤60 nama), nama/warna (`PALET` bawaan atau palet "kustom" = 2-8 warna heksa pilihan sendiri lewat `<input type=color>`, `warnaRoda()`)/lama putaran/"keluarkan pemenang otomatis"/"tampilkan nama pemenang di tengah layar" (`popup`: overlay `backdrop-blur-xl` 2 dtk, ketuk untuk menutup); disimpan di localStorage `synaped_wheels_<classId>` - TANPA Firestore/Server Action, tidak dibagikan ke siswa. Halaman server hanya mengirim NAMA anggota (tanpa uid/email) dan menjaga lewat `requireOwnedClass`. Pemenang DIUNDI dulu (`acakIndeks`, crypto + rejection sampling) lalu `sudutTujuan` memutar roda (transisi CSS) tepat ke irisannya - jangan membalik urutannya. Komponen dirender klien saja (`useSyncExternalStore`) karena membaca localStorage.
 - **Foto profil kelas** (`Kelas.imageURL`, null = inisial): dipilih di `ClassForm` (potong persegi 512px via `compressSquare`, unggah `uploadClassImage` → `avatars/{uid}/class-<hex16>.jpg`, folder yang sama dengan foto profil/banner sehingga storage.rules tak perlu dideploy), URL diperiksa `fotoKelasSah` di `createClass`/`updateClass` (path HARUS `avatars/{uid-SESI}/class-<hex>.jpg`; `imageRaw` undefined = tak diubah, null = hapus, foto lama dibuang). `pruneAvatarFolder` TIDAK boleh membuang `class-*.jpg` (selain saat folder dikosongkan). `ClassPlate` kini DIAM (tanpa `drift`/holo/kaca) dan menampilkan foto/inisial; `ClassSpine` memakai foto di pita tebal.
 - **Mini-profil dari foto** (`profile/AvatarMini.tsx`, portal ke `<body>` karena leluhur `Reveal` bertransform merusak `fixed`): foto pengajar/peserta/penulis pengumuman & balasan di ruang kelas membuka `MiniProfile`. Gerbang `getMiniProfile` kini: penulis komentar publik ATAU pemanggil yang masuk dan sekelas (`sekelas()`: satu kelas sebagai pemilik/anggota) ATAU pemanggil admin/dirinya sendiri; kueri tunggal-field, tanpa indeks komposit. Hero ruang kelas: tautan kembali bergaris-penunjuk, kartu pengajar = garis tegak + foto 56px + nama (tanpa kotak abu).
-- **Balasan admin pada ulasan**: `Review.reply` ({body, at, by}; field dokumen `adminReply/adminReplyAt/adminReplyBy`), ditulis HANYA oleh `replyToReview` (admin; nama dari SESI, maks 600 karakter, teks kosong = hapus). Form di `/admin/reviews` (`ReviewReply`); tampil sebagai kutipan bergaris biru di kartu komentar beranda (`TestimonialItem.reply`, 2 baris) + dialognya, dan di `ReviewList` halaman kursus. Penulis menulis ulang ulasannya = balasan hilang (submitReview menimpa dokumen). `/admin` (akun): `UserList` (client) = pencarian nama/email/HP/peran + chip peran; tanggal diformat di server karena `adminUsers.ts` server-only. `/pengaturan` tanpa label "Akun Saya", `LogoutButton` = batang tanpa border (hover merah), `SignInMethodsCard`/`UsernameForm` diratakan. Tombol "Kelola kursus" di pendapatan = batang `SectionHead` (hover biru + garis memanjang).
+- **Balasan admin pada ulasan** (kartu menulis label hanya "Balasan", tanpa nama/"admin"): `Review.reply` ({body, at, by}; field dokumen `adminReply/adminReplyAt/adminReplyBy`), ditulis HANYA oleh `replyToReview` (admin; nama dari SESI, maks 600 karakter, teks kosong = hapus). Form di `/admin/reviews` (`ReviewReply`); tampil sebagai kutipan bergaris biru di kartu komentar beranda (`TestimonialItem.reply`, 2 baris) + dialognya, dan di `ReviewList` halaman kursus. Penulis menulis ulang ulasannya = balasan hilang (submitReview menimpa dokumen). `/admin` (akun): `UserList` (client) = pencarian nama/email/HP/peran + chip peran; tanggal diformat di server karena `adminUsers.ts` server-only. `/pengaturan` tanpa label "Akun Saya", `LogoutButton` = batang tanpa border (hover merah), `SignInMethodsCard`/`UsernameForm` diratakan. Tombol "Kelola kursus" di pendapatan = batang `SectionHead` (hover biru + garis memanjang).
 - **Pita komentar tanpa batas**: daftar digandakan `SALINAN`=4 kali dan `scrollLeft` dijaga di [1,2] salinan (mulai di salinan kedua; seretan membungkus posisi & menggeser `startLeft`) - dulu 2 salinan mulai dari 0 sehingga seret ke kanan membentur 0. Tombol "Admin" navbar: tanpa ikon perisai, teks biru bold dengan kilau gradien `.admin-kilau` tiap 5 dtk. `LogoutButton`: hover `bg-rust-700` + teks `#fff` (hex karena `text-white` terbalik di tema terang). Tema TERANG: `--color-paper-card` `#E9EFF8` (lebih gelap dari latar `#F5F8FD`), `card-hover` `#DCE7F7`, `paper-alt` `#DFE8F5`; `.theme-day` ikut. Breadcrumb detail kursus = huruf kapital kecil, pemisah garis tipis.
 - **Panel chat** (`ChatWidget`): persegi tanpa border/radius; kepala = judul + "Siap membantu" (teks saja, tanpa titik); balasan asisten = teks polos dengan garis aksen biru di kiri (`shadow-[inset_2px_0_0]`), pesan pengguna = kotak biru; saran/opsi = baris/chip persegi; indikator mengetik = tiga titik (`.chat-titik`); kolom isian bergaris bawah + tombol kirim kotak berpanah. Logika kirim/stream TIDAK berubah.
-- **Admin mengelola akun** (`lib/adminUserActions.ts`, "use server", tiap fungsi memeriksa sesi admin sendiri): `changeUserRole` (custom claim + `revokeRefreshTokens`; role akun SENDIRI tidak bisa diubah agar admin tak mengunci diri), `setUserPassword` (`updateUser` + cabut sesi; `acak` = sandi 12 karakter dari `crypto.randomBytes` dikembalikan SEKALI), `createAccount` (email+sandi, role pilihan, `ensureUsername`; email dibiarkan belum terverifikasi). KATA SANDI LAMA TIDAK BISA DILIHAT: Firebase hanya menyimpan hash satu arah dan tak ada API untuk membacanya - jangan pernah menjanjikan fitur "lihat password". UI: `UserManage` di `/admin/users/[uid]`, `CreateAccountForm` di `/admin/users/new`, tombol "Buat akun" di `/admin`. `/admin/users/[uid]` TIDAK memuat pengajuan educator (itu khusus `/admin/notifications`). Daftar `<select>` (`select option`) dipatok ke token di globals.css (tanpa itu pilihan putih-di-atas-putih di tema gelap). `components/ui/BackLink.tsx` = tautan "Kembali ke …" bersama (garis tipis + kapital kecil; dipakai admin/educator/dashboard/profil edit). `components/ui/Breadcrumb.tsx` = jejak halaman bersama (kapital kecil, pemisah garis, garis bawah biru); dipakai admin/educator/legal/kontak.
-- **Mobile & judul section**: `SectionTitle` memakai 0,72 em/huruf, `nowrap`, `line-height` 1,05 + `padding-bottom` 0,06em (ekor huruf & patah baris tak lagi terpotong di ponsel). Judul section beranda berbahasa Indonesia: Kursus, Fitur, Alur Belajar, Komentar, Tanya Jawab. Learning Path versi mobile (`LearningPathMobile`) = `SectionTitle` + rel tegak berisi biru yang MENGIKUTI GULIRAN (`--rp`, warna pejal `--lp-rel/--lp-simpul`), simpul kotak yang menyala + berdenyut sekali, kartu langkah meluncur dari kanan (kabur→tajam, pantulan) dan angka mengacak digit lalu terkunci (`AngkaAcak`); reversibel, semua teks Plus Jakarta Sans. Balon robot (`balon()` di ChatRobot): di KIRI robot (kanan bila robot di separuh kiri layar), sejajar tengah, ekor segitiga menunjuk robot, `bg-card-hover`, animasi `balon-kiri/kanan-muncul`. `/komentar` (`KomentarWall`): SEMUA ulasan (beranda hanya bintang ≥4) dalam kolom bata + saringan bintang, kartu SATU WARNA (miring mengikuti kursor + cahaya sorot, "Baca selengkapnya"), tanpa tanda kutip hias dan tanpa kalimat ringkasan jumlah/rata-rata di atasnya, balasan admin, foto → mini-profil; tombol "Lihat semua komentar" di bawah pita komentar beranda.
+- **Admin mengelola akun** (`lib/adminUserActions.ts`, "use server", tiap fungsi memeriksa sesi admin sendiri): `changeUserRole` (custom claim + `revokeRefreshTokens`; role akun SENDIRI tidak bisa diubah agar admin tak mengunci diri), `setUserPassword` (`updateUser` + cabut sesi; `acak` = sandi 12 karakter dari `crypto.randomBytes` dikembalikan SEKALI), `createAccount` (email+sandi, role pilihan, `ensureUsername`; email dibiarkan belum terverifikasi), dan MODERASI PROFIL: `setUserName` (2-60 karakter, `updateUser displayName`), `removeUserPhoto` (`photoURL: null` + `pruneAvatarFolder(uid, "__tidak-ada__")` - keep terisi supaya banner & foto kelas akun itu selamat), `replaceUserPhoto` (data URL JPEG ≤600 KB dari `compressSquare` di browser; magic bytes FF D8 FF diperiksa; ditulis SERVER ke `avatars/{uid}/admin-<hex>.jpg` dengan token unduh karena storage.rules hanya mengizinkan PEMILIK menulis di sana; berkas lama dibuang). Nama/foto hidup di Auth, jadi komentar/kelas/mini-profil ikut berubah; cookie sesi akun itu baru memuat foto baru setelah ia masuk ulang. UI: bagian "Nama & foto profil" di `UserManage`. KATA SANDI LAMA TIDAK BISA DILIHAT: Firebase hanya menyimpan hash satu arah dan tak ada API untuk membacanya - jangan pernah menjanjikan fitur "lihat password". UI: `UserManage` di `/admin/users/[uid]`, `CreateAccountForm` di `/admin/users/new`, tombol "Buat akun" di `/admin`. `/admin/users/[uid]` TIDAK memuat pengajuan educator (itu khusus `/admin/notifications`). Daftar `<select>` (`select option`) dipatok ke token di globals.css (tanpa itu pilihan putih-di-atas-putih di tema gelap). `components/ui/BackLink.tsx` = tautan "Kembali ke …" bersama (garis tipis + kapital kecil; dipakai admin/educator/dashboard/profil edit). `components/ui/Breadcrumb.tsx` = jejak halaman bersama (kapital kecil, pemisah garis, garis bawah biru); dipakai admin/educator/legal/kontak.
+- **Mobile & judul section**: `SectionTitle` memakai 0,72 em/huruf, `nowrap`, `line-height` 1,05 + `padding-bottom` 0,06em (ekor huruf & patah baris tak lagi terpotong di ponsel). Judul section beranda berbahasa Indonesia: Kursus, Fitur, Alur Belajar, Komentar, Tanya Jawab. Learning Path versi mobile (`LearningPathMobile`) = `SectionTitle` + rel tegak berisi PUTIH (bukan biru) yang MENGIKUTI GULIRAN (`--rp`, warna pejal `--lp-rel/--lp-simpul`), simpul kotak yang menyala + berdenyut sekali, kartu langkah meluncur dari kanan (kabur→tajam, pantulan) dan angka mengacak digit lalu terkunci (`AngkaAcak`); reversibel, semua teks Plus Jakarta Sans. Balon robot (`balon()` di ChatRobot): di KIRI robot (kanan bila robot di separuh kiri layar), sejajar tengah, ekor segitiga menunjuk robot, `bg-card-hover`, animasi `balon-kiri/kanan-muncul`. `/komentar` (`KomentarWall`): SEMUA ulasan (beranda hanya bintang ≥4) dalam kolom bata + saringan bintang, kartu SATU WARNA (miring mengikuti kursor + cahaya sorot, "Baca selengkapnya"), tanpa tanda kutip hias dan tanpa kalimat ringkasan jumlah/rata-rata di atasnya, balasan admin, foto → mini-profil; tombol "Lihat semua komentar" di bawah pita komentar beranda.
 - **Mini-profil di komentar** (`profile/MiniProfile.tsx`, `lib/miniProfileActions.ts`): foto/nama penulis di DIALOG komentar (`Testimonials`) membuka kartu di atasnya, bukan berpindah halaman. Pengguna: banner, foto, kursus DIIKUTI + kemajuan (tiap kursus → `/courses/slug`); educator: itu + kursus DIBUAT (tanpa bilah); admin: hanya `FORBIDDEN` ber-glitch (`.forbidden`, ::before/::after + clip-path steps). `getMiniProfile` = server action PUBLIK, jadi dibatasi: hanya uid yang pernah menulis ulasan (`reviews`), kursus disaring ke katalog publik, admin tanpa data, tanpa email/telepon/nilai kuis. INI SENGAJA melonggarkan keputusan lama di `publicProfile.ts` (kursus yang diikuti tak tampil di profil publik) atas permintaan pemilik - hanya lewat kartu ini; profil publik `/profil/[uid]` tetap TIDAK menampilkannya.
 - **Halaman educator** (`EducatorShell` kini SERVER component yang hanya merender `Navbar` + `Footer` beranda - bilah atas lama dengan "Panel Educator" dibuang): `/educator/courses` = daftar "buku besar" (nomor tipis, judul, tingkat sebagai TEKS polos, aksi teks); `/educator/courses/new` = judul dua baris menjorok + rel bab sticky (`#tentang/#kontributor/#isi/#terbit`) + `CourseForm` berbab bernomor (`BabHead`); `inputClass` bersama (juga form sunting) kini persegi, latar `white/[0.06]`, garis bawah biru saat fokus; `/educator` (pengajuan) = tiga keunggulan bernomor raksasa-tipis, turun bertangga, TANPA ikon.
 - **Form kursus (kontributor, isi kursus)**: `ContributorEditor` punya prop `tanpaJudul` (kepala bab ditulis `CourseForm`), bilah pembagian bertumpuk (potongan platform / pemilik / tiap kontributor, `flex: <bagian> 1 0`), baris dengan garis rambut `divide-white/10`, slider `.range-tipis` (lintasan 2px, penggeser kotak biru). `SectionList` (curriculumDraft): bagian = kartu persegi, pelajaran = `bg-white/[0.04]`, tombol naik/turun kotak 36px (`iconButton`) dan `hapusButton` setinggi sama, "+ Tambah bagian" selebar kartu. Rel bab di `/educator/courses/new`: tiga kolom tetap `[12px|2.4rem|1fr]` dan garis tegak di `left:5.5px` agar kotak penanda tepat di atas garis (versi lama melenceng).
@@ -259,9 +268,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   pemilik - jangan dikembalikan tanpa diminta.
 - **Hero menunggu splash**: `SplashLoader.intiSelesai()` memasang `<html data-intro="selesai">` + peristiwa `synaped:intro-selesai` saat splash selesai ATAU dilewati; `Hero` menahan semua animasinya (`data-tunggu="true"` → `animation-play-state: paused !important` di globals.css; jeda `--rise-delay` tidak berjalan selama ditahan) sampai tanda itu (jaring pengaman 8 dtk), dan meneruskan `mulai` ke `HeroStars`. Dulu hero beranimasi di BALIK splash sehingga tertimpa. `HeroStars`: 8 bentuk tak simetris (posisi/skala/kemiringan beda + jitter acak per pemuatan), 4 bentuk rinci (pensil berserat+cincin+penghapus, buku berpita+tumpukan halaman, bohlam berulir+filamen+sinar+taburan cahaya, laptop berpapan ketik+jendela kode) + debu bintang; KEMUNCULAN = tiap bintang melesat spiral dari jauh (`jauh`, `putar`, `tunda` per bentuk, `lembut` easeOutQuart + kilatan terang).
 - **Tombol hero "Mulai Belajar"** (wajah tombol di `Hero.tsx`, state `mulaiFase` → `data-fase` = diam/masuk/keluar): hover (`masuk`) = label turun keluar dari bawah & "AYOK KITA MULAI BELAJAR" jatuh dari atas kata demi kata (`.mulai-kata`, jeda `--i`×130ms, pantulan); lepas (`keluar`) = kata turun ke bawah & label datang dari atas (seperti memutar). Terpotong batas tombol (`overflow-hidden`). TANPA perubahan warna saat hover - berlaku juga untuk tombol kirim di bilah hero. Panah idle bergeser ke samping lalu kembali (`.mulai-panah`). CSS di globals.css.
-- **About, panel menyempit**: label bawaan = ANGKA 01/02/03 (bukan judul tegak), tanpa sorotan warna saat hover. Hover (`data-hover="masuk"` dari state `hov` di About.tsx) → judul muncul huruf demi huruf dari kiri ke kanan & angka keluar ke kanan; lepas (`keluar`) → angka muncul lagi huruf demi huruf & judul keluar ke kanan (`.about-huruf`, `--i`, `--langkah` di globals.css). Layar tanpa hover (`@media (hover: none)`) menampilkan angka & judul berdampingan. Panah bilah hero: naik-turun selama di-hover (`.bilah-panah`), tanpa efek angkat/warna.
+- **About, panel menyempit**: label bawaan = ANGKA 01/02/03 (bukan judul tegak), tanpa sorotan warna saat hover. Hover (`data-hover="masuk"` dari state `hov` di About.tsx) → judul muncul huruf demi huruf dari kiri ke kanan & angka keluar ke kanan; lepas (`keluar`) → angka muncul lagi huruf demi huruf & judul keluar ke kanan (`.about-huruf`, `--i`, `--langkah` di globals.css). Layar sentuh memakai logika yang SAMA (hanya angka bawaan; judul menggantikan angka saat disentuh) - blok `@media (hover: none)` yang dulu menampilkan keduanya sudah dihapus. Panah bilah hero: naik-turun selama di-hover (`.bilah-panah`), tanpa efek angkat/warna.
 - **Kartu kursus**: TANPA perubahan warna saat hover (latar kartu, judul, lencana nomor, sisi belakang sampul, dan tombol "Lihat Detail" semua dihapus); hover = kartu terangkat 4px + tombol "Lihat Detail" berdenyut (`.tombol-denyut`: cincin `box-shadow` + label `scale` di dalam; SENGAJA tanpa transform pada tautannya karena `::after` penutup-klik-kartu akan menyusut). Modul & estimasi = grid 2 kolom selebar penuh kartu, angka 2,3rem, modul rata kiri, estimasi rata kanan, TANPA garis pemisah. Label About menyempit: ANGKA besar (hingga 10rem, `font-black`, tracking -0,08em) sangat samar (`color-mix` putih 13% transparan) seperti angka hantu panel terbuka, tetap di tengah; JUDUL putih REDUP (64% dengan `--color-paper`).
-- **Titik section (`SectionDots`) = pemilih section**: menyeret titik-titik ke KIRI (>36px; mouse/sentuh, pendengar di `window`, TANPA `setPointerCapture` agar klik tombol tetap sampai) membuka mode pilih - lapisan `backdrop-blur-xl` `z-[65]` memburamkan seluruh laman (termasuk navbar) dan titik-titik (`z-[70]`) bergeser kiri + membesar menjadi daftar bernomor (label tampil bertahap); seret ke KANAN / Esc / ketuk latar buram / memilih section menutupnya. Klik yang menyusul seretan ditelan (`barusSeret`). Tombol `sr-only` untuk papan ketik. Hanya lg:+. Indikator hover: SELAMA penunjuk di atas daftar (`hover` state), HANYA tulisan section yang sedang AKTIF memantul ke kiri-kanan TERUS-MENERUS (`.dots-pantul`, infinite, jeda singkat tiap siklus); titik-titik diam; area pegang diperlebar (`p-4`) karena titik 8px terlalu kecil untuk diseret.
+- **Titik section (`SectionDots`) = pemilih section**: menyeret titik-titik ke KIRI (>36px; mouse/sentuh, pendengar di `window`, TANPA `setPointerCapture` agar klik tombol tetap sampai) membuka mode pilih - lapisan `backdrop-blur-xl` `z-[65]` memburamkan seluruh laman (termasuk navbar) dan titik-titik (`z-[70]`) bergeser kiri + membesar menjadi daftar bernomor (label tampil bertahap); seret ke KANAN / Esc / ketuk latar buram / memilih section menutupnya. Klik yang menyusul seretan ditelan (`barusSeret`). Tombol `sr-only` untuk papan ketik. Hanya lg:+. Di mode pilih, tiap label memiliki garis yang MEMUTARI kata (`svg.dots-garis` > `rect` dengan `pathLength=1`, `stroke-dashoffset` 1→0; geometri lewat properti CSS `width: calc(100% - 1.5px)` karena atribut SVG tak mendukung calc) - tergambar saat hover/fokus dan tetap tergambar pada section aktif. Indikator hover: SELAMA penunjuk di atas daftar (`hover` state), HANYA tulisan section yang sedang AKTIF memantul ke kiri-kanan TERUS-MENERUS (`.dots-pantul`, infinite, jeda singkat tiap siklus); titik-titik diam; area pegang diperlebar (`p-4`) karena titik 8px terlalu kecil untuk diseret.
 - **Bintang hero** (`HeroStars.tsx`, canvas 2D di dalam div sticky, `opacity: var(--c)`): bintang berkedip menyusun PENSIL/BUKU/LAMPU/LAPTOP (garis poligon dalam kotak 0..100, disampel tiap ±10px). Kursor/sentuhan (`pointermove` dibaca dari `window`; kanvas `pointer-events:none` agar huruf hero tetap bisa diseret) melontarkan bintang menjauh + acak; pegas pulang (`PEGAS`, melemah selama `patah`>0) menyusun ulang bentuknya; `pointerdown` = ledakan lebih besar. Warna bintang = `color` kanvas (`text-blue-300`, ikut tema). Berhenti bila tak terlihat/tab tersembunyi; hemat gerak = digambar sekali tanpa interaksi. TERPISAH dari rasi bintang di Learning Path→Comments yang sudah dihapus.
 - **Hero bilah**: kalimat yang diketik DIBANGUN dari katalog (`lib/heroPrompts.ts`, modul netral; `app/page.tsx` meneruskan
   `buildHeroPrompts(courses, categories)` ke `Hero`): templat tetap per kursus (dipilih lewat hash slug) + satu kalimat
@@ -270,7 +279,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   kursusnya); anak panah di bilah menuju `/courses?q=<q>` (`heroHref`), dan `/courses` meneruskan `?q` ke
   `CourseCatalog` sebagai `initialQuery`. Indeks diundi sekali setelah mount (HTML server = klien), tidak pernah sama
   dengan kalimat sebelumnya (`sessionStorage` `synaped_hero_prompt`, jadi muat ulang selalu berganti), dan diundi
-  ulang saat pengunjung kembali ke atas. Tombol wajah "Mulai Belajar" tetap ke /register. Fitur bilah → panel
+  ulang saat pengunjung kembali ke atas. Tombol wajah "Mulai Belajar" → /courses bila sudah masuk (`useAuth`), /login bila belum. Fitur bilah → panel
   rekomendasi kursus dan bilah yang melebar sendiri sudah DIHAPUS atas permintaan pemilik - jangan dikembalikan tanpa
   diminta; `Hero` kini hanya menerima `prompts`.
 - **Latar section landing** semuanya `bg-ivory` (alias `paper`, kini gelap).
@@ -328,11 +337,20 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 4. **Modul netral** (tanpa `server-only`, tanpa `"use client"`, tanpa impor `@/`)
    untuk nilai/validasi yang dipakai klien + server + skrip tsx: `*Rules.ts`,
    `*Types.ts`, `contributors.ts`, `royaltySplit.ts`, `royaltyTerms.ts`,
-   `referralRules.ts`, `classTypes.ts`, `profileTypes.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
+   `referralRules.ts`, `classTypes.ts`, `classAssignmentRules.ts`, `profileTypes.ts`, `chatLinks.ts`,
+   `chatKnowledge.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
    `server-only` dari komponen klien menyeret firebase-admin ke bundel browser.
 5. **Semua koleksi Firestore tertutup dari klien** (`allow read, write: if false`),
    kecuali `courses/{slug}` baca publik dan `users/{uid}` baca oleh pemiliknya.
    Klien tidak menulis Firestore sama sekali.
+6. **Kode Python Lab 04 hanya berjalan di `public/lab/python-worker.js`**, yang
+   punya CSP SENDIRI di `next.config.ts` (`headers()`): `default-src 'none'`,
+   script & connect HANYA ke direktori Pyodide berversi (`pythonVersi.ts`),
+   `'wasm-unsafe-eval'` (BUKAN `'unsafe-eval'`), `worker-src 'none'`. Kode itu
+   bisa datang dari tautan siapa saja dan berjalan di origin SynapEd — CSP inilah
+   yang mencegahnya memanggil API/Server Action sebagai pembuka tautan. Jangan
+   dilonggarkan, jangan jalankan Pyodide di utas utama atau worker blob/bundel
+   (keduanya mewarisi CSP halaman yang kosong). `verify-kode` menjaga isi CSP-nya.
 
 ## Konvensi Firestore
 
@@ -363,8 +381,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `reviews/{id}` | Hanya pemilik enrollment `completed`. |
 | `educatorApplications/{uid}` | Pengajuan jadi educator. |
 | `categories/{slug}` | Dikelola admin; slug tidak berubah saat label diganti. |
-| `classes/{id}` (+ `posts/{id}/replies/{id}`), `classMembers/{uid}_{classId}` | Kelas educator; `joinCode` rahasia (jangan dikirim ke anggota biasa). |
-| `users/{uid}` | `bio`, `education`, `skills`, `phone`, `bannerURL`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
+| `classes/{id}` (+ `posts/{id}/replies/{id}`), `classMembers/{uid}_{classId}` | Kelas educator; `joinCode` rahasia (jangan dikirim ke anggota biasa). Post: `kind` (`announcement`/`assignment`; hilang = announcement), `title`, `body`, `attachments[{name,path,size,mime}]`, `assignment {formats, dueAt, acceptLate, maxPoints}` (null untuk pengumuman). |
+| `classSubmissions/{classId}_{postId}_{uid}` | Pengumpulan tugas kelas: `text`, `files[]`, `status` submitted/graded, `late` (dibekukan saat kirim), `grade`, `feedback`. Koleksi TERPISAH dari `classes` — `recursiveDelete` tidak menjangkaunya. |
+| `users/{uid}` | `bio`, `education`, `skills`, `phone`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
 | `usernames/{username}` | Reservasi `{uid}`. |
 | `orders/{orderId}` | Pesanan. `method` midtrans/manual, `status`, `royalty` (syarat dibekukan), `postPaidStatus`. |
 | `settings/payments` | Saklar metode, QRIS, `platformFeePercent` (bawaan 30), `referralPercent` (bawaan 10). |
@@ -374,7 +393,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 Storage: `avatars/{uid}` (juga `banner.jpg` — banner profil, lihat bawah), `course-assets/{uid}` (PDF, dilayani lewat
 `/api/courses/[slug]/asset`), `course-thumbnails/{uid}` (publik), `payment-qris`
 (publik), `payment-proofs/{uid}` (lewat `/api/payments/proof`, admin),
-`submissions/{uid}` (lewat `/api/submissions/file`). Materi terkunci selalu
+`submissions/{uid}` (lewat `/api/submissions/file`), `class-files/{uid}/{classId}/`
+(lampiran pengajar, lewat `/api/classes/attachment`), `class-submissions/{uid}/{classId}/{postId}/`
+(jawaban siswa, lewat `/api/classes/submission`). Materi terkunci selalu
 dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 
 ## Pembayaran
@@ -441,6 +462,19 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 - Model `:free` dilayani dari **kolam bersama** seluruh pengguna OpenRouter — 429
   `upstream_provider_shared_pool` itu antrean sesaat (retry), BUKAN jatah kita habis
   (jangan retry, tunggu besok). `readRateLimit()` membedakan keduanya.
+- **Pengetahuan asisten** (system prompt dirakit `chatPrompt.ts` setiap permintaan):
+  - aturan topik/format (stabil, di `chatPrompt.ts`) → `PENGETAHUAN_SITUS` dari
+    `chatKnowledge.ts` (ditulis tangan, WAJIB ikut diperbarui saat fitur berubah) →
+    `infoTerkini()` yang dibaca LANGSUNG tiap permintaan: metode bayar aktif
+    (`getPaymentSettings` + `manualQrisReady`), persen referral, kontak `COMPANY`
+    → katalog kursus (`listCourses`, mode FAQ) atau konteks pelajaran (mode tutor).
+    Gagal membaca setelan = bagian itu dilewati, chat tidak ikut gagal.
+  - Daftar tautan yang boleh dipakai model = `CHAT_LINKS` (`chatLinks.ts`);
+    halaman yang sengaja tidak ditautkan di `CHAT_LINKS_DIKECUALIKAN` + alasannya.
+    `verify-chat-knowledge` (murni) memindai `app/**/page.tsx`: tautan harus ada,
+    setiap halaman harus ditautkan ATAU dikecualikan, alamat di teks pengetahuan
+    harus terdaftar, dan frasa basi ("belum bisa dibeli", …) dilarang.
+  - Jangan menaruh harga, potongan platform, atau detail teknis di pengetahuan.
 - **Tutor dalam course**: `ChatWidget.tsx` dipasang sekali secara global di
   `layout.tsx`, tanpa props. Konteks "sedang di pelajaran mana" mengalir lewat
   `ChatContext.tsx` (satu-satunya React Context di proyek ini) yang dipublikasikan
@@ -461,12 +495,297 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
   ke instruksi format kompleks. `parseGradingResponse` mengambil kecocokan
   **terakhir**, jaga-jaga model menulis contoh/mikir keras dulu sebelum jawaban asli.
 
+## Tugas kelas
+
+Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
+
+- **Laci materi SynapLab** (`LabNavigasi.tsx`): persegi tanpa border/radius (`bg-header`), logo gambar di kepala, bagian = nomor raksasa samar + nama, item = blok dengan batang biru di kiri bila aktif (tanpa titik/cincin); latar belakang laci `backdrop-blur-md` (laman di belakang DIBURAMKAN). Tombol pembukanya persegi dan TANPA perubahan warna saat hover: ikon tiga garis (kotak 1,5px), garis teratas & terbawah menjauh 3px dari garis tengah saat di-hover.
+- **SynapLab**: bilah gulir panel `.lab-pane` DISEMBUNYIKAN (tetap bisa digulir); penanda "Lab 01 · Array" tanpa lingkaran biru berdenyut; tombol contoh mulai-cepat di papan kosong (`MULAI_CEPAT` di kelima `*Board.tsx`) = kotak `bg-white/[0.06]` dengan garis biru di bawah saat hover, bukan pil biru.
+- **Tampilan** (sama dengan halaman lain): kartu/isian/tombol PERSEGI tanpa `rounded-*` dan tanpa border kotak (kartu `bg-paper-card`, isian `bg-white/[0.06]` + garis biru di bawah saat fokus, bukan ring); statistik tugas dipisah celah 4px; tab ruang kelas aktif = latar samar + bilah biru di bawah. Jangan menambah `rounded-*`/`border` kotak lagi di `components/classes` dan halaman tugas.
+- Berkas: `classAssignmentRules.ts` (NETRAL — format, MIME, batas, validasi,
+  status, WIB), `classAssignments.ts` (server-only, tanpa penjaga: data,
+  `periksaBerkas`, `bersihkanPost/Kelas`), `classAssignmentActions.ts`
+  (`"use server"`: `gradeClassSubmission`, `submitClassAssignment`,
+  `unsubmitClassAssignment`), `createPost`/`createAssignment`/`editPost` di
+  `classActions.ts`, isian tugas bersama `IsianTugas.tsx` (kotak tulis + formulir edit), unggah klien di `classUpload.ts`, penyaji `serveStorageFile.ts`.
+- Format dipilih per tugas, SATU PER JENIS BERKAS: `text`/`pdf`/`jpg`/`png`/`docx`/`pptx`/
+  `xlsx`/`zip` (`.jpeg` = `jpg`). Versi pertama berkelompok (`pdfImage`, `office`):
+  `normalisasiFormat` menerjemahkannya saat MEMBACA (`toPengaturan`) dan saat MENERIMA
+  (`validasiPengaturan`, untuk browser yang masih memuat formulir lama) — data lama tidak
+  dimigrasi dan tetap menerima jenis yang sama. Urutan disimpan selalu urutan baku
+  `FORMAT_TUGAS`. `KELOMPOK_FORMAT` hanya untuk tampilan; `ringkasFormat` untuk teks
+  ringkas. **MIME diambil dari
+  ekstensi** (`mimeOfName`), bukan `file.type` (Windows: ZIP = `x-zip-compressed`).
+  Daftar MIME sama persis dengan `isClassFile()` di storage.rules; batas 20 MB eksklusif.
+- **`periksaBerkas` tidak mempercayai browser**: path wajib berawalan folder milik
+  pengirim (`class-files/{uid}/{classId}/` atau `class-submissions/{uid}/{classId}/{postId}/`,
+  tanpa `..`/`//`), lalu ukuran & MIME dibaca ULANG dari metadata Storage. Hanya nama tampilan
+  yang diambil dari klien.
+- Unggahan terjadi saat formulir DIKIRIM (bukan saat berkas dipilih) supaya
+  berkas yang dibuang tidak meninggalkan sampah. Galat unggah diterjemahkan
+  `pesanGagalUnggah` per kode Firebase — dulu semuanya "periksa koneksi",
+  padahal penyebab nyatanya storage.rules belum di-deploy (`storage/unauthorized`, 403).
+- Tenggat diukur jam SERVER. `masihDibuka` = belum lewat ATAU `acceptLate`.
+  Satu kiriman per siswa per tugas; mengganti = batalkan dulu. Batal ditolak
+  setelah dinilai dan setelah pengumpulan ditutup. Batal menghapus dokumen DULU,
+  baru berkas. Menilai pakai transaksi (siswa bisa membatalkan bersamaan).
+- **Edit postingan** (`editPost`, UI `EditPost.tsx` — di umpan & di halaman tugas):
+  masukan bentuk UTUH, divalidasi persis seperti membuat (`validasiPengaturan(..., false)`:
+  tenggat lampau BOLEH, itu cara menutup lebih awal). `keepAttachments` dicocokkan
+  dengan lampiran tersimpan, unggahan baru lewat `periksaBerkas`, lampiran yang dibuang
+  dihapus SETELAH tersimpan. `maxPoints` ditolak bila di bawah nilai tertinggi yang
+  sudah diberikan. Jenis (pengumuman/tugas) tidak bisa berubah. Kiriman lama tidak
+  disentuh (format/`late` tidak dihitung ulang). Formulir memuat ulang isinya dari
+  props setiap kali dibuka — tanpa itu unggahan yang baru tersimpan hilang di simpanan
+  berikutnya. `pernahDiedit` (> 1 menit) memberi tanda "diedit". `updateAssignment`
+  (khusus tenggat) sudah DIHAPUS — jangan dihidupkan lagi; satu jalur edit saja.
+- **Setiap `Intl.DateTimeFormat`/`toLocale*` untuk waktu WAJIB `timeZone: "Asia/Jakarta"`**: server berjalan di UTC, tanpa itu jam geser 7 jam
+  (siswa yang bergabung 07.31 WIB tampil "00.31"). `formatDate`/`formatDateOnly` (adminUsers.ts), sertifikat, dan `joinedAtOf` sudah diperbaiki.
+- **WIB tetap** (`inputWibKeIso`, `isoKeInputWib`, `formatWib`): server App Hosting
+  UTC. Komponen klien menerima waktu yang SUDAH diformat server (`waktuKirim`) —
+  Intl Node vs browser bisa berbeda tanda baca → hydration mismatch.
+- Halaman: `/kelas/[id]?tab=tugas`, `/kelas/[id]/tugas/[postId]` (siswa; pemilik/admin
+  dialihkan), `/educator/classes/[id]/tugas/[postId]` (daftar siswa + nilai). Halaman
+  siswa hanya membaca kiriman miliknya lewat ID deterministik. `jamServer()` dipanggil
+  sekali per render (lint purity melarang `Date.now()` langsung di komponen).
+- Hapus post/kelas memanggil `bersihkanPost`/`bersihkanKelas`: dokumen
+  `classSubmissions` + berkasnya + lampiran. `MANAGED_PREFIXES` di `storageCleanup.ts`
+  memuat kedua folder kelas (tanpa itu `deleteObjects` diam-diam tidak menghapus apa-apa).
+- Penyaji berkas: lampiran → anggota/pemilik (bukan anggota = 404); jawaban →
+  pengirim atau `requireOwnedClass` (siswa lain = 403). Keduanya memeriksa ulang
+  awalan path dan selalu `attachment` + `nosniff`.
+- **Koreksi AI** (`classGradingActions.ts`: `suggestClassGrade`, `saveAiGradingSettings`;
+  tombol di `ClassGradeForm.tsx`, kartu `AiGradingSettings.tsx`):
+  - Hanya SARAN, persis seperti `suggestGrade` kursus: tidak pernah menulis nilai;
+    pengajar menyimpan lewat `gradeClassSubmission`. Penjaga `requireOwnedClass`;
+    pembatas laju `grade-ai:{uid}` yang SAMA dengan kursus (satu kuota OpenRouter).
+  - Pengaturan per tugas di field `aiGrading {source: "assignment"|"separate", files,
+    notes, fillComment}` pada dokumen post, dibaca HANYA lewat `getPengaturanAi` —
+    `toPost`/`KelasPost` sengaja tidak memuatnya (berkasnya bisa kunci jawaban;
+    tipe yang tidak memuatnya membuat halaman siswa mustahil membocorkannya).
+    Berkas konteks di `class-files/{uid}/{classId}/ai-{postId}/`, BUKAN lampiran,
+    jadi `/api/classes/attachment` tidak bisa menyajikannya.
+  - **Konteks dari pengajar** = `notes` (teks bebas, maks `MAX_AI_NOTES` 4000) + `files`,
+    dipakai di KEDUA mode: `assignment` = instruksi & lampiran tugas + konteks;
+    `separate` = HANYA konteks (sah dengan teks saja ATAU berkas saja). SENGAJA satu
+    kotak bebas, bukan kolom rubrik/kunci/panjang komentar/rentang nilai (permintaan
+    pemilik): prompt (`classGradingPrompt.ts`) menyuruh model memahami sendiri maksud
+    tiap bagian, mengonversi skala lain ke 0..`maxPoints`, dan tidak mengutip kunci di
+    FEEDBACK. `notes` rahasia sama seperti berkas (tidak ada di `KelasPost`; diuji
+    tidak muncul di halaman siswa). Gambar soal maks 2 TOTAL, konteks pengajar didahulukan.
+    Uji action lewat HTTP harus mencocokkan pesan galat PERSIS: respons action yang
+    keliru menerima membawa render ulang halaman yang memuat kata umum ("maksimal").
+  - `saveAiGradingSettings`: `keep` (berkas lama) dicocokkan dengan daftar di server,
+    `files` (unggahan baru) lewat `periksaBerkas` + `MIME_AI_KONTEKS` (tanpa ZIP),
+    maks `MAX_AI_CONTEXT_FILES` 3; berkas lama yang dibuang dihapus SETELAH tersimpan.
+    Kartunya diberi `key` = isi pengaturan supaya dipasang ulang setelah refresh —
+    tanpa itu state lama bertahan dan simpanan berikutnya membuang unggahan baru.
+  - Hapus post/kelas membaca `getPengaturanAi`/`berkasAiKelas` SEBELUM
+    `recursiveDelete`, lalu meneruskan path-nya ke `bersihkanPost/Kelas`.
+  - Pembacaan berkas (`classGradingFiles.ts`): PDF → `pdfText`, JPG/PNG → base64
+    ke `VISION_MODELS` (≤ 4 MB, maks 2 gambar soal + 3 jawaban), DOCX/PPTX/XLSX →
+    `officeText.ts` (pembaca ZIP+XML sendiri dengan zlib, tanpa dependensi;
+    `maxOutputLength` 8 MB per entri menahan bom ZIP). Yang tak terbaca dilaporkan
+    sebagai `peringatan`; jawaban yang sama sekali tak terbaca ditolak tanpa
+    memanggil AI. Gambar diselipkan tepat setelah teks bagiannya (soal vs jawaban).
+  - Prompt (`classGradingPrompt.ts`, netral): skala 0..`maxPoints` tugas; isi
+    jawaban siswa dinyatakan sebagai DATA (abaikan perintah di dalamnya).
+    `parseGradingResponse(raw, max, maxGrade=100)` — regex 4 digit + `(?!\d)`:
+    dengan 3 digit, "GRADE: 1000" terbaca 100 dan lolos diam-diam.
+
+## Tema kustom
+
+- Pilihan ketiga di `ThemeSwitch` (`synaped_theme` = `custom`). `lib/customTheme.ts` (NETRAL): empat warna `PaletKustom`
+  {latar, kartu, teks, aksen} → `hitungTema` menurunkan 25 variabel CSS (`NAMA_VARIABEL`) yang dipasang INLINE di `<html>`
+  (menang atas blok `html[data-theme]`). Latar terang (kecerahan > 0,4) = struktur tema TERANG (`data-theme="light"` +
+  `--color-white` dibalik jadi warna Teks); latar gelap = struktur gelap bawaan (`--color-white` TIDAK disentuh). Aksen terlalu
+  terang digelapkan agar tulisan putih di tombol (`blue-600`) tetap ≥3,2:1; `peringatan` bila kontras Teks/Latar <4,5.
+- Disimpan sebagai CSS jadi di localStorage (`synaped_theme_css`, `_mode`, `_palet`); skrip <head> di layout.tsx memasangnya
+  sebelum cat pertama (`d.style.cssText = css`). Memilih Gelap/Terang memanggil `lepasTemaKustom` (hapus tiap variabel, bukan
+  seluruh `style`). Data dari localStorage untuk UI selalu lewat `sahkanPalet` (hanya `#RRGGBB`). Tes: `npm run verify:tema-kustom` (murni).
+- Footer/navy/`bg-blue-*`/`keep-white` tetap memakai aturan tema terang yang sudah ada (mendeklarasi ulang `--color-white: #fff`).
+
+## Banner kelas
+
+- `Kelas.bannerURL` (null = tanpa). Diunggah dari `ClassForm` lewat `compressBanner` (≤1600px JPEG <2MB) + `uploadClassImage`
+  ke `avatars/{uid}/class-<hex16>.jpg` - folder & pola nama SAMA dengan foto kelas, jadi storage.rules tak perlu dideploy dan
+  `pruneAvatarFolder` tak membuangnya. `createClass(name, desc, image, banner)` / `updateClass(..., image, banner)`:
+  undefined = tak diubah, null = hapus (berkas lama dibuang), string = divalidasi `fotoKelasSah` (path HARUS milik uid SESI).
+  `deleteClass` ikut membuang foto & banner (upaya terbaik). Tampil di hero `ClassRoom` (`<img>` absolut + gradasi gelap
+  ke `#081520`; teks hero tetap putih). Uji: bagian "Banner kelas" di `verify-class-quiz`.
+- **Banner quiz**: `Quiz.bannerURL` (diunggah dari `QuizBuilder` lewat `compressBanner` + `uploadClassImage`, folder & pola nama
+  SAMA dengan foto/banner kelas). `saveQuiz`: `bannerURL` di input tak ada = tak diubah, null = dibuang, string = divalidasi
+  `urlGambarSah` (`lib/gambarKelas.ts`; path wajib milik uid SESI); berkas lama dibuang saat diganti/quiz dihapus. Tampil sebagai latar
+  kepala kartu (`QuizTab`) dan kepala halaman quiz siswa; teks di atasnya `#fff` (bukan `text-white`, terbalik di tema terang).
+- Tombol "Izinkan mengulang" (Pantau) = `TOMBOL_KOTAK` bersama Tutup quiz (ikon `ulang`).
+- Kartu quiz (`QuizTab`) RINGKAS: tingginya ditentukan kotak peringkat (`QuizPodium` `min-h-[218px]`, lebar 236px, flush kanan di lg); kiri = status + "n/m terkumpul" (pengelola), judul, tiga angka `font-bold` sebaris, tombol. Garis status tepi kiri (`garisStatus`). Angka/judul bagian quiz (kartu, halaman mulai, hasil, pantau) minimal `font-semibold` (permintaan pemilik; jangan `font-extralight`), teks lain `font-medium` lewat akar. Kotak peringkat BERWARNA SAMA dengan kartu (`bg-paper-card`, pintu juga), tanpa garis sekat, piala emas champagne ramping.
+
+## Mengeluarkan anggota & dialog konfirmasi
+
+- `removeClassMember(classId, uid)` (classActions; pemilik/admin lewat `requireOwnedClass`): transaksi hapus
+  `classMembers/{uid}_{classId}` + `memberCount -1`; uid sasaran WAJIB anggota (kalau tidak: "bukan anggota").
+  Jawaban tugas/quiz TIDAK dihapus. UI: `KeluarkanAnggota` di tab Anggota (`ClassRoom`, hanya `isOwner`) & `/members`.
+- `ConfirmDialog` (dipakai 16 tempat) kini PERSEGI: tanpa border & radius; Batal = kotak berlatar putih transparan
+  bergaris tipis, konfirmasi = kotak biru. Gaya tombol kotak bersama ada di `lib/quizUi.ts` (`TOMBOL_KOTAK*`).
+
+## Quiz kelas
+
+Tab "Quiz" (semua anggota; kanan "Tugas"). "Pantau" BUKAN tab di bilah (dihapus atas permintaan pemilik): ia
+`?tab=pantau&quiz=<id>` yang dibuka lewat tombol "Pantau" tiap quiz (HANYA pengelola; tab Quiz tetap menyala;
+tanpa pemilih quiz & tanpa judul quiz; quiz tak ada → pesan + tautan ke daftar). Urutan tab:
+Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`/`PantauTab`
+(komponen server async) langsung hanya saat tabnya aktif; `?quiz=` memilih quiz di Pantau.
+
+- **Data**: `classes/{id}/quizzes/{quizId}` (soal + KUNCI `correct` + setelan; `published`, `closed`,
+  `extraMin`) dan percobaan di koleksi TERPISAH `classQuizAttempts/{classId}_{quizId}_{uid}` (satu per
+  siswa; `answers`, `order` per siswa, `extraSec`, `essayScores`, `submittedAt`, `finalizedBy` siswa|waktu|ditutup).
+  Firestore.rules menutup keduanya. Penghapusan kelas memanggil `hapusPercobaanKelas`; `deleteQuiz` menghapus percobaannya.
+- **Aturan NETRAL** `lib/classQuizRules.ts` (validasi, `bagiRataPoin`, acak bersemai per siswa
+  `urutanUntukSiswa`, `hitungNilai`, waktu, `peringkatTeratas`); server `lib/classQuizzes.ts`;
+  action `lib/classQuizActions.ts`. Total poin TEPAT 100 hanya saat terbit (draf boleh ≤100).
+- **Nilai tidak disimpan**: `hitungNilai` menghitung ulang dari jawaban + kunci + poin SEKARANG,
+  jadi mengubah poin menghitung ulang semuanya; poin esai dijepit ke poin soal. Soal terkunci
+  (`strukturSama`) begitu ada satu percobaan: hanya poin/judul/deskripsi/setelan yang boleh berubah.
+- **Jadwal mulai**: `Quiz.opensAt` (ISO; null = langsung terbuka saat diterbitkan, lampau = sudah terbuka;
+  `sudahDibuka`). Server menolak `startQuiz` sebelum jamnya (jam SERVER, bukan perangkat siswa); siswa tetap
+  melihat quiz berlabel "Dijadwalkan" tanpa tombol Mulai. Builder memakai `inputWibKeIso`/`isoKeInputWib` (WIB tetap).
+- **Waktu**: batas = mulai + (durasi + `extraMin`) + `extraSec`. Server berwenang: `selesaikanBilaPerlu`
+  (transaksi) menutup percobaan yang kedaluwarsa, DICATAT TEPAT di batas (bukan saat dibuka); jawaban yang
+  dinilai = yang TERSIMPAN (autosave 1,5 dtk di `QuizPengerja`), kiriman terlambat > 5 dtk ditolak.
+  Penghitung mundur klien memakai sisa detik server - `performance.now`, bukan jam dinding. Menambah waktu
+  (`addQuizTime`) / membuka kembali quiz membuka lagi percobaan `waktu`/`ditutup` yang belum punya nilai esai.
+- **Kunci jawaban**: soal dikirim ke klien lewat `soalUntukSiswa` (urutan siswa, TANPA `correct`);
+  `QuizHasil` (server) baru menampilkan kunci bila `quiz.closed` - jangan percepat, siswa cepat bisa membagi kunci.
+- **Papan peringkat = `QuizPodium`** (client): KOTAK bergambar piala di KANAN kotak quiz (kolom 236px; HANYA di tab Quiz -
+  halaman quiz siswa sengaja tanpa papan, tampil editorial: kicker, judul besar, tiga angka tipis, daftar bernomor). Ditekan → pintunya tergulung KE ATAS seperti sampul kartu kursus (`translateY(-100%)` 900ms, bersekat),
+  menyingkap podium 2-1-3 dengan balok makin tinggi makin tinggi peringkatnya + foto profil (balok 3→2→1 tumbuh, sosok
+  mendarat, mahkota goyang; CSS `.podium-*`).
+  KEMBANG API: bila PEMBACA adalah juara 1 (`rayakan`, dihitung server di `QuizTab`), tiap membuka papan menyalakan kanvas layar penuh
+  ±5 dtk (`lib/kembangApi.ts`); satu pertunjukan sekaligus - membuka lagi saat masih berjalan TIDAK menumpuk/memulai baru; hemat gerak = tak tampil. WARNA bagian quiz HANYA keluarga biru (permintaan pemilik): tanpa amber/kuning/oranye kecuali gambar PIALA di pintu; balok podium, status, batang pantau, dan kembang api semuanya biru-putih. Isian angka di `.kelas-jakarta` tanpa panah spinner (CSS). Versi "tombol kecil + ruang memanjang" dan kolom `QuizPapanPeringkat` sudah dihapus.
+- **About - warna & Sources (revisi)**: panel 02 memakai `color-mix(paper 90%, blue-600)` supaya tiga panel membentuk satu tangga rona biru
+  (01 `deep` gelap, 02 = titik tengah persis `deep`/`paper-card` (BUKAN dicampur biru: pernah terlalu biru), 03 `paper-card`); peraga Ticker =
+  kata putih + titik `blue-400`, sama seperti panel 01/03. `Sources`: tanda "+" DIHAPUS; penjelasan poin = `text-xl font-semibold` (SAMA dengan
+  judul & nomor poin) dan tetap `text-blue-300`.
+- **Perlindungan kode & salin**; perayap AI diminta berhenti lewat `app/robots.ts` + meta `noai` (permintaan sopan, bukan penghalang) (jujur soal batasnya: kode yang dikirim ke peramban selalu bisa diambil): (1) `next.config.ts` -
+  `productionBrowserSourceMaps:false`, `poweredByHeader:false`, header global (kecuali `/lab/python-worker.js`, yang punya CSP sendiri):
+  `frame-ancestors 'self'` + `X-Frame-Options SAMEORIGIN` (situs tak bisa dibingkai), nosniff, Referrer-Policy, HSTS, COOP
+  `same-origin-allow-popups` (popup Google/Midtrans tetap jalan), Permissions-Policy. CSP penuh SENGAJA tak dipasang (Midtrans Snap,
+  Firebase, Google Translate, Pyodide - tanpa daftar sumber lengkap akan merusak situs). (2) `ui/PerlindunganSalin.tsx` (dipasang di
+  layout): `html[data-lindungi]` mematikan blok teks (`user-select:none`), menahan `copy/cut/contextmenu/dragstart` dan pintasan
+  F12 / Ctrl+Shift+I,J,C / Ctrl+U / Ctrl+S, KECUALI di kolom isian/editor dan elemen `data-boleh-salin`, serta seluruh `/admin` & `/educator`.
+  Tombol "Salin" memakai Clipboard API (tak terpengaruh). Ini hanya penghalang pengunjung awam; keamanan sungguhan = server (kode server &
+  rahasia tak dikirim ke klien, aturan akses, sesi).
+- **Tambahan Pantau (uji: `npm run verify:quiz-tambahan`, murni + dev server)**:
+  - **Analisis soal**: `analisisSoal(quiz, percobaan)` (rules, murni) menghitung dari percobaan TERKUMPUL saja, diurut
+    `persenSalah` menurun; MCQ = persen tiap opsi + `terbanyakId`, esai = rata-rata skor % (`persenSalah` esai = 100 - rata).
+    UI `quiz/AnalisisSoal.tsx` (server, biru; kunci ditandai "Kunci", terfavorit "Terbanyak").
+  - **Ekspor**: `GET /api/classes/quiz-export?class&quiz` (`requireOwnedClass`; 409 bila `alasanTakBisaEkspor`: tak ada yang
+    mengumpulkan / ada esai belum dinilai). Berkas dibuat `lib/xlsxMini.ts` (NETRAL; ZIP "stored" + CRC32 sendiri, `inlineStr`,
+    karakter kontrol XML dibuang; tanpa dependensi). Poin berupa ANGKA, belum mengerjakan = sel kosong (bukan 0). Tombol di Pantau
+    nonaktif + alasan bila belum boleh. Setiap XML baru harus tetap terbaca `extractOfficeText`.
+  - **Peringatkan murid**: `warnQuizStudents` (classQuizActions; pemilik/admin) menulis `classes/{id}/quizAlerts/{quizId}`
+    `{at, uids, byUid}` (sasaran = anggota TANPA percobaan saat itu; ditolak bila ditutup / belum dibuka / jeda
+    `JEDA_PERINGATAN_DETIK` 20 dtk). Siswa memoll `GET /api/classes/quiz-alert?class` (hanya anggota non-pemilik; jawaban hanya
+    untuk uid SESI, tanpa daftar sasaran) - lolos bila `peringatanBerlaku` (sasaran, belum mulai, quiz terbit/terbuka/tak ditutup,
+    dalam `MASA_PERINGATAN_DETIK` 120). Klien `quiz/PeringatanQuiz.tsx` (dipasang di `ClassRoom` untuk siswa dan di halaman quiz siswa
+    selama belum mulai): poll 8 dtk saat tab terlihat, layar penuh `z-[300]` + bilah selebar layar berdenyut (`.peringatan-bilah`),
+    alarm WebAudio 2 dtk; peramban boleh menahan suara sebelum ada sentuhan, jadi alarm dibunyikan pada sentuhan pertama bila tertahan.
+    Sudah-dilihat dicatat di localStorage `synaped_quiz_alert_<quizId>` = `at`.
+- **Tautan di teks pengumuman/tugas/balasan**: `lib/linkify.ts` (netral, `pecahTeksTautan`; hanya http(s)/www, menolak userinfo
+  & host tanpa titik, memangkas tanda baca ujung) + `classes/TeksBertaut.tsx` (`target=_blank`, `noopener noreferrer nofollow ugc`).
+  Isi tetap teks polos. Uji: `npm run verify:linkify`.
+- **Nama hidup di pengajuan**: `getApplication`/`listApplications` (educator.ts) dan `listRequests*` (courseRequests.ts) menimpa
+  nama/foto dengan data Auth saat ini (salinan dipakai bila akun terhapus), sehingga ganti nama oleh admin ikut tampil. Uji:
+  `npm run verify:admin-nama` (dev server).
+- **Halaman Pantau sengaja BERBEDA dari gaya kartu profil**: ruang kendali (angka besar "n / total", batang sebaran
+  status, rata-rata), "lintasan" per siswa (batang waktu terpakai vs batas; batang bergaris-gerak `.pantau-garis` untuk yang
+  sedang mengerjakan, amber bila waktu habis), dan garis waktu aktivitas bertitik. Tautan kembali = `BackLink`.
+- **Peringkat**: nilai tertinggi → durasi tercepat → mulai lebih dulu; hanya percobaan terkumpul dengan
+  esai dinilai penuh; tiga teratas (nama+foto+nilai+waktu) dilihat siswa, selebihnya hanya pengelola.
+- **Tes**: `npm run verify:class-quiz` (aturan murni + alur penuh; dev server).
+
+## Arsip postingan kelas
+
+- Field `archived` (boolean, + `archivedAt`) pada dokumen post; `KelasPost.archived` (`toPost` → false bila hilang).
+  `setPostArchived(classId, postId, archived)` di classActions (pemilik/admin; `updatedAt` TIDAK disentuh).
+- Terarsip = tak ada bagi siswa di SETIAP jalur: `ClassRoom` menyaringnya sendiri (jangan hanya andalkan
+  pemanggil), halaman tugas siswa 404, `/api/classes/attachment` & `/model` 404 untuk non-pemilik,
+  `createReply` dan `ambilTugas` (kirim/batal kirim) menolak untuk siswa; `gradeClassSubmission` memakai
+  `ambilTugas(..., true)` agar pengajar tetap bisa menilai tugas terarsip.
+- UI: `ArsipButton` (di `PostFeed` bersama Edit/Hapus, tanpa konfirmasi) dan `ArsipZona` (TAB "Arsip" di kanan "Tugas",
+  HANYA `isOwner`; siswa dengan `?tab=arsip` jatuh ke Pengumuman; `<details>` per item: isi, lampiran, tautan tugas, Pulihkan, Hapus). Tes: `npm run verify:class-archive`.
+
+## Objek 3D di pengumuman kelas
+
+Pengumuman (BUKAN tugas) boleh membawa satu model `.glb` + keterangan per titik.
+Pustaka: `three`, `@react-three/fiber`, `@react-three/drei` (+ `@types/three`).
+
+- **Data**: field `model3d` pada dokumen post `{file:{name,path,size,mime}, title, annotations:[{id,title,text,mesh,meshName,point:[x,y,z]}]}`
+  (`KelasPost.model3d`, null = tanpa). Aturan & validasi NETRAL di `lib/model3dRules.ts`
+  (`title` gerbang ≤80, kosong/dokumen lama → dari nama berkas via `validasiJudulModel`; maks 30 keterangan, judul ≤60 wajib, teks ≤400, koordinat dibatasi). `point` = koordinat
+  scene glTF SEBELUM penskalaan tampilan; `mesh` = urutan komponen menurut `traverse` (hanya untuk
+  menyorot; titik tetap tampil walau indeksnya tak cocok).
+- **Berkas**: `class-files/{uid}/{classId}/…`. Browser mengunggah dengan MIME `application/zip`
+  (`MIME_UNGGAH_MODEL3D`) karena itu SUDAH diizinkan rules yang ter-deploy - versi awal memakai
+  `model/gltf-binary` dan gagal `storage/unauthorized` karena rules tak ikut deploy otomatis. Server menerima
+  kedua MIME dan mencatat `mime` sebagai `model/gltf-binary`. `storage.rules` tetap punya `isModel3d()`
+  (opsional, hanya `class-files`); keabsahan GLB dijaga penanda `glTF`, bukan MIME.
+  Server (`periksaBerkasModel` di classAssignments.ts) membaca ulang ukuran/MIME dari Storage DAN
+  12 byte pertama (ajaib `glTF`, versi 2) - nama `.glb` saja tidak dipercaya. `periksaModel3D`:
+  berkas tak dikirim ulang = pertahankan berkas lama (path dari browser tak pernah menunjuk
+  berkas yang bukan milik post). Satu komponen = satu keterangan (`adaMeshGanda`, ditolak
+  saat MENULIS saja; data lama tak dibuang). Di editor, mengeklik komponen berketerangan hanya memilihnya.
+- **Action**: `createPost(classId, body, lampiran, model3d)` dan `editPost` (`model3d`: tak ada =
+  tak diubah, `null` = dibuang, objek = keterangan baru + opsional `file` baru). Berkas yang
+  diganti/dibuang/ikut post/kelas yang dihapus ikut dihapus (`bersihkanPost/Kelas`, `editPost`).
+  Pengumuman yang hanya berisi objek 3D sah (tanpa teks).
+- **Penyaji**: `/api/classes/model?class&post&v` (anggota/pemilik/admin; bukan anggota 404) -
+  inline `model/gltf-binary` + `nosniff` + CSP `sandbox`; dibaca `fetch` pemuat, bukan diunduh.
+- **UI** (`components/classes/model3d/`): `Model3DStage` (client; pembungkus: lazy-load lewat
+  IntersectionObserver, `frameloop` dijeda saat di luar layar, kartu hologram HTML + garis SVG
+  yang posisinya ditulis ke DOM tiap bingkai lewat `onProject` - BUKAN state), `Model3DScene`
+  (adegan R3F; dimuat `next/dynamic` `ssr:false`; klon scene (bahan TIDAK diklon/di-dispose: dipakai bersama cache
+  `useGLTF`); sorotan komponen (terpilih/hover) = garis tepi biru yang mengalir (`EdgesGeometry` + `LineDashedMaterial`
+  dengan uniform fase lewat `onBeforeCompile`, karena material itu tak punya `dashOffset`; `raycast` garis dimatikan
+  agar tak mencegat klik) - BUKAN emissive; TANPA penanda bola/cincin dan TANPA cahaya biru latar panggung (gradasi radial & lampu cyan dihapus); tombol putar = `putar()` per sisi 90° (tween BERBASIS WAKTU 1,1 dtk ease-in-out sinus di useFrame `putaran`, bukan pelunakan per bingkai yang terasa patah; tekan lagi saat berjalan = lanjut dari posisi sekarang; seret manual membatalkan), bukan reset; TANPA penanda bola/cincin di mana pun (dihapus atas permintaan pemilik, jangan dikembalikan; gantinya: di editor/mode sunting SEMUA komponen berketerangan selalu bergaris biru mengalir, di tampilan murid & Pratinjau garis hanya saat di-hover, TANPA garis untuk komponen terpilih), kartu hologram = nama komponen + keterangan saja (tanpa nomor, TANPA glitch/sapuan cahaya - dihapus), latar dibuat transparan (alfa ≈0,35), memakai `TeksAcak` (teks acak sejenis yang mengunci kiri→kanan); model dinormalisasi ke ukuran 2; uji halangan raycast tiap 6
+  bingkai meredupkan kartu bila titik di balik model), `LampiranModel3D` (editor: tab
+  Sunting/Pratinjau; Pratinjau = Stage mode `lihat` yang sama dengan murid). `GerbangModel3D` = pembungkus di umpan (`PostFeed`)
+  DAN di tab Pratinjau editor: kotak berjudul → ruang memanjang ke bawah (`grid-template-rows` 0fr→1fr; kotak ini
+  SENDIRI pintunya - daun pintu sudah dihapus atas permintaan pemilik, jangan dikembalikan), isi memudar masuk;
+  `Model3DStage` baru DIPASANG pada klik pertama (lazy; jangan pasang saat tertutup: IntersectionObserver
+  menganggap elemen berukuran nol "terlihat"). Mode `lihat`: komponen TANPA keterangan tak merespons
+  (tanpa hover/sorotan/klik) dan tetap menghalangi yang di belakangnya (`sasaranKena`). Dipasang di
+  `PostComposer`, `EditPost`, `PostFeed`. Zoom gulir baru aktif setelah panggung ditekan (supaya
+  umpan tetap bisa digulir); tombol +/-/reset/layar penuh selalu ada. CSS `.holo-*` di globals.css;
+  panggung SELALU gelap (hex sendiri; `keep-white` karena `--color-white` terbalik di tema terang).
+- Jebakan: `Model3DScene` mematikan lint `react-hooks/immutability` per berkas (graf three.js
+  imperatif). URL objek dari `createObjectURL` TIDAK dilepas di cleanup efek (StrictMode memanggil
+  cleanup palsu dan merusak URL yang masih dipakai) - dilepas lewat `bebaskanModel`.
+- Tes: `npm run verify:model3d` (aturan murni + penerbitan/penolakan/penyaji/edit/pembersihan; butuh dev server).
+
 ## SynapLab (`/lab`)
 
 Papan sandbox untuk memvisualisasikan materi. **Tanpa Firestore, tanpa Server
 Action, tanpa login** — seluruh keadaan hidup di memori browser dan di URL.
-Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
-**N-D** (`arrayNd`).
+Lima materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
+**3D** (`array3d`), **N-D** (`arrayNd`) — **Linked List** (`linkedList`,
+singly), **Flowchart** (`"flowchart"`), **Python** (`"python"`, Lab 04) dan
+**Pseudocode** (`"pseudocode"`, Lab 05). Tiga yang terakhir BUKAN `LabId` (lihat
+bagian Flowchart & Lab kode); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode"`. Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
+MENIMPA halaman (fixed + latar gelap, `inert` saat tertutup, fokus dikurung,
+gulir `body` dikunci, `Esc` ditangkap di fase capture supaya tidak ikut menutup
+mode presentasi). Komponennya generik — hanya menerima `BagianNavigasi[]`
+(teks) dan `onPilih(id)` — dan dirender SEKALI oleh `LabShell` di luar ruang
+kerja mana pun, jadi tidak bergantung pada halaman materi yang sedang dibuka
+(materi baru boleh punya halaman yang sama sekali berbeda). Tombolnya: di lg
+kolom sempit di kiri judul — `LabShell` membungkus `[LabNavigasi | ruang kerja]`
+dalam `lg:flex`, jadi tombol sejajar judul dan tidak ikut tergulir; di layar
+sempit pil mengambang di tengah bawah. Materi/lab baru = satu entri di `NAVIGASI` + `MATERI` + cabang
+ruang kerjanya. Array di laci hanya SATU item (`ID_ARRAY` = `"array"`, bukan `LabId`;
+atas permintaan pemilik): dimensinya dipilih lewat pengalih 1D/2D/3D/N-D di kepala
+halaman, dan item laci membuka dimensi yang TERAKHIR dipakai (`arrayTerakhir`),
+bukan selalu 1D. `aktif` yang dikirim ke `LabNavigasi` dipetakan ke `"array"` selama
+materi array terbuka.
 
 - **Logika murni di `lib/lab/`** (semuanya netral; `scripts/verify-lab.ts`
   mengimpornya lewat path relatif):
@@ -480,8 +799,8 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   - URL: `labUrl.ts` (dispatcher `encodeLabSnapshot`/`decodeLabSnapshot`),
     `labUrlMatrix.ts`, `labUrlCube.ts`, `labUrlNd.ts`, `labUrlBagian.ts` (penolong
     urai bersama).
-- **UI**: `LabShell.tsx` = pengalih 1D·2D·3D·N-D + kepala halaman. Tiap lab adalah
-  sebuah `LabKit` (`labKit.ts` kontraknya, `labKits.tsx` keempatnya: reducer,
+- **UI**: `LabShell.tsx` = laci materi (`LabNavigasi`), pengalih dimensi, dan kepala halaman. Tiap lab adalah
+  sebuah `LabKit` (`labKit.ts` kontraknya, `labKits.tsx` kelimanya: reducer,
   katalog, kanvas, encode, navigasi panah, isian "pakai sel" + `isianSel` = nama
   isian yang boleh diisi dari sel dan karenanya TIDAK diisi contoh di awal). `LabWorkspace.tsx`
   generik (bilah alat, langkah, riwayat, presentasi, bagikan, pintasan) dan
@@ -524,7 +843,8 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
 - Transformasi 2D & 3D memindahkan **sel** (id, catatan) beserta penunjuk & sorotannya;
   `verify-lab` memeriksa "yang ditandai" tetap sel yang sama.
 - **Skema URL** `?s=1<huruf>~ruas~ruas~ruas~ruas` (selalu 5 ruas), huruf `a`=1D,
-  `m`=2D, `c`=3D, `n`=N-D. 1D: nilai~penunjuk~rentang~catatan. 2D: baris dipisah `;`,
+  `m`=2D, `c`=3D, `n`=N-D, `l`=linked list. Linked list: nilai dari head ~ tiga ruas
+  cadangan yang WAJIB kosong (alamat dihitung ulang dari id). 1D: nilai~penunjuk~rentang~catatan. 2D: baris dipisah `;`,
   nilai `,` ~ `nama:r:c:nada` ~ `r1:c1:r2:c2:nada` ~ `r:c:teks`. 3D: bentuk `DxRxC` (kosong = kubus kosong) ~ nilai row-major ~
   `nama:k:i:j:nada` ~ `k1:i1:j1:k2:i2:j2:nada`. N-D: bentuk dipisah
   `x` ~ nilai row-major ~ kursor dipisah `x` (kosong = tanpa) ~ `sumbu:posisi:nada`.
@@ -566,6 +886,40 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   - `StepTimeline` hanya merender jendela 60 langkah di sekitar langkah aktif
     (pengurutan bisa ratusan langkah) + tombol lompat ke awal/akhir.
   - Isian `pilihan` (select) di `labForm`/`LabControls`; nilai bawaannya opsi pertama.
+- **Linked list** (`listLab.ts`, `listLabCatalog.ts`, `labUrlList.ts`, `ListBoard.tsx`):
+  - Keadaan = `nodes[{id,value,next}]` + `head` + `nextId`; urutan larik `nodes` tidak
+    bermakna, urutan list = rantai `next` dari head. Maksimal `LIST_MAX_NODES` 8.
+    `alamatSimpul(id)` = 1000 + (id×7919 mod 8999): tiruan alamat yang sengaja
+    TIDAK berurutan, unik untuk id < 8999.
+  - Dua tingkat invarian: `assertListInvariants` (keadaan akhir & URL: semua simpul
+    tercapai dari head tepat sekali, tanpa siklus) dan `assertListLangkah` (setiap
+    langkah tengah: simpul boleh lepas dari rantai, tetapi **tidak boleh hilang** —
+    harus tercapai dari head atau dari variabel penunjuk langkah itu). Inilah yang
+    menangkap urutan pointer yang salah (mis. `cur.next = baru` sebelum
+    `baru.next = cur.next`). Langkah terakhir tanpa variabel.
+  - Tanda khusus di `LabStep`: `variabel` (`{nama, id|null}[]`, chip dikunci NAMA
+    sehingga `cur` yang maju meluncur) dan `posisiSimpul` (id → {kolom, baris};
+    dipakai saat tata letak bawaan menyesatkan — simpul baru/dihapus di baris 1,
+    dan seluruh simpul dikunci di tempat selama list dibalik). Tanpa `posisiSimpul`,
+    papan menata rantai dari head (simpul lepas di baris 1).
+  - `ListBoard` menggambar dalam piksel tetap lalu `scale()` agar muat (minimum
+    0,72 — di bawahnya alamat tak terbaca — selebihnya digulir). Simpul = kartu
+    `[data | next]`, head = kotak pointer berlabel "HEAD" (bentuk sama dengan
+    bagian next), pointer null = coretan miring di kotaknya, indeks & alamat di
+    BAWAH kartu (atas kartu dipakai chip variabel). SVG panah dirender SESUDAH
+    simpul (di atasnya); bulatan pointer BUKAN elemen HTML melainkan
+    `marker-start` panahnya, jadi bulatan & garis selalu menyatu (juga saat
+    meluncur). Pangkalnya = pusat isi kotak next (memperhitungkan tepi 2px), dan
+    tombol simpul `flex justify-start` — `<button>` bawaannya memusatkan isi
+    tegak dan menggeser kartu ±2px dari posisi hitungan panah;
+    panah maju berakhir di tengah sisi kiri simpul tujuan, jadi rantai lurus
+    benar-benar lurus (titik awal & akhir sama tinggi). Panah = `<path>` SVG yang bentuknya ditulis lewat
+    properti CSS `d` dan ditransisikan (`.lab-panah`) — SELALU satu perintah
+    `M … C …` dengan jumlah angka sama supaya bisa dianimasikan; pointer null =
+    jalur yang mengerut di titik asal (titik kendali di titik asal juga, supaya
+    tidak mengayun). Panah yang menunjuk ke belakang melengkung di bawah rantai
+    dan masuk dari bawah simpul (toleransi "sebaris" = setengah tinggi baris).
+  - Pilihan papan = INDEKS simpul di rantai (bukan id).
 - **Panah keyboard** memilih sel hanya kalau fokus ada di papan (atau di body);
   di tempat lain panah tetap menggulir panel. 2D: ←→↑↓; 3D: ←→ kolom, ↑↓ baris,
   PgUp/PgDn lapisan; N-D: ←→ sumbu terakhir, ↑↓ sumbu sebelumnya.
@@ -629,6 +983,151 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
     berlaku — itu tata letak, bukan animasi).
 - Tautan "Lab" di navbar bertanda `sempit: true` → `hidden lg:block`. Diukur:
   di 820px, menambahkannya mendorong tombol "Daftar Gratis" keluar layar.
+- **Flowchart** (`lib/lab/flow*.ts` netral + `components/lab/flow/`):
+  - TIDAK memakai `LabKit`/`LabWorkspace`: disunting langsung di kanvas, dan
+    "langkah"-nya eksekusi program, bukan animasi operasi. `LabShell` mengenalnya
+    sebagai `PilihanLab = LabId | "flowchart"`; yang dipakai bersama hanya
+    `labHistory` dan gaya.
+  - Data: `flowTypes.ts` (`Simpul{id,jenis,x,y,w,h,teks}`, `Garis{id,dari,ke,
+    dariSisi,keSisi,label}`, satu `nextId` untuk keduanya, batas 120 simpul/240
+    garis/teks 200). Mulai & Selesai dua JENIS berbeda (jangan ditebak dari teks).
+  - `flowGeometri.ts`: bentuk tiap jenis sebagai path, titik sambung per sisi,
+    `ruteGaris` siku ala draw.io (keluar lurus 20px dulu; sisi sama → "kurung"),
+    `bungkusTeks` dengan PERKIRAAN lebar huruf — sengaja tanpa measureText supaya
+    server, browser, dan berkas ekspor membungkus identik (tanpa hydration mismatch).
+  - `flowEdit.ts`: operasi murni (diagram baru, tidak mutasi; ditolak = diagram
+    sama). `sambung` dari Keputusan otomatis memberi label Ya lalu Tidak.
+    Menaruh, menggeser, dan menggandakan menjepret TITIK TENGAH simbol ke grid
+    (`tepiDariPusat`), bukan tepi kirinya: lebar bawaan berbeda per jenis (140/160/170)
+    dan garis tersambung di tengah sisi, jadi tepi yang dijepret membuat tengah
+    meleset 5px dan garis berbelok kecil (bug yang dilaporkan pemilik). Pratinjau seret
+    di `FlowCanvas` memanggil `pindahkan` yang sama — pratinjau = hasil.
+  - Garis LURUS untuk selisih kecil: `ujungGaris` (dipakai `titikGaris` & pratinjau
+    menyambung) menggeser satu ujung sepanjang bagian DATAR sisinya (`ruangGeser`;
+    puncak ketupat, busur kapsul/lingkaran/silinder, sisi miring jajar genjang =
+    0) bila dua simbol berhadapan dan tengahnya meleset ≤ `TOLERANSI_LURUS` (20px);
+    ujung tujuan diutamakan. Ini juga meluruskan diagram LAMA tanpa memindahkan
+    simbolnya. Selisih lebih besar = belokan yang disengaja.
+  - `flowEkspresi.ts`: Pratt parser sendiri — **jangan pernah `eval`/`Function`**
+    (tautan flowchart dari siapa saja). Variabel di `Map` (aman dari `__proto__`).
+    Di kondisi, `=` berarti sama dengan. Galat = `GalatEkspresi` berbahasa Indonesia.
+    **Bentuk baku = gaya Cambridge** (keputusan pemilik; silabus IGCSE 0478 / O Level
+    2210 menetapkan enam simbol & penulisan tepat, isinya pseudocode Cambridge):
+    START/STOP, INPUT, OUTPUT, ←, Yes/No, AND/OR/NOT, MOD/DIV (operator & bentuk
+    fungsi `MOD(a, b)`), `&`, INT/ROUND/LENGTH/UCASE/LCASE, kondisi boleh diawali
+    "Is"/"Apakah" (`bersihkanKondisi`). Bentuk lama/Indonesia TETAP diterima (flowchart
+    lama harus jalan) — `saranGaya` (flowPeriksa) + `gayaEkspresi` (flowEkspresi)
+    hanya memberi temuan SARAN `gaya-cambridge`, satu per simbol. `OUTPUT` menyambung
+    nilai TANPA pemisah (seperti pseudocode); Tampilkan/Cetak/Print tetap dengan spasi
+    (`PerintahIo.pemisah`) supaya keluaran flowchart lama tidak berubah. Teks bawaan
+    simbol (`INFO_JENIS`), label otomatis, dan contoh semuanya baku (diuji: contoh &
+    teks bawaan tanpa saran). Tab "Panduan" (`PanduanFlow.tsx`) = daftar perintah yang
+    dilihat siswa — WAJIB diperbarui bila mesin menerima bentuk baru.
+    Token operator menyimpan `asli` (ejaan siswa: "mod", "<>") di samping bentuk baku
+    (`%`, `!=`); pesan galat WAJIB memakai `asli` — dulu "x > mod 2" dilaporkan sebagai
+    '"%" tidak boleh berada di sini'. Dua operator berurutan disebut keduanya.
+  - `flowJalan.ts`: mesin jalan murni; "aktif" = simpul yang BARU dijalankan,
+    Keputusan menyimpan `cabang` untuk langkah berikutnya, konektor tanpa garis
+    keluar melompat ke konektor berlabel sama, input dari antrean atau
+    `tunggu-input`, berhenti di `FLOW_MAKS_LANGKAH` 5000. Subproses bernama/
+    Dokumen/Data dilewati dengan narasi jujur.
+  - `flowPeriksa.ts`: temuan `galat`/`saran` + id simbol/garis untuk disorot
+    (sorotan kanvas hanya saat tab Periksa terbuka). Keterjangkauan & "jalan ke
+    Selesai" ikut menghitung lompatan konektor.
+  - `flowUrl.ts`: `?f=` = digit versi + base64url(deflate-raw(JSON ringkas)) via
+    `CompressionStream` (sama di browser & Node), maks 8000 karakter; dibaca di
+    SERVER (`app/lab/page.tsx`, async). `sahkanDiagram` = satu-satunya pintu data
+    luar (tautan & berkas `.json`), semua-atau-tidak; dekompresi dibatasi 512 KB
+    (bom kompresi). `verify-flowchart` membuktikan batas itu dengan JSON SAH 2 MB —
+    muatan rusak sudah gagal di JSON.parse dan tidak menguji batasnya.
+  - `flowSvg.ts`: ekspor SVG dari DATA (bukan DOM — variabel CSS tema tidak ikut,
+    `foreignObject` membuat kanvas PNG tercemar), selalu latar putih. PNG = SVG itu
+    digambar ke canvas 2×.
+  - Kanvas (`FlowCanvas.tsx`): SVG + pointer capture; seret = pratinjau di state
+    lokal, diterapkan SEKALI saat dilepas (satu entri undo). `wheel` dipasang manual
+    (`passive:false`). Klik ganda memakai `document.elementFromPoint`, BUKAN
+    `e.target` — selama pointer capture klik diarahkan ke `<svg>`. Warna = rona
+    jenis (`RONA_JENIS`) dicampur `--color-paper-card`, jadi ikut tema gelap/terang.
+  - Ruang kerja (`FlowWorkspace.tsx`): mode Jalankan MENGUNCI penyuntingan;
+    pemutar `setTimeout` berantai dari event handler (bukan effect); viewport awal
+    dihitung dari data (bukan diukur) supaya render server = klien; draf
+    `localStorage` (`synaplab-flowchart-draf`) dibaca lewat `useSyncExternalStore`.
+    Menu `<details>` menutup lewat klik di wadahnya (lint `react-hooks/refs` menolak
+    fungsi pembaca ref yang dioper saat render). Situs punya layar intro sekali per
+    sesi (`SplashLoader`, ±4 dtk) — uji browser harus menunggunya.
+  - Tombol/ikon/`Kelompok`/`Menu`/`unduh` bilah alat ada di `components/lab/LabAlat.tsx`,
+    dipakai bersama flowchart & lab kode.
+  - Panel Properti: Teks simbol & label garis diterapkan PER KETUKAN (isian terkendali
+    dari diagram), BUKAN saat blur — dulu hanya saat blur, dan mengeklik kanvas
+    mengganti panel lebih dulu sehingga blur tak pernah datang dan ketikan hilang
+    (bug yang dilaporkan pemilik). Satu sesi mengetik tetap SATU undo: `terapkan(…,
+    sesi)` di FlowWorkspace — ketukan pertama sesi `pushHistory`, berikutnya
+    `gantiPuncakHistory` (labHistory.ts); operasi lain, blur (`onSelesaiKetik`),
+    undo, dan redo memutus sesi. Kunci `PropertiSimpul`/`PropertiGaris` TIDAK boleh
+    memuat teks/label (panel terpasang ulang tiap ketukan → fokus hilang).
+- **Lab kode — Python (Lab 04) & Pseudocode (Lab 05)**:
+  - Satu ruang kerja untuk keduanya (`components/lab/kode/KodeWorkspace.tsx`);
+    yang berbeda hanya `MesinKode` (`jalankan(kode, masukan, rekam) → JejakKode`,
+    `hentikan`, `status`), contoh, dan panduan (`Panduan.tsx`). Bentuk jejak bersama
+    di `lib/lab/kodeTypes.ts`: satu langkah = keadaan SEBELUM `baris` dijalankan,
+    langkah terakhir `baris: null` (selesai) atau baris galat; `panjangKeluaran`
+    (angka, bukan salinan teks) → keluaran langkah = `jejak.keluaran.slice(0, n)`.
+    "Langkah demi langkah" = MEMUTAR ULANG jejak yang sudah direkam (maju-mundur
+    gratis); mode langkah mengunci editor (`Sunting` membuka).
+  - Editor (`KodeEditor.tsx`): `<textarea>` transparan di atas `<pre>` berwarna,
+    huruf/ukuran/`leading-6`/bantalan HARUS sama (selisih = kursor melayang); gulir
+    disinkronkan lewat `transform` langsung di DOM. Sisip teks lewat
+    `execCommand("insertText")` supaya Ctrl+Z bawaan tetap jalan. Esc lalu Tab =
+    keluar editor. Warna token = kelas `.kode-*` / variabel `--kode-*` di globals.css
+    (ada versi tema terang), BUKAN hex di kelas Tailwind. Penyorot `kodeSorot.ts`
+    toleran (tak pernah melempar) dan token per baris HARUS menyusun ulang barisnya
+    persis (diuji).
+  - Draf `localStorage` (`synaplab-python-draf` / `synaplab-pseudocode-draf`)
+    ditulis dari PENANGAN ketik, bukan efek — memuat contoh tidak boleh menimpa
+    draf (itulah jalan pulang); dibaca lewat `useSyncExternalStore`, tawaran
+    "Buka draf" muncul setelah hidrasi.
+  - Tautan `?py=`/`?ps=` (`kodeUrl.ts`): digit versi + padatan `{k, m}` lewat
+    `labKompres.ts` (dipakai juga `flowUrl.ts`), maks 8000 karakter, dekompresi
+    dibatasi 256 KB, semua-atau-tidak; dibaca di server (`app/lab/page.tsx`). Kode
+    dari tautan HANYA ditampilkan, tidak pernah dijalankan otomatis. Berkas
+    `.py`/`.txt` = kode polos (tanpa masukan).
+  - **Pseudocode** (`lib/lab/pseudo/`, netral): `pseudoLexer` → `pseudoParser`
+    (AST bernomor baris, Pratt) → `pseudoJalan` (interpreter GENERATOR: `yield`
+    baris sebelum tiap pernyataan, `yield*` menembus pemanggilan fungsi, jadi
+    langkah di dalam rekursi ikut terekam). Dialek = Pseudocode Guide 9618
+    (diverifikasi dengan panduan resmi 2026): kata kunci huruf besar (huruf kecil =
+    galat yang menjelaskan), nama tak membedakan besar-kecil (Map berkunci HURUF
+    BESAR), BYREF/BYVAL berlaku untuk parameter sesudahnya sampai diganti
+    (contoh SWAP panduan), FUNCTION tanpa BYREF, CONSTANT hanya literal, `/`
+    selalu REAL, DIV/MOD INTEGER (juga bentuk fungsi lama), `&` untuk teks,
+    AND/OR hubung-singkat, REAL ditampilkan bertitik (`5.0`). DECLARE WAJIB
+    (panduan: "praktik baik"; lab mewajibkan agar tipe bisa diperiksa — pesan
+    galatnya mengatakan itu). Batas: 10.000 langkah, rekursi 200, array 10.000
+    sel, teks 10.000, keluaran 50.000. INPUT TIDAK menggemakan nilai. Tanda `−`/`–`
+    dan kutip `ꞌ` dari PDF panduan diterima.
+  - **Python** — Pyodide dari jsDelivr (versi di `python/pythonVersi.ts`, SATU
+    sumber untuk worker & CSP) di Web Worker berkas statis (lihat invarian
+    keamanan 6). Worker = cangkang: memuat Pyodide, memasang `KODE_PELACAK`
+    (`python/pythonPelacak.ts`, kode Python sebagai teks), menghapus API jaringan &
+    penyimpanan dari global + prototipenya, lalu meneruskan pesan. Penghalang impor
+    `js`/`pyodide` di pelacak hanya lapisan SOPAN (bisa ditembus lewat gc) — yang
+    menahan adalah CSP + penghapusan API. Hasil worker selalu lewat `sahkanJejak`.
+  - Pelacak: `sys.settrace` hanya untuk berkas `<siswa>`; rekam ≤ `KODE_MAKS_REKAM`
+    (2000), program dihentikan di 100.000 event baris (galat "Batas langkah",
+    bukan layar beku); `input()` diganti versi yang MENGGEMAKAN nilainya (seperti
+    terminal); stdout dikabarkan ke utas utama PER POTONGAN (delta), supaya
+    keluaran sebelum perulangan tak berujung selamat saat worker dimatikan;
+    `builtins` & batas rekursi dipulihkan setiap jalan.
+  - `usePythonMesin.ts`: satu worker per halaman di luar React (status lewat
+    `useSyncExternalStore`), baru dibuat saat lab Python DIBUKA (bukan saat /lab
+    dimuat). Batas waktu 10 dtk dihitung setelah siap; batas waktu/Stop =
+    `terminate()` + worker baru (Pyodide dari cache ±2 dtk). Saran galat Indonesia
+    ditambahkan di utas utama (`python/pythonGalat.ts`); traceback asli tetap tampil.
+  - Uji browser lab kode (puppeteer, tunggu SplashLoader) memeriksa: Pyodide tidak
+    diunduh sebelum lab dibuka, langkah & variabel fungsi, galat bersaran,
+    `import js` ditolak, API jaringan tidak bisa dipanggil dari Python, tidak ada
+    permintaan jaringan dari kode siswa, `import()` dinamis di worker diblokir CSP,
+    Stop/batas waktu/batas langkah, builtins pulih, tautan `?py=`.
 
 ## Pengujian (`scripts/`)
 
@@ -639,7 +1138,20 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   `settings/payments` harus menyalin & memulihkan dokumennya **persis**
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
-- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`. Sisanya butuh `npm run dev`.
+- `verify-model3d` (butuh dev server) menulis GLB uji langsung ke bucket (melewati rules, jadi TIDAK menguji `storage.rules`) lalu membersihkannya.
+- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`. Sisanya butuh `npm run dev`.
+- `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
+  lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
+  Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office
+  (ZIP buatan sendiri, termasuk bom ZIP), dan parser nilai; panggilan AI sungguhan
+  hanya terjadi bila `OPENROUTER_API_KEY` ada (lokal biasanya tidak — pemeriksaannya
+  menerima "belum dikonfigurasi" sebagai bukti alur sampai ke pemanggilan AI).
+- Kunci OpenRouter kosong → `openRouterTerkonfigurasi()` false → kedua action penilaian
+  menjawab `PESAN_AI_BELUM_DIKONFIGURASI`, bukan "tidak bisa dihubungi" (dulu menyesatkan:
+  di dev lokal tanpa kunci, pengajar mengira jaringan/OpenRouter bermasalah).
+- Puppeteer dengan dua peran: pakai `browser.createBrowserContext()` per peran. Tab dalam
+  satu konteks berbagi cookie — memasang cookie siswa diam-diam mengubah tab pengajar jadi
+  siswa (halaman pengelola lalu 404 dan tampak seperti bug).
 - `check`/`finish` hidup di `scripts/checks.ts`; `testSupport.ts` me-re-export-nya.
   Suite murni WAJIB mengimpor dari `./checks` — `testSupport.ts` memanggil
   `initAdmin()` di level modul, jadi mengimpornya menuntut kredensial Firebase
@@ -670,4 +1182,11 @@ Empat lab array: **1D** (`array1d`), **2D** (`array2d`), **3D** (`array3d`),
   tanpa try/catch — dulu tombol beli diam tanpa pesan padahal pesanan sudah dibuat.
 - `CountUp` membaca "4,7" sebagai 47; angka desimal dirender statis.
 - `.rise-in` animasi `transform` menimpa transform lain di elemen yang sama; bungkus dengan lapisan terpisah.
-- **`lib/chatPrompt.ts` masih menyatakan kursus berbayar belum bisa dibeli** — basi, perlu diperbarui.
+- **Pengetahuan asisten pernah basi berminggu-minggu** (bersikeras kursus berbayar belum
+  bisa dibeli padahal Midtrans sudah aktif). Karena itu kini dipisah ke `chatKnowledge.ts`,
+  hal yang bisa dibaca dari sistem dibaca langsung, dan `verify-chat-knowledge` menjaga sisanya.
+- `.next/dev/types/validator.ts` bisa terpotong kalau dev server mati di tengah menulis →
+  `tsc --noEmit` gagal dengan galat sintaks di berkas itu. Hapus berkasnya, lalu ulangi.
+  Kalau setelah itu rute yang ADA menjawab 404 bahkan untuk anonim (seharusnya 307 ke
+  login) atau suite melaporkan "Server action not found": cache Turbopack di `.next/dev`
+  ikut rusak — matikan dev server, hapus seluruh `.next/dev`, jalankan ulang.

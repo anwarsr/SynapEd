@@ -38,8 +38,9 @@ export default function ProfileLink({
       aria-hidden={secondary || undefined}
       tabIndex={secondary ? -1 : undefined}
       className={cn(
-        "transition-colors duration-200 hover:text-blue-700",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg",
+        // Tautan foto (secondary) mendapat cincin garis yang tergambar saat di-hover; tautan nama tetap berubah warna.
+        secondary ? "foto-link inline-block rounded-full" : "transition-colors duration-200 hover:text-blue-700 rounded-lg",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
         className,
       )}
     >

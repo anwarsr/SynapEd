@@ -37,9 +37,9 @@ const NAV_LINKS: readonly { label: string; id: string; href?: string; sempit?: b
 // pernah ada, dan penanda aktifnya diam-diam berhenti bekerja.
 const SECTION_IDS = NAV_LINKS.filter((l) => !l.href).map((l) => l.id);
 
-/** Tombol sekunder berbentuk pil: latar kaca tipis, tanpa garis tepi. */
-const PIL =
-  "rounded-full bg-white/10 px-4 py-2 text-sm font-medium whitespace-nowrap text-white transition-colors duration-200 ease-out-soft hover:bg-white/15";
+/** Tautan sekunder: teks polos TANPA kotak. Hover = garis tipis melebar dari tengah di bawah kata,
+ *  huruf sedikit merenggang (.nav-aksi di globals.css). */
+const PIL = "nav-aksi px-3 py-2 text-sm font-medium whitespace-nowrap text-white/85 hover:text-white";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -193,7 +193,7 @@ export default function Navbar() {
                 href="/profil"
                 title={`${user.email} - buka profil`}
                 aria-label="Buka profil"
-                className="rounded-full ring-2 ring-white/15 transition-[box-shadow,transform] duration-200 ease-out-soft hover:-translate-y-0.5 hover:ring-white/50 focus:outline-none focus-visible:ring-white/70"
+                className="foto-link block rounded-full focus:outline-none"
               >
                 <UserAvatar name={user.name} photoURL={user.photoURL} size="sm" />
               </Link>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import ChatWidget from "@/components/ui/ChatWidget";
 import SplashLoader from "@/components/ui/SplashLoader";
+import PerlindunganSalin from "@/components/ui/PerlindunganSalin";
 import TranslateLoader from "@/components/ui/TranslateLoader";
 import { ChatContextProvider } from "@/components/ui/ChatContext";
 import "./globals.css";
@@ -17,6 +18,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  // Permintaan sopan agar tidak dipakai melatih AI (non-standar, dipatuhi sebagian perayap); lihat juga app/robots.ts.
+  other: { robots: "noai, noimageai" },
   title: "SynapEd – Platform Pembelajaran Online Terlengkap",
   description:
     "SynapEd – Platform pembelajaran online multi-disiplin. Belajar berbagai bidang ilmu secara terstruktur dan aplikatif.",
@@ -47,12 +50,13 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              'try{var d=document.documentElement;if(sessionStorage.getItem("synaped_intro_seen_v2")==="1")d.classList.add("intro-skip");if(localStorage.getItem("synaped_theme")==="light")d.dataset.theme="light"}catch(e){}',
+              'try{var d=document.documentElement;if(sessionStorage.getItem("synaped_intro_seen_v2")==="1")d.classList.add("intro-skip");var t=localStorage.getItem("synaped_theme");if(t==="light")d.dataset.theme="light";else if(t==="custom"){var c=localStorage.getItem("synaped_theme_css");if(c){d.style.cssText=c;if(localStorage.getItem("synaped_theme_mode")==="light")d.dataset.theme="light"}}}catch(e){}',
           }}
         />
       </head>
       <body className="antialiased font-body bg-paper text-ink-body">
         <SplashLoader />
+        <PerlindunganSalin />
         <TranslateLoader />
         <ChatContextProvider>
           {children}

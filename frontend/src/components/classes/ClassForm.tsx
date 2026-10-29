@@ -5,7 +5,7 @@ import { Label, inputClass } from "@/components/educator/fields";
 import { createClass, updateClass } from "@/lib/classActions";
 import { MAX_CLASS_DESC, MAX_CLASS_NAME } from "@/lib/classTypes";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { compressSquare, uploadClassImage } from "@/lib/profile";
+import { compressBanner, compressSquare, uploadClassImage } from "@/lib/profile";
 import { authErrorMessage } from "@/lib/authActions";
 import { inisialKelas } from "@/lib/classColor";
 import { cn } from "@/lib/cn";
@@ -24,7 +24,7 @@ import { cn } from "@/lib/cn";
 export default function ClassForm({
   kelas,
 }: {
-  kelas?: { id: string; name: string; description: string; imageURL?: string | null };
+  kelas?: { id: string; name: string; description: string; imageURL?: string | null; bannerURL?: string | null };
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +33,10 @@ export default function ClassForm({
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(kelas?.imageURL ?? null);
   const [hapus, setHapus] = useState(false);
+  const bannerRef = useRef<HTMLInputElement>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(kelas?.bannerURL ?? null);
+  const [hapusBanner, setHapusBanner] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -52,6 +56,32 @@ export default function ClassForm({
       if (lama?.startsWith("blob:")) URL.revokeObjectURL(lama);
       return URL.createObjectURL(f);
     });
+  }
+
+  function pilihBanner(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      setError("Berkas harus berupa gambar.");
+      return;
+    }
+    setError(null);
+    setBannerFile(f);
+    setHapusBanner(false);
+    setBannerPreview((lama) => {
+      if (lama?.startsWith("blob:")) URL.revokeObjectURL(lama);
+      return URL.createObjectURL(f);
+    });
+  }
+
+  function buangBanner() {
+    setBannerPreview((lama) => {
+      if (lama?.startsWith("blob:")) URL.revokeObjectURL(lama);
+      return null;
+    });
+    setBannerFile(null);
+    setHapusBanner(true);
   }
 
   function buang() {
@@ -80,9 +110,19 @@ export default function ClassForm({
           image = null;
         }
 
+        // Banner: dikecilkan di browser (≤1600px, JPEG < 2 MB) lalu diunggah ke folder avatar yang sama.
+        let banner: string | null | undefined = undefined;
+        if (bannerFile) {
+          const sesi = firebaseAuth().currentUser;
+          if (!sesi) return setError("Sesi berakhir. Silakan masuk kembali.");
+          banner = await uploadClassImage(sesi, await compressBanner(bannerFile));
+        } else if (hapusBanner) {
+          banner = null;
+        }
+
         const res = kelas
-          ? await updateClass(kelas.id, name, description, image)
-          : await createClass(name, description, image ?? null);
+          ? await updateClass(kelas.id, name, description, image, banner)
+          : await createClass(name, description, image ?? null, banner ?? null);
 
         if (!res.ok) return setError(res.error);
 
@@ -92,9 +132,13 @@ export default function ClassForm({
           setDescription("");
           buang();
           setHapus(false);
+          buangBanner();
+          setHapusBanner(false);
         } else {
           setFile(null);
           setHapus(false);
+          setBannerFile(null);
+          setHapusBanner(false);
         }
         router.refresh();
       } catch (err) {
@@ -140,6 +184,39 @@ export default function ClassForm({
             )}
             <p className="text-xs text-ink-muted">Dipotong persegi dari tengah.</p>
           </div>
+        </div>
+      </div>
+
+      {/* Banner kelas */}
+      <div className="mb-5">
+        <Label htmlFor="classbanner">Banner kelas</Label>
+        <div className="relative flex h-[120px] w-full items-center justify-center overflow-hidden bg-white/[0.08] sm:h-[150px]">
+          {bannerPreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={bannerPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <span className="px-4 text-center text-xs text-ink-muted">Belum ada banner. Gambar lebar tampil di kepala ruang kelas.</span>
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <input ref={bannerRef} id="classbanner" type="file" accept="image/*" onChange={pilihBanner} className="hidden" />
+          <button
+            type="button"
+            onClick={() => bannerRef.current?.click()}
+            className="bg-white/10 px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-200 hover:bg-white/15"
+          >
+            {bannerPreview ? "Ganti banner" : "Pilih banner"}
+          </button>
+          {bannerPreview && (
+            <button
+              type="button"
+              onClick={buangBanner}
+              className="px-1 text-[12.5px] font-semibold text-error-text underline-offset-4 hover:underline"
+            >
+              Hapus banner
+            </button>
+          )}
+          <p className="text-xs text-ink-muted">Dikecilkan otomatis (maks 1600 px). Dipotong mengikuti lebar layar.</p>
         </div>
       </div>
 

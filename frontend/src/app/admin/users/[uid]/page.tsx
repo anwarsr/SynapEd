@@ -90,7 +90,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
         </div>
 
         {/* Ubah role & ganti kata sandi (kata sandi lama TIDAK bisa dilihat - lihat adminUserActions.ts) */}
-        <UserManage uid={user.uid} role={user.role} isSelf={user.uid === admin.uid} />
+        <UserManage uid={user.uid} role={user.role} isSelf={user.uid === admin.uid} name={user.name} photoURL={user.photoURL} />
 
         {/* Tautan kembali: garis penunjuk yang memanjang saat di-hover */}
         <BackLink href="/admin" className="mt-12">Kembali ke daftar akun</BackLink>

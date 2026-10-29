@@ -116,5 +116,5 @@ export function joinedAtOf(creationTime: string | undefined): string {
   const t = new Date(creationTime);
   if (Number.isNaN(t.getTime())) return "";
 
-  return new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(t);
+  return new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", month: "long", year: "numeric" }).format(t);
 }

@@ -27,7 +27,7 @@ export default async function VerifyCertificatePage({ params }: Props) {
       <Navbar />
 
       <main className="bg-paper min-h-screen pt-36 pb-24">
-        <div className="container-reading max-w-2xl">
+        <div className="container-reading max-w-3xl">
           <p className="chapter-mark mb-5">
             <span aria-hidden="true" className="w-6 h-px bg-rule-strong" />
             <span>Verifikasi Sertifikat</span>

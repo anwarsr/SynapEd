@@ -35,10 +35,6 @@ export default async function CoursesPage({
         <div className="container-page">
           <div className="mb-14 flex flex-col items-center text-center">
             <SectionTitle as="h1" title="Semua Kursus" />
-            <p className="t-body mt-6 max-w-xl text-ink-muted">
-              {courses.length} modul terstruktur dari level dasar hingga analisis lanjutan. Cari
-              berdasarkan topik, atau saring menurut jenis dan rating.
-            </p>
           </div>
 
           <CourseCatalog courses={courses} categories={categories} initialQuery={awal} />

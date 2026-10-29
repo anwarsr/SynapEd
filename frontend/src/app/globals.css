@@ -1129,8 +1129,8 @@ select optgroup {
 }
 .lp-m-kartu[data-on="true"] { opacity: 1; transform: translateX(0); filter: blur(0); }
 @keyframes lp-m-denyut {
-    0%   { box-shadow: 0 0 0 0 rgb(47 111 237 / 0.7); }
-    100% { box-shadow: 0 0 0 18px rgb(47 111 237 / 0); }
+    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-white) 60%, transparent); }
+    100% { box-shadow: 0 0 0 18px color-mix(in srgb, var(--color-white) 0%, transparent); }
 }
 .lp-m-denyut { animation: lp-m-denyut 900ms ease-out 1; }
 @media (prefers-reduced-motion: reduce) {
@@ -1252,7 +1252,14 @@ select optgroup {
    masuk  = angka keluar ke kanan; judul muncul dari kiri, huruf demi huruf;
    keluar = judul keluar ke kanan; angka muncul lagi dari kiri, huruf demi huruf.
    Kedua lapisan bertumpuk di satu sel grid supaya tepat di tengah. */
-.about-label { display: grid; place-items: center; }
+.about-label { display: grid; place-items: center start; position: relative; }
+/* Di ponsel angka rata kiri pada garis yang SAMA di tiap panel (dulu dipusatkan di sel selebar judul, jadi 02 dan 03 bergeser); di desktop dipusatkan di panel. */
+@media (min-width: 1024px) { .about-label { place-items: center; } }
+/* Ponsel: judul DILEPAS dari aliran (absolut) supaya lebar label = lebar angka saja; angka 01/02/03 pun
+   berhenti bergeser mengikuti lebar judul yang berbeda-beda. */
+@media (max-width: 1023px) {
+    .about-label > .about-judul { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+}
 .about-label > * { grid-area: 1 / 1; }
 .about-huruf { display: inline-block; }
 .about-judul .about-huruf { opacity: 0; }
@@ -1286,11 +1293,6 @@ select optgroup {
     animation-delay: calc(300ms + var(--i) * var(--langkah, 90ms));
 }
 /* Layar tanpa hover (sentuh): angka & judul tampil berdampingan, tanpa animasi. */
-@media (hover: none) {
-    .about-label { display: flex; align-items: baseline; gap: 0.9rem; }
-    .about-label > * { grid-area: auto; }
-    .about-judul .about-huruf { opacity: 1; }
-}
 @media (prefers-reduced-motion: reduce) {
     [data-hover] .about-huruf { animation: none; }
     [data-hover="masuk"] .about-angka .about-huruf { opacity: 0; }
@@ -1351,12 +1353,54 @@ select optgroup {
 .dots-pantul { animation: dots-pantul 1.15s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
 @media (prefers-reduced-motion: reduce) { .dots-pantul { animation: none; } }
 
+/* ══ Tautan navbar: garis melebar dari tengah + huruf merenggang ═══ */
+.nav-aksi { position: relative; letter-spacing: 0; transition: letter-spacing 400ms cubic-bezier(0.22, 1, 0.36, 1), color 200ms ease; }
+.nav-aksi::after {
+    content: ""; position: absolute; left: 50%; bottom: 3px; height: 1.5px; width: calc(100% - 1.5rem);
+    background: currentColor; transform: translateX(-50%) scaleX(0); transform-origin: center;
+    transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-aksi:hover, .nav-aksi:focus-visible { letter-spacing: 0.035em; }
+.nav-aksi:hover::after, .nav-aksi:focus-visible::after { transform: translateX(-50%) scaleX(1); }
+@media (prefers-reduced-motion: reduce) { .nav-aksi, .nav-aksi::after { transition: none; } }
+
+/* ══ Foto profil yang bisa diklik: garis melingkar tergambar mengelilingi foto saat di-hover ═══
+   Cincin = conic-gradient yang sudutnya (--sudut, @property) dianimasikan 0→360deg, dilubangi
+   dengan mask radial sehingga hanya tersisa garis 2px. Pembungkusnya WAJIB bulat & seukuran foto. */
+@property --sudut { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.foto-link { position: relative; }
+.foto-link::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 9999px; pointer-events: none;
+    background: conic-gradient(from 0deg, var(--color-blue-400) var(--sudut), transparent var(--sudut));
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+    transition: --sudut 700ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.foto-link:hover::after, .foto-link:focus-visible::after { --sudut: 360deg; }
+@media (prefers-reduced-motion: reduce) { .foto-link::after { transition: none; } }
+
+/* ══ Pemilih section: garis yang memutari kata saat di-hover ═══
+   pathLength=1 menormalkan keliling kotak, jadi dashoffset 1→0 menggambar garis dari kiri-atas
+   searah jarum jam sepanjang bentuk kata, berapa pun lebarnya. */
+.dots-garis rect { x: 0.75px; y: 0.75px; width: calc(100% - 1.5px); height: calc(100% - 1.5px); stroke: var(--color-blue-400); stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 650ms cubic-bezier(0.65, 0, 0.35, 1); }
+.group:hover .dots-garis rect, .group:focus-visible .dots-garis rect { stroke-dashoffset: 0; }
+.dots-garis-aktif rect { stroke-dashoffset: 0; stroke: var(--color-blue-600); }
+@media (prefers-reduced-motion: reduce) { .dots-garis rect { transition: none; } }
+
+/* ══ Roda pemilih: pop-up pemenang di tengah layar ═══ */
+@keyframes wheel-popup-masuk { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wheel-popup-nama { from { opacity: 0; transform: scale(0.82); filter: blur(10px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
+.wheel-popup { animation: wheel-popup-masuk 300ms ease both; }
+.wheel-popup-nama { animation: wheel-popup-nama 650ms cubic-bezier(0.34, 1.4, 0.5, 1) 80ms both; }
+@media (prefers-reduced-motion: reduce) { .wheel-popup, .wheel-popup-nama { animation: none; } }
+
 /* ══ Robot asisten (ChatRobot) ═════════════════════════════
    Mata berkedip tiap ±4 dtk; gelembung & menu muncul dengan "pop" kecil. */
 @keyframes robot-blink {
     0%, 90%, 100% { transform: scaleY(1); }
     94% { transform: scaleY(0.1); }
 }
+.robot-mata { transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1); }
 .robot-eye {
     transform-box: fill-box;
     transform-origin: center;
@@ -1763,9 +1807,10 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
    tanpa itu, sampai di ujung panel operasi, seluruh halaman ikut bergeser. */
 .lab-pane {
     overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-rule-strong) transparent;
+    /* Bilah gulir disembunyikan (tetap bisa digulir dengan roda mouse/sentuh). */
+    scrollbar-width: none;
 }
+.lab-pane::-webkit-scrollbar { display: none; }
 
 .lab-pointer {
     transform: translateX(calc(var(--i) * (var(--lab-cell) + var(--lab-gap))));
@@ -1797,6 +1842,13 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
     transition: translate var(--lab-gerak, 1000ms) var(--ease-out-soft), width var(--lab-gerak, 1000ms) var(--ease-out-soft),
         height var(--lab-gerak, 1000ms) var(--ease-out-soft), background-color 300ms var(--ease-out-soft),
         border-color 300ms var(--ease-out-soft), opacity 300ms var(--ease-out-soft);
+}
+
+/* Panah pointer linked list (ListBoard): bentuknya (`d`) ikut dianimasikan,
+   jadi pointer yang dibelokkan terlihat berbelok. Peramban yang belum bisa
+   menganimasikan `d` tetap menggambar bentuk akhirnya dengan benar. */
+.lab-panah {
+    transition: d var(--lab-gerak, 1000ms) var(--ease-out-soft), opacity 400ms var(--ease-out-soft);
 }
 
 /* Jejak penelusuran (JejakPanah): ruas terbaru tegas, ruas lama memudar. */
@@ -1878,7 +1930,8 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
     .lab-kubus-badan,
     .lab-kubus-lapisan,
     .lab-posisi,
-    .lab-bingkai { transition: none !important; }
+    .lab-bingkai,
+    .lab-panah { transition: none !important; }
 
     /* Dimatikan total, bukan dipersingkat: blok global di atas hanya
        memendekkan durasi, sementara jeda bertingkat (--d) tetap berlaku dan
@@ -1889,3 +1942,200 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
     .lab-land,
     .lab-fade-up { animation: none !important; }
 }
+
+/* ══ Flowchart SynapLab: simbol yang sedang dijalankan & garis yang baru dilewati ═══ */
+@keyframes flow-denyut { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
+.flow-aktif { animation: flow-denyut 1.2s ease-in-out infinite; }
+@keyframes flow-alir { to { stroke-dashoffset: -20; } }
+.flow-garis-jalan { stroke-dasharray: 7 5; animation: flow-alir 0.6s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .flow-aktif { animation: none; opacity: 0.45; }
+    .flow-garis-jalan { animation: none; }
+}
+
+/* ══ Lab kode (Python & Pseudocode): warna sintaks editor ═══════════════
+   Variabel sendiri, bukan hex di kelas Tailwind: warna pastel yang terbaca di
+   latar malam hilang di latar terang, jadi tema terang mendefinisikan ulang
+   semuanya dengan nada yang lebih gelap (kontras ≥ 4.5:1 di #F5F8FD). */
+:root {
+    --kode-kunci: #8AB4FF;
+    --kode-tipe: #7FD1B9;
+    --kode-fungsi: #E8B86D;
+    --kode-teks: #E59A7A;
+    --kode-angka: #B9A3F5;
+    --kode-galat: #E0795A;
+}
+html[data-theme="light"] {
+    --kode-kunci: #1D4ED8;
+    --kode-tipe: #0F766E;
+    --kode-fungsi: #8A5300;
+    --kode-teks: #B4441F;
+    --kode-angka: #6D28D9;
+    --kode-galat: #C2410C;
+}
+.kode-kunci { color: var(--kode-kunci); font-weight: 600; }
+.kode-tipe { color: var(--kode-tipe); }
+.kode-fungsi { color: var(--kode-fungsi); }
+.kode-teks { color: var(--kode-teks); }
+.kode-angka { color: var(--kode-angka); }
+.kode-baris-galat {
+    background: color-mix(in srgb, var(--kode-galat) 20%, transparent);
+    box-shadow: inset 3px 0 0 var(--kode-galat);
+}
+
+/* ══ Objek 3D di pengumuman kelas: panggung & kartu HOLOGRAM ═════════════
+   Panggung SELALU gelap (juga di tema terang) supaya cahaya cyan tetap
+   terbaca; teksnya memakai hex sendiri karena `--color-white` terbalik di
+   tema terang. Kartu & garis diposisikan Model3DStage lewat DOM langsung. */
+.holo-panggung {
+    background: linear-gradient(180deg, #05121a 0%, #071b26 100%);
+    touch-action: none;
+}
+.holo-panggung canvas { cursor: grab; }
+.holo-panggung canvas:active { cursor: grabbing; }
+.holo-memuat { animation: holo-kedip 1.2s ease-in-out infinite; }
+@keyframes holo-kedip { 50% { opacity: 0.35; } }
+
+.holo-bar {
+    display: flex; flex-direction: column;
+    background: rgba(5, 18, 26, 0.6); backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.holo-tombol {
+    display: flex; height: 38px; width: 38px; align-items: center; justify-content: center;
+    color: rgba(255, 255, 255, 0.7); transition: background-color 0.2s, color 0.2s;
+}
+.holo-tombol + .holo-tombol { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+.holo-tombol:hover, .holo-tombol:focus-visible { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.holo-tombol:active { background: rgba(255, 255, 255, 0.2); }
+
+.holo-garis {
+    stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 400; stroke-dashoffset: 400;
+    filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.9));
+    animation: holo-tarik 0.5s 0.05s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes holo-tarik { to { stroke-dashoffset: 0; } }
+.holo-titik { fill: #fff; filter: drop-shadow(0 0 6px #22d3ee); }
+
+.holo-kartu {
+    position: relative; overflow: hidden; padding: 12px 16px 14px;
+    color: #e6fbff; font-family: var(--font-sans);
+    background:
+        repeating-linear-gradient(0deg, rgba(34, 211, 238, 0.07) 0 1px, transparent 1px 3px),
+        linear-gradient(135deg, rgba(8, 70, 90, 0.34), rgba(5, 36, 50, 0.4));
+    box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.7), 0 0 22px rgba(34, 211, 238, 0.35), inset 0 0 28px rgba(34, 211, 238, 0.12);
+    backdrop-filter: blur(2px);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    animation: holo-muncul 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes holo-muncul {
+    0% { opacity: 0; clip-path: inset(50% 0 50% 0); transform: scaleX(0.9); }
+    35% { opacity: 1; clip-path: inset(0 0 0 0); transform: translateX(-3px); filter: hue-rotate(40deg); }
+    50% { transform: translateX(3px); opacity: 0.55; }
+    65% { transform: translateX(0); opacity: 1; filter: none; }
+    100% { opacity: 1; }
+}
+
+.holo-judul { font-size: 16px; font-weight: 700; line-height: 1.3; color: #fff; text-shadow: 0 0 10px rgba(34, 211, 238, 0.6); overflow-wrap: anywhere; }
+.holo-isi { margin-top: 6px; font-size: 13px; line-height: 1.6; color: #c9f4fb; white-space: pre-line; overflow-wrap: anywhere; }
+
+.holo-daftar { background: #05121a; }
+.holo-chip {
+    display: inline-flex; align-items: center; gap: 9px; padding: 7px 12px; font-size: 12.5px; font-weight: 500; letter-spacing: 0.01em;
+    color: rgba(255, 255, 255, 0.7); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+    transition: color 0.2s, box-shadow 0.25s, background-color 0.2s;
+}
+.holo-chip:hover { color: #fff; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+.holo-chip-aktif, .holo-chip-aktif:hover { color: #fff; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 -2px 0 #67e8f9, inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+.holo-chip-no { font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; color: #67e8f9; }
+
+@media (prefers-reduced-motion: reduce) {
+    .holo-kartu, .holo-garis, .holo-memuat { animation: none; }
+    .holo-garis { stroke-dashoffset: 0; }
+    .holo-kartu::after { display: none; }
+}
+.holo-bungkus { filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.45)); }
+
+/* ══ Gerbang objek 3D: kotak berjudul yang memanjang ke bawah ═══════════
+   Kotaknya SENDIRI yang menjadi pintu: ruang di bawah judul membuka lewat
+   grid-template-rows 0fr→1fr, lalu isinya memudar masuk. */
+.gerbang-kepala { transition: background-color 0.25s; }
+.gerbang-kepala:hover { background: rgba(255, 255, 255, 0.1); }
+.gerbang[data-buka="true"] .gerbang-panah { transform: rotate(180deg); }
+
+.gerbang-ruang {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.gerbang[data-buka="true"] .gerbang-ruang { grid-template-rows: 1fr; }
+.gerbang-dalam { min-height: 0; overflow: hidden; }
+.gerbang-dalam > div { opacity: 0; transform: translateY(-8px); transition: opacity 0.35s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.gerbang[data-buka="true"] .gerbang-dalam > div { opacity: 1; transform: none; transition-delay: 0.25s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .gerbang-ruang, .gerbang-dalam > div, .gerbang-panah { transition: none !important; }
+}
+
+/* ══ Podium juara quiz: kotak piala → pintu tergulung ke atas → balok tumbuh ═
+   Pintu memakai gerak yang sama dengan sampul kartu kursus (900ms, motor menarik
+   lalu mengendap). Balok juara 3 → 2 → 1 tumbuh setelah pintu terangkat. */
+.podium-pintu { transition: transform 900ms cubic-bezier(0.65, 0, 0.25, 1); }
+.podium-panggung { display: flex; height: 100%; align-items: flex-end; justify-content: center; gap: 4px; padding: 8px 6px 0; }
+.podium-kolom { display: flex; width: 70px; flex-direction: column; align-items: center; }
+.podium-juara {
+    position: relative; display: flex; min-height: 20px; flex-direction: column; align-items: center; padding-bottom: 5px; text-align: center;
+    opacity: 0; transform: translateY(-26px);
+    transition: opacity 0.3s, transform 0.6s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.podium-foto { display: inline-flex; border-radius: 9999px; }
+.podium-mahkota { width: 18px; height: 18px; margin-bottom: 2px; color: #bbd5ff; }
+.podium-blok {
+    position: relative; display: flex; width: 100%; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 5px 0 6px; transform: scaleY(0); transform-origin: bottom;
+    transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.podium-angka { font-size: 26px; font-weight: 300; line-height: 1; color: rgba(255, 255, 255, 0.85); opacity: 0; transition: opacity 0.3s; }
+.podium-nilai { display: flex; flex-direction: column; align-items: center; font-size: 15px; font-weight: 700; line-height: 1; color: #fff; opacity: 0; transition: opacity 0.3s; }
+.podium-nilai small { margin-top: 1px; font-size: 7px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; }
+
+/* Urutan: pintu naik (≈0,55 dtk), lalu juara 3 tumbuh, lalu 2, lalu 1; sosok mendarat setelah bloknya. */
+.podium[data-buka="true"] .podium-blok { transform: scaleY(1); transition-delay: calc(0.5s + (2 - var(--i)) * 0.18s); }
+.podium[data-buka="true"] .podium-angka, .podium[data-buka="true"] .podium-nilai { opacity: 1; transition-delay: calc(0.9s + (2 - var(--i)) * 0.18s); }
+.podium[data-buka="true"] .podium-juara { opacity: 1; transform: none; transition-delay: calc(0.95s + (2 - var(--i)) * 0.18s); }
+.podium[data-buka="true"] .podium-mahkota { animation: podium-goyang 2.6s 1.9s ease-in-out infinite; }
+@keyframes podium-goyang { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-3px) rotate(4deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .podium-pintu, .podium-juara, .podium-blok, .podium-angka, .podium-nilai { transition: none !important; }
+    .podium-mahkota { animation: none !important; }
+}
+
+/* ══ Ruang pantau quiz: garis bergerak & titik "langsung" ══════════════ */
+.pantau-garis {
+    background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.38) 0 8px, transparent 8px 16px);
+    background-size: 22px 100%; animation: pantau-geser 1.1s linear infinite;
+}
+@keyframes pantau-geser { to { background-position: 22px 0; } }
+.pantau-titik { animation: pantau-denyut 1.6s ease-in-out infinite; }
+@keyframes pantau-denyut { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+@media (prefers-reduced-motion: reduce) { .pantau-garis, .pantau-titik { animation: none; } }
+
+/* Penghalang salin (ui/PerlindunganSalin.tsx): teks tak bisa diblok di halaman publik, kecuali kolom isian
+   dan elemen berpenanda data-boleh-salin. Penanda dipasang skrip, jadi tanpa JS situs tetap normal. */
+html[data-lindungi="true"] body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+html[data-lindungi="true"] :is(input, textarea, select, [contenteditable="true"], [data-boleh-salin]) { -webkit-user-select: text; user-select: text; }
+html[data-lindungi="true"] img { -webkit-user-drag: none; }
+
+/* Peringatan quiz: bilah selebar layar berdenyut (hemat gerak = diam) */
+.peringatan-bilah { animation: peringatan-denyut 0.5s ease-in-out infinite alternate; }
+@keyframes peringatan-denyut { from { opacity: 1; } to { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .peringatan-bilah { animation: none; } }
+
+/* Seluruh teks laman kelas & quiz memakai Plus Jakarta Sans (satu keluarga font situs),
+   termasuk isian/tombol/pilihan yang di sebagian peramban tak mewarisi font. */
+.kelas-jakarta, .kelas-jakarta :where(*) { font-family: var(--font-sans); }
+
+/* Isian angka di laman kelas/quiz: diketik saja, tanpa panah naik-turun. */
+.kelas-jakarta input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.kelas-jakarta input[type="number"]::-webkit-outer-spin-button,
+.kelas-jakarta input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

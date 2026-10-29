@@ -60,7 +60,7 @@ export default function ReplyForm({
           maxLength={MAX_REPLY_BODY}
           placeholder="Tulis balasan…"
           className={cn(
-            "min-w-0 flex-1 rounded-full bg-white/[0.06] px-[18px] py-2.5 text-sm text-ink",
+            "min-w-0 flex-1 bg-white/[0.06] px-[18px] py-2.5 text-sm text-ink",
             "transition-colors duration-200 placeholder:text-ink-faint",
             "focus:bg-white/10 focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] focus:outline-none",
           )}
@@ -70,7 +70,7 @@ export default function ReplyForm({
           type="submit"
           disabled={pending || body.trim().length === 0}
           className={cn(
-            "shrink-0 rounded-full bg-white/10 px-5 py-2.5 text-sm font-medium text-ink-body",
+            "shrink-0 bg-white/10 px-5 py-2.5 text-sm font-medium text-ink-body",
             "transition-colors duration-200 hover:bg-white/15 hover:text-white",
             "disabled:opacity-60 disabled:cursor-not-allowed",
           )}

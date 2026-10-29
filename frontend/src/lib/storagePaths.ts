@@ -38,3 +38,18 @@ export const PAYMENT_PROOFS = "payment-proofs";
  * Disajikan hanya lewat route API yang memeriksa peran.
  */
 export const SUBMISSION_FILES = "submissions";
+
+/**
+ * Lampiran postingan kelas dari pengajar — TERTUTUP, satu folder per pengajar
+ * (`class-files/{uid}/{classId}/…`). Yang boleh membaca hanya anggota kelas
+ * itu, jadi tidak bisa berupa URL publik; disajikan lewat
+ * /api/classes/attachment yang memeriksa keanggotaan.
+ */
+export const CLASS_FILES = "class-files";
+
+/**
+ * Berkas jawaban tugas kelas dari siswa — TERTUTUP, satu folder per siswa
+ * (`class-submissions/{uid}/{classId}/{postId}/…`). Hanya siswa itu sendiri
+ * dan pengelola kelasnya yang boleh mengunduh, lewat /api/classes/submission.
+ */
+export const CLASS_SUBMISSION_FILES = "class-submissions";

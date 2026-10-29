@@ -106,7 +106,7 @@ penyusun kursus tidak pernah berkurang.
 
 ### Kode referral
 
-- Setiap akun bisa membuat **satu kode** di `/dashboard`. Kode tidak bisa
+- Setiap akun bisa membuat **satu kode** di `/dashboard/pendapatan`. Kode tidak bisa
   diganti setelah dibuat, supaya tautan yang sudah tersebar tetap berfungsi.
 - Tombol **Bagikan dengan kode referral** di halaman kursus mana pun
   menghasilkan tautan yang memuat kode itu. Siapa pun yang membeli lewat
@@ -134,9 +134,15 @@ penyusun kursus tidak pernah berkurang.
 ### SynapLab — papan coba-coba (`/lab`)
 
 Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
-orang lain. Isinya saat ini **lab array** dalam empat versi yang dipilih lewat
-tombol **1D · 2D · 3D · N-D** di kepala halaman. Tiap versi punya papan, operasi,
-dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
+orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
+tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
+(Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), **Flowchart** (Lab 03),
+**Python** (Lab 04), dan **Pseudocode** (Lab 05). Laci menimpa halaman
+tanpa menggesernya. Array tampil sebagai satu materi di laci; empat versinya
+— **1D · 2D · 3D · N-D** — dipilih lewat pengalih di kepala halaman, dan laci
+kembali ke dimensi yang terakhir dipakai.
+Tiap lab punya papan, operasi, dan tautan bagikannya sendiri; berpindah lab
+tidak menghapus papan lab lain.
 
 - **Terbuka untuk siapa saja**, tanpa login. Tautan yang dibagikan guru bisa
   langsung dibuka siswa.
@@ -201,6 +207,112 @@ dan tautan bagikannya sendiri; berpindah versi tidak menghapus papan versi lain.
 - **Batalkan & ulangi** untuk setiap operasi.
 - **Mode presentasi** (sel membesar, layar penuh, `Esc` untuk keluar) dan
   tombol pintas keyboard.
+- **Flowchart** (Lab 03) — menggambar ala draw.io lalu **menjalankannya**:
+  - **simbol ANSI/ISO 5807**: Mulai, Selesai, Proses, Input/Output, Keputusan,
+    Persiapan, Subproses, Konektor, Dokumen, Data tersimpan, dan Catatan —
+    diseret dari panel Simbol (atau diklik untuk ditaruh di tengah);
+  - **menyambung**: arahkan ke simbol, seret bulatan biru di sisinya ke simbol
+    lain; garis siku digambar otomatis (diluruskan bila dua simbol hampir
+    sejajar), cabang Keputusan otomatis berlabel **Yes** lalu **No**. Sisi
+    keluar/masuk dan label bisa diubah di Properti; teks yang diketik di
+    Properti langsung tampil di kanvas;
+  - menyunting: klik ganda untuk mengubah teks/label di tempat, seret sudut
+    untuk mengubah ukuran, Shift+seret untuk memilih banyak, salin (Ctrl+D),
+    hapus (Del), undo/redo, geser kanvas & zoom (Ctrl+roda), grid, layar penuh;
+  - **pemeriksa aturan** (tab Periksa, berupa peringatan — tetap boleh
+    menggambar bebas): satu Mulai, ada Selesai, Mulai tanpa garis masuk,
+    Selesai tanpa garis keluar, Keputusan tepat dua cabang Yes/No, simbol
+    lain satu garis keluar, semua simbol terjangkau dari Mulai dan punya jalan
+    ke Selesai, konektor berpasangan, teks yang bisa dijalankan, dan **saran
+    bentuk baku Cambridge** (mis. "tulis INPUT, bukan Baca"). Klik temuan untuk
+    menyorot simbolnya;
+  - **Jalankan** (tab Jalankan): flowchart dieksekusi langkah demi langkah —
+    simbol aktif menyala, garis yang dilewati beranimasi, tabel **variabel**
+    (yang baru berubah disorot), **keluaran**, dan narasi tiap langkah.
+    Putar/jeda/langkah/mundur/sampai akhir, kecepatan 0,5×–4×. Simbol **INPUT**
+    memakai masukan yang diisi di muka (mis. `4, 5`) atau berhenti meminta
+    nilainya. Perulangan tak berujung dihentikan setelah 5.000 langkah;
+  - **bentuk baku penulisan = gaya Cambridge** (silabus IGCSE 0478 / O Level
+    2210 menetapkan enam simbol flowchart dan penulisan yang tepat; isinya
+    pseudocode Cambridge, sama dengan Lab 05): `START`/`STOP`, `INPUT X`,
+    `OUTPUT "Luas = ", Luas` (nilai disambung tanpa spasi), `Total ← Total + X`
+    (ketik `<-`), kondisi `X MOD 2 = 0?` atau `Is X > 0?`, `AND`/`OR`/`NOT`,
+    `<>`, `&`, `MOD(X, 2)`/`DIV(X, 2)`, fungsi `INT`, `ROUND(X, n)`, `LENGTH`,
+    `UCASE`, `LCASE`, dan cabang **Yes/No**. Bentuk Indonesia/lama tetap
+    berjalan (Baca, Tampilkan, `x = 1`, `+=`, `++`, `dan`/`atau`/`tidak`, `==`,
+    `!=`, `mod`, Ya/Tidak, akar/abs/bulat/min/max) dan hanya mendapat saran di
+    tab Periksa. Tab **Panduan** di panel kanan berisi daftar lengkap perintah,
+    operator, padanan bentuk lama, dan kesalahan yang sering terjadi.
+    Subproses bernama, Dokumen, dan Data dilewati (dikatakan di narasi);
+  - **contoh** siap pakai: luas persegi panjang, genap/ganjil, jumlah 1 sampai n;
+  - **menyimpan**: tombol Bagikan membuat tautan (diagram dipadatkan), menu
+    Berkas menyimpan/membuka `.json` (untuk flowchart besar) dan mengekspor
+    **PNG/SVG** berlatar putih untuk laporan. Draf terakhir juga diingat browser.
+- **Python** (Lab 04) — menulis dan menjalankan Python 3.14 sungguhan di
+  browser (CPython lewat Pyodide), tanpa install dan tanpa akun:
+  - editor berwarna dengan nomor baris; Tab menjorokkan 4 spasi, Enter
+    meneruskan jorokan (dan menambahnya setelah `:`), Ctrl+Enter menjalankan;
+  - **Masukan diisi di muka**: kotak Masukan, satu nilai per baris, dibaca
+    `input()` berurutan; nilai yang dibaca ikut tampil di keluaran seperti di
+    terminal;
+  - **Langkah demi langkah** ala Python Tutor: program direkam lalu diputar
+    maju-mundur (tombol, panah ←/→, Home/End, penggeser, kecepatan 0,5×–4×).
+    Baris berikutnya disorot biru, baris yang baru dijalankan samar; tabel
+    **variabel** per lingkup (global & setiap fungsi yang sedang dipanggil,
+    termasuk rekursi), yang berubah disorot; keluaran tumbuh per langkah;
+  - **galat** ditampilkan dengan nomor baris, traceback asli, dan **saran
+    berbahasa Indonesia** (mis. "hasil input() selalu teks — pakai
+    int(input())");
+  - batas: satu kali jalan 10 detik (lalu dihentikan; ada tombol **Stop**),
+    mode langkah merekam 2.000 langkah dan menghentikan program di 100.000
+    langkah (perulangan tak berujung jadi galat yang bisa ditelusuri), keluaran
+    100.000 karakter;
+  - aman: kode berjalan di Web Worker terpisah tanpa akses ke halaman, akun,
+    maupun jaringan (kode dari tautan orang lain tidak bisa memanggil SynapEd
+    atas nama Anda). Pustaka standar tersedia; paket seperti numpy belum;
+  - Python (±12 MB) baru diunduh saat lab Python dibuka, lalu dari cache.
+- **Pseudocode** (Lab 05) — pseudocode gaya **Cambridge International AS & A
+  Level Computer Science 9618** (mengikuti *Pseudocode Guide for Teachers*),
+  dengan editor, Jalankan, dan langkah demi langkah yang sama seperti Python:
+  - `DECLARE`/`CONSTANT`, tipe `INTEGER REAL CHAR STRING BOOLEAN`,
+    `ARRAY[1:n]` dan 2D `ARRAY[1:n, 1:m]`, `←` (atau `<-`), `INPUT`, `OUTPUT`;
+  - `IF … THEN … ELSE … ENDIF`, `CASE OF … OTHERWISE … ENDCASE` (nilai, daftar,
+    rentang `TO`), `FOR … TO … STEP … NEXT`, `WHILE … ENDWHILE`,
+    `REPEAT … UNTIL`;
+  - `PROCEDURE`/`CALL` dengan `BYVAL`/`BYREF` (BYREF berlaku sampai diganti,
+    sesuai panduan), `FUNCTION … RETURNS … RETURN`, rekursi;
+  - operator `& MOD DIV AND OR NOT`, fungsi `LENGTH LEFT RIGHT MID UCASE LCASE
+    TO_UPPER TO_LOWER NUM_TO_STR STR_TO_NUM IS_NUM ASC CHR INT RAND`;
+  - **tipe diperiksa** seperti di ujian: REAL tidak boleh masuk INTEGER, teks
+    disambung dengan `&` (bukan `+`), indeks array diperiksa batasnya, setiap
+    variabel wajib di-DECLARE (panduan menyebutnya praktik yang baik; lab
+    mewajibkannya agar tipe bisa diperiksa). Kesalahan umum dijawab dengan
+    bentuk 9618 yang benar: `PRINT` → `OUTPUT`, `x = 5` → `x ← 5`, `ELSEIF`,
+    `END IF`, `ENDFOR`, kata kunci huruf kecil;
+  - teks yang disalin dari PDF panduan (tanda `−` dan kutip `ꞌ`) tetap terbaca;
+  - panel **Panduan** berisi ringkasan dialeknya.
+- Kedua lab kode: **contoh** siap pakai (luas, genap/ganjil, jumlah 1..n,
+  CASE, array, validasi masukan, rekursi, BYREF/dictionary), **Bagikan**
+  (tautan berisi kode + masukan; kode dari tautan hanya ditampilkan, tidak
+  dijalankan otomatis), menu **Berkas** (simpan/buka `.py`/`.txt`), **draf**
+  terakhir diingat browser, layar penuh, tema terang/gelap, dan ponsel.
+- **Linked list (singly)** — materi tersendiri, terpisah dari array:
+  - setiap simpul digambar `[nilai | next]` lengkap dengan **alamat memorinya**,
+    disambung panah; kotak `head` menunjuk simpul pertama, dan tabel **Memori**
+    di bawah papan memperlihatkan bahwa simpul-simpul tersebar, tidak berderet
+    seperti array (maksimal 8 simpul);
+  - operasi: isi dari teks/acak, kosongkan, sisip di depan / belakang / di
+    indeks, hapus di depan / belakang / di indeks / menurut nilai, cari nilai,
+    baca & ubah nilai di indeks, telusuri, dan **balik list**;
+  - variabel penunjuk algoritma (`cur`, `prev`, `next`, `baru`, `hapus`)
+    meluncur dari simpul ke simpul; panah pointer **berbelok** saat diubah;
+    simpul baru muncul di bawah rantai lalu naik masuk, simpul yang dihapus
+    turun keluar lalu dibebaskan; saat dibalik, panah dibalik satu per satu
+    sementara simpulnya diam;
+  - narasinya menekankan biaya: sisip/hapus di depan O(1), mencapai indeks k
+    harus berjalan k langkah dari head, dan **urutan mengubah pointer** saat
+    menyisip (sambungkan simpul baru ke sisa list dulu, baru belokkan
+    pendahulunya — kalau terbalik, sisa list hilang).
 - **Bagikan papan lewat tautan**: seluruh keadaan papan ikut di URL. Tidak ada
   yang tersimpan di server — menutup tab berarti papan itu hilang.
 
@@ -211,9 +323,108 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - Educator (dan admin) membuat kelas, memberinya **foto profil** (tampil di kotak
   identitas kelas), dan membagikan **kode undangan**.
 - Anggota bergabung dengan kode itu di `/kelas`.
-- Di dalam kelas ada pengumuman/postingan dan balasan.
-- Foto pengajar, peserta, dan penulis di ruang kelas bisa dipencet untuk melihat
-  mini-profil orangnya.
+- **Perlindungan salin**: di halaman publik teks tidak bisa diblok/disalin dan klik kanan serta pintasan lihat-sumber
+  ditahan (kolom isian, editor SynapLab, dan area admin/educator dikecualikan). Situs juga tak bisa dibingkai situs lain,
+  dan source map produksi dimatikan. Catatan: ini penghalang untuk pengunjung awam, bukan jaminan mutlak.
+- **Roda pemilih** (`/educator/classes/<id>/wheel`, pintasan di bawah kotak kode undangan):
+  roda untuk mengundi siswa yang menjawab. Bisa membuat beberapa roda per kelas, mengisinya
+  dengan anggota kelas dan/atau nama sendiri, dan menyesuaikan nama, warna, lama putaran, serta
+  opsi mengeluarkan pemenang otomatis, warna kustom sendiri, dan pop-up nama pemenang di
+  tengah layar (layar diburamkan 2 detik). Roda tersimpan di peramban pengajar (tidak di server).
+- Di dalam kelas ada pengumuman/postingan dan balasan. Pengumuman boleh
+  berlampiran berkas (atau berkas saja tanpa teks), dan isi serta lampirannya
+  bisa diedit setelah terbit. Alamat web (`https://…` / `www.…`) di isi pengumuman, tugas, dan balasan
+  otomatis menjadi tautan yang bisa diklik (dibuka di tab baru).
+- **Tema kustom** (profil → Pengaturan Laman → Tampilan → *Kustom*): selain Gelap & Terang, pengguna menyusun
+  palet sendiri dari empat warna (Latar, Kartu, Teks, Aksen) lewat pemilih warna atau kode `#RRGGBB`, atau memulai
+  dari contoh (Samudra, Hutan, Senja, Kertas, Es). Seluruh situs berubah seketika, bertahan setelah muat ulang
+  (tersimpan di perangkat ini), dan ada peringatan bila kontras tulisan terlalu rendah.
+- **Banner kelas** (pengajar/admin): di tab Tentang → Pengaturan kelas (juga saat membuat kelas) ada isian
+  *Banner kelas*. Gambar lebar dikecilkan otomatis (maks 1600 px, JPEG < 2 MB) dan tampil penuh di belakang
+  kepala ruang kelas (digelapkan agar tulisan tetap terbaca) bagi semua anggota. Bisa diganti atau dihapus.
+- **Banner quiz**: di pembuat quiz ada isian *Banner quiz*; gambarnya melatari judul + deskripsi quiz, baik di
+  kartu quiz maupun di halaman quiz siswa (digelapkan agar tulisan tetap terbaca). Bisa diganti atau dibuang.
+- **Mengeluarkan siswa** (pengajar/admin): tombol *Keluarkan* di tab Anggota kelas dan di halaman
+  Kelola anggota, dengan dialog konfirmasi. Hanya keanggotaan yang dihapus (jawaban tugas & quiz
+  tetap tersimpan); siswa bisa bergabung lagi dengan kode undangan selama kodenya belum diganti.
+- **Quiz kelas** (tab **Quiz**, di kanan Tugas): pengajar/admin membuat quiz ala Google Form di
+  `/educator/classes/<id>/quiz/new` - tiap nomor bisa **pilihan ganda** (dengan kunci) atau **esai**,
+  punya poin sendiri, total TEPAT 100 saat diterbitkan (ada tombol *Bagi rata poin*). Setelan: **jadwal mulai**
+  (hari/tanggal/jam WIB, atau langsung terbuka begitu diterbitkan), acak
+  urutan soal & pilihan per siswa (sulit mencontek), batas waktu pengerjaan (habis → otomatis
+  dikumpulkan; jawaban tersimpan otomatis), tambahan waktu untuk semua atau satu siswa, tutup/buka
+  quiz. Pilihan ganda dinilai otomatis, esai dinilai pengajar. Tiap quiz punya **papan peringkat
+  1-3** di kanannya (nilai tertinggi, seri → tercepat; hanya yang sudah dinilai penuh). Setelah
+  quiz ditutup siswa melihat nilai & kunci jawaban. Setelah ada yang mengerjakan, soal terkunci
+  (poin masih bisa diubah, nilai dihitung ulang). Halaman **Pantau** (dibuka dengan tombol *Pantau* pada tiap quiz, pengelola saja; bukan tab):
+  siapa belum/sedang/sudah mengerjakan, jam mulai-selesai, lama, nilai, umpan aktivitas, nilai esai,
+  izinkan mengulang. Satu percobaan per siswa. Di Pantau juga ada: **Analisis soal** (soal mana paling banyak
+  tidak benar, jawaban paling banyak dipilih, kunci jawaban, semuanya dalam persen), **Ekspor spreadsheet**
+  (.xlsx berisi nama & poin, aktif setelah semua esai dinilai), dan **Peringatkan murid** (siswa yang belum
+  memulai melihat peringatan selebar layar + alarm 2 detik; ada jeda 20 detik antar kiriman).
+- **Arsip** (pengajar/admin): tombol *Arsipkan* di tiap pengumuman/tugas memindahkannya ke
+  tab **Arsip** (di kanan tab Tugas; hanya pengelola yang melihatnya). Yang terarsip
+  hilang total bagi siswa (umpan, daftar tugas, lampiran, balasan, pengumpulan baru) tetapi
+  datanya utuh; di zona Arsip bisa dibuka, **Pulihkan**, atau dihapus permanen.
+- **Objek 3D di pengumuman** (educator/admin pemilik kelas): lampirkan berkas
+  `.glb` (maks 20 MB) dari kotak tulis, lengkap dengan **judul** objek. Di umpan, murid
+  melihat kotak berjudul dulu; diklik, kotaknya memanjang ke bawah (itulah "pintunya")
+  dan memperlihatkan objeknya (berkas baru diunduh saat dibuka pertama kali) -
+  diputar dengan seret atau tombol putar (per sisi: depan → kanan → belakang → kiri), di-zoom dengan gulir/tombol +/-, bisa layar penuh. Pengajar
+  menambah keterangan dengan mengeklik bagian objek (judul + penjelasan per titik/komponen);
+  tab **Pratinjau** menampilkan persis apa yang dilihat murid. Saat murid mengeklik
+  titik/komponen berketerangan (komponen tanpa keterangan tidak bisa disentuh), muncul kartu **hologram** yang ditarik garis ke titik itu,
+  dan komponennya menyala. Objek & keterangan bisa diedit atau dibuang setelah terbit.
+  Satu komponen hanya boleh punya satu keterangan (komponen yang sudah berketerangan
+  hanya dipilih saat diklik di editor, tidak menambah yang baru).
+- **Tugas** (mirip Google Classroom), diterbitkan pengajar dari kotak tulis yang
+  sama dengan memilih "Tugas":
+  - judul, instruksi, dan lampiran berkas (opsional);
+  - format jawaban yang diterima, dipilih **per jenis berkas** dan boleh lebih
+    dari satu: **teks** yang diketik langsung, **PDF**, **JPG**, **PNG**,
+    **Word (.docx)**, **PowerPoint (.pptx)**, **Excel (.xlsx)**, **ZIP** —
+    misalnya "hanya .docx". Di formulir dikelompokkan (Teks · PDF & gambar ·
+    Dokumen Office · Arsip) dengan tombol *Pilih semua* per kelompok;
+  - **tenggat** opsional (ditulis & ditampilkan dalam WIB) dan pilihan
+    **menerima pengumpulan setelah tenggat** (ditandai "Terlambat");
+  - nilai maksimal (bawaan 100).
+
+  Setelah terbit, tugas tetap bisa **diedit** lewat tombol *Edit tugas* di
+  halaman tugas (atau *Edit* di umpan): judul, instruksi, lampiran (tambah /
+  buang), format, tenggat (termasuk memperpanjang atau menutup lebih awal),
+  izin terlambat, dan nilai maksimal. Kiriman yang sudah masuk tidak berubah,
+  dan nilai maksimal tidak bisa diturunkan di bawah nilai yang sudah
+  diberikan. Postingan yang disunting diberi tanda *diedit*.
+- Siswa melihat semua tugas di tab **Tugas** beserta statusnya (belum
+  mengumpulkan / dikumpulkan / terlambat / dinilai), lalu mengumpulkan di
+  halaman tugas `/kelas/[id]/tugas/[postId]`. Selama belum dinilai dan
+  pengumpulan masih dibuka, kiriman bisa **dibatalkan lalu dikirim ulang**
+  (berkas yang sudah dikirim ikut terhapus).
+- Pengajar melihat daftar seluruh siswa per tugas di
+  `/educator/classes/[id]/tugas/[postId]`, mengunduh jawabannya, lalu memberi
+  **nilai + komentar** yang langsung terlihat oleh siswa.
+- Batas: maksimal 5 berkas per postingan/kiriman, masing-masing di bawah 20 MB.
+  Siswa tidak bisa melihat jawaban siswa lain.
+- **Koreksi dengan AI** (per siswa, di halaman tugas pengajar):
+  - tombol di setiap kiriman mengisi kolom **nilai** otomatis (skala nilai
+    maksimal tugas). Pengajar tetap meninjau, boleh mengubah, lalu menekan
+    *Simpan nilai* sendiri — AI tidak pernah menyimpan;
+  - centang **"AI juga mengisi komentar"** (bawaannya diatur per tugas, bisa
+    diubah per siswa). Kalau tidak dicentang, catatan AI tetap ditampilkan
+    sebagai petunjuk dengan tombol *Pakai sebagai komentar*;
+  - kartu **Koreksi AI** berisi **Konteks untuk AI**: satu kotak teks bebas
+    (maks. 4.000 karakter) plus berkas opsional (maks. 3 PDF, gambar, atau
+    Office). Isinya boleh apa saja dan tanpa format khusus — soal, kunci
+    jawaban, rubrik & bobot, rentang nilai, panjang atau gaya komentar — AI
+    memahami maksudnya sendiri (skala nilai lain dikonversi ke nilai maksimal
+    tugas). Konteks **tidak pernah terlihat siswa**. Pengajar juga memilih apakah
+    AI ikut membaca **instruksi & lampiran tugas** atau **hanya konteks** itu;
+  - AI bisa membaca jawaban teks, PDF ketikan, gambar JPG/PNG, dan dokumen
+    DOCX/PPTX/XLSX. ZIP dan PDF hasil pindai tidak terbaca — pengajar diberi
+    tahu berkas mana yang dilewati;
+  - memakai OpenRouter (model gratis), berbagi kuota harian dengan asisten chat
+    dan "Minta Saran AI" kursus, maksimal 8 koreksi per menit per pengajar.
+    Jawaban siswa dikirim ke layanan AI pihak ketiga saat dikoreksi.
 
 ### Profil & akun
 
@@ -240,6 +451,15 @@ seputar SynapEd (OpenRouter, model gratis). Dibuka dari dalam halaman
 belajar suatu pelajaran, ia beralih ke **mode tutor**: bisa mendiskusikan
 materi pelajaran itu, tapi menolak memberi jawaban akhir untuk kuis/tugas
 yang sedang dikerjakan.
+
+Yang diketahui asisten:
+- **Pengetahuan fitur** ditulis di `frontend/src/lib/chatKnowledge.ts` dan
+  wajib ikut diperbarui setiap kali fitur yang terlihat pengguna berubah.
+- **Diperbarui otomatis** setiap pesan, karena dibaca langsung dari sistem:
+  katalog kursus, metode pembayaran yang sedang dinyalakan admin, persentase
+  referral, dan kontak resmi.
+- `npm run verify:chat-knowledge` gagal kalau ada halaman baru atau alamat yang
+  berubah tetapi pengetahuan asisten belum ikut diperbarui.
 
 ### Panel admin (`/admin`)
 
@@ -287,6 +507,11 @@ npm run emulators            # UI di http://localhost:4000
 Lalu setel `NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true` dan variabel emulator di
 `.env.local`, serta `.firebaserc` ke `demo-synaped`. Login akun hasil impor
 lama tidak bisa diuji di emulator.
+
+### Moderasi nama & foto akun
+
+Admin dapat mengganti nama dan foto profil akun mana pun (atau menghapus fotonya) di
+`/admin/users/<uid>`, untuk menertibkan nama/foto yang tidak pantas.
 
 ### Mengubah role akun
 
@@ -337,6 +562,11 @@ cd frontend && npx tsc --noEmit   # aplikasi
 cd frontend && npm run lint
 npm run verify:royalty            # contoh; daftar lengkap di package.json
 npm run verify:lab                # SynapLab — murni, tanpa dev server & kredensial
+npm run verify:flowchart          # flowchart: ekspresi, mesin jalan, pemeriksa, tautan (murni)
+npm run verify:pseudocode         # interpreter pseudocode 9618: bahasa, galat & baris, jejak (murni)
+npm run verify:kode               # lab kode: tautan, berkas, penyorot, saran Python, CSP worker (murni)
+npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
+npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
 
 ---
@@ -346,10 +576,21 @@ npm run verify:lab                # SynapLab — murni, tanpa dev server & krede
 - Penarikan dana / payout untuk royalti dan referral.
 - Refund otomatis. Kabar refund dari Midtrans hanya ditandai untuk ditindaklanjuti admin.
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
-- Asisten chat di dalam halaman belajar.
 - Soal kuis selain pilihan tunggal.
-- Lab selain array di SynapLab (string, visualisasi data), dan algoritma selain pengurutan di atas papan (mis. pencarian linear/biner).
+- Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
+- Flowchart: titik belok garis yang diatur manual, pinch-zoom di layar sentuh,
+  subproses yang benar-benar memanggil flowchart lain, dan perulangan `for` di
+  simbol Persiapan (sekarang ditulis sebagai penugasan + Keputusan).
+- Tugas kelas: mengembalikan tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
+  rekap nilai per kelas, dan koreksi AI untuk semua siswa sekaligus.
+- Koreksi AI untuk PDF hasil pindai dan isi arsip ZIP.
+- Lab Python: paket di luar pustaka standar (numpy, dll.), grafik/turtle, dan
+  input interaktif saat program berjalan (masukan diisi di muka). Pyodide
+  masih dari CDN — tanpa internet lab Python tidak bisa dibuka.
+- Lab Pseudocode: `TYPE` (record, enum, pointer, set), operasi berkas
+  (`OPENFILE` dkk.), OOP, tipe `DATE` dan fungsi tanggal.
+- Menghubungkan lab kode ke tugas kelas (mengumpulkan & menilai kode).
 
 ---
 

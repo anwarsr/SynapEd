@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { heroHref, type HeroPrompt } from "@/lib/heroPrompts";
 import HeroStars from "@/components/sections/HeroStars";
+import { useAuth } from "@/lib/useAuth";
 
 type LetterPosition = {
   x: number;
@@ -31,6 +32,10 @@ const KUNCI_TERAKHIR = "synaped_hero_prompt";
  * ke atas. Anak panah membawa ke /courses?q=… sesuai kalimat yang tampil.
  */
 export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
+  // Tombol "Mulai Belajar": sudah masuk → langsung ke katalog kursus; belum → halaman masuk.
+  const { status: statusAuth } = useAuth();
+  const tujuanMulai = statusAuth === "authenticated" ? "/courses" : "/login";
+
   // =========================================================
   // SCROLL → TOMBOL BERUBAH JADI BILAH
   // Progres scroll (0..1) ditulis ke variabel CSS --p langsung di DOM, bukan
@@ -231,12 +236,6 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
     setDraggingLetter(null);
   };
 
-  // =========================================================
-  // RESET LETTERS
-  // =========================================================
-  const resetLetters = () => {
-    setLetterPositions({});
-  };
 
   // =========================================================
   // RENDER WORD
@@ -416,31 +415,6 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
             </span>
           </h1>
 
-          {/* =================================================
-              DESCRIPTION
-              ================================================= */}
-
-          <p
-            className="
-              rise-in
-              text-lg
-              2xl:text-xl
-              leading-relaxed
-              text-ink-body
-              max-w-lg
-              2xl:max-w-xl
-              mt-8
-              mx-auto
-            "
-            style={
-              {
-                "--rise-delay": "1300ms",
-              } as React.CSSProperties
-            }
-          >
-            Akses ratusan materi berkualitas dari berbagai bidang ilmu. Didesain
-            untuk pelajar, mahasiswa, dan profesional di semua bidang.
-          </p>
 
           {/* =================================================
               BUTTONS
@@ -451,7 +425,7 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
               flex
               flex-wrap
               gap-3
-              mt-9
+              mt-10
               justify-center
             "
           >
@@ -463,27 +437,6 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
               style={{ width: BTN_W, height: BTN_H }}
             />
 
-            {/* =================================================
-                RESET
-                ================================================= */}
-
-            {Object.keys(letterPositions).length > 0 && (
-              <button
-                type="button"
-                onClick={resetLetters}
-                className="
-                  basis-full
-                  mx-auto
-                  mt-2
-                  text-xs
-                  text-ink-muted
-                  hover:text-white
-                  transition-colors
-                "
-              >
-                Reset posisi huruf
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -511,7 +464,7 @@ export default function Hero({ prompts }: { prompts: HeroPrompt[] }) {
         >
           {/* Wajah tombol */}
           <Link
-            href="/register"
+            href={tujuanMulai}
             tabIndex={bar ? -1 : 0}
             data-fase={mulaiFase}
             onPointerEnter={() => setMulaiFase("masuk")}

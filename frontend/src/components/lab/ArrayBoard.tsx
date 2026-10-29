@@ -115,8 +115,11 @@ export default function ArrayBoard({
         <div className="lab-scroller overflow-x-auto scrollbar-hide">
           {/* `w-max` + `mx-auto`: dipusatkan selama muat, dan saat deretnya lebih
               panjang dari papan, margin otomatis jatuh ke 0 sehingga guliran
-              dimulai dari indeks 0 - bukan dari tengah yang memotong kedua ujung. */}
-          <div className="mx-auto w-max px-2">
+              dimulai dari indeks 0 — bukan dari tengah yang memotong kedua ujung.
+              `pb-4`: wadah gulir mendatar ikut memotong ke arah tegak, dan cincin
+              fokus, denyut, serta bayangan sel menonjol beberapa piksel di luar
+              sel — tanpa ruang ini bagian bawahnya terpangkas. */}
+          <div className="mx-auto w-max px-2 pt-1 pb-4">
             {/* ── Lajur variabel algoritma (hanya selama pengurutan) ── */}
             {peran && (
               <div className="relative h-9" aria-hidden="true">
@@ -288,10 +291,7 @@ export default function ArrayBoard({
                   key={m.label}
                   type="button"
                   onClick={() => onMulai(m.op())}
-                  className={cn(
-                    "lab-fade-up rounded-full   bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700",
-                    "transition-all duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-blue-100 hover:",
-                  )}
+                  className="lab-fade-up bg-white/[0.06] px-5 py-2.5 text-[13px] font-semibold tracking-[0.02em] text-ink-body transition-colors duration-300 ease-out-soft hover:bg-white/10 hover:text-white hover:shadow-[inset_0_-2px_0_var(--color-blue-500)]"
                   style={{ "--d": `${120 + i * 70}ms` } as React.CSSProperties}
                 >
                   {m.label}
