@@ -4,6 +4,7 @@ import { Component, useCallback, useEffect, useRef, useState, type ReactNode } f
 import type { Anotasi3D } from "@/lib/model3dRules";
 import type { KontrolAdegan, ProyeksiHolo, TitikTambah } from "@/components/classes/model3d/Model3DScene";
 import TeksAcak from "@/components/classes/model3d/TeksAcak";
+import GerakTangan from "@/components/classes/model3d/GerakTangan";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { cn } from "@/lib/cn";
 
@@ -84,6 +85,7 @@ export default function Model3DStage({
   const [sentuh, setSentuh] = useState(false);
   const [penuh, setPenuh] = useState(false);
   const [dalam, setDalam] = useState<string | null>(null);
+  const [gerakTangan, setGerakTangan] = useState(false);
 
   const terpilihId = selectedId !== undefined ? selectedId : dalam;
   const terpilih = annotations.find((a) => a.id === terpilihId) ?? null;
@@ -112,7 +114,12 @@ export default function Model3DStage({
   }, []);
 
   useEffect(() => {
-    const f = () => setPenuh(document.fullscreenElement === wadah.current);
+    const f = () => {
+      const p = document.fullscreenElement === wadah.current;
+      setPenuh(p);
+      // Kamera hanya boleh menyala selama layar penuh: keluar = mati.
+      if (!p) setGerakTangan(false);
+    };
     document.addEventListener("fullscreenchange", f);
     return () => document.removeEventListener("fullscreenchange", f);
   }, []);
@@ -260,10 +267,23 @@ export default function Model3DStage({
           >
             <path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5" />
           </TombolHolo>
+          {penuh && (
+            <TombolHolo
+              label={gerakTangan ? "Matikan kontrol gerakan tangan" : "Kontrol gerakan tangan (kamera)"}
+              tekan={gerakTangan}
+              onClick={() => setGerakTangan((v) => !v)}
+            >
+              <path d="M8 13V5.5a1.5 1.5 0 013 0V11m0-1.5V4a1.5 1.5 0 013 0v5.5m0-3a1.5 1.5 0 013 0V14m0-4.5a1.5 1.5 0 013 0V15a6 6 0 01-6 6h-1.5a6 6 0 01-4.7-2.3L4.3 15.4a1.6 1.6 0 012.4-2.1L8 14.6" />
+            </TombolHolo>
+          )}
           <TombolHolo label={penuh ? "Keluar layar penuh" : "Layar penuh"} onClick={layarPenuh}>
             <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
           </TombolHolo>
         </div>
+
+        {penuh && gerakTangan && (
+          <GerakTangan kontrol={kontrol} onGerak={() => setSentuh(true)} onPilih={pilih} onTutup={() => setGerakTangan(false)} />
+        )}
 
         <p className="pointer-events-none absolute bottom-2 left-3 text-[11px] tracking-wide text-white/55">
           {mode === "sunting"
@@ -297,9 +317,9 @@ export default function Model3DStage({
   );
 }
 
-function TombolHolo({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+function TombolHolo({ label, onClick, children, tekan }: { label: string; onClick: () => void; children: ReactNode; tekan?: boolean }) {
   return (
-    <button type="button" aria-label={label} title={label} onClick={onClick} className="holo-tombol">
+    <button type="button" aria-label={label} title={label} onClick={onClick} aria-pressed={tekan} className="holo-tombol">
       <svg
         viewBox="0 0 24 24"
         className="h-4 w-4"

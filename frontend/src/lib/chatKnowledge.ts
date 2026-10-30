@@ -104,6 +104,8 @@ export const PENGETAHUAN_SITUS = `## Akun
   kunci, dalam persen), ekspor spreadsheet nama dan poin (setelah semua esai dinilai), dan tombol
   Peringatkan murid (siswa yang belum mengerjakan melihat peringatan layar penuh dengan bunyi alarm 2 detik).
   Alamat web yang ditulis di pengumuman otomatis bisa diklik.
+  Objek 3D di pengumuman punya mode layar penuh dengan kontrol gerakan tangan lewat kamera: tangan terbuka bergerak
+  memutar objek, telunjuk saja untuk menunjuk komponen dan menampilkan keterangannya (tahan sebentar), dua jari naik-turun untuk zoom, kepalan untuk jeda (kamera hanya diproses di perangkat, tidak direkam).
   Tampilan situs bisa Gelap, Terang, atau Kustom (profil, Pengaturan Laman): pengguna menyusun palet sendiri
   dari empat warna (latar, kartu, teks, aksen); pilihan tersimpan di perangkat itu saja.
   Quiz juga bisa diberi banner yang melatari judul dan deskripsinya.

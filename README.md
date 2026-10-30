@@ -326,6 +326,9 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - **Perlindungan salin**: di halaman publik teks tidak bisa diblok/disalin dan klik kanan serta pintasan lihat-sumber
   ditahan (kolom isian, editor SynapLab, dan area admin/educator dikecualikan). Situs juga tak bisa dibingkai situs lain,
   dan source map produksi dimatikan. Catatan: ini penghalang untuk pengunjung awam, bukan jaminan mutlak.
+- **Gerakan tangan untuk objek 3D**: di mode layar penuh objek 3D ada tombol tangan; kamera depan membaca tangan
+  (tangan terbuka bergerak = memutar objek ke kanan/kiri/atas/bawah, telunjuk saja = menunjuk komponen lalu tahan sebentar untuk menampilkan keterangannya, dua jari naik-turun = zoom, kepalan = jeda).
+  Panel kontrolnya bawaan berupa batang tegak tipis di tepi kanan (berubah biru saat tangan terdeteksi, bisa diseret naik-turun, tekan untuk membuka, tombol minus untuk mengecilkan lagi). Pratinjau hanya menampilkan kerangka tangan (wajah tidak ditampilkan); gambar kamera hanya diproses di perangkat sendiri, tidak direkam atau dikirim.
 - **Roda pemilih** (`/educator/classes/<id>/wheel`, pintasan di bawah kotak kode undangan):
   roda untuk mengundi siswa yang menjawab. Bisa membuat beberapa roda per kelas, mengisinya
   dengan anggota kelas dan/atau nama sendiri, dan menyesuaikan nama, warna, lama putaran, serta

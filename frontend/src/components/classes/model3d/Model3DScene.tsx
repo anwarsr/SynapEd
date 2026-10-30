@@ -34,6 +34,13 @@ export interface KontrolAdegan {
   zoom: (faktor: number) => void;
   /** Memutar kamera ke sisi berikutnya (kelipatan 90° dari depan), dengan animasi. */
   putar: () => void;
+  /** Memutar kamera mengelilingi model: `dTheta` ke samping, `dPhi` ke atas/bawah (radian). Dipakai kontrol gerakan tangan. */
+  orbit: (dTheta: number, dPhi: number) => void;
+  /**
+   * Menunjuk titik layar (0..1, kiri-atas = 0,0) seperti kursor: menyorot komponen berketerangan di situ dan
+   * mengembalikan id keterangannya (null = tak ada). `null,null` = lepas sorotan. Dipakai kontrol gerakan tangan.
+   */
+  tunjuk: (x: number | null, y: number | null) => string | null;
 }
 
 export interface TitikTambah {
@@ -62,6 +69,13 @@ const POSISI_KAMERA = new THREE.Vector3(0, 0.55, 3.5);
 const AMBANG_SERET = 5;
 /** Lama satu putaran 90° tombol putar (detik). */
 const DURASI_PUTAR = 1.1;
+/** Komponen berketerangan sedalam ini (satuan adegan; model berukuran 2) di belakang yang terdepan masih terjangkau penunjuk jari. */
+const BATAS_TEMBUS = 0.5;
+/** Radius terluar toleransi penunjuk jari, fraksi tinggi layar (0,02 = ±16 px di layar 800 px). */
+const TOLERANSI_TUNJUK = 0.02;
+/** Kotak deteksi komponen: diperluas ke segala arah sebesar (sisi terpanjang x NISBAH) + TETAP (satuan adegan; model berukuran 2). */
+const KOTAK_MARGIN_NISBAH = 0.1;
+const KOTAK_MARGIN_TETAP = 0.04;
 
 export default function Model3DScene({ jalan, ...props }: Props) {
   return (
@@ -194,6 +208,7 @@ function Isi({
 
   const grup = useRef<THREE.Group>(null);
   const hover = useRef(-1);
+  const tunjukTerbaru = useRef<(x: number | null, y: number | null) => string | null>(() => null);
   const tinggiLantai = -model.tinggi / 2 - 0.02;
 
   // Keterangan per komponen — untuk menyorot dan memilih dari klik pada komponen.
@@ -221,6 +236,18 @@ function Isi({
         const arah = camera.position.clone().sub(c.target);
         const panjang = THREE.MathUtils.clamp(arah.length() * f, 1.2, 9);
         camera.position.copy(c.target).add(arah.setLength(panjang));
+      },
+      tunjuk: (x, y) => tunjukTerbaru.current(x, y),
+      orbit: (dTheta, dPhi) => {
+        const c = controls as unknown as { target?: THREE.Vector3 } | null;
+        if (!c?.target) return;
+        putaran.current = null;
+        const rel = camera.position.clone().sub(c.target);
+        const bola = new THREE.Spherical().setFromVector3(rel);
+        bola.theta += dTheta;
+        // Kutub dijauhi sedikit supaya model tak terbalik saat tangan bergerak ekstrem.
+        bola.phi = THREE.MathUtils.clamp(bola.phi + dPhi, 0.2, Math.PI - 0.2);
+        camera.position.copy(c.target).add(rel.setFromSpherical(bola));
       },
       putar: () => {
         const c = controls as unknown as { target?: THREE.Vector3 } | null;
@@ -328,6 +355,120 @@ function Isi({
   const arah = useMemo(() => new THREE.Vector3(), []);
   const penembak = useMemo(() => new THREE.Raycaster(), []);
   const sasaran = useMemo(() => new THREE.Vector3(), []);
+
+  /** Satu sinar dari titik layar (NDC): komponen BERKETERANGAN pertama yang tertembus (bagian kecil tanpa keterangan di depannya tak menghalangi, selama <= `BATAS_TEMBUS`). */
+  function tembak(ndcX: number, ndcY: number): { i: number; titik: THREE.Vector3 } | null {
+    penembak.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+    const semua = penembak.intersectObjects(model.meshes, false);
+    const terdepan = semua[0]?.distance ?? 0;
+    for (const h of semua) {
+      if (h.distance - terdepan > BATAS_TEMBUS) break;
+      const j = indeksMesh(h.object);
+      if (j >= 0 && (perMesh.get(j)?.length ?? 0) > 0) return { i: j, titik: h.point };
+    }
+    return null;
+  }
+
+  /**
+   * KOTAK DETEKSI: tiap komponen berketerangan punya kotak 3D tak terlihat (kotak pembatasnya di dunia, DIPERLUAS
+   * `KOTAK_MARGIN_NISBAH` x ukurannya + `KOTAK_MARGIN_TETAP`). Sinar yang menembus kotak itu dianggap menunjuk komponennya,
+   * TANPA peduli bagian mana dari komponen yang terlihat dari sudut sekarang - port yang menyempit/terhalang bezel saat
+   * model menengok tetap terjangkau. Kotak tetangga bisa saling tumpang tindih: yang dipilih yang PUSATNYA paling dekat
+   * dengan sinar (dibanding ukurannya). Kotak yang berada jauh di belakang permukaan terdepan (> `BATAS_TEMBUS`) diabaikan,
+   * jadi komponen tersembunyi di balik bodi tak ikut terpilih.
+   */
+  function cariKotak(ndcX: number, ndcY: number, terdepan: number): { i: number; titik: THREE.Vector3 } | null {
+    penembak.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+    const sinar = penembak.ray;
+    const kotak = new THREE.Box3();
+    const ukuran = new THREE.Vector3();
+    const pusat = new THREE.Vector3();
+    const kena = new THREE.Vector3();
+    let terbaik: { i: number; titik: THREE.Vector3 } | null = null;
+    let skorTerbaik = Infinity;
+    for (const j of perMesh.keys()) {
+      const mesh = model.meshes[j];
+      if (!mesh) continue;
+      kotak.setFromObject(mesh);
+      if (kotak.isEmpty()) continue;
+      kotak.getSize(ukuran);
+      const margin = Math.max(ukuran.x, ukuran.y, ukuran.z) * KOTAK_MARGIN_NISBAH + KOTAK_MARGIN_TETAP;
+      kotak.expandByScalar(margin);
+      if (!sinar.intersectBox(kotak, kena)) continue;
+      if (kena.distanceTo(sinar.origin) - terdepan > BATAS_TEMBUS) continue;
+      kotak.getCenter(pusat);
+      const setengahDiagonal = kotak.getSize(ukuran).length() / 2;
+      const skor = sinar.distanceToPoint(pusat) / Math.max(1e-6, setengahDiagonal);
+      if (skor < skorTerbaik) {
+        skorTerbaik = skor;
+        terbaik = { i: j, titik: kena.clone() };
+      }
+    }
+    return terbaik;
+  }
+
+  /**
+   * Menunjuk titik layar (0..1, kiri-atas = 0,0) dengan jari.
+   *
+   * Titik TENGAH kursor tetap penentu utama. Toleransi di sekitarnya SANGAT kecil (cincin sinar <= `TOLERANSI_TUNJUK`
+   * fraksi tinggi layar, ±15 px di layar 800 px): komponen kecil/tipis menyempit drastis saat model menengok
+   * (foreshortening) sehingga sinar tunggal hampir mustahil mengenainya. Yang dicoba berurutan dari titik tepat,
+   * lalu cincin dalam, lalu cincin luar, dan yang menang adalah yang PERTAMA kena (= terdekat dari ujung panah).
+   * Magnet lama (radius 3,5%/7% tinggi layar) terlalu besar: komponen di SAMPING ikut terpilih - JANGAN dibesarkan.
+   * Cadangan "kotak layar" (kotak proyeksi memuat titik) pernah dicoba: daerah kena melebar ±5x - JANGAN dikembalikan.
+   */
+  function tunjuk(x: number | null, y: number | null): string | null {
+    if (x === null || y === null) {
+      hover.current = -1;
+      return null;
+    }
+    const ndcX = x * 2 - 1;
+    const ndcY = -(y * 2 - 1);
+    const rasio = size.height / Math.max(1, size.width);
+
+    let hasil = tembak(ndcX, ndcY);
+    for (const [r, jumlah] of [
+      [TOLERANSI_TUNJUK / 2, 8],
+      [TOLERANSI_TUNJUK, 12],
+    ] as [number, number][]) {
+      if (hasil) break;
+      for (let k = 0; k < jumlah && !hasil; k++) {
+        const a = (k / jumlah) * Math.PI * 2;
+        // 1 satuan tinggi layar = 2 satuan NDC; sumbu x disesuaikan rasio agar cincin bulat di layar.
+        hasil = tembak(ndcX + Math.cos(a) * r * 2 * rasio, ndcY + Math.sin(a) * r * 2);
+      }
+    }
+
+    // Cadangan terakhir: kotak deteksi komponen (lihat `cariKotak`).
+    if (!hasil) {
+      penembak.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+      const depan = penembak.intersectObjects(model.meshes, false)[0];
+      hasil = cariKotak(ndcX, ndcY, depan ? depan.distance : Infinity);
+    }
+
+    const i = hasil ? hasil.i : -1;
+    const kandidat = i >= 0 ? (perMesh.get(i) ?? []) : [];
+    if (!hasil || kandidat.length === 0) {
+      hover.current = -1;
+      return null;
+    }
+    hover.current = i;
+    const lokal = model.root.worldToLocal(hasil.titik.clone());
+    let terdekat = kandidat[0];
+    let jarak = Infinity;
+    for (const a of kandidat) {
+      const d = lokal.distanceToSquared(new THREE.Vector3(...a.point));
+      if (d < jarak) {
+        jarak = d;
+        terdekat = a;
+      }
+    }
+    return terdekat.id;
+  }
+  // Fungsi di atas membaca model/keterangan terbaru; ref ini membuatnya terjangkau dari kontrol yang dipasang sekali.
+  useEffect(() => {
+    tunjukTerbaru.current = tunjuk;
+  });
 
   // Garis dilepas saat model diganti/dicopot dari panggung.
   useEffect(() => {
