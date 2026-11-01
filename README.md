@@ -402,7 +402,9 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   (berkas yang sudah dikirim ikut terhapus).
 - Pengajar melihat daftar seluruh siswa per tugas di
   `/educator/classes/[id]/tugas/[postId]`, mengunduh jawabannya, lalu memberi
-  **nilai + komentar** yang langsung terlihat oleh siswa.
+  **nilai + komentar** yang langsung terlihat oleh siswa. Di layar lebar, kolom
+  kiri (instruksi & daftar siswa) dan kolom kanan (Ringkasan & Koreksi AI)
+  digulir terpisah, sehingga pengaturan AI tetap terjangkau saat menilai.
 - Batas: maksimal 5 berkas per postingan/kiriman, masing-masing di bawah 20 MB.
   Siswa tidak bisa melihat jawaban siswa lain.
 - **Koreksi dengan AI** (per siswa, di halaman tugas pengajar):

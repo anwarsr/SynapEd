@@ -548,6 +548,13 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
   dialihkan), `/educator/classes/[id]/tugas/[postId]` (daftar siswa + nilai). Halaman
   siswa hanya membaca kiriman miliknya lewat ID deterministik. `jamServer()` dipanggil
   sekali per render (lint purity melarang `Date.now()` langsung di komponen).
+- **Halaman tugas pengajar = dua panel** (lg ke atas; prop `duaPanel` di `EducatorShell` DAN
+  `AssignmentDetail`, harus berpasangan): halaman dikunci `lg:h-dvh lg:overflow-hidden`, kolom kiri
+  (instruksi + daftar pengumpulan) dan kanan (Ringkasan, Koreksi AI, Hapus) menggulir sendiri-sendiri
+  (`.lab-pane`: bilah gulir tersembunyi, gulir tidak merambat), footer `lg:hidden`. Di bawah lg kembali
+  satu aliran halaman. SENGAJA bukan kolom kanan `sticky` + `max-h`: saat halaman di posisi atas, ujung
+  bawah kolom itu keluar layar sehingga tombol Hapus tak terjangkau tanpa menggulir kolom kiri. Halaman
+  siswa tetap pola lama (aside `sticky`, footer tampil).
 - Hapus post/kelas memanggil `bersihkanPost`/`bersihkanKelas`: dokumen
   `classSubmissions` + berkasnya + lampiran. `MANAGED_PREFIXES` di `storageCleanup.ts`
   memuat kedua folder kelas (tanpa itu `deleteObjects` diam-diam tidak menghapus apa-apa).

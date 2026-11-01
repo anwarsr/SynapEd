@@ -16,6 +16,10 @@ import type { UserCard } from "@/lib/userCards";
  * pengumpulan siswa, atau pengaturan tugas untuk pengajar). Isi khusus
  * peran dioper sebagai slot supaya data milik satu peran tidak pernah
  * tersedia di komponen yang juga dirender untuk peran lain.
+ *
+ * `duaPanel` (lg ke atas, pasangannya `duaPanel` di EducatorShell): kedua kolom
+ * menggulir sendiri-sendiri. Dipakai halaman pengajar, yang kedua kolomnya bisa
+ * sama-sama panjang (daftar siswa vs kartu Koreksi AI).
  */
 export default function AssignmentDetail({
   post,
@@ -26,6 +30,7 @@ export default function AssignmentDetail({
   samping,
   bawah,
   aksi,
+  duaPanel = false,
 }: {
   post: KelasPost;
   namaKelas: string;
@@ -36,17 +41,24 @@ export default function AssignmentDetail({
   bawah?: ReactNode;
   /** Tepat di bawah kepala tugas — tombol & formulir edit di halaman pengelola. */
   aksi?: ReactNode;
+  duaPanel?: boolean;
 }) {
   const p = post.assignment!;
   const lewat = lewatTenggat(p.dueAt, saat);
   const namaPengajar = pengajar?.name ?? "Pengajar";
 
   return (
-    <div className="container-page">
+    <div className={duaPanel ? "container-page lg:flex lg:h-full lg:flex-col" : "container-page"}>
       <BackLink href={kembali}>{namaKelas}</BackLink>
 
-      <div className="mt-6 grid gap-8 grid-cols-[minmax(0,1fr)_340px] max-lg:grid-cols-1">
-        <div className="min-w-0">
+      <div
+        className={
+          duaPanel
+            ? "mt-6 grid gap-8 grid-cols-[minmax(0,1fr)_340px] max-lg:grid-cols-1 lg:min-h-0 lg:flex-1"
+            : "mt-6 grid gap-8 grid-cols-[minmax(0,1fr)_340px] max-lg:grid-cols-1"
+        }
+      >
+        <div className={duaPanel ? "lab-pane min-w-0 lg:min-h-0 lg:overflow-y-auto" : "min-w-0"}>
           <div className="flex items-start gap-4">
             <div className="min-w-0 flex-1">
               <span className="block text-sm font-bold uppercase tracking-[0.3em] text-blue-300">Tugas</span>
@@ -111,7 +123,15 @@ export default function AssignmentDetail({
           {bawah && <div className="mt-10">{bawah}</div>}
         </div>
 
-        <aside className="w-full space-y-4 lg:sticky lg:top-24 lg:self-start">{samping}</aside>
+        <aside
+          className={
+            duaPanel
+              ? "lab-pane w-full space-y-4 lg:min-h-0 lg:overflow-y-auto"
+              : "w-full space-y-4 lg:sticky lg:top-24 lg:self-start"
+          }
+        >
+          {samping}
+        </aside>
       </div>
     </div>
   );
