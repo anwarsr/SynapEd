@@ -134,13 +134,15 @@ penyusun kursus tidak pernah berkurang.
 ### SynapLab — papan coba-coba (`/lab`)
 
 Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
-orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
-tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
-(Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), **Flowchart** (Lab 03),
-**Python** (Lab 04), **Pseudocode** (Lab 05), **Sorting** (Lab 06), dan **Searching** (Lab 07). Laci menimpa halaman
-tanpa menggesernya. Array tampil sebagai satu materi di laci; empat versinya
-— **1D · 2D · 3D · N-D** — dipilih lewat pengalih di kepala halaman, dan laci
-kembali ke dimensi yang terakhir dipakai.
+orang lain. Membuka `/lab` menampilkan **galeri kartu** semua materi (bergambar,
+terlihat sekaligus): **Array** (Lab 01 — 1D, 2D, 3D, N-D), **Linked List**
+(Lab 02), **Flowchart** (Lab 03), **Python** (Lab 04), **Pseudocode** (Lab 05),
+**Sorting** (Lab 06), dan **Searching** (Lab 07). Dari dalam lab, tombol ☰ di
+tepi kiri (di ponsel: tombol "Materi" di tengah bawah) membuka galeri yang sama
+sebagai lapisan layar penuh; lab yang sedang dibuka ditandai. Tautan bagikan
+langsung membuka lab-nya tanpa melewati galeri. Array tampil sebagai satu kartu;
+empat versinya — **1D · 2D · 3D · N-D** — dipilih lewat pengalih di kepala
+halaman, dan kartunya kembali ke dimensi yang terakhir dipakai.
 Tiap lab punya papan, operasi, dan tautan bagikannya sendiri; berpindah lab
 tidak menghapus papan lab lain.
 

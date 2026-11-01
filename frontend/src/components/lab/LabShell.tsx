@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useState } from "react";
 import LabNavigasi, { type BagianNavigasi } from "./LabNavigasi";
+import GaleriLab from "./GaleriLab";
 import LabWorkspace from "./LabWorkspace";
 import FlowWorkspace from "./flow/FlowWorkspace";
 import PseudoWorkspace from "./kode/PseudoWorkspace";
@@ -138,7 +139,8 @@ export default function LabShell({
   awalCari: IsiCari | null;
   tautanRusak: boolean;
 }) {
-  const labAwal: PilihanLab = awalCari
+  // null = halaman depan: galeri semua lab. Tautan bagikan langsung membuka lab-nya.
+  const labAwal: PilihanLab | null = awalCari
     ? "searching"
     : awalSort
     ? "sorting"
@@ -148,9 +150,9 @@ export default function LabShell({
         ? "pseudocode"
         : awalFlow
           ? "flowchart"
-          : (awal?.lab ?? "array1d");
-  const [aktif, setAktif] = useState<PilihanLab>(labAwal);
-  const [dibuka, setDibuka] = useState<ReadonlySet<PilihanLab>>(() => new Set([labAwal]));
+          : (awal?.lab ?? null);
+  const [aktif, setAktif] = useState<PilihanLab | null>(labAwal);
+  const [dibuka, setDibuka] = useState<ReadonlySet<PilihanLab>>(() => new Set(labAwal ? [labAwal] : []));
   const [beritahuRusak, setBeritahuRusak] = useState(tautanRusak);
   // Dimensi array yang terakhir dipakai: item "Array" di laci kembali ke sana,
   // bukan selalu ke 1D (papan 3D yang sedang dipakai mengajar tidak hilang dari layar).
@@ -165,6 +167,42 @@ export default function LabShell({
   }, []);
 
   const sembunyikanPemberitahuan = useCallback(() => setBeritahuRusak(false), []);
+
+  /** Item galeri → lab. Item "Array" kembali ke dimensi yang terakhir dipakai. */
+  const pilihItem = (id: string) => {
+    if (id === ID_ARRAY) pilih(aktif !== null && materiDari(aktif) === "array" ? aktif : arrayTerakhir);
+    else if (ID_LAB.has(id)) pilih(id as PilihanLab);
+  };
+
+  // Halaman depan /lab: galeri kartu semua lab (acuan pemilik: VisuAlgo), supaya
+  // seluruh materi terlihat sekaligus sebelum memilih.
+  if (aktif === null) {
+    return (
+      <div className="lab-pane lg:h-full lg:overflow-y-auto lg:pr-1">
+        <header className="mb-6 flex flex-col gap-3">
+          <h1>
+            <span className="sr-only">SynapLab</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/SynapLab.png" alt="" width={157} height={30} className="logo-on-dark h-9 w-auto lg:h-10" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/SynapLab Black.png" alt="" width={157} height={30} className="logo-on-light h-9 w-auto lg:h-10" />
+          </h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">
+            Papan coba-coba untuk memahami struktur data, algoritma, dan pemrograman sambil mencobanya langsung - semua berjalan
+            di browser, tanpa akun. Pilih materi untuk mulai.
+          </p>
+          {beritahuRusak && (
+            <p role="status" className="lab-fade-up bg-amber-500/15 px-4 py-3 text-sm text-warn-text">
+              Tautan papan tidak dapat dibaca. Pilih lab di bawah untuk mulai dari awal.
+            </p>
+          )}
+        </header>
+        <nav aria-label="Materi">
+          <GaleriLab bagian={NAVIGASI} aktif={null} onPilih={pilihItem} />
+        </nav>
+      </div>
+    );
+  }
 
   const materi = materiDari(aktif);
   const infoMateri = MATERI.find((m) => m.id === materi)!;
@@ -255,10 +293,7 @@ export default function LabShell({
       <LabNavigasi
         bagian={NAVIGASI}
         aktif={materi === "array" ? ID_ARRAY : aktif}
-        onPilih={(id) => {
-          if (id === ID_ARRAY) pilih(materi === "array" ? aktif : arrayTerakhir);
-          else if (ID_LAB.has(id)) pilih(id as PilihanLab);
-        }}
+        onPilih={pilihItem}
       />
       <div className="min-w-0 lg:h-full lg:flex-1">
       {dibuka.has("array1d") && (

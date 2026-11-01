@@ -499,7 +499,7 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
 
 Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
 
-- **Laci materi SynapLab** (`LabNavigasi.tsx`): persegi tanpa border/radius (`bg-header`), logo gambar di kepala, bagian = nomor raksasa samar + nama, item = blok dengan batang biru di kiri bila aktif (tanpa titik/cincin); latar belakang laci `backdrop-blur-md` (laman di belakang DIBURAMKAN). Tombol pembukanya persegi dan TANPA perubahan warna saat hover: ikon tiga garis (kotak 1,5px), garis teratas & terbawah menjauh 3px dari garis tengah saat di-hover.
+- **Galeri materi SynapLab** (`GaleriLab.tsx` + `IlustrasiLab.tsx`, dulu laci sempit `LabNavigasi`): kartu persegi tanpa border (`bg-paper-card`, gambar di `bg-header` + nomor raksasa samar, terangkat 4px saat hover, kartu aktif = garis biru bawah + "Sedang dibuka"), ilustrasi SVG garis per lab yang hanya memakai token lewat `currentColor` (ikut tema). Tombol pembukanya persegi dan TANPA perubahan warna saat hover: ikon tiga garis (kotak 1,5px), garis teratas & terbawah menjauh 3px dari garis tengah saat di-hover.
 - **SynapLab**: bilah gulir panel `.lab-pane` DISEMBUNYIKAN (tetap bisa digulir); penanda "Lab 01 · Array" tanpa lingkaran biru berdenyut; tombol contoh mulai-cepat di papan kosong (`MULAI_CEPAT` di kelima `*Board.tsx`) = kotak `bg-white/[0.06]` dengan garis biru di bawah saat hover, bukan pil biru.
 - **Tampilan** (sama dengan halaman lain): kartu/isian/tombol PERSEGI tanpa `rounded-*` dan tanpa border kotak (kartu `bg-paper-card`, isian `bg-white/[0.06]` + garis biru di bawah saat fokus, bukan ring); statistik tugas dipisah celah 4px; tab ruang kelas aktif = latar samar + bilah biru di bawah. Jangan menambah `rounded-*`/`border` kotak lagi di `components/classes` dan halaman tugas.
 - Berkas: `classAssignmentRules.ts` (NETRAL — format, MIME, batas, validasi,
@@ -778,19 +778,25 @@ Tujuh materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
 **3D** (`array3d`), **N-D** (`arrayNd`) — **Linked List** (`linkedList`,
 singly), **Flowchart** (`"flowchart"`), **Python** (`"python"`, Lab 04) dan
 **Pseudocode** (`"pseudocode"`, Lab 05), **Sorting** (`"sorting"`, Lab 06), dan **Searching** (`"searching"`, Lab 07). Lima yang terakhir BUKAN `LabId` (lihat
-bagian Flowchart, Lab kode, Sorting & Searching); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode" | "sorting" | "searching"`. Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
-MENIMPA halaman (fixed + latar gelap, `inert` saat tertutup, fokus dikurung,
-gulir `body` dikunci, `Esc` ditangkap di fase capture supaya tidak ikut menutup
-mode presentasi). Komponennya generik — hanya menerima `BagianNavigasi[]`
+bagian Flowchart, Lab kode, Sorting & Searching); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode" | "sorting" | "searching"`. Navigasi materi = GALERI KARTU (`GaleriLab.tsx`, satu kartu per item `NAVIGASI`,
+ilustrasi `IlustrasiLab.tsx`; permintaan pemilik dengan acuan VisuAlgo: semua lab terlihat
+sekaligus). Dua tempat: (1) HALAMAN DEPAN `/lab` — `LabShell` mulai dengan `aktif = null`
+bila tidak ada tautan (`?s=`/`?f=`/`?py=`/`?ps=`/`?u=`/`?c=`); tautan rusak juga jatuh ke
+galeri + pemberitahuan; grid 4 kolom di xl supaya ketujuh kartu muat di 1440×900
+(diuji); (2) tombol ☰ di dalam lab (`LabNavigasi.tsx`) membuka galeri yang sama
+sebagai lapisan layar penuh yang MENIMPA halaman (`backdrop-blur-xl`, `inert` saat
+tertutup, fokus dikurung & pindah ke kartu aktif, gulir `body` dikunci, `Esc` ditangkap
+di fase capture supaya tidak ikut menutup mode presentasi, klik latar menutup). Memilih
+lab TIDAK mengubah URL (tombol Back tidak kembali ke galeri). Komponennya generik — hanya menerima `BagianNavigasi[]`
 (teks) dan `onPilih(id)` — dan dirender SEKALI oleh `LabShell` di luar ruang
 kerja mana pun, jadi tidak bergantung pada halaman materi yang sedang dibuka
 (materi baru boleh punya halaman yang sama sekali berbeda). Tombolnya: di lg
 kolom sempit di kiri judul — `LabShell` membungkus `[LabNavigasi | ruang kerja]`
 dalam `lg:flex`, jadi tombol sejajar judul dan tidak ikut tergulir; di layar
 sempit pil mengambang di tengah bawah. Materi/lab baru = satu entri di `NAVIGASI` + `MATERI` + cabang
-ruang kerjanya. Array di laci hanya SATU item (`ID_ARRAY` = `"array"`, bukan `LabId`;
+ruang kerjanya (+ gambar di `IlustrasiLab`). Array di galeri hanya SATU kartu (`ID_ARRAY` = `"array"`, bukan `LabId`;
 atas permintaan pemilik): dimensinya dipilih lewat pengalih 1D/2D/3D/N-D di kepala
-halaman, dan item laci membuka dimensi yang TERAKHIR dipakai (`arrayTerakhir`),
+halaman, dan kartunya membuka dimensi yang TERAKHIR dipakai (`arrayTerakhir`, `pilihItem`),
 bukan selalu 1D. `aktif` yang dikirim ke `LabNavigasi` dipetakan ke `"array"` selama
 materi array terbuka.
 
@@ -806,7 +812,7 @@ materi array terbuka.
   - URL: `labUrl.ts` (dispatcher `encodeLabSnapshot`/`decodeLabSnapshot`),
     `labUrlMatrix.ts`, `labUrlCube.ts`, `labUrlNd.ts`, `labUrlBagian.ts` (penolong
     urai bersama).
-- **UI**: `LabShell.tsx` = laci materi (`LabNavigasi`), pengalih dimensi, dan kepala halaman. Tiap lab adalah
+- **UI**: `LabShell.tsx` = galeri halaman depan, tombol galeri (`LabNavigasi`), pengalih dimensi, dan kepala halaman. Tiap lab adalah
   sebuah `LabKit` (`labKit.ts` kontraknya, `labKits.tsx` kelimanya: reducer,
   katalog, kanvas, encode, navigasi panah, isian "pakai sel" + `isianSel` = nama
   isian yang boleh diisi dari sel dan karenanya TIDAK diisi contoh di awal). `LabWorkspace.tsx`
@@ -1136,7 +1142,7 @@ materi array terbuka.
     permintaan jaringan dari kode siswa, `import()` dinamis di worker diblokir CSP,
     Stop/batas waktu/batas langkah, builtins pulih, tautan `?py=`.
 - **Sorting (Lab 06)** — bubble sort & merge sort (`lib/lab/sort/*` netral, `components/lab/sort/`):
-  - Satu item laci; algoritma dipilih tab Bubble/Merge DI DALAM `SortWorkspace` (keduanya memakai data yang
+  - Satu kartu galeri; algoritma dipilih tab Bubble/Merge DI DALAM `SortWorkspace` (keduanya memakai data yang
     sama, ringkasan akhir membandingkan kerja keduanya). TIDAK memakai `LabKit`/`LabWorkspace`; operasi urut di
     lab Array (`labSort.ts`, merge in-place) tetap ada dan terpisah.
   - Rekaman sekali (`rekamBubble`/`rekamMerge`, `useMemo` dari data+arah) → `useLabPlayer` memutar. Setiap langkah
@@ -1162,7 +1168,7 @@ materi array terbuka.
   saat lab aktif & tidak saat mengetik/fokus di tombol), dan `KodeSorotBaca`. Urai angka bersama = `lib/lab/labAngka.ts`
   (`uraiAngka`/`uraiSatu`, pesan galat sama untuk kedua lab). Lab "langkah demi langkah" baru = rekam potret + pakai ini.
 - **Searching (Lab 07)** — linear & binary search (`lib/lab/search/*` netral, `components/lab/search/`):
-  - Pola sama dengan Sorting (rekam sekali, potret utuh, satu item laci, tab Linear/Binary, data + nilai cari bersama,
+  - Pola sama dengan Sorting (rekam sekali, potret utuh, satu kartu galeri, tab Linear/Binary, data + nilai cari bersama,
     ringkasan akhir membandingkan perbandingan). Batas 2-32 data 0..999; `uraiDicari` untuk nilai yang dicari.
   - Linear berhenti di kemunculan PERTAMA; satu langkah per perbandingan (kalimatnya menyebut `i ← i + 1`, sorotan
     hanya baris IF - rentang sampai `i ← i + 1` ikut menyorot `Ketemu ← TRUE` yang tidak dijalankan).

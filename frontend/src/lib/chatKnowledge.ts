@@ -152,7 +152,10 @@ export const PENGETAHUAN_SITUS = `## Akun
 
 ## SynapLab
 - /lab adalah papan untuk memahami struktur data dan pemrograman sambil
-  mencobanya, terbuka untuk siapa saja tanpa login.
+  mencobanya, terbuka untuk siapa saja tanpa login. Halaman /lab dibuka dengan
+  galeri kartu semua lab (Lab 01 Array sampai Lab 07 Searching); tombol menu
+  (☰, di ponsel tombol "Materi") di dalam lab membuka galeri yang sama untuk
+  pindah lab.
 - Materi: Array (1D, 2D, 3D yang tampil sebagai kubus yang bisa diputar, dan
   N-dimensi) serta Linked List (singly). Operasi dijalankan lewat tombol dan
   form, bukan menulis kode, lalu diputar langkah demi langkah dengan narasi
