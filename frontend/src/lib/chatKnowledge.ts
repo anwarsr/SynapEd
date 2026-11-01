@@ -192,6 +192,15 @@ export const PENGETAHUAN_SITUS = `## Akun
   TYPE (record), operasi berkas, dan OOP. Panduan singkat ada di panel lab.
 - Kode Python dan pseudocode bisa dibagikan lewat tautan atau disimpan/dibuka
   sebagai berkas (.py/.txt). Masing-masing punya contoh siap pakai.
+- Sorting (Lab 06): bubble sort dan merge sort diperagakan langkah demi langkah
+  secara pelan (kecepatan 0,25x sampai 2x, atau maju/mundur manual). Bubble
+  sort tampil sebagai batang yang bertukar; merge sort sebagai pohon yang
+  dibagi lalu digabung dengan array bantu. Setiap langkah dijelaskan dengan
+  kalimat dan baris pseudocode Cambridge 9618 yang sedang berjalan disorot.
+  Data bisa diketik (2-12 angka 0-999), diacak, atau dipilih dari contoh kasus
+  (sudah urut, terbalik, hampir urut, ada nilai kembar), dan dibagikan lewat
+  tautan. Algoritma lain (selection, insertion, quick sort) ada sebagai operasi
+  urut di lab Array.
 
 ## Yang belum tersedia
 Penarikan dana pendapatan, notifikasi email, pengembalian dana otomatis,

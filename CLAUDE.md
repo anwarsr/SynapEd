@@ -774,11 +774,11 @@ Pustaka: `three`, `@react-three/fiber`, `@react-three/drei` (+ `@types/three`).
 
 Papan sandbox untuk memvisualisasikan materi. **Tanpa Firestore, tanpa Server
 Action, tanpa login** — seluruh keadaan hidup di memori browser dan di URL.
-Lima materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
+Enam materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
 **3D** (`array3d`), **N-D** (`arrayNd`) — **Linked List** (`linkedList`,
 singly), **Flowchart** (`"flowchart"`), **Python** (`"python"`, Lab 04) dan
-**Pseudocode** (`"pseudocode"`, Lab 05). Tiga yang terakhir BUKAN `LabId` (lihat
-bagian Flowchart & Lab kode); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode"`. Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
+**Pseudocode** (`"pseudocode"`, Lab 05), dan **Sorting** (`"sorting"`, Lab 06). Empat yang terakhir BUKAN `LabId` (lihat
+bagian Flowchart, Lab kode & Sorting); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode" | "sorting"`. Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
 MENIMPA halaman (fixed + latar gelap, `inert` saat tertutup, fokus dikurung,
 gulir `body` dikunci, `Esc` ditangkap di fase capture supaya tidak ikut menutup
 mode presentasi). Komponennya generik — hanya menerima `BagianNavigasi[]`
@@ -1135,6 +1135,28 @@ materi array terbuka.
     `import js` ditolak, API jaringan tidak bisa dipanggil dari Python, tidak ada
     permintaan jaringan dari kode siswa, `import()` dinamis di worker diblokir CSP,
     Stop/batas waktu/batas langkah, builtins pulih, tautan `?py=`.
+- **Sorting (Lab 06)** — bubble sort & merge sort (`lib/lab/sort/*` netral, `components/lab/sort/`):
+  - Satu item laci; algoritma dipilih tab Bubble/Merge DI DALAM `SortWorkspace` (keduanya memakai data yang
+    sama, ringkasan akhir membandingkan kerja keduanya). TIDAK memakai `LabKit`/`LabWorkspace`; operasi urut di
+    lab Array (`labSort.ts`, merge in-place) tetap ada dan terpisah.
+  - Rekaman sekali (`rekamBubble`/`rekamMerge`, `useMemo` dari data+arah) → `useLabPlayer` memutar. Setiap langkah
+    = POTRET UTUH (`LangkahBubble.urutan`, `LangkahMerge.simpul` = pohon lengkap), jadi maju/mundur/garis waktu bebas.
+    Mengganti data/algoritma/arah = kembali ke langkah 1 TANPA memutar otomatis.
+  - Merge = cara buku teks: pohon 2n−1 simpul disusun dulu (`Tengah = (Kiri+Kanan) DIV 2`), status simpul
+    `tersembunyi/menunggu/dibagi/menggabung/urut/terpakai`, penunjuk `i`/`j` relatif anak & `k` relatif simpul yang
+    digabung (invarian k = i + j), seri diambil dari KIRI (stabil). Bubble berhenti lebih awal bila satu putaran
+    tanpa pertukaran, persis pseudocode-nya.
+  - Pseudocode 9618 di panel (`sortKode.ts`) DIJALANKAN `jalankanPseudo` di `verify-sorting` (dibungkus DECLARE A/N +
+    INPUT + OUTPUT) dan jumlah putaran bubble dicocokkan dengan rekaman. Nomor baris sorotan dicari dari TEKS kode
+    (`cariBaris`), bukan ditulis tangan. Menyunting kodenya = jalankan `npm run verify:sorting`.
+  - Tempo `TAHAN_MS` (info 2800, banding 1900, tukar/salin 2600, bagi 2200, daun 1500 ms) dan kecepatan
+    `KECEPATAN_SORT` maks 2× dijaga `verify-sorting` - permintaan pemilik "tidak terlalu cepat".
+  - Papan: batang = `translate` persen dari lebarnya sendiri, urutan DOM per id (pelajaran `urutStabil`); pohon =
+    simpul absolut `left = lo/n`, `width = (hi−lo+1)/n` (muat di 390px tanpa `scale`). Panel kode baca-saja
+    (`KodeSorotBaca`) menggulir KOTAKNYA SENDIRI lewat `scrollTop`, bukan `scrollIntoView`.
+  - Data 2-12 bilangan bulat 0..999 (negatif sengaja ditolak: tinggi batang). Tautan `?u=1<b|m>~<n|t>~v,v,…` (≤120
+    karakter, tanpa kompresi, semua-atau-tidak, dibaca di server). `ShareLabButton` kini menerima `param`.
+  - Hemat gerak: tombol Putar nonaktif, langkah manual tetap jalan (`useLabPlayer` tidak pernah memutar).
 
 ## Pengujian (`scripts/`)
 
@@ -1146,7 +1168,7 @@ materi array terbuka.
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
 - `verify-model3d` (butuh dev server) menulis GLB uji langsung ke bucket (melewati rules, jadi TIDAK menguji `storage.rules`) lalu membersihkannya.
-- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office

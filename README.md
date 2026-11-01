@@ -137,7 +137,7 @@ Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
 orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
 tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
 (Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), **Flowchart** (Lab 03),
-**Python** (Lab 04), dan **Pseudocode** (Lab 05). Laci menimpa halaman
+**Python** (Lab 04), **Pseudocode** (Lab 05), dan **Sorting** (Lab 06). Laci menimpa halaman
 tanpa menggesernya. Array tampil sebagai satu materi di laci; empat versinya
 — **1D · 2D · 3D · N-D** — dipilih lewat pengalih di kepala halaman, dan laci
 kembali ke dimensi yang terakhir dipakai.
@@ -291,6 +291,20 @@ tidak menghapus papan lab lain.
     `END IF`, `ENDFOR`, kata kunci huruf kecil;
   - teks yang disalin dari PDF panduan (tanda `−` dan kutip `ꞌ`) tetap terbaca;
   - panel **Panduan** berisi ringkasan dialeknya.
+- **Sorting** (Lab 06) — **bubble sort** dan **merge sort**, langkah demi
+  langkah dan sengaja **pelan** (kecepatan 0,25×-2×, bisa maju/mundur manual):
+  - bubble sort digambar sebagai **batang** (tinggi = nilai): pasangan yang
+    dibandingkan, pertukaran yang meluncur, dan bagian kanan yang sudah final;
+  - merge sort digambar sebagai **pohon bagi-gabung** seperti di buku teks:
+    data dibelah turun sampai satu elemen, lalu digabung naik ke array bantu
+    dengan penunjuk `i`, `j`, `k`;
+  - setiap langkah punya **kalimat penjelasan** dan baris **pseudocode
+    Cambridge 9618** yang sedang dijalankan disorot (kodenya bisa langsung
+    dicoba di Lab 05), plus penghitung perbandingan & pertukaran/penyalinan;
+  - data: ketik sendiri (2-12 angka 0-999), acak, atau **contoh kasus**
+    (sudah urut, terbalik, hampir urut, ada nilai kembar), arah naik/turun;
+    kedua algoritma memakai data yang sama dan di akhir jumlah kerjanya
+    dibandingkan; **Bagikan** menyalin tautan berisi algoritma + data.
 - Kedua lab kode: **contoh** siap pakai (luas, genap/ganjil, jumlah 1..n,
   CASE, array, validasi masukan, rekursi, BYREF/dictionary), **Bagikan**
   (tautan berisi kode + masukan; kode dari tautan hanya ditampilkan, tidak
@@ -567,6 +581,7 @@ npm run verify:lab                # SynapLab — murni, tanpa dev server & krede
 npm run verify:flowchart          # flowchart: ekspresi, mesin jalan, pemeriksa, tautan (murni)
 npm run verify:pseudocode         # interpreter pseudocode 9618: bahasa, galat & baris, jejak (murni)
 npm run verify:kode               # lab kode: tautan, berkas, penyorot, saran Python, CSP worker (murni)
+npm run verify:sorting            # Lab Sorting: hasil stabil, langkah, baris kode, pseudocode dijalankan, tautan (murni)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
