@@ -1156,9 +1156,9 @@ materi array terbuka.
     `import js` ditolak, API jaringan tidak bisa dipanggil dari Python, tidak ada
     permintaan jaringan dari kode siswa, `import()` dinamis di worker diblokir CSP,
     Stop/batas waktu/batas langkah, builtins pulih, tautan `?py=`.
-- **Sorting (Lab 06)** — bubble sort & merge sort (`lib/lab/sort/*` netral, `components/lab/sort/`):
-  - Satu kartu galeri; algoritma dipilih tab Bubble/Merge DI DALAM `SortWorkspace` (keduanya memakai data yang
-    sama, ringkasan akhir membandingkan kerja keduanya). TIDAK memakai `LabKit`/`LabWorkspace`; operasi urut di
+- **Sorting (Lab 06)** — bubble, insertion & merge sort (`lib/lab/sort/*` netral, `components/lab/sort/`):
+  - Satu kartu galeri; algoritma dipilih tab Bubble/Insertion/Merge (`ALGO_SORT`) DI DALAM `SortWorkspace` (semuanya
+    memakai data yang sama, ringkasan akhir membandingkan kerja ketiganya). TIDAK memakai `LabKit`/`LabWorkspace`; operasi urut di
     lab Array (`labSort.ts`, merge in-place) tetap ada dan terpisah.
   - Rekaman sekali (`rekamBubble`/`rekamMerge`, `useMemo` dari data+arah) → `useLabPlayer` memutar. Setiap langkah
     = POTRET UTUH (`LangkahBubble.urutan`, `LangkahMerge.simpul` = pohon lengkap), jadi maju/mundur/garis waktu bebas.
@@ -1172,18 +1172,31 @@ materi array terbuka.
     (`cariBaris`), bukan ditulis tangan. Menyunting kodenya = jalankan `npm run verify:sorting`.
   - Tempo `TAHAN_MS` (info 2800, banding 1900, tukar/salin 2600, bagi 2200, daun 1500 ms) dan kecepatan
     `KECEPATAN_PELAN` (labTypes.ts, dipakai Lab 06 & 07) maks 2× dijaga `verify-sorting` - permintaan pemilik "tidak terlalu cepat".
-  - Papan: batang = `translate` persen dari lebarnya sendiri, urutan DOM per id (pelajaran `urutStabil`); pohon =
-    simpul absolut `left = lo/n`, `width = (hi−lo+1)/n` (muat di 390px tanpa `scale`). Panel kode baca-saja
+  - Papan: batang = `translate` persen dari lebarnya sendiri, urutan DOM per id (pelajaran `urutStabil`).
+    **Pohon merge (`PohonMerge`) = diagram buku teks berbentuk belah ketupat** (permintaan pemilik, acuan diagram
+    GeeksforGeeks): setiap simpul punya DUA kotak - kotak "bagi" (`SimpulMerge.asli`, urutan semula) di baris =
+    tingkatnya, dan kotak "gabung" (`isi`, slot null terisi satu per satu) di baris 2D − tingkat (D = kedalaman); daun
+    SELALU di baris D walau lebih dangkal (panahnya memanjang). Panah SVG induk→anak & hasil anak→kotak gabung induk
+    (yang sedang dikerjakan biru). Angka kecil = `nomorBagi`/`nomorGabung` dari perekam (urutan rekursi; 1..3n−2,
+    contoh 7 data → hasil akhir #19; diagram acuan #20 karena punya langkah "turunkan 10" yang tak ada di algoritma).
+    Kotak berisi ANGKA (bukan batang), posisi px dari lebar terukur (ResizeObserver, awal 720 sama di server & klien);
+    celah antarkotak 9px (3px di ponsel) - harus jauh lebih lebar dari celah antarsel 2px, kalau mirip dua kotak
+    bertetangga terbaca sebagai satu deret. Atribut `data-kotak/data-simpul/data-sel/data-nomor` dipakai uji browser. Panel kode baca-saja
     (`KodeSorotBaca`) menggulir KOTAKNYA SENDIRI lewat `scrollTop`, bukan `scrollIntoView`.
-  - Data 2-12 bilangan bulat 0..999 (negatif sengaja ditolak: tinggi batang). Tautan `?u=1<b|m>~<n|t>~v,v,…` (≤120
+  - **Insertion** (`sortInsertion.ts`) memakai papan batang bubble (`PapanBubble`) dengan peran tambahan `kunci` (amber,
+    "kartu di tangan") & `urutKiri` + `batasKiri` (garis pembatas bagian kiri yang sementara urut). Satu pergeseran =
+    kunci & A[j] bertukar tempat (kunci maju ke kiri) - setara pseudocode yang menyimpan kunci di variabel. Seri tidak
+    digeser (stabil). Invarian teruji: pergeseran = inversi, kunci maju tepat satu per geser, narasi "Sekarang A[1..X]
+    urut" ⇔ `batasKiri` = X. `pindah` di ringkasan = pergeseran.
+  - Data 2-12 bilangan bulat 0..999 (negatif sengaja ditolak: tinggi batang). Tautan `?u=1<b|i|m>~<n|t>~v,v,…` (≤120
     karakter, tanpa kompresi, semua-atau-tidak, dibaca di server). `ShareLabButton` kini menerima `param`.
   - Hemat gerak: tombol Putar nonaktif, langkah manual tetap jalan (`useLabPlayer` tidak pernah memutar).
 - **Bagian bersama Lab 06 & 07** (`components/lab/langkah/`): `PemutarLangkah` (pemutar + kecepatan + `putarAtauJeda`),
   `TabAlgoritma`, `NarasiLangkah`, `GarisWaktu`, `DaftarPintasan`, `usePintasanPemutar` (Spasi/←/→/Home/End/Esc, hanya
   saat lab aktif & tidak saat mengetik/fokus di tombol), dan `KodeSorotBaca`. Urai angka bersama = `lib/lab/labAngka.ts`
   (`uraiAngka`/`uraiSatu`, pesan galat sama untuk kedua lab). Lab "langkah demi langkah" baru = rekam potret + pakai ini.
-- **Searching (Lab 07)** — linear & binary search (`lib/lab/search/*` netral, `components/lab/search/`):
-  - Pola sama dengan Sorting (rekam sekali, potret utuh, satu kartu galeri, tab Linear/Binary, data + nilai cari bersama,
+- **Searching (Lab 07)** — linear, binary & jump search (`lib/lab/search/*` netral, `components/lab/search/`):
+  - Pola sama dengan Sorting (rekam sekali, potret utuh, satu kartu galeri, tab Linear/Binary/Jump (`ALGO_CARI`), data + nilai cari bersama,
     ringkasan akhir membandingkan perbandingan). Batas 2-32 data 0..999; `uraiDicari` untuk nilai yang dicari.
   - Linear berhenti di kemunculan PERTAMA; satu langkah per perbandingan (kalimatnya menyebut `i ← i + 1`, sorotan
     hanya baris IF - rentang sampai `i ← i + 1` ikut menyorot `Ketemu ← TRUE` yang tidak dijalankan).
@@ -1196,7 +1209,12 @@ materi array terbuka.
     `verify-searching`). Label penunjuk di papan memakai nama variabel yang sama.
   - `PapanCari`: kotak absolut dengan `translate` dari kolom/baris (jumlah kolom dari lebar, ResizeObserver; lebar awal
     720 sama di server & klien) supaya pengurutan meluncur lintas baris; urutan DOM per id.
-  - Tautan `?c=1<l|b>~<dicari>~v,v,…` (≤200 karakter, semua-atau-tidak, dibaca server). Tes: `npm run verify:searching`.
+  - **Jump** (`searchJump.ts`): diurutkan dulu seperti binary (`urutkanSel` di searchTypes), lompatan `lompatan(n)` = ⌊√n⌋
+    dihitung dengan perulangan karena 9618 tidak punya fungsi akar; periksa UJUNG blok (`A[Akhir] < Dicari`), lompati
+    blok selama lebih kecil, jepit `Akhir ← N`, lalu linear di dalam blok. Menemukan kemunculan PERTAMA (blok yang
+    dilompati seluruhnya lebih kecil) - beda dengan binary. Penunjuk `Awal`/`Akhir`; `PapanCari` memakai Kiri..Kanan
+    ATAU Awal..Akhir sebagai rentang bergaris bawah. Batas teruji `maksJump(n)` = ⌈n/m⌉ − 1 + m (32 data → 11).
+  - Tautan `?c=1<l|b|j>~<dicari>~v,v,…` (≤200 karakter, semua-atau-tidak, dibaca server). Tes: `npm run verify:searching`.
 
 ## Pengujian (`scripts/`)
 

@@ -1,5 +1,5 @@
 /**
- * Bentuk data Lab 07 Searching (linear search & binary search).
+ * Bentuk data Lab 07 Searching (linear, binary, dan jump search).
  *
  * Polanya sama dengan Lab 06 Sorting: algoritma direkam sekali menjadi potret
  * utuh per langkah, lalu `useLabPlayer` memutarnya.
@@ -7,7 +7,9 @@
  * Modul netral.
  */
 
-export type AlgoCari = "linear" | "binary";
+export type AlgoCari = "linear" | "binary" | "jump";
+
+export const ALGO_CARI: readonly AlgoCari[] = ["linear", "binary", "jump"];
 
 export const CARI_MIN_DATA = 2;
 export const CARI_MAX_DATA = 32;
@@ -31,7 +33,7 @@ export interface SelCari {
   nilai: number;
 }
 
-export type NamaPenunjuk = "i" | "Kiri" | "Tengah" | "Kanan";
+export type NamaPenunjuk = "i" | "Kiri" | "Tengah" | "Kanan" | "Awal" | "Akhir";
 
 export interface LangkahCari {
   fase: string;
@@ -63,3 +65,23 @@ export interface RekamanCari {
 
 /** Batas jumlah perbandingan binary search untuk n data: ⌊log₂ n⌋ + 1. */
 export const maksBinary = (n: number) => (n < 1 ? 0 : Math.floor(Math.log2(n)) + 1);
+
+/** Ukuran lompatan jump search: ⌊√n⌋ (minimal 1) — sama dengan perulangan `Lompat` di pseudocode. */
+export function lompatan(n: number): number {
+  let m = 1;
+  while ((m + 1) * (m + 1) <= n) m++;
+  return m;
+}
+
+/**
+ * Batas perbandingan jump search untuk n data: paling banyak ⌈n/m⌉ − 1 ujung blok
+ * diperiksa (ujung blok terakhir tidak pernah dibandingkan), lalu ≤ m data di dalam blok.
+ */
+export const maksJump = (n: number) => (n < 1 ? 0 : Math.ceil(n / lompatan(n)) - 1 + lompatan(n));
+
+/** Salinan data yang diurutkan naik secara STABIL (nilai kembar tetap dalam urutan semulanya). */
+export function urutkanSel(nilai: readonly number[]): { semula: SelCari[]; urut: SelCari[]; sudahUrut: boolean } {
+  const semula = nilai.map((v, id) => ({ id, nilai: v }));
+  const urut = [...semula].sort((a, b) => a.nilai - b.nilai || a.id - b.id);
+  return { semula, urut, sudahUrut: urut.every((s, i) => s.id === i) };
+}

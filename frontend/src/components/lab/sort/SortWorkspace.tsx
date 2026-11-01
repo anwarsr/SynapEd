@@ -9,10 +9,11 @@ import { DaftarPintasan, GarisWaktu, NarasiLangkah, PemutarLangkah, TabAlgoritma
 import { useLabPlayer } from "@/lib/useLabPlayer";
 import { rekamBubble } from "@/lib/lab/sort/sortBubble";
 import { rekamMerge } from "@/lib/lab/sort/sortMerge";
-import { kodeBubble, kodeMerge } from "@/lib/lab/sort/sortKode";
+import { rekamInsertion } from "@/lib/lab/sort/sortInsertion";
+import { kodeBubble, kodeInsertion, kodeMerge } from "@/lib/lab/sort/sortKode";
 import { CONTOH_KASUS, DATA_BAWAAN, dataAcak, uraiData } from "@/lib/lab/sort/sortData";
 import { encodeSort, SORT_URL_PARAM, type IsiSort } from "@/lib/lab/sort/sortUrl";
-import { SORT_MAX_DATA, type AlgoSort, type ArahSort, type LangkahBubble, type LangkahMerge } from "@/lib/lab/sort/sortTypes";
+import { ALGO_SORT, SORT_MAX_DATA, type AlgoSort, type ArahSort, type LangkahBubble, type LangkahMerge } from "@/lib/lab/sort/sortTypes";
 import { cn } from "@/lib/cn";
 
 const INFO_ALGO: Record<AlgoSort, { nama: string; ide: string[]; kompleksitas: string; pindah: string }> = {
@@ -27,6 +28,17 @@ const INFO_ALGO: Record<AlgoSort, { nama: string; ide: string[]; kompleksitas: s
     kompleksitas: "O(n²) - terbaik O(n) bila data sudah urut.",
     pindah: "Pertukaran",
   },
+  insertion: {
+    nama: "Insertion sort",
+    ide: [
+      "Anggap bagian kiri sudah urut - awalnya hanya A[1].",
+      "Ambil nilai berikutnya sebagai Kunci, seperti mengambil satu kartu.",
+      "Geser setiap nilai di kiri yang lebih besar dari Kunci satu langkah ke kanan.",
+      "Taruh Kunci di celah yang tersisa; ulangi sampai nilai terakhir.",
+    ],
+    kompleksitas: "O(n²) - terbaik O(n) bila data sudah urut, dan cepat untuk data yang hampir urut.",
+    pindah: "Pergeseran",
+  },
   merge: {
     nama: "Merge sort",
     ide: [
@@ -40,27 +52,35 @@ const INFO_ALGO: Record<AlgoSort, { nama: string; ide: string[]; kompleksitas: s
   },
 };
 
-const LEGENDA: Record<AlgoSort, { warna: string; arti: string }[]> = {
+const LEGENDA: Record<AlgoSort, { warna: string; arti: string; teks?: string }[]> = {
   bubble: [
     { warna: "bg-blue-300", arti: "sedang dibandingkan (j dan j+1)" },
     { warna: "bg-amber-500", arti: "baru saja ditukar" },
     { warna: "bg-blue-600", arti: "sudah di tempat akhirnya" },
     { warna: "bg-white/[0.16]", arti: "belum final" },
   ],
+  insertion: [
+    { warna: "bg-amber-500", arti: "Kunci - nilai yang sedang disisipkan" },
+    { warna: "bg-blue-300", arti: "sedang dibandingkan dengan Kunci (j)" },
+    { warna: "bg-blue-600/50", arti: "bagian kiri yang sudah urut (sementara)" },
+    { warna: "bg-white/[0.16]", arti: "belum diambil" },
+  ],
   merge: [
-    { warna: "bg-white/[0.2]", arti: "belum urut / menunggu" },
+    { warna: "bg-white/[0.09]", arti: "bagian yang dibagi (urutan semula)" },
+    { warna: "bg-blue-600/45", arti: "satu elemen - sudah urut dengan sendirinya" },
     { warna: "bg-blue-300", arti: "sedang digabung (diisi satu per satu, k)" },
-    { warna: "bg-blue-600", arti: "bagian yang sudah urut" },
-    { warna: "bg-white/[0.06] shadow-[inset_0_0_0_1px_var(--color-blue-400)]", arti: "slot array bantu yang belum terisi" },
+    { warna: "bg-blue-600", arti: "hasil gabungan yang sudah urut" },
+    { warna: "bg-white/[0.04] shadow-[inset_0_0_0_1px_var(--color-blue-400)]", arti: "slot array bantu yang belum terisi" },
+    { warna: "text-[10px] font-bold text-blue-300/80 leading-[14px]", arti: "angka kecil di bawah kotak = urutan proses", teks: "7" },
   ],
 };
 
 const LABEL_SEKSI = "mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted";
 
 /**
- * Ruang kerja Lab 06 Sorting: bubble sort & merge sort, langkah demi langkah.
+ * Ruang kerja Lab 06 Sorting: bubble, insertion, dan merge sort, langkah demi langkah.
  *
- * Kedua algoritma direkam SEKALI dari data yang sama (rekaman murah: ≤ 12
+ * Ketiga algoritma direkam SEKALI dari data yang sama (rekaman murah: ≤ 12
  * elemen), lalu satu `useLabPlayer` memutar algoritma yang dipilih. Karena
  * datanya sama, ringkasan di akhir bisa membandingkan kerja keduanya.
  *
@@ -88,13 +108,18 @@ export default function SortWorkspace({
   const [presentasi, setPresentasi] = useState(false);
 
   const rekBubble = useMemo(() => rekamBubble(nilai, arah), [nilai, arah]);
+  const rekInsertion = useMemo(() => rekamInsertion(nilai, arah), [nilai, arah]);
   const rekMerge = useMemo(() => rekamMerge(nilai, arah), [nilai, arah]);
-  const langkah: (LangkahBubble | LangkahMerge)[] = algo === "bubble" ? rekBubble.langkah : rekMerge.langkah;
+  const rekaman = { bubble: rekBubble, insertion: rekInsertion, merge: rekMerge };
+  const langkah: (LangkahBubble | LangkahMerge)[] = rekaman[algo].langkah;
   const pemutar = useLabPlayer(langkah);
   const l = langkah[pemutar.frame];
   const terakhir = langkah.length - 1;
   const info = INFO_ALGO[algo];
-  const kode = useMemo(() => (algo === "bubble" ? kodeBubble(arah) : kodeMerge(arah)), [algo, arah]);
+  const kode = useMemo(
+    () => (algo === "bubble" ? kodeBubble(arah) : algo === "insertion" ? kodeInsertion(arah) : kodeMerge(arah)),
+    [algo, arah],
+  );
 
   function gantiData(baru: number[], idKasus: string | null) {
     setNilai(baru);
@@ -132,10 +157,7 @@ export default function SortWorkspace({
   const tablist = (
     <TabAlgoritma
       label="Algoritma pengurutan"
-      pilihan={[
-        { id: "bubble", nama: INFO_ALGO.bubble.nama },
-        { id: "merge", nama: INFO_ALGO.merge.nama },
-      ]}
+      pilihan={ALGO_SORT.map((a) => ({ id: a, nama: INFO_ALGO[a].nama }))}
       nilai={algo}
       onPilih={pilihAlgo}
     />
@@ -159,7 +181,7 @@ export default function SortWorkspace({
 
   const papan = (
     <div style={{ "--lab-gerak": `${Math.round(1000 / pemutar.kecepatan)}ms` } as React.CSSProperties}>
-      {algo === "bubble" ? <PapanBubble langkah={l as LangkahBubble} /> : <PohonMerge langkah={l as LangkahMerge} />}
+      {algo === "merge" ? <PohonMerge langkah={l as LangkahMerge} /> : <PapanBubble langkah={l as LangkahBubble} />}
     </div>
   );
 
@@ -293,15 +315,17 @@ export default function SortWorkspace({
               <dt className="text-ink-muted" />
               <dd className="text-right text-[11px] uppercase tracking-wider text-ink-faint">Banding</dd>
               <dd className="text-right text-[11px] uppercase tracking-wider text-ink-faint">Pindah</dd>
-              <dt className={algo === "bubble" ? "font-semibold text-ink" : "text-ink-body"}>Bubble sort</dt>
-              <dd className="text-right tabular-nums text-ink">{rekBubble.banding}</dd>
-              <dd className="text-right tabular-nums text-ink">{rekBubble.pindah}</dd>
-              <dt className={algo === "merge" ? "font-semibold text-ink" : "text-ink-body"}>Merge sort</dt>
-              <dd className="text-right tabular-nums text-ink">{rekMerge.banding}</dd>
-              <dd className="text-right tabular-nums text-ink">{rekMerge.pindah}</dd>
+              {ALGO_SORT.map((a) => (
+                <div key={a} className="contents">
+                  <dt className={algo === a ? "font-semibold text-ink" : "text-ink-body"}>{INFO_ALGO[a].nama}</dt>
+                  <dd className="text-right tabular-nums text-ink">{rekaman[a].banding}</dd>
+                  <dd className="text-right tabular-nums text-ink">{rekaman[a].pindah}</dd>
+                </div>
+              ))}
             </dl>
             <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-              &quot;Pindah&quot; = pertukaran pada bubble sort, penyalinan ke array bantu pada merge sort. Coba contoh &quot;Sudah urut&quot; dan
+              &quot;Pindah&quot; = pertukaran pada bubble sort, pergeseran pada insertion sort, penyalinan ke array bantu pada
+              merge sort. Coba contoh &quot;Sudah urut&quot; dan
               &quot;Terbalik&quot; untuk melihat kapan masing-masing unggul.
             </p>
           </section>
@@ -333,7 +357,9 @@ export default function SortWorkspace({
           <ul className="space-y-2 text-sm text-ink-body">
             {LEGENDA[algo].map((g) => (
               <li key={g.arti} className="flex items-center gap-3">
-                <span aria-hidden="true" className={cn("h-3.5 w-6 shrink-0", g.warna)} />
+                <span aria-hidden="true" className={cn("h-3.5 w-6 shrink-0", g.warna)}>
+                  {g.teks}
+                </span>
                 {g.arti}
               </li>
             ))}

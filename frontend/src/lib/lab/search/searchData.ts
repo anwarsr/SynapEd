@@ -41,7 +41,7 @@ export const CONTOH_CARI: readonly ContohCari[] = [
     nilai: [15, 8, 27, 15, 3, 27, 15, 40],
     dicari: 15,
   },
-  { id: "panjang", nama: "32 data", ket: "Selisih terbesar: linear sampai 32 perbandingan, binary paling banyak 6.", nilai: TIGA_PULUH_DUA, dicari: 35 },
+  { id: "panjang", nama: "32 data", ket: "Selisih terbesar: linear sampai 32 perbandingan, jump paling banyak 11, binary paling banyak 6.", nilai: TIGA_PULUH_DUA, dicari: 35 },
 ];
 
 export const CONTOH_BAWAAN = CONTOH_CARI[0];

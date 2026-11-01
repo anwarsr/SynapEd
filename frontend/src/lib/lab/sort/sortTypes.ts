@@ -1,5 +1,5 @@
 /**
- * Bentuk data Lab 06 Sorting (bubble sort & merge sort).
+ * Bentuk data Lab 06 Sorting (bubble sort, insertion sort, merge sort).
  *
  * Setiap algoritma direkam SEKALI menjadi deretan langkah, lalu diputar ulang
  * oleh `useLabPlayer`. Setiap langkah adalah POTRET UTUH (bukan selisih), jadi
@@ -9,10 +9,10 @@
  * Modul netral: dipakai komponen klien, halaman server, dan `verify-sorting`.
  */
 
-export type AlgoSort = "bubble" | "merge";
+export type AlgoSort = "bubble" | "insertion" | "merge";
 export type ArahSort = "naik" | "turun";
 
-export const ALGO_SORT: readonly AlgoSort[] = ["bubble", "merge"];
+export const ALGO_SORT: readonly AlgoSort[] = ["bubble", "insertion", "merge"];
 
 /** Satu elemen data. `id` = posisi SEMULA, penanda kestabilan untuk nilai kembar. */
 export interface Batang {
@@ -56,7 +56,12 @@ export interface LangkahSort {
   tahanMs: number;
 }
 
-export type PeranBatang = "banding" | "tukar" | "terurut";
+/**
+ * Peran batang di papan batang (bubble & insertion sort). `kunci` = nilai yang
+ * sedang disisipkan insertion sort ("kartu di tangan"); `urutKiri` = bagian kiri
+ * yang SEMENTARA urut (nilai yang datang kemudian masih bisa menyisip di antaranya).
+ */
+export type PeranBatang = "banding" | "tukar" | "terurut" | "kunci" | "urutKiri";
 
 export interface LangkahBubble extends LangkahSort {
   /** Batang menurut posisinya sekarang (indeks 0 = A[1]). */
@@ -67,6 +72,8 @@ export interface LangkahBubble extends LangkahSort {
   label: Record<number, string>;
   /** Indeks (0-based) pertama bagian kanan yang sudah di tempat akhirnya; n = belum ada. */
   batasTerurut: number;
+  /** Insertion sort: banyaknya batang di bagian kiri yang sementara urut (garis pembatas digambar sesudahnya). */
+  batasKiri?: number;
 }
 
 /**
@@ -92,7 +99,15 @@ export interface SimpulMerge {
   hi: number;
   /** null = slot hasil yang belum terisi selama penggabungan. */
   isi: (Batang | null)[];
+  /** Isi saat simpul DIBAGI (= urutan semula A[lo..hi]); digambar di baris "bagi" pohon. */
+  asli: Batang[];
   status: StatusSimpul;
+  /**
+   * Nomor urut proses (seperti angka di diagram buku teks): `nomorBagi` saat simpul
+   * dibagi / daun dicapai, `nomorGabung` saat hasil gabungannya selesai. null = belum.
+   */
+  nomorBagi: number | null;
+  nomorGabung: number | null;
 }
 
 export interface LangkahMerge extends LangkahSort {

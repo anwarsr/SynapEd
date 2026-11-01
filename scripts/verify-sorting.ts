@@ -10,6 +10,8 @@
  *   2. bubble: setiap langkah permutasi, hanya langkah "tukar" yang
  *      memindahkan batang, jumlah pertukaran = jumlah inversi, data urut =
  *      n−1 perbandingan (berhenti lebih awal), data terbalik = n(n−1)/2;
+ *   2b. insertion: hasil stabil, pergeseran = inversi, kunci maju tepat satu
+ *      langkah per pergeseran, bagian kiri urut tumbuh satu per putaran;
  *   3. merge: pohon 2n−1 simpul, isi simpul selalu dari rentangnya sendiri
  *      tanpa ganda, simpul "urut" = gabungan terurut anak-anaknya, k = i + j
  *      di setiap penyalinan, perbandingan ≤ n⌈log₂ n⌉;
@@ -24,7 +26,8 @@ import { KECEPATAN_PELAN as KECEPATAN_SORT } from "../frontend/src/lib/lab/labTy
 import { jalankanPseudo } from "../frontend/src/lib/lab/pseudo/pseudoJalan";
 import { rekamBubble } from "../frontend/src/lib/lab/sort/sortBubble";
 import { rekamMerge } from "../frontend/src/lib/lab/sort/sortMerge";
-import { barisBubble, barisMerge, kodeBubble, kodeMerge } from "../frontend/src/lib/lab/sort/sortKode";
+import { rekamInsertion } from "../frontend/src/lib/lab/sort/sortInsertion";
+import { barisBubble, barisInsertion, barisMerge, kodeBubble, kodeInsertion, kodeMerge } from "../frontend/src/lib/lab/sort/sortKode";
 import { CONTOH_KASUS, dataAcak, uraiData } from "../frontend/src/lib/lab/sort/sortData";
 import { decodeSort, encodeSort } from "../frontend/src/lib/lab/sort/sortUrl";
 import {
@@ -184,6 +187,60 @@ console.log("\n3. Merge sort");
 }
 
 // ---------------------------------------------------------------------------
+console.log("\n3b. Pohon merge: isi asli & nomor urutan proses");
+{
+  let asliSalah = "";
+  let nomorSalah = "";
+  let urutanSalah = "";
+  let berubah = "";
+  for (const nilai of kumpulan) {
+    const r = rekamMerge(nilai, "naik");
+    const n = nilai.length;
+    const akhir = r.langkah.at(-1)!.simpul;
+    // Isi asli = A[lo..hi] semula (yang digambar di baris "bagi").
+    for (const s of akhir) {
+      if (!asliSalah && !sama(idDari(s.asli), Array.from({ length: s.hi - s.lo + 1 }, (_, x) => s.lo + x))) asliSalah = `[${nilai}] ${s.lo}..${s.hi}`;
+    }
+    // Semua nomor 1..3n−2 tepat sekali: 2n−1 bagi/daun + n−1 gabung.
+    const semua = akhir.flatMap((s) => [s.nomorBagi, s.nomorGabung]).filter((x): x is number => x !== null).sort((a, b) => a - b);
+    if (!nomorSalah && !sama(semua, Array.from({ length: 3 * n - 2 }, (_, x) => x + 1))) nomorSalah = `[${nilai}] ${semua.join(",")}`;
+    if (!nomorSalah && akhir.some((s) => (s.kiri === null) !== (s.nomorGabung === null))) nomorSalah = `[${nilai}] daun bernomor gabung / simpul dalam tanpa nomor gabung`;
+    // Urutan rekursi: induk dibagi sebelum anak; subpohon kiri tuntas sebelum kanan; gabung sesudah semua keturunannya.
+    const nomorSub = (id: number): number[] => {
+      const s = akhir[id];
+      const sendiri = [s.nomorBagi!, ...(s.nomorGabung !== null ? [s.nomorGabung] : [])];
+      return s.kiri === null ? sendiri : [...sendiri, ...nomorSub(s.kiri), ...nomorSub(s.kanan!)];
+    };
+    for (const s of akhir) {
+      if (urutanSalah || s.kiri === null) continue;
+      const ki = nomorSub(s.kiri);
+      const ka = nomorSub(s.kanan!);
+      if (!(s.nomorBagi! < Math.min(...ki, ...ka)) || !(Math.max(...ki) < Math.min(...ka)) || !(s.nomorGabung! > Math.max(...ki, ...ka)))
+        urutanSalah = `[${nilai}] simpul ${s.lo}..${s.hi}`;
+    }
+    // Nomor yang sudah diberikan tidak pernah berubah di langkah berikutnya.
+    const tetap = new Map<string, number>();
+    for (const l of r.langkah) {
+      for (const s of l.simpul) {
+        for (const [k, v] of [[`b${s.id}`, s.nomorBagi], [`g${s.id}`, s.nomorGabung]] as const) {
+          if (v === null) {
+            if (!berubah && tetap.has(k)) berubah = `[${nilai}] ${k} hilang`;
+          } else if (!tetap.has(k)) tetap.set(k, v);
+          else if (!berubah && tetap.get(k) !== v) berubah = `[${nilai}] ${k} ${tetap.get(k)}→${v}`;
+        }
+      }
+    }
+  }
+  check("merge: isi asli tiap simpul = A[lo..hi] semula", !asliSalah, asliSalah || "ok");
+  check("merge: nomor proses 1..3n−2 tepat sekali (daun tanpa nomor gabung)", !nomorSalah, nomorSalah || "ok");
+  check("merge: nomor mengikuti urutan rekursi (bagi → kiri tuntas → kanan → gabung)", !urutanSalah, urutanSalah || "ok");
+  check("merge: nomor yang sudah diberikan tidak berubah", !berubah, berubah || "ok");
+  const contoh = rekamMerge([38, 27, 43, 3, 9, 82, 10], "naik").langkah.at(-1)!.simpul;
+  const akar = contoh[0];
+  check("merge: contoh buku teks - akar dibagi #1, hasil akhir #19", akar.nomorBagi === 1 && akar.nomorGabung === 19, `${akar.nomorBagi}/${akar.nomorGabung}`);
+}
+
+// ---------------------------------------------------------------------------
 console.log("\n4. Baris pseudocode yang disorot");
 for (const arah of ARAH) {
   const kb = kodeBubble(arah).split("\n");
@@ -251,7 +308,8 @@ ${ekor}`;
       const harap = idStabil(nilai, arah).map((id) => nilai[id]);
       const jb = jalankanPseudo(bungkus(kodeBubble(arah), 'OUTPUT "P", Putaran - 1'), masukan(nilai), { rekam: false });
       const jm = jalankanPseudo(bungkus(kodeMerge(arah)), masukan(nilai), { rekam: false });
-      for (const [nama, j] of [["bubble", jb], ["merge", jm]] as const) {
+      const ji = jalankanPseudo(bungkus(kodeInsertion(arah)), masukan(nilai), { rekam: false });
+      for (const [nama, j] of [["bubble", jb], ["merge", jm], ["insertion", ji]] as const) {
         if (j.galat) {
           galat ||= `${nama} ${arah}: ${j.galat.pesan} (baris ${j.galat.baris})`;
           continue;
@@ -301,6 +359,7 @@ console.log("\n6. Data, tautan, tempo");
   for (const isi of [
     { algo: "bubble", arah: "naik", nilai: [38, 27, 43] },
     { algo: "merge", arah: "turun", nilai: [0, 999, 5, 5] },
+    { algo: "insertion", arah: "naik", nilai: [9, 1] },
   ] as const) {
     const kode = encodeSort({ ...isi, nilai: [...isi.nilai] });
     const balik = decodeSort(kode);
@@ -316,6 +375,91 @@ console.log("\n6. Data, tautan, tempo");
   check("kecepatan maksimal 2×", Math.max(...KECEPATAN_SORT) <= 2 && KECEPATAN_SORT.includes(1), KECEPATAN_SORT.join(","));
   const r = rekamBubble([3, 1, 2], "naik");
   check("setiap langkah membawa tahanMs sesuai jenisnya", r.langkah.every((l) => l.tahanMs === TAHAN_MS[l.jenis]), "ok");
+}
+
+// ---------------------------------------------------------------------------
+console.log("\n7. Insertion sort");
+{
+  let hasilSalah = "";
+  let bukanPermutasi = "";
+  let gerakDiLuarTukar = "";
+  let inversiSalah = "";
+  let kunciSalah = "";
+  let kiriSalah = "";
+  let bandingSalah = "";
+  for (const nilai of kumpulan) {
+    for (const arah of ARAH) {
+      const r = rekamInsertion(nilai, arah);
+      const n = nilai.length;
+      const akhir = r.langkah.at(-1)!;
+      if (!hasilSalah && !sama(idDari(akhir.urutan), idStabil(nilai, arah))) hasilSalah = `${arah} [${nilai}]`;
+      if (!inversiSalah && r.pindah !== inversi(nilai, arah)) inversiSalah = `${arah} [${nilai}]: ${r.pindah} vs ${inversi(nilai, arah)}`;
+      // Setiap putaran: perbandingan = pergeseran + (1 bila berhenti karena nilai, 0 bila sampai ujung kiri).
+      if (!bandingSalah && (r.banding < r.pindah || r.banding > r.pindah + n - 1)) bandingSalah = `[${nilai}] ${r.banding}/${r.pindah}`;
+      let lalu = idDari(r.langkah[0].urutan);
+      let kiriLalu = 0;
+      for (const l of r.langkah) {
+        const ids = idDari(l.urutan);
+        if (!bukanPermutasi && !sama([...ids].sort((a, b) => a - b), nilai.map((_, i) => i))) bukanPermutasi = `[${nilai}]`;
+        if (!gerakDiLuarTukar && l.jenis !== "tukar" && !sama(ids, lalu)) gerakDiLuarTukar = `${l.jenis} [${nilai}]`;
+        if (!kunciSalah && l.jenis === "tukar") {
+          const kunci = Number(Object.entries(l.peran).find(([, p]) => p === "kunci")?.[0]);
+          const sebelum = lalu.indexOf(kunci);
+          const sesudah = ids.indexOf(kunci);
+          const berubah = ids.filter((id, i) => id !== lalu[i]).length;
+          if (sesudah !== sebelum - 1 || berubah !== 2) kunciSalah = `[${nilai}] kunci ${sebelum}→${sesudah}, berubah ${berubah}`;
+        }
+        const kiri = l.batasKiri ?? -1;
+        if (!kiriSalah && (kiri < kiriLalu || kiri < 1 || kiri > n)) kiriSalah = `[${nilai}] ${kiriLalu}→${kiri}`;
+        // Bagian kiri yang ditandai urut memang urut (stabil) di setiap langkah info.
+        if (!kiriSalah && l.jenis === "info") {
+          const awalan = l.urutan.slice(0, kiri);
+          const harap = [...awalan].sort((a, b) => (arah === "naik" ? a.nilai - b.nilai : b.nilai - a.nilai) || a.id - b.id);
+          if (!sama(idDari(awalan), idDari(harap))) kiriSalah = `[${nilai}] awalan ${kiri} belum urut`;
+        }
+        // Kalimat "Sekarang A[1..X] urut" = garis pembatas tepat sesudah A[X].
+        const sebut = /Sekarang A\[1\.\.(\d+)\] urut/.exec(l.narasi);
+        if (!kiriSalah && sebut && kiri !== Number(sebut[1])) kiriSalah = `[${nilai}] narasi ${sebut[1]}, batas ${kiri}`;
+        kiriLalu = kiri;
+        lalu = ids;
+      }
+      if (!kiriSalah && akhir.batasKiri !== n) kiriSalah = `[${nilai}] akhir ${akhir.batasKiri}`;
+    }
+  }
+  check("insertion: hasil = urutan stabil bawaan (dua arah)", !hasilSalah, hasilSalah || `${kumpulan.length * 2} kasus`);
+  check("insertion: setiap langkah permutasi data semula", !bukanPermutasi, bukanPermutasi || "ok");
+  check("insertion: hanya langkah geser yang memindahkan batang", !gerakDiLuarTukar, gerakDiLuarTukar || "ok");
+  check("insertion: jumlah pergeseran = jumlah inversi", !inversiSalah, inversiSalah || "ok");
+  check("insertion: tiap geser = kunci maju tepat satu ke kiri, satu batang ke kanan", !kunciSalah, kunciSalah || "ok");
+  check("insertion: bagian kiri urut tumbuh dan memang urut", !kiriSalah, kiriSalah || "ok");
+  check("insertion: pergeseran ≤ perbandingan ≤ pergeseran + n−1", !bandingSalah, bandingSalah || "ok");
+  for (const n of [2, 7, 12]) {
+    const urut = Array.from({ length: n }, (_, i) => i * 3);
+    const r = rekamInsertion(urut, "naik");
+    check(`insertion: data urut (n=${n}) = n−1 perbandingan, 0 pergeseran`, r.banding === n - 1 && r.pindah === 0, `${r.banding}/${r.pindah}`);
+    const rb = rekamInsertion([...urut].reverse(), "naik");
+    check(`insertion: data terbalik (n=${n}) = n(n−1)/2 pergeseran`, rb.pindah === (n * (n - 1)) / 2, String(rb.pindah));
+  }
+
+  for (const arah of ARAH) {
+    const k = kodeInsertion(arah).split("\n");
+    const t = (x: number) => (k[x - 1] ?? "").trim();
+    const B = barisInsertion(arah);
+    const op = arah === "naik" ? ">" : "<";
+    check(`${arah}: insertion banding → WHILE j >= 1 AND A[j] ${op} Kunci`, t(B.banding) === `WHILE j >= 1 AND A[j] ${op} Kunci`, t(B.banding));
+    check(
+      `${arah}: insertion geser → A[j + 1] ← A[j] … j ← j - 1`,
+      t(B.geser[0]) === "A[j + 1] \u2190 A[j]" && t(B.geser[1]) === "j \u2190 j - 1",
+      `${t(B.geser[0])} | ${t(B.geser[1])}`,
+    );
+    check(`${arah}: insertion sisip → A[j + 1] ← Kunci`, t(B.sisip) === "A[j + 1] \u2190 Kunci", t(B.sisip));
+    const contoh = rekamInsertion([38, 27, 43, 3, 9, 82, 10], arah);
+    const tepat = contoh.langkah.every(
+      (l) => l.baris >= 1 && l.sampai <= k.length && (l.jenis !== "banding" || l.baris === B.banding) && (l.jenis !== "tukar" || l.baris === B.geser[0]),
+    );
+    check(`${arah}: setiap langkah insertion menyorot baris yang tepat`, tepat, "ok");
+  }
+  check("insertion: setiap langkah membawa tahanMs sesuai jenisnya", rekamInsertion([3, 1, 2], "naik").langkah.every((l) => l.tahanMs === TAHAN_MS[l.jenis]), "ok");
 }
 
 finish();

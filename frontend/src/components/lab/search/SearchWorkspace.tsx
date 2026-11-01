@@ -8,10 +8,11 @@ import { DaftarPintasan, GarisWaktu, NarasiLangkah, PemutarLangkah, TabAlgoritma
 import { useLabPlayer } from "@/lib/useLabPlayer";
 import { rekamLinear } from "@/lib/lab/search/searchLinear";
 import { rekamBinary } from "@/lib/lab/search/searchBinary";
-import { KODE_BINARY, KODE_LINEAR } from "@/lib/lab/search/searchKode";
+import { rekamJump } from "@/lib/lab/search/searchJump";
+import { KODE_BINARY, KODE_JUMP, KODE_LINEAR } from "@/lib/lab/search/searchKode";
 import { CONTOH_BAWAAN, CONTOH_CARI, dataAcak, uraiData, uraiDicari } from "@/lib/lab/search/searchData";
 import { CARI_URL_PARAM, encodeCari, type IsiCari } from "@/lib/lab/search/searchUrl";
-import { CARI_MAX_DATA, maksBinary, type AlgoCari } from "@/lib/lab/search/searchTypes";
+import { ALGO_CARI, CARI_MAX_DATA, lompatan, maksBinary, maksJump, type AlgoCari } from "@/lib/lab/search/searchTypes";
 import { cn } from "@/lib/cn";
 
 const INFO_ALGO: Record<AlgoCari, { nama: string; ide: string[]; kompleksitas: string }> = {
@@ -35,13 +36,25 @@ const INFO_ALGO: Record<AlgoCari, { nama: string; ide: string[]; kompleksitas: s
     ],
     kompleksitas: "O(log n): setiap tebakan membuang separuh sisa data, jadi 32 data paling banyak 6 tebakan.",
   },
+  jump: {
+    nama: "Jump search",
+    ide: [
+      "Data HARUS urut - kalau belum, diurutkan dulu.",
+      "Bagi data menjadi blok berisi ⌊√n⌋ data.",
+      "Lompat dari blok ke blok sambil memeriksa UJUNG blok saja, selama ujungnya masih lebih kecil dari yang dicari.",
+      "Di blok tempat berhenti, cari satu per satu seperti linear search.",
+    ],
+    kompleksitas: "O(√n): di antara linear dan binary - 32 data paling banyak 11 perbandingan. Cocok bila melompat mundur mahal.",
+  },
 };
+
+const KODE: Record<AlgoCari, string> = { linear: KODE_LINEAR, binary: KODE_BINARY, jump: KODE_JUMP };
 
 const LEGENDA = [
   { warna: "bg-blue-300", arti: "sedang dibandingkan dengan nilai yang dicari" },
   { warna: "bg-blue-600", arti: "ketemu" },
   { warna: "bg-white/[0.08] opacity-30", arti: "sudah diperiksa / dibuang" },
-  { warna: "bg-white/[0.08] shadow-[inset_0_-3px_0_var(--color-blue-400)]", arti: "masih mungkin (rentang Kiri..Kanan, binary)" },
+  { warna: "bg-white/[0.08] shadow-[inset_0_-3px_0_var(--color-blue-400)]", arti: "masih mungkin (Kiri..Kanan di binary, blok Awal..Akhir di jump)" },
 ];
 
 const LABEL_SEKSI = "mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted";
@@ -76,7 +89,9 @@ export default function SearchWorkspace({
 
   const rekLinear = useMemo(() => rekamLinear(nilai, dicari), [nilai, dicari]);
   const rekBinary = useMemo(() => rekamBinary(nilai, dicari), [nilai, dicari]);
-  const rek = algo === "linear" ? rekLinear : rekBinary;
+  const rekJump = useMemo(() => rekamJump(nilai, dicari), [nilai, dicari]);
+  const rekaman = { linear: rekLinear, binary: rekBinary, jump: rekJump };
+  const rek = rekaman[algo];
   const langkah = rek.langkah;
   const pemutar = useLabPlayer(langkah);
   const l = langkah[pemutar.frame];
@@ -123,10 +138,7 @@ export default function SearchWorkspace({
     <div className="flex flex-wrap items-center gap-2">
       <TabAlgoritma
         label="Algoritma pencarian"
-        pilihan={[
-          { id: "linear", nama: INFO_ALGO.linear.nama },
-          { id: "binary", nama: INFO_ALGO.binary.nama },
-        ]}
+        pilihan={ALGO_CARI.map((a) => ({ id: a, nama: INFO_ALGO[a].nama }))}
         nilai={algo}
         onPilih={pilihAlgo}
       />
@@ -259,8 +271,12 @@ export default function SearchWorkspace({
           </div>
           <div className="bg-paper-card px-5 py-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">Paling banyak</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums text-ink-muted">{algo === "linear" ? n : maksBinary(n)}</p>
-            <p className="mt-0.5 text-[11px] text-ink-faint">{algo === "linear" ? "= n" : "= ⌊log₂ n⌋ + 1"}</p>
+            <p className="mt-1 text-3xl font-semibold tabular-nums text-ink-muted">
+              {algo === "linear" ? n : algo === "binary" ? maksBinary(n) : maksJump(n)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-ink-faint">
+              {algo === "linear" ? "= n" : algo === "binary" ? "= ⌊log₂ n⌋ + 1" : `= ⌈n/m⌉ - 1 + m, m = ⌊√n⌋ = ${lompatan(n)}`}
+            </p>
           </div>
         </section>
 
@@ -271,15 +287,18 @@ export default function SearchWorkspace({
               <dt />
               <dd className="text-right text-[11px] uppercase tracking-wider text-ink-faint">Banding</dd>
               <dd className="text-right text-[11px] uppercase tracking-wider text-ink-faint">Hasil</dd>
-              <dt className={algo === "linear" ? "font-semibold text-ink" : "text-ink-body"}>Linear search</dt>
-              <dd className="text-right tabular-nums text-ink">{rekLinear.banding}</dd>
-              <dd className="text-right text-ink-body">{hasilTeks(rekLinear.hasil)}</dd>
-              <dt className={algo === "binary" ? "font-semibold text-ink" : "text-ink-body"}>Binary search</dt>
-              <dd className="text-right tabular-nums text-ink">{rekBinary.banding}</dd>
-              <dd className="text-right text-ink-body">{rekBinary.hasil.ketemu ? "ketemu*" : "tidak ada"}</dd>
+              {ALGO_CARI.map((a) => (
+                <div key={a} className="contents">
+                  <dt className={algo === a ? "font-semibold text-ink" : "text-ink-body"}>{INFO_ALGO[a].nama}</dt>
+                  <dd className="text-right tabular-nums text-ink">{rekaman[a].banding}</dd>
+                  <dd className="text-right text-ink-body">
+                    {a === "linear" ? hasilTeks(rekaman[a].hasil) : rekaman[a].hasil.ketemu ? "ketemu*" : "tidak ada"}
+                  </dd>
+                </div>
+              ))}
             </dl>
             <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-              *Posisi binary search dihitung pada data yang sudah diurutkan. Binary search hampir selalu lebih sedikit
+              *Posisi binary & jump search dihitung pada data yang sudah diurutkan. Keduanya hampir selalu lebih sedikit
               membandingkan, tetapi datanya harus urut dulu - dan mengurutkan juga butuh kerja.
             </p>
           </section>
@@ -290,7 +309,7 @@ export default function SearchWorkspace({
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">Pseudocode 9618</p>
             <p className="text-[11px] text-ink-faint">bisa dicoba di Lab 05</p>
           </div>
-          <KodeSorotBaca kode={algo === "linear" ? KODE_LINEAR : KODE_BINARY} dari={l.baris} sampai={l.sampai} />
+          <KodeSorotBaca kode={KODE[algo]} dari={l.baris} sampai={l.sampai} />
         </section>
 
         <section className="bg-paper-card p-5">

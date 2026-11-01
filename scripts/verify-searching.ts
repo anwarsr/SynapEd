@@ -12,6 +12,8 @@
  *   3. binary: data diurutkan dulu (stabil) bila perlu, Tengah = ⌊(Kiri+Kanan)/2⌋,
  *      Kiri ≤ Tengah ≤ Kanan, rentang menyempit, nilai yang dicari tidak pernah ada
  *      di bagian yang dibuang, perbandingan ≤ ⌊log₂ n⌋ + 1;
+ *   3b. jump: lompatan ⌊√n⌋, kemunculan PERTAMA pada data urut, blok yang
+ *      dilompati seluruhnya lebih kecil, perbandingan ≤ ⌈n/m⌉ − 1 + m;
  *   4. baris pseudocode yang disorot tepat;
  *   5. pseudocode yang TAMPIL dijalankan interpreter Lab 05 dan hasilnya sama
  *      dengan rekaman;
@@ -22,10 +24,11 @@ import { mulberry32 } from "../frontend/src/lib/lab/labRandom";
 import { jalankanPseudo } from "../frontend/src/lib/lab/pseudo/pseudoJalan";
 import { rekamLinear } from "../frontend/src/lib/lab/search/searchLinear";
 import { rekamBinary } from "../frontend/src/lib/lab/search/searchBinary";
-import { barisBinary, barisLinear, KODE_BINARY, KODE_LINEAR } from "../frontend/src/lib/lab/search/searchKode";
+import { rekamJump } from "../frontend/src/lib/lab/search/searchJump";
+import { barisBinary, barisJump, barisLinear, KODE_BINARY, KODE_JUMP, KODE_LINEAR } from "../frontend/src/lib/lab/search/searchKode";
 import { CONTOH_CARI, dataAcak, uraiData, uraiDicari } from "../frontend/src/lib/lab/search/searchData";
 import { decodeCari, encodeCari } from "../frontend/src/lib/lab/search/searchUrl";
-import { CARI_MAX_DATA, TAHAN_MS, maksBinary, type LangkahCari } from "../frontend/src/lib/lab/search/searchTypes";
+import { CARI_MAX_DATA, TAHAN_MS, lompatan, maksBinary, maksJump, type LangkahCari } from "../frontend/src/lib/lab/search/searchTypes";
 
 const sama = (a: readonly number[], b: readonly number[]) => a.length === b.length && a.every((x, i) => x === b[i]);
 const diSingkir = (l: LangkahCari, i: number) => l.tersingkir.some(([a, b]) => i >= a && i <= b);
@@ -173,6 +176,7 @@ ${kode}`;
     for (const [nama, kode, data, r] of [
       ["linear", KODE_LINEAR, nilai, rekamLinear(nilai, dicari)],
       ["binary", KODE_BINARY, urut, rekamBinary(nilai, dicari)],
+      ["jump", KODE_JUMP, urut, rekamJump(nilai, dicari)],
     ] as const) {
       const j = jalankanPseudo(bungkus(kode), masukan([...data], dicari), { rekam: false });
       if (j.galat) {
@@ -182,7 +186,7 @@ ${kode}`;
       if (!beda && j.keluaran.trim() !== keluaranDari(r.hasil)) beda = `${nama} [${data}] cari ${dicari}: "${j.keluaran.trim()}" vs "${keluaranDari(r.hasil)}"`;
     }
   }
-  check("pseudocode linear & binary berjalan tanpa galat", !galat, galat || `${sampel.length * 2} program`);
+  check("pseudocode linear, binary & jump berjalan tanpa galat", !galat, galat || `${sampel.length * 3} program`);
   check("keluaran pseudocode = hasil rekaman (posisi sama persis)", !beda, beda || "ok");
 }
 
@@ -212,6 +216,7 @@ console.log("\n6. Data, tautan, tempo");
   for (const isi of [
     { algo: "linear", dicari: 43, nilai: [38, 27, 43] },
     { algo: "binary", dicari: 0, nilai: Array.from({ length: 32 }, () => 999) },
+    { algo: "jump", dicari: 7, nilai: [7, 1] },
   ] as const) {
     const kode = encodeCari({ ...isi, nilai: [...isi.nilai] });
     const b = decodeCari(kode);
@@ -225,6 +230,70 @@ console.log("\n6. Data, tautan, tempo");
   const cepat = Object.entries(minimum).filter(([j, ms]) => TAHAN_MS[j as keyof typeof minimum] < ms);
   check("tempo tidak dipercepat diam-diam", cepat.length === 0, cepat.map(([j]) => j).join(",") || "ok");
   check("setiap langkah membawa tahanMs sesuai jenisnya", [...rekamLinear([3, 1], 1).langkah, ...rekamBinary([3, 1, 2], 2).langkah].every((l) => l.tahanMs === TAHAN_MS[l.jenis]), "ok");
+}
+
+// ---------------------------------------------------------------------------
+console.log("\n7. Jump search");
+{
+  let salah = "";
+  let bukanPertama = "";
+  let lompatSalah = "";
+  let blokSalah = "";
+  let pertamaTerbuang = "";
+  let bandingBanyak = "";
+  let tidakUrut = "";
+  for (const { nilai, dicari } of kasus) {
+    const r = rekamJump(nilai, dicari);
+    const n = nilai.length;
+    const m = lompatan(n);
+    const akhir = r.langkah.at(-1)!;
+    const urut = nilai.map((v, id) => ({ v, id })).sort((a, b) => a.v - b.v || a.id - b.id);
+    const pertama = urut.findIndex((x) => x.v === dicari);
+    if (!salah && (r.hasil.ketemu !== pertama >= 0 || (r.hasil.ketemu && akhir.sel[r.hasil.indeks!].nilai !== dicari)))
+      salah = `[${nilai}] cari ${dicari} → ${JSON.stringify(r.hasil)}`;
+    if (!bukanPertama && pertama >= 0 && r.hasil.indeks !== pertama) bukanPertama = `[${nilai}] cari ${dicari}: ${r.hasil.indeks} vs ${pertama}`;
+    if (!bandingBanyak && r.banding > maksJump(n)) bandingBanyak = `[${nilai}] ${r.banding} > ${maksJump(n)}`;
+    const mulai = r.langkah.findIndex((l) => l.fase === "Blok 1");
+    if (!tidakUrut && !sama(r.langkah[mulai].sel.map((x) => x.id), urut.map((x) => x.id))) tidakUrut = `[${nilai}]`;
+
+    for (const l of r.langkah) {
+      const { Awal, Akhir } = l.penunjuk;
+      // Setiap blok selebar m: Akhir − Awal + 1 = m kecuali blok terakhir yang dijepit ke N.
+      if (!lompatSalah && Awal !== undefined && Akhir !== undefined && l.fase !== "Cari di blok") {
+        const lebar = Akhir - Awal + 1;
+        if (lebar !== m && !(Akhir === n - 1 && lebar <= m)) lompatSalah = `[${nilai}] blok ${Awal}..${Akhir}, m=${m}`;
+      }
+      if (!blokSalah && l.fase === "Cari di blok" && Awal !== undefined && Akhir !== undefined && Akhir - Awal + 1 > m) blokSalah = `[${nilai}] ${Awal}..${Akhir}`;
+      // Bagian yang dilompati/dibuang tidak pernah memuat kemunculan PERTAMA (langkah akhir dikecualikan).
+      if (!pertamaTerbuang && pertama >= 0 && l.jenis !== "selesai" && l.tersingkir.some(([a, b]) => pertama >= a && pertama <= b))
+        pertamaTerbuang = `[${nilai}] cari ${dicari}, langkah "${l.fase}"`;
+      // Semua yang dilompati lebih kecil dari yang dicari.
+      if (!blokSalah && l.jenis === "buang" && l.sel.slice(0, Awal).some((x) => x.nilai >= dicari)) blokSalah = `[${nilai}] lompat melewati nilai ≥ ${dicari}`;
+    }
+  }
+  check("jump: ketemu ⇔ nilai ada, dan sel yang ditunjuk bernilai yang dicari", !salah, salah || `${kasus.length} kasus`);
+  check("jump: yang ditemukan = kemunculan PERTAMA pada data urut", !bukanPertama, bukanPertama || "ok");
+  check("jump: pencarian berjalan di atas data terurut stabil", !tidakUrut, tidakUrut || "ok");
+  check("jump: setiap blok selebar ⌊√n⌋ (blok terakhir dijepit ke N)", !lompatSalah, lompatSalah || "ok");
+  check("jump: blok yang dilompati seluruhnya lebih kecil; blok terakhir ≤ m data", !blokSalah, blokSalah || "ok");
+  check("jump: kemunculan pertama tidak pernah ada di bagian yang dibuang", !pertamaTerbuang, pertamaTerbuang || "ok");
+  check("jump: perbandingan ≤ ⌈n/m⌉ − 1 + m", !bandingBanyak, bandingBanyak || "ok");
+  check("jump: lompatan = ⌊√n⌋", [1, 3, 4, 8, 9, 15, 16, 32].every((n) => lompatan(n) === Math.floor(Math.sqrt(n))), [1, 3, 4, 8, 9, 15, 16, 32].map(lompatan).join(","));
+  check("jump: 32 data paling banyak 11 perbandingan", maksJump(32) === 11, String(maksJump(32)));
+
+  const kj = KODE_JUMP.split("\n");
+  const t = (x: number) => (kj[x - 1] ?? "").trim();
+  const J = barisJump();
+  check("jump ujung blok → WHILE Akhir < N AND A[Akhir] < Dicari", t(J.ujung) === "WHILE Akhir < N AND A[Akhir] < Dicari", t(J.ujung));
+  check("jump loncat → Awal ← Akhir + 1 … Akhir ← Akhir + Lompat", t(J.loncat[0]) === "Awal \u2190 Akhir + 1" && t(J.loncat[1]) === "Akhir \u2190 Akhir + Lompat", `${J.loncat}`);
+  check("jump cari di blok → IF A[i] = Dicari", t(J.banding) === "IF A[i] = Dicari", t(J.banding));
+  check("jump jepit → Akhir ← N", t(J.jepit) === "Akhir \u2190 N", t(J.jepit));
+  const contoh = rekamJump(CONTOH_CARI.find((c) => c.id === "panjang")!.nilai, 35);
+  const tepat = contoh.langkah.every(
+    (l) => l.baris >= 1 && l.sampai <= kj.length && (l.jenis !== "buang" || l.baris === J.loncat[0]) && (l.jenis !== "banding" || l.baris === J.ujung || l.baris === J.banding),
+  );
+  check("setiap langkah jump menyorot baris yang tepat", tepat, "ok");
+  check("jump: setiap langkah membawa tahanMs sesuai jenisnya", rekamJump([3, 1, 2], 2).langkah.every((l) => l.tahanMs === TAHAN_MS[l.jenis]), "ok");
 }
 
 finish();

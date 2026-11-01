@@ -197,19 +197,23 @@ export const PENGETAHUAN_SITUS = `## Akun
   TYPE (record), operasi berkas, dan OOP. Panduan singkat ada di panel lab.
 - Kode Python dan pseudocode bisa dibagikan lewat tautan atau disimpan/dibuka
   sebagai berkas (.py/.txt). Masing-masing punya contoh siap pakai.
-- Sorting (Lab 06): bubble sort dan merge sort diperagakan langkah demi langkah
-  secara pelan (kecepatan 0,25x sampai 2x, atau maju/mundur manual). Bubble
-  sort tampil sebagai batang yang bertukar; merge sort sebagai pohon yang
-  dibagi lalu digabung dengan array bantu. Setiap langkah dijelaskan dengan
+- Sorting (Lab 06): bubble sort, insertion sort, dan merge sort diperagakan
+  langkah demi langkah secara pelan (kecepatan 0,25x sampai 2x, atau
+  maju/mundur manual). Bubble sort tampil sebagai batang yang bertukar;
+  insertion sort sebagai batang dengan "Kunci" yang disisipkan ke bagian kiri
+  yang sudah urut; merge sort sebagai pohon seperti di buku teks: dibagi turun
+  sampai satu elemen, lalu hasil gabungannya digambar di baris-baris di
+  bawahnya, lengkap dengan panah dan nomor urutan proses. Setiap langkah dijelaskan dengan
   kalimat dan baris pseudocode Cambridge 9618 yang sedang berjalan disorot.
   Data bisa diketik (2-12 angka 0-999), diacak, atau dipilih dari contoh kasus
   (sudah urut, terbalik, hampir urut, ada nilai kembar), dan dibagikan lewat
-  tautan. Algoritma lain (selection, insertion, quick sort) ada sebagai operasi
-  urut di lab Array.
-- Searching (Lab 07): linear search dan binary search langkah demi langkah,
-  dengan kendali yang sama seperti Lab Sorting. Data tampil sebagai kotak
-  berindeks dengan penunjuk i (linear) atau Kiri/Tengah/Kanan (binary); bagian
-  yang sudah diperiksa atau dibuang diredupkan. Binary search hanya untuk data
+  tautan. Selection sort dan quick sort ada sebagai operasi urut di lab Array.
+- Searching (Lab 07): linear search, binary search, dan jump search langkah
+  demi langkah, dengan kendali yang sama seperti Lab Sorting. Data tampil
+  sebagai kotak berindeks dengan penunjuk i (linear), Kiri/Tengah/Kanan
+  (binary), atau Awal/Akhir per blok (jump search melompat per blok berisi
+  akar n data, lalu mencari satu per satu di blok terakhir); bagian yang sudah
+  diperiksa atau dibuang diredupkan. Binary dan jump search hanya untuk data
   urut, jadi data yang belum urut diurutkan dulu secara otomatis. Ada
   pseudocode 9618 yang disorot, penghitung perbandingan, data 2-32 angka
   (ketik, acak, atau contoh kasus seperti "tidak ada" dan "32 data"), nilai

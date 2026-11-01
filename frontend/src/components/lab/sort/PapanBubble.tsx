@@ -8,10 +8,12 @@ const WARNA: Record<PeranBatang | "biasa", string> = {
   banding: "bg-blue-300",
   tukar: "bg-amber-500",
   terurut: "bg-blue-600",
+  kunci: "bg-amber-500",
+  urutKiri: "bg-blue-600/50",
 };
 
 /**
- * Deretan batang bubble sort: tinggi = nilai, angka di atasnya.
+ * Deretan batang bubble sort & insertion sort: tinggi = nilai, angka di atasnya.
  *
  * Setiap batang selebar 1/n papan dan digeser lewat properti CSS `translate`
  * sebesar posisinya × lebarnya sendiri (persen `translate` dihitung dari lebar
@@ -26,6 +28,7 @@ export default function PapanBubble({ langkah }: { langkah: LangkahBubble }) {
   const posisi = new Map(langkah.urutan.map((b, i) => [b.id, i]));
   const perId = [...langkah.urutan].sort((a, b) => a.id - b.id);
   const batas = langkah.batasTerurut;
+  const kiri = langkah.batasKiri;
 
   return (
     <div className="bg-paper-card px-3 pb-3 pt-6 sm:px-5">
@@ -36,6 +39,15 @@ export default function PapanBubble({ langkah }: { langkah: LangkahBubble }) {
             aria-hidden="true"
             className="lab-posisi absolute bottom-0 top-0 w-px bg-blue-400/60"
             style={{ left: `${(batas / n) * 100}%` }}
+          />
+        )}
+
+        {/* Insertion sort: batas bagian kiri yang sementara urut. */}
+        {kiri !== undefined && kiri > 0 && kiri < n && (
+          <div
+            aria-hidden="true"
+            className="lab-posisi absolute bottom-0 top-0 w-px bg-amber-500/70"
+            style={{ left: `${(kiri / n) * 100}%` }}
           />
         )}
 
@@ -60,7 +72,7 @@ export default function PapanBubble({ langkah }: { langkah: LangkahBubble }) {
               <span
                 className={cn(
                   "mb-1 text-xs font-semibold tabular-nums sm:text-sm",
-                  peran === "banding" || peran === "tukar" ? "text-ink" : "text-ink-body",
+                  peran === "banding" || peran === "tukar" || peran === "kunci" ? "text-ink" : "text-ink-body",
                 )}
               >
                 {b.nilai}
@@ -69,7 +81,7 @@ export default function PapanBubble({ langkah }: { langkah: LangkahBubble }) {
                 className={cn(
                   "w-full transition-[background-color,height] duration-300 ease-out-soft",
                   WARNA[peran ?? "biasa"],
-                  peran === "tukar" && "lab-glow",
+                  (peran === "tukar" || peran === "kunci") && "lab-glow",
                 )}
                 style={{ height: `${tinggi}%` }}
               />

@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "SynapLab – SynapEd",
   description:
-    "Papan coba-coba untuk memvisualisasikan array (1D, 2D, 3D, N-dimensi), linked list, flowchart, Python, pseudocode, sorting (bubble sort & merge sort), dan searching (linear search & binary search): isi, telusuri, urutkan, gambar alur, tulis kode, lalu jalankan langkahnya satu per satu.",
+    "Papan coba-coba untuk memvisualisasikan array (1D, 2D, 3D, N-dimensi), linked list, flowchart, Python, pseudocode, sorting (bubble, insertion & merge sort), dan searching (linear, binary & jump search): isi, telusuri, urutkan, gambar alur, tulis kode, lalu jalankan langkahnya satu per satu.",
 };
 
 interface Props {

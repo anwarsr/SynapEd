@@ -33,9 +33,9 @@ const RINGKAS_PYTHON =
 const RINGKAS_PSEUDOCODE =
   "Tulis pseudocode Cambridge 9618, jalankan, lalu ikuti langkah demi langkah: baris aktif, variabel, dan keluaran.";
 const RINGKAS_SORTING =
-  "Bubble sort dan merge sort langkah demi langkah, pelan-pelan: setiap perbandingan, pertukaran, pembagian, dan penggabungan dijelaskan bersama pseudocode 9618-nya.";
+  "Bubble sort, insertion sort, dan merge sort langkah demi langkah, pelan-pelan: setiap perbandingan, pertukaran, pergeseran, pembagian, dan penggabungan dijelaskan bersama pseudocode 9618-nya.";
 const RINGKAS_SEARCHING =
-  "Linear search dan binary search langkah demi langkah, pelan-pelan: setiap data yang diperiksa, tebakan di tengah, dan separuh yang dibuang dijelaskan bersama pseudocode 9618-nya.";
+  "Linear search, binary search, dan jump search langkah demi langkah, pelan-pelan: setiap data yang diperiksa, tebakan di tengah, lompatan per blok, dan bagian yang dibuang dijelaskan bersama pseudocode 9618-nya.";
 
 const DIMENSI_ARRAY: readonly { id: LabId; nama: string; ringkas: string }[] = [
   KIT_ARRAY_1D,
@@ -97,12 +97,12 @@ const NAVIGASI: readonly BagianNavigasi[] = [
     nama: "Sorting",
     // Satu item: bubble/merge dipilih di dalam ruang kerjanya, dan keduanya
     // memakai data yang sama supaya bisa dibandingkan.
-    item: [{ id: "sorting", nama: "Bubble & merge sort", ket: RINGKAS_SORTING }],
+    item: [{ id: "sorting", nama: "Bubble, insertion & merge sort", ket: RINGKAS_SORTING }],
   },
   {
     nomor: "07",
     nama: "Searching",
-    item: [{ id: "searching", nama: "Linear & binary search", ket: RINGKAS_SEARCHING }],
+    item: [{ id: "searching", nama: "Linear, binary & jump search", ket: RINGKAS_SEARCHING }],
   },
 ];
 

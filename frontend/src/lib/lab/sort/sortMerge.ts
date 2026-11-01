@@ -35,7 +35,8 @@ export function rekamMerge(nilai: readonly number[], arah: ArahSort): Rekaman<La
 
   function bangun(lo: number, hi: number, tingkat: number, induk: number | null): number {
     const id = simpul.length;
-    simpul.push({ id, induk, kiri: null, kanan: null, tingkat, lo, hi, isi: data.slice(lo, hi + 1), status: "tersembunyi" });
+    const asli = data.slice(lo, hi + 1);
+    simpul.push({ id, induk, kiri: null, kanan: null, tingkat, lo, hi, isi: [...asli], asli, status: "tersembunyi", nomorBagi: null, nomorGabung: null });
     if (lo < hi) {
       const mid = Math.floor((lo + hi) / 2);
       simpul[id].kiri = bangun(lo, mid, tingkat + 1, id);
@@ -46,6 +47,8 @@ export function rekamMerge(nilai: readonly number[], arah: ArahSort): Rekaman<La
 
   const langkah: LangkahMerge[] = [];
   let banding = 0;
+  /** Nomor urut proses berikutnya (bagi, daun, gabung - urutan rekursi sebenarnya). */
+  let nomor = 0;
   let pindah = 0;
   if (n === 0) return { langkah, banding, pindah };
   const akar = bangun(0, n - 1, 0, null);
@@ -88,6 +91,7 @@ export function rekamMerge(nilai: readonly number[], arah: ArahSort): Rekaman<La
     const s = simpul[id];
     if (s.kiri === null || s.kanan === null) {
       s.status = "urut";
+      s.nomorBagi = ++nomor;
       catat(
         "daun",
         "Bagi",
@@ -102,6 +106,7 @@ export function rekamMerge(nilai: readonly number[], arah: ArahSort): Rekaman<La
     const ki = simpul[s.kiri];
     const ka = simpul[s.kanan];
     s.status = "dibagi";
+    s.nomorBagi = ++nomor;
     ki.status = "menunggu";
     ka.status = "menunggu";
     catat(
@@ -200,6 +205,7 @@ export function rekamMerge(nilai: readonly number[], arah: ArahSort): Rekaman<La
     }
 
     s.status = "urut";
+    s.nomorGabung = ++nomor;
     ki.status = "terpakai";
     ka.status = "terpakai";
     catat(

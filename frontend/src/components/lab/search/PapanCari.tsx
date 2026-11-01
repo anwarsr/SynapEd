@@ -7,7 +7,7 @@ const JARAK = 6;
 /** Tinggi lajur label penunjuk di atas kotak — cukup untuk tiga label bertumpuk. */
 const LAJUR_LABEL = 36;
 const LAJUR_INDEKS = 18;
-const URUTAN_LABEL: NamaPenunjuk[] = ["Kiri", "Tengah", "Kanan", "i"];
+const URUTAN_LABEL: NamaPenunjuk[] = ["Kiri", "Tengah", "Kanan", "Awal", "Akhir", "i"];
 
 /**
  * Kotak berindeks Lab Searching.
@@ -48,8 +48,10 @@ export default function PapanCari({ langkah, dicari }: { langkah: LangkahCari; d
     const i = langkah.penunjuk[nama];
     if (i !== undefined && i >= 0 && i < n) label.set(i, [...(label.get(i) ?? []), nama]);
   }
-  const { Kiri, Kanan } = langkah.penunjuk;
-  const dalamRentang = (i: number) => Kiri !== undefined && Kanan !== undefined && i >= Kiri && i <= Kanan;
+  // Rentang yang masih mungkin: Kiri..Kanan (binary) atau blok Awal..Akhir (jump).
+  const lo = langkah.penunjuk.Kiri ?? langkah.penunjuk.Awal;
+  const hi = langkah.penunjuk.Kanan ?? langkah.penunjuk.Akhir;
+  const dalamRentang = (i: number) => lo !== undefined && hi !== undefined && i >= lo && i <= hi;
   const tersingkir = (i: number) => langkah.tersingkir.some(([a, b]) => i >= a && i <= b);
   const ketemu = langkah.hasil?.ketemu ? langkah.hasil.indeks : null;
 

@@ -94,6 +94,23 @@ CALL MergeSort(1, N)
 `;
 }
 
+/** Insertion sort: geser selama A[j] "harus di kanan" kunci — `>` (naik) / `<` (turun); seri berhenti = stabil. */
+export function kodeInsertion(arah: ArahSort): string {
+  return `// Insertion sort - A[1:N] berisi data yang akan diurutkan
+DECLARE i, j, Kunci : INTEGER
+
+FOR i ${PANAH} 2 TO N
+   Kunci ${PANAH} A[i]
+   j ${PANAH} i - 1
+   WHILE j >= 1 AND A[j] ${opBubble(arah)} Kunci
+      A[j + 1] ${PANAH} A[j]
+      j ${PANAH} j - 1
+   ENDWHILE
+   A[j + 1] ${PANAH} Kunci
+NEXT i
+`;
+}
+
 /**
  * Nomor baris (1-based) pertama yang — setelah dipangkas — DIAWALI `awal`,
  * dicari mulai setelah baris `setelah`. Melempar bila tidak ada: itu salah
@@ -172,5 +189,28 @@ export function barisMerge(arah: ArahSort): BarisMerge {
     sisaKanan,
     sisaKananSalin: [sisaKanan + 1, sisaKanan + 3],
     salinBalik: [salinBalik, salinBalik + 2],
+  };
+}
+
+export interface BarisInsertion {
+  putaran: number;
+  ambil: [number, number];
+  banding: number;
+  geser: [number, number];
+  sisip: number;
+  akhir: number;
+}
+
+export function barisInsertion(arah: ArahSort): BarisInsertion {
+  const k = kodeInsertion(arah);
+  const ambil = cariBaris(k, `Kunci ${PANAH} A[i]`);
+  const geser = cariBaris(k, `A[j + 1] ${PANAH} A[j]`);
+  return {
+    putaran: cariBaris(k, `FOR i ${PANAH} 2`),
+    ambil: [ambil, cariBaris(k, `j ${PANAH} i - 1`, ambil)],
+    banding: cariBaris(k, "WHILE j >= 1"),
+    geser: [geser, cariBaris(k, `j ${PANAH} j - 1`, geser)],
+    sisip: cariBaris(k, `A[j + 1] ${PANAH} Kunci`),
+    akhir: cariBaris(k, "NEXT i"),
   };
 }

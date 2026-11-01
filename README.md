@@ -293,32 +293,39 @@ tidak menghapus papan lab lain.
     `END IF`, `ENDFOR`, kata kunci huruf kecil;
   - teks yang disalin dari PDF panduan (tanda `−` dan kutip `ꞌ`) tetap terbaca;
   - panel **Panduan** berisi ringkasan dialeknya.
-- **Sorting** (Lab 06) — **bubble sort** dan **merge sort**, langkah demi
+- **Sorting** (Lab 06) — **bubble sort**, **insertion sort**, dan **merge sort**, langkah demi
   langkah dan sengaja **pelan** (kecepatan 0,25×-2×, bisa maju/mundur manual):
   - bubble sort digambar sebagai **batang** (tinggi = nilai): pasangan yang
     dibandingkan, pertukaran yang meluncur, dan bagian kanan yang sudah final;
+  - insertion sort memakai batang yang sama: **Kunci** (kartu yang sedang
+    disisipkan, berwarna amber) bergerak ke kiri sementara nilai yang lebih besar
+    bergeser ke kanan, dengan garis pembatas bagian kiri yang sudah urut;
   - merge sort digambar sebagai **pohon bagi-gabung** seperti di buku teks:
-    data dibelah turun sampai satu elemen, lalu digabung naik ke array bantu
-    dengan penunjuk `i`, `j`, `k`;
+    data dibelah turun sampai satu elemen, lalu hasil gabungannya digambar di
+    baris-baris berikutnya (bentuk belah ketupat) dengan **panah** dari induk ke
+    anak dan dari anak ke hasil gabungan, **nomor urutan proses** di setiap
+    kotak, serta penunjuk `i`, `j`, `k` saat mengisi array bantu;
   - setiap langkah punya **kalimat penjelasan** dan baris **pseudocode
     Cambridge 9618** yang sedang dijalankan disorot (kodenya bisa langsung
-    dicoba di Lab 05), plus penghitung perbandingan & pertukaran/penyalinan;
+    dicoba di Lab 05), plus penghitung perbandingan & pertukaran/pergeseran/penyalinan;
   - data: ketik sendiri (2-12 angka 0-999), acak, atau **contoh kasus**
     (sudah urut, terbalik, hampir urut, ada nilai kembar), arah naik/turun;
-    kedua algoritma memakai data yang sama dan di akhir jumlah kerjanya
+    ketiga algoritma memakai data yang sama dan di akhir jumlah kerjanya
     dibandingkan; **Bagikan** menyalin tautan berisi algoritma + data.
-- **Searching** (Lab 07) — **linear search** dan **binary search** dengan
+- **Searching** (Lab 07) — **linear search**, **binary search**, dan **jump search** dengan
   kendali yang sama seperti Lab 06 (pelan, maju/mundur, garis waktu):
   - data tampil sebagai **kotak berindeks**; penunjuk `i` (linear) atau
-    `Kiri`/`Tengah`/`Kanan` (binary) di atas kotak, dan bagian yang sudah
-    diperiksa/dibuang diredupkan;
-  - binary search butuh data urut, jadi data yang belum urut **diurutkan dulu**
+    `Kiri`/`Tengah`/`Kanan` (binary) atau `Awal`/`Akhir` (blok jump search) di
+    atas kotak, dan bagian yang sudah diperiksa/dibuang diredupkan;
+  - jump search melompat per blok berisi ⌊√n⌋ data sambil memeriksa ujung
+    blok saja, lalu mencari satu per satu di blok tempat ia berhenti;
+  - binary & jump search butuh data urut, jadi data yang belum urut **diurutkan dulu**
     (kotak-kotak meluncur ke tempatnya) dengan penjelasan alasannya;
   - narasi per langkah + pseudocode **Cambridge 9618** yang disorot (bisa dicoba
     di Lab 05), penghitung perbandingan beserta batas maksimalnya (n untuk
-    linear, ⌊log₂ n⌋ + 1 untuk binary);
+    linear, ⌊log₂ n⌋ + 1 untuk binary, ⌈n/m⌉ − 1 + m untuk jump);
   - data 2-32 angka 0-999 + nilai yang dicari: ketik, acak, atau contoh kasus
-    (ada di tengah, di awal, tidak ada, nilai kembar, 32 data); di akhir kedua
+    (ada di tengah, di awal, tidak ada, nilai kembar, 32 data); di akhir ketiga
     algoritma dibandingkan; **Bagikan** menyalin tautannya.
 - Kedua lab kode: **contoh** siap pakai (luas, genap/ganjil, jumlah 1..n,
   CASE, array, validasi masukan, rekursi, BYREF/dictionary), **Bagikan**

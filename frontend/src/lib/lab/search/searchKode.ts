@@ -121,3 +121,78 @@ export function barisBinary(): BarisBinary {
     keluarTidak: cariBaris(k, 'OUTPUT "Tidak', akhir),
   };
 }
+
+/**
+ * Jump search. 9618 tidak punya fungsi akar, jadi ukuran lompatan ⌊√N⌋ dihitung
+ * dengan perulangan: naikkan `Lompat` selama (Lompat + 1)² masih ≤ N.
+ */
+export const KODE_JUMP = `// Jump search - A[1:N] berisi data URUT, Dicari = nilai yang dicari
+DECLARE Lompat, Awal, Akhir, i, Posisi : INTEGER
+
+Lompat ${PANAH} 1
+WHILE (Lompat + 1) * (Lompat + 1) <= N
+   Lompat ${PANAH} Lompat + 1
+ENDWHILE
+
+Awal ${PANAH} 1
+Akhir ${PANAH} Lompat
+WHILE Akhir < N AND A[Akhir] < Dicari
+   Awal ${PANAH} Akhir + 1
+   Akhir ${PANAH} Akhir + Lompat
+ENDWHILE
+IF Akhir > N
+   THEN
+      Akhir ${PANAH} N
+ENDIF
+
+Posisi ${PANAH} 0
+i ${PANAH} Awal
+WHILE i <= Akhir AND Posisi = 0
+   IF A[i] = Dicari
+      THEN
+         Posisi ${PANAH} i
+      ELSE
+         i ${PANAH} i + 1
+   ENDIF
+ENDWHILE
+
+IF Posisi > 0
+   THEN
+      OUTPUT "Ditemukan di A[", Posisi, "]"
+   ELSE
+      OUTPUT "Tidak ditemukan"
+ENDIF
+`;
+
+export interface BarisJump {
+  kepala: number;
+  lompat: [number, number];
+  mulai: [number, number];
+  ujung: number;
+  loncat: [number, number];
+  jepit: number;
+  blok: [number, number];
+  banding: number;
+  keluarKetemu: number;
+  keluarTidak: number;
+}
+
+export function barisJump(): BarisJump {
+  const k = KODE_JUMP;
+  const lompat = cariBaris(k, `Lompat ${PANAH} 1`);
+  const loncat = cariBaris(k, `Awal ${PANAH} Akhir + 1`);
+  const blok = cariBaris(k, `Posisi ${PANAH} 0`);
+  const akhir = cariBaris(k, "IF Posisi > 0");
+  return {
+    kepala: 1,
+    lompat: [lompat, cariBaris(k, "ENDWHILE", lompat)],
+    mulai: [cariBaris(k, `Awal ${PANAH} 1`), cariBaris(k, `Akhir ${PANAH} Lompat`)],
+    ujung: cariBaris(k, "WHILE Akhir < N"),
+    loncat: [loncat, cariBaris(k, `Akhir ${PANAH} Akhir + Lompat`, loncat)],
+    jepit: cariBaris(k, `Akhir ${PANAH} N`),
+    blok: [blok, cariBaris(k, `i ${PANAH} Awal`, blok)],
+    banding: cariBaris(k, "IF A[i] = Dicari"),
+    keluarKetemu: cariBaris(k, 'OUTPUT "Ditemukan', akhir),
+    keluarTidak: cariBaris(k, 'OUTPUT "Tidak', akhir),
+  };
+}
