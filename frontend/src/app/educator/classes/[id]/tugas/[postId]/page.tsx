@@ -91,8 +91,9 @@ export default async function TugasPengajarPage({ params }: Props) {
   const dinilai = subs.filter((s) => s.status === "graded").length;
 
   return (
-    <EducatorShell user={user}>
+    <EducatorShell user={user} duaPanel>
       <AssignmentDetail
+        duaPanel
         post={post}
         namaKelas={kelas.name}
         pengajar={kartu.get(post.authorUid)}

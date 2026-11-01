@@ -154,7 +154,10 @@ export const PENGETAHUAN_SITUS = `## Akun
 
 ## SynapLab
 - /lab adalah papan untuk memahami struktur data dan pemrograman sambil
-  mencobanya, terbuka untuk siapa saja tanpa login.
+  mencobanya, terbuka untuk siapa saja tanpa login. Halaman /lab dibuka dengan
+  galeri kartu semua lab (Lab 01 Array sampai Lab 07 Searching); tombol menu
+  (☰, di ponsel tombol "Materi") di dalam lab membuka galeri yang sama untuk
+  pindah lab.
 - Materi: Array (1D, 2D, 3D yang tampil sebagai kubus yang bisa diputar, dan
   N-dimensi) serta Linked List (singly). Operasi dijalankan lewat tombol dan
   form, bukan menulis kode, lalu diputar langkah demi langkah dengan narasi
@@ -194,6 +197,23 @@ export const PENGETAHUAN_SITUS = `## Akun
   TYPE (record), operasi berkas, dan OOP. Panduan singkat ada di panel lab.
 - Kode Python dan pseudocode bisa dibagikan lewat tautan atau disimpan/dibuka
   sebagai berkas (.py/.txt). Masing-masing punya contoh siap pakai.
+- Sorting (Lab 06): bubble sort dan merge sort diperagakan langkah demi langkah
+  secara pelan (kecepatan 0,25x sampai 2x, atau maju/mundur manual). Bubble
+  sort tampil sebagai batang yang bertukar; merge sort sebagai pohon yang
+  dibagi lalu digabung dengan array bantu. Setiap langkah dijelaskan dengan
+  kalimat dan baris pseudocode Cambridge 9618 yang sedang berjalan disorot.
+  Data bisa diketik (2-12 angka 0-999), diacak, atau dipilih dari contoh kasus
+  (sudah urut, terbalik, hampir urut, ada nilai kembar), dan dibagikan lewat
+  tautan. Algoritma lain (selection, insertion, quick sort) ada sebagai operasi
+  urut di lab Array.
+- Searching (Lab 07): linear search dan binary search langkah demi langkah,
+  dengan kendali yang sama seperti Lab Sorting. Data tampil sebagai kotak
+  berindeks dengan penunjuk i (linear) atau Kiri/Tengah/Kanan (binary); bagian
+  yang sudah diperiksa atau dibuang diredupkan. Binary search hanya untuk data
+  urut, jadi data yang belum urut diurutkan dulu secara otomatis. Ada
+  pseudocode 9618 yang disorot, penghitung perbandingan, data 2-32 angka
+  (ketik, acak, atau contoh kasus seperti "tidak ada" dan "32 data"), nilai
+  yang dicari bisa diatur, dan bisa dibagikan lewat tautan.
 
 ## Yang belum tersedia
 Penarikan dana pendapatan, notifikasi email, pengembalian dana otomatis,

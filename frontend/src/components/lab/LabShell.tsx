@@ -1,25 +1,30 @@
 "use client";
 import { useCallback, useState } from "react";
 import LabNavigasi, { type BagianNavigasi } from "./LabNavigasi";
+import GaleriLab from "./GaleriLab";
 import LabWorkspace from "./LabWorkspace";
 import FlowWorkspace from "./flow/FlowWorkspace";
 import PseudoWorkspace from "./kode/PseudoWorkspace";
 import PythonWorkspace from "./kode/PythonWorkspace";
+import SortWorkspace from "./sort/SortWorkspace";
+import SearchWorkspace from "./search/SearchWorkspace";
 import { KIT_ARRAY_1D, KIT_ARRAY_2D, KIT_ARRAY_3D, KIT_ARRAY_ND, KIT_LINKED_LIST } from "./labKits";
 import type { LabSnapshot } from "@/lib/lab/labUrl";
 import type { LabId } from "@/lib/lab/labTypes";
 import type { Diagram } from "@/lib/lab/flowTypes";
 import type { BahasaKode, IsiKode } from "@/lib/lab/kodeUrl";
+import type { IsiSort } from "@/lib/lab/sort/sortUrl";
+import type { IsiCari } from "@/lib/lab/search/searchUrl";
 import { cn } from "@/lib/cn";
 
-type Materi = "array" | "list" | "flowchart" | "python" | "pseudocode";
+type Materi = "array" | "list" | "flowchart" | "python" | "pseudocode" | "sorting" | "searching";
 
 /**
  * Flowchart dan lab kode BUKAN `LabId`: mereka tidak memakai skema tautan
  * `?s=` maupun `LabWorkspace`, jadi tidak ikut tipe lab berbasis operasi.
  * Kerangka ini cukup mengenalnya sebagai pilihan tambahan.
  */
-type PilihanLab = LabId | "flowchart" | "python" | "pseudocode";
+type PilihanLab = LabId | "flowchart" | "python" | "pseudocode" | "sorting" | "searching";
 
 const RINGKAS_FLOWCHART =
   "Gambar flowchart, periksa aturannya, lalu jalankan langkah demi langkah dengan variabel dan masukan.";
@@ -27,6 +32,10 @@ const RINGKAS_PYTHON =
   "Tulis dan jalankan Python sungguhan di browser, lalu ikuti langkah demi langkah: baris aktif, variabel, dan keluaran.";
 const RINGKAS_PSEUDOCODE =
   "Tulis pseudocode Cambridge 9618, jalankan, lalu ikuti langkah demi langkah: baris aktif, variabel, dan keluaran.";
+const RINGKAS_SORTING =
+  "Bubble sort dan merge sort langkah demi langkah, pelan-pelan: setiap perbandingan, pertukaran, pembagian, dan penggabungan dijelaskan bersama pseudocode 9618-nya.";
+const RINGKAS_SEARCHING =
+  "Linear search dan binary search langkah demi langkah, pelan-pelan: setiap data yang diperiksa, tebakan di tengah, dan separuh yang dibuang dijelaskan bersama pseudocode 9618-nya.";
 
 const DIMENSI_ARRAY: readonly { id: LabId; nama: string; ringkas: string }[] = [
   KIT_ARRAY_1D,
@@ -42,6 +51,8 @@ const MATERI: readonly { id: Materi; nomor: string; nama: string }[] = [
   { id: "flowchart", nomor: "03", nama: "Flowchart" },
   { id: "python", nomor: "04", nama: "Python" },
   { id: "pseudocode", nomor: "05", nama: "Pseudocode" },
+  { id: "sorting", nomor: "06", nama: "Sorting" },
+  { id: "searching", nomor: "07", nama: "Searching" },
 ];
 
 /**
@@ -81,12 +92,24 @@ const NAVIGASI: readonly BagianNavigasi[] = [
     nama: "Pseudocode",
     item: [{ id: "pseudocode", nama: "Pseudocode 9618", ket: RINGKAS_PSEUDOCODE }],
   },
+  {
+    nomor: "06",
+    nama: "Sorting",
+    // Satu item: bubble/merge dipilih di dalam ruang kerjanya, dan keduanya
+    // memakai data yang sama supaya bisa dibandingkan.
+    item: [{ id: "sorting", nama: "Bubble & merge sort", ket: RINGKAS_SORTING }],
+  },
+  {
+    nomor: "07",
+    nama: "Searching",
+    item: [{ id: "searching", nama: "Linear & binary search", ket: RINGKAS_SEARCHING }],
+  },
 ];
 
 const ID_LAB: ReadonlySet<string> = new Set(NAVIGASI.flatMap((b) => b.item.map((it) => it.id)));
 
 const materiDari = (id: PilihanLab): Materi =>
-  id === "flowchart" || id === "python" || id === "pseudocode" ? id : id === "linkedList" ? "list" : "array";
+  id === "flowchart" || id === "python" || id === "pseudocode" || id === "sorting" || id === "searching" ? id : id === "linkedList" ? "list" : "array";
 
 /**
  * Pengalih materi (Array · Linked List) dan, untuk array, pengalih dimensinya
@@ -101,6 +124,8 @@ export default function LabShell({
   awal,
   awalFlow,
   awalKode,
+  awalSort,
+  awalCari,
   tautanRusak,
 }: {
   awal: LabSnapshot | null;
@@ -108,11 +133,26 @@ export default function LabShell({
   awalFlow: Diagram | null;
   /** Kode dari tautan `?py=`/`?ps=`, sudah dibaca di server. */
   awalKode: Record<BahasaKode, IsiKode | null>;
+  /** Data & algoritma Lab Sorting dari tautan `?u=`, sudah dibaca di server. */
+  awalSort: IsiSort | null;
+  /** Data, nilai cari & algoritma Lab Searching dari tautan `?c=`, sudah dibaca di server. */
+  awalCari: IsiCari | null;
   tautanRusak: boolean;
 }) {
-  const labAwal: PilihanLab = awalKode.python ? "python" : awalKode.pseudocode ? "pseudocode" : awalFlow ? "flowchart" : (awal?.lab ?? "array1d");
-  const [aktif, setAktif] = useState<PilihanLab>(labAwal);
-  const [dibuka, setDibuka] = useState<ReadonlySet<PilihanLab>>(() => new Set([labAwal]));
+  // null = halaman depan: galeri semua lab. Tautan bagikan langsung membuka lab-nya.
+  const labAwal: PilihanLab | null = awalCari
+    ? "searching"
+    : awalSort
+    ? "sorting"
+    : awalKode.python
+      ? "python"
+      : awalKode.pseudocode
+        ? "pseudocode"
+        : awalFlow
+          ? "flowchart"
+          : (awal?.lab ?? null);
+  const [aktif, setAktif] = useState<PilihanLab | null>(labAwal);
+  const [dibuka, setDibuka] = useState<ReadonlySet<PilihanLab>>(() => new Set(labAwal ? [labAwal] : []));
   const [beritahuRusak, setBeritahuRusak] = useState(tautanRusak);
   // Dimensi array yang terakhir dipakai: item "Array" di laci kembali ke sana,
   // bukan selalu ke 1D (papan 3D yang sedang dipakai mengajar tidak hilang dari layar).
@@ -128,6 +168,42 @@ export default function LabShell({
 
   const sembunyikanPemberitahuan = useCallback(() => setBeritahuRusak(false), []);
 
+  /** Item galeri → lab. Item "Array" kembali ke dimensi yang terakhir dipakai. */
+  const pilihItem = (id: string) => {
+    if (id === ID_ARRAY) pilih(aktif !== null && materiDari(aktif) === "array" ? aktif : arrayTerakhir);
+    else if (ID_LAB.has(id)) pilih(id as PilihanLab);
+  };
+
+  // Halaman depan /lab: galeri kartu semua lab (acuan pemilik: VisuAlgo), supaya
+  // seluruh materi terlihat sekaligus sebelum memilih.
+  if (aktif === null) {
+    return (
+      <div className="lab-pane lg:h-full lg:overflow-y-auto lg:pr-1">
+        <header className="mb-6 flex flex-col gap-3">
+          <h1>
+            <span className="sr-only">SynapLab</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/SynapLab.png" alt="" width={157} height={30} className="logo-on-dark h-9 w-auto lg:h-10" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/SynapLab Black.png" alt="" width={157} height={30} className="logo-on-light h-9 w-auto lg:h-10" />
+          </h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">
+            Papan coba-coba untuk memahami struktur data, algoritma, dan pemrograman sambil mencobanya langsung - semua berjalan
+            di browser, tanpa akun. Pilih materi untuk mulai.
+          </p>
+          {beritahuRusak && (
+            <p role="status" className="lab-fade-up bg-amber-500/15 px-4 py-3 text-sm text-warn-text">
+              Tautan papan tidak dapat dibaca. Pilih lab di bawah untuk mulai dari awal.
+            </p>
+          )}
+        </header>
+        <nav aria-label="Materi">
+          <GaleriLab bagian={NAVIGASI} aktif={null} onPilih={pilihItem} />
+        </nav>
+      </div>
+    );
+  }
+
   const materi = materiDari(aktif);
   const infoMateri = MATERI.find((m) => m.id === materi)!;
   const lab =
@@ -137,6 +213,10 @@ export default function LabShell({
         ? { nama: "Python", ringkas: RINGKAS_PYTHON }
       : aktif === "pseudocode"
         ? { nama: "Pseudocode", ringkas: RINGKAS_PSEUDOCODE }
+      : aktif === "sorting"
+        ? { nama: "Sorting", ringkas: RINGKAS_SORTING }
+      : aktif === "searching"
+        ? { nama: "Searching", ringkas: RINGKAS_SEARCHING }
       : aktif === "linkedList"
         ? KIT_LINKED_LIST
         : (DIMENSI_ARRAY.find((l) => l.id === aktif) ?? DIMENSI_ARRAY[0]);
@@ -213,10 +293,7 @@ export default function LabShell({
       <LabNavigasi
         bagian={NAVIGASI}
         aktif={materi === "array" ? ID_ARRAY : aktif}
-        onPilih={(id) => {
-          if (id === ID_ARRAY) pilih(materi === "array" ? aktif : arrayTerakhir);
-          else if (ID_LAB.has(id)) pilih(id as PilihanLab);
-        }}
+        onPilih={pilihItem}
       />
       <div className="min-w-0 lg:h-full lg:flex-1">
       {dibuka.has("array1d") && (
@@ -276,6 +353,16 @@ export default function LabShell({
       {dibuka.has("pseudocode") && (
         <div hidden={aktif !== "pseudocode"} className="lg:h-full">
           <PseudoWorkspace awal={awalKode.pseudocode} judul={judul} aktif={aktif === "pseudocode"} />
+        </div>
+      )}
+      {dibuka.has("sorting") && (
+        <div hidden={aktif !== "sorting"} className="lg:h-full">
+          <SortWorkspace awal={awalSort} judul={judul} aktif={aktif === "sorting"} onJalan={sembunyikanPemberitahuan} />
+        </div>
+      )}
+      {dibuka.has("searching") && (
+        <div hidden={aktif !== "searching"} className="lg:h-full">
+          <SearchWorkspace awal={awalCari} judul={judul} aktif={aktif === "searching"} onJalan={sembunyikanPemberitahuan} />
         </div>
       )}
       {dibuka.has("arrayNd") && (

@@ -134,13 +134,15 @@ penyusun kursus tidak pernah berkurang.
 ### SynapLab — papan coba-coba (`/lab`)
 
 Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
-orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
-tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
-(Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), **Flowchart** (Lab 03),
-**Python** (Lab 04), dan **Pseudocode** (Lab 05). Laci menimpa halaman
-tanpa menggesernya. Array tampil sebagai satu materi di laci; empat versinya
-— **1D · 2D · 3D · N-D** — dipilih lewat pengalih di kepala halaman, dan laci
-kembali ke dimensi yang terakhir dipakai.
+orang lain. Membuka `/lab` menampilkan **galeri kartu** semua materi (bergambar,
+terlihat sekaligus): **Array** (Lab 01 — 1D, 2D, 3D, N-D), **Linked List**
+(Lab 02), **Flowchart** (Lab 03), **Python** (Lab 04), **Pseudocode** (Lab 05),
+**Sorting** (Lab 06), dan **Searching** (Lab 07). Dari dalam lab, tombol ☰ di
+tepi kiri (di ponsel: tombol "Materi" di tengah bawah) membuka galeri yang sama
+sebagai lapisan layar penuh; lab yang sedang dibuka ditandai. Tautan bagikan
+langsung membuka lab-nya tanpa melewati galeri. Array tampil sebagai satu kartu;
+empat versinya — **1D · 2D · 3D · N-D** — dipilih lewat pengalih di kepala
+halaman, dan kartunya kembali ke dimensi yang terakhir dipakai.
 Tiap lab punya papan, operasi, dan tautan bagikannya sendiri; berpindah lab
 tidak menghapus papan lab lain.
 
@@ -291,6 +293,33 @@ tidak menghapus papan lab lain.
     `END IF`, `ENDFOR`, kata kunci huruf kecil;
   - teks yang disalin dari PDF panduan (tanda `−` dan kutip `ꞌ`) tetap terbaca;
   - panel **Panduan** berisi ringkasan dialeknya.
+- **Sorting** (Lab 06) — **bubble sort** dan **merge sort**, langkah demi
+  langkah dan sengaja **pelan** (kecepatan 0,25×-2×, bisa maju/mundur manual):
+  - bubble sort digambar sebagai **batang** (tinggi = nilai): pasangan yang
+    dibandingkan, pertukaran yang meluncur, dan bagian kanan yang sudah final;
+  - merge sort digambar sebagai **pohon bagi-gabung** seperti di buku teks:
+    data dibelah turun sampai satu elemen, lalu digabung naik ke array bantu
+    dengan penunjuk `i`, `j`, `k`;
+  - setiap langkah punya **kalimat penjelasan** dan baris **pseudocode
+    Cambridge 9618** yang sedang dijalankan disorot (kodenya bisa langsung
+    dicoba di Lab 05), plus penghitung perbandingan & pertukaran/penyalinan;
+  - data: ketik sendiri (2-12 angka 0-999), acak, atau **contoh kasus**
+    (sudah urut, terbalik, hampir urut, ada nilai kembar), arah naik/turun;
+    kedua algoritma memakai data yang sama dan di akhir jumlah kerjanya
+    dibandingkan; **Bagikan** menyalin tautan berisi algoritma + data.
+- **Searching** (Lab 07) — **linear search** dan **binary search** dengan
+  kendali yang sama seperti Lab 06 (pelan, maju/mundur, garis waktu):
+  - data tampil sebagai **kotak berindeks**; penunjuk `i` (linear) atau
+    `Kiri`/`Tengah`/`Kanan` (binary) di atas kotak, dan bagian yang sudah
+    diperiksa/dibuang diredupkan;
+  - binary search butuh data urut, jadi data yang belum urut **diurutkan dulu**
+    (kotak-kotak meluncur ke tempatnya) dengan penjelasan alasannya;
+  - narasi per langkah + pseudocode **Cambridge 9618** yang disorot (bisa dicoba
+    di Lab 05), penghitung perbandingan beserta batas maksimalnya (n untuk
+    linear, ⌊log₂ n⌋ + 1 untuk binary);
+  - data 2-32 angka 0-999 + nilai yang dicari: ketik, acak, atau contoh kasus
+    (ada di tengah, di awal, tidak ada, nilai kembar, 32 data); di akhir kedua
+    algoritma dibandingkan; **Bagikan** menyalin tautannya.
 - Kedua lab kode: **contoh** siap pakai (luas, genap/ganjil, jumlah 1..n,
   CASE, array, validasi masukan, rekursi, BYREF/dictionary), **Bagikan**
   (tautan berisi kode + masukan; kode dari tautan hanya ditampilkan, tidak
@@ -405,7 +434,9 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   (berkas yang sudah dikirim ikut terhapus).
 - Pengajar melihat daftar seluruh siswa per tugas di
   `/educator/classes/[id]/tugas/[postId]`, mengunduh jawabannya, lalu memberi
-  **nilai + komentar** yang langsung terlihat oleh siswa.
+  **nilai + komentar** yang langsung terlihat oleh siswa. Di layar lebar, kolom
+  kiri (instruksi & daftar siswa) dan kolom kanan (Ringkasan & Koreksi AI)
+  digulir terpisah, sehingga pengaturan AI tetap terjangkau saat menilai.
 - Batas: maksimal 5 berkas per postingan/kiriman, masing-masing di bawah 20 MB.
   Siswa tidak bisa melihat jawaban siswa lain.
 - **Koreksi dengan AI** (per siswa, di halaman tugas pengajar):
@@ -568,6 +599,8 @@ npm run verify:lab                # SynapLab — murni, tanpa dev server & krede
 npm run verify:flowchart          # flowchart: ekspresi, mesin jalan, pemeriksa, tautan (murni)
 npm run verify:pseudocode         # interpreter pseudocode 9618: bahasa, galat & baris, jejak (murni)
 npm run verify:kode               # lab kode: tautan, berkas, penyorot, saran Python, CSP worker (murni)
+npm run verify:sorting            # Lab Sorting: hasil stabil, langkah, baris kode, pseudocode dijalankan, tautan (murni)
+npm run verify:searching          # Lab Searching: hasil, Kiri/Tengah/Kanan, baris kode, pseudocode dijalankan, tautan (murni)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
@@ -580,7 +613,7 @@ npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman s
 - Refund otomatis. Kabar refund dari Midtrans hanya ditandai untuk ditindaklanjuti admin.
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
 - Soal kuis selain pilihan tunggal.
-- Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
+- Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma pengurutan & pencarian lain di Lab Sorting/Searching (mis. quick sort, jump search).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
 - Flowchart: titik belok garis yang diatur manual, pinch-zoom di layar sentuh,
   subproses yang benar-benar memanggil flowchart lain, dan perulangan `for` di

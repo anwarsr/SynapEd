@@ -46,6 +46,12 @@ export const LAB_MAX_KELOMPOK = 8;
 export const LAB_MAX_STEPS_URUT = 1000;
 
 /**
+ * Pilihan kecepatan lab "langkah demi langkah" (Sorting, Searching). Tanpa 4×:
+ * tujuannya dipahami, bukan ditonton cepat. `verify-sorting` menjaganya.
+ */
+export const KECEPATAN_PELAN: readonly number[] = [0.25, 0.5, 1, 2];
+
+/**
  * Lab yang tersedia — tiga cara memandang array: satu deret (1D), kisi baris ×
  * kolom (2D), dan array bersarang dengan berapa pun dimensinya (N-D).
  *

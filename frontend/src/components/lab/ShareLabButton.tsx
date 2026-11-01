@@ -13,8 +13,17 @@ import { cn } from "@/lib/cn";
  *
  * `kode` dipanggil saat tombol ditekan, bukan saat render: mengodekan papan
  * setiap render hanya membuang waktu untuk tautan yang jarang diminta.
+ *
+ * `param` = nama parameter URL-nya; bawaan `?s=` (lab berbasis operasi), lab
+ * Sorting memakai `?u=`.
  */
-export default function ShareLabButton({ kode: buatKode }: { kode: () => string | null }) {
+export default function ShareLabButton({
+  kode: buatKode,
+  param = LAB_URL_PARAM,
+}: {
+  kode: () => string | null;
+  param?: string;
+}) {
   const [pesan, setPesan] = useState<{ teks: string; ok: boolean } | null>(null);
 
   async function bagikan() {
@@ -25,7 +34,7 @@ export default function ShareLabButton({ kode: buatKode }: { kode: () => string 
     }
 
     const url = new URL(window.location.pathname, window.location.origin);
-    url.searchParams.set(LAB_URL_PARAM, kode);
+    url.searchParams.set(param, kode);
     const tautan = url.toString();
 
     try {
