@@ -37,9 +37,6 @@ export const TAHAN_MS: Record<JenisLangkah, number> = {
   selesai: 2800,
 };
 
-/** Pilihan kecepatan pemutar. Tanpa 4×: tujuannya dipahami, bukan ditonton cepat. */
-export const KECEPATAN_SORT: readonly number[] = [0.25, 0.5, 1, 2];
-
 export const SORT_MIN_DATA = 2;
 export const SORT_MAX_DATA = 12;
 export const SORT_NILAI_MAKS = 999;

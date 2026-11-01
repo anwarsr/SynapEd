@@ -1,17 +1,18 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import ShareLabButton from "../ShareLabButton";
-import { IKON, Ikon, Kelompok, TOMBOL } from "../LabAlat";
+import { IKON, Ikon, TOMBOL } from "../LabAlat";
 import PapanBubble from "./PapanBubble";
 import PohonMerge from "./PohonMerge";
-import KodeSorotBaca from "./KodeSorotBaca";
+import KodeSorotBaca from "../langkah/KodeSorotBaca";
+import { DaftarPintasan, GarisWaktu, NarasiLangkah, PemutarLangkah, TabAlgoritma, usePintasanPemutar } from "../langkah/PemutarLangkah";
 import { useLabPlayer } from "@/lib/useLabPlayer";
 import { rekamBubble } from "@/lib/lab/sort/sortBubble";
 import { rekamMerge } from "@/lib/lab/sort/sortMerge";
 import { kodeBubble, kodeMerge } from "@/lib/lab/sort/sortKode";
 import { CONTOH_KASUS, DATA_BAWAAN, dataAcak, uraiData } from "@/lib/lab/sort/sortData";
 import { encodeSort, SORT_URL_PARAM, type IsiSort } from "@/lib/lab/sort/sortUrl";
-import { KECEPATAN_SORT, SORT_MAX_DATA, type AlgoSort, type ArahSort, type LangkahBubble, type LangkahMerge } from "@/lib/lab/sort/sortTypes";
+import { SORT_MAX_DATA, type AlgoSort, type ArahSort, type LangkahBubble, type LangkahMerge } from "@/lib/lab/sort/sortTypes";
 import { cn } from "@/lib/cn";
 
 const INFO_ALGO: Record<AlgoSort, { nama: string; ide: string[]; kompleksitas: string; pindah: string }> = {
@@ -116,100 +117,34 @@ export default function SortWorkspace({
     onJalan();
   }
 
-  function putarAtauJeda() {
-    if (pemutar.memutar) return pemutar.jeda();
-    // Di ujung, Putar berarti "putar ulang dari awal".
-    if (pemutar.frame >= terakhir) pemutar.keLangkah(0);
-    pemutar.putar();
-    onJalan();
-  }
-
-  // Pintasan keyboard — hanya saat lab ini yang tampil, dan tidak saat mengetik
-  // atau saat fokus di tombol (Spasi di tombol sudah menekan tombol itu).
-  useEffect(() => {
-    if (!aktif) return;
-    const tekan = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.closest("input, textarea, select, [contenteditable='true']") || (e.key === " " && t.closest("button, summary")))) return;
-      if (e.key === "Escape" && presentasi) setPresentasi(false);
-      else if (e.key === " ") putarAtauJeda();
-      else if (e.key === "ArrowRight") pemutar.maju();
-      else if (e.key === "ArrowLeft") pemutar.mundur();
-      else if (e.key === "Home") pemutar.keLangkah(0);
-      else if (e.key === "End") pemutar.keLangkah(terakhir);
-      else return;
-      e.preventDefault();
-    };
-    window.addEventListener("keydown", tekan);
-    return () => window.removeEventListener("keydown", tekan);
+  usePintasanPemutar({
+    aktif,
+    pemutar,
+    jumlah: langkah.length,
+    presentasi,
+    keluarPresentasi: () => setPresentasi(false),
+    onMulai: onJalan,
   });
 
   if (!l) return null;
   const dataTampil = nilai.join(", ");
 
   const tablist = (
-    <div role="tablist" aria-label="Algoritma pengurutan" className="flex bg-paper-card p-1">
-      {(["bubble", "merge"] as const).map((a) => {
-        const dipilih = a === algo;
-        return (
-          <button
-            key={a}
-            type="button"
-            role="tab"
-            aria-selected={dipilih}
-            onClick={() => pilihAlgo(a)}
-            className={cn(
-              "px-4 py-1.5 text-sm font-semibold transition-colors duration-200",
-              dipilih ? "bg-blue-600 text-white" : "text-ink-muted hover:bg-white/10 hover:text-ink",
-            )}
-          >
-            {INFO_ALGO[a].nama}
-          </button>
-        );
-      })}
-    </div>
+    <TabAlgoritma
+      label="Algoritma pengurutan"
+      pilihan={[
+        { id: "bubble", nama: INFO_ALGO.bubble.nama },
+        { id: "merge", nama: INFO_ALGO.merge.nama },
+      ]}
+      nilai={algo}
+      onPilih={pilihAlgo}
+    />
   );
 
   const bilah = (
     <div className="flex flex-wrap items-center gap-2">
       {tablist}
-      <Kelompok label="Pemutar">
-        <button type="button" className={TOMBOL} onClick={() => pemutar.keLangkah(0)} disabled={pemutar.frame === 0} title="Ke awal (Home)" aria-label="Ke awal">
-          ⏮
-        </button>
-        <button type="button" className={TOMBOL} onClick={pemutar.mundur} disabled={pemutar.frame === 0} title="Langkah sebelumnya (←)" aria-label="Langkah sebelumnya">
-          ‹
-        </button>
-        <button
-          type="button"
-          onClick={putarAtauJeda}
-          disabled={pemutar.hematGerak}
-          title={pemutar.hematGerak ? "Hemat gerak aktif: pakai tombol langkah" : "Putar / jeda (Spasi)"}
-          className={cn(TOMBOL, "min-w-[5.5rem] justify-center bg-blue-600 font-semibold text-white hover:bg-blue-700")}
-        >
-          {!pemutar.hematGerak && <Ikon d={pemutar.memutar ? IKON.henti : IKON.putar} />}
-          {pemutar.memutar ? "Jeda" : pemutar.frame >= terakhir ? "Ulangi" : "Putar"}
-        </button>
-        <button type="button" className={TOMBOL} onClick={pemutar.maju} disabled={pemutar.frame >= terakhir} title="Langkah berikutnya (→)" aria-label="Langkah berikutnya">
-          ›
-        </button>
-        <button type="button" className={TOMBOL} onClick={() => pemutar.keLangkah(terakhir)} disabled={pemutar.frame >= terakhir} title="Ke akhir (End)" aria-label="Ke akhir">
-          ⏭
-        </button>
-        <select
-          aria-label="Kecepatan"
-          value={pemutar.kecepatan}
-          onChange={(e) => pemutar.setKecepatan(Number(e.target.value))}
-          className="bg-transparent px-1 py-1 text-sm text-ink-body focus:outline-none"
-        >
-          {KECEPATAN_SORT.map((k) => (
-            <option key={k} value={k}>
-              {String(k).replace(".", ",")}×
-            </option>
-          ))}
-        </select>
-      </Kelompok>
+      <PemutarLangkah pemutar={pemutar} jumlah={langkah.length} onMulai={onJalan} />
       <div className="ml-auto flex items-center gap-2">
         <ShareLabButton param={SORT_URL_PARAM} kode={() => encodeSort({ algo, arah, nilai })} />
         <button type="button" className={TOMBOL} onClick={() => setPresentasi((p) => !p)} title="Layar penuh (Esc untuk keluar)">
@@ -220,19 +155,7 @@ export default function SortWorkspace({
     </div>
   );
 
-  const narasi = (
-    <div className="bg-paper-card px-5 py-4" aria-live="polite">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-300">{l.fase}</p>
-        <p className="text-xs tabular-nums text-ink-muted">
-          Langkah {pemutar.frame + 1} / {langkah.length}
-        </p>
-      </div>
-      <p key={pemutar.frame} className="lab-fade-up mt-1.5 text-[15px] leading-relaxed text-ink">
-        {l.narasi}
-      </p>
-    </div>
-  );
+  const narasi = <NarasiLangkah fase={l.fase} narasi={l.narasi} ke={pemutar.frame} jumlah={langkah.length} />;
 
   const papan = (
     <div style={{ "--lab-gerak": `${Math.round(1000 / pemutar.kecepatan)}ms` } as React.CSSProperties}>
@@ -240,20 +163,7 @@ export default function SortWorkspace({
     </div>
   );
 
-  const garisWaktu = (
-    <label className="flex items-center gap-3 text-xs text-ink-muted">
-      <span className="shrink-0">Garis waktu</span>
-      <input
-        type="range"
-        min={0}
-        max={terakhir}
-        value={pemutar.frame}
-        onChange={(e) => pemutar.keLangkah(Number(e.target.value))}
-        className="range-tipis w-full"
-        aria-label="Pilih langkah"
-      />
-    </label>
-  );
+  const garisWaktu = <GarisWaktu pemutar={pemutar} jumlah={langkah.length} />;
 
   if (presentasi) {
     return (
@@ -290,27 +200,7 @@ export default function SortWorkspace({
           <p className="text-xs text-ink-muted">Mode hemat gerak aktif: pemutaran otomatis dimatikan, gunakan tombol langkah (‹ ›).</p>
         )}
 
-        <details className="group bg-paper-card px-5 py-3 text-sm">
-          <summary className="flex cursor-pointer list-none items-center justify-between text-ink-body">
-            Tombol pintas keyboard
-            <span aria-hidden="true" className="text-ink-faint transition-transform duration-200 group-open:rotate-180">
-              ▾
-            </span>
-          </summary>
-          <ul className="mt-3 grid gap-x-6 gap-y-1.5 text-xs text-ink-muted sm:grid-cols-2">
-            {[
-              ["Spasi", "putar atau jeda"],
-              ["← / →", "langkah mundur / maju"],
-              ["Home / End", "ke awal / ke akhir"],
-              ["Esc", "keluar layar penuh"],
-            ].map(([tombol, arti]) => (
-              <li key={tombol} className="flex items-center gap-2">
-                <kbd className="bg-white/10 px-1.5 py-0.5 font-sans text-[11px] text-ink">{tombol}</kbd>
-                {arti}
-              </li>
-            ))}
-          </ul>
-        </details>
+        <DaftarPintasan />
       </section>
 
       {/* ── Panel kanan: data, kode, penjelasan ─────────────────── */}

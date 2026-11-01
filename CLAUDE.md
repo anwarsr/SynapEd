@@ -774,11 +774,11 @@ Pustaka: `three`, `@react-three/fiber`, `@react-three/drei` (+ `@types/three`).
 
 Papan sandbox untuk memvisualisasikan materi. **Tanpa Firestore, tanpa Server
 Action, tanpa login** — seluruh keadaan hidup di memori browser dan di URL.
-Enam materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
+Tujuh materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
 **3D** (`array3d`), **N-D** (`arrayNd`) — **Linked List** (`linkedList`,
 singly), **Flowchart** (`"flowchart"`), **Python** (`"python"`, Lab 04) dan
-**Pseudocode** (`"pseudocode"`, Lab 05), dan **Sorting** (`"sorting"`, Lab 06). Empat yang terakhir BUKAN `LabId` (lihat
-bagian Flowchart, Lab kode & Sorting); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode" | "sorting"`. Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
+**Pseudocode** (`"pseudocode"`, Lab 05), **Sorting** (`"sorting"`, Lab 06), dan **Searching** (`"searching"`, Lab 07). Lima yang terakhir BUKAN `LabId` (lihat
+bagian Flowchart, Lab kode, Sorting & Searching); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode" | "sorting" | "searching"`. Navigasi materi = `LabNavigasi.tsx`: laci setinggi layar di kiri yang
 MENIMPA halaman (fixed + latar gelap, `inert` saat tertutup, fokus dikurung,
 gulir `body` dikunci, `Esc` ditangkap di fase capture supaya tidak ikut menutup
 mode presentasi). Komponennya generik — hanya menerima `BagianNavigasi[]`
@@ -1150,13 +1150,32 @@ materi array terbuka.
     INPUT + OUTPUT) dan jumlah putaran bubble dicocokkan dengan rekaman. Nomor baris sorotan dicari dari TEKS kode
     (`cariBaris`), bukan ditulis tangan. Menyunting kodenya = jalankan `npm run verify:sorting`.
   - Tempo `TAHAN_MS` (info 2800, banding 1900, tukar/salin 2600, bagi 2200, daun 1500 ms) dan kecepatan
-    `KECEPATAN_SORT` maks 2× dijaga `verify-sorting` - permintaan pemilik "tidak terlalu cepat".
+    `KECEPATAN_PELAN` (labTypes.ts, dipakai Lab 06 & 07) maks 2× dijaga `verify-sorting` - permintaan pemilik "tidak terlalu cepat".
   - Papan: batang = `translate` persen dari lebarnya sendiri, urutan DOM per id (pelajaran `urutStabil`); pohon =
     simpul absolut `left = lo/n`, `width = (hi−lo+1)/n` (muat di 390px tanpa `scale`). Panel kode baca-saja
     (`KodeSorotBaca`) menggulir KOTAKNYA SENDIRI lewat `scrollTop`, bukan `scrollIntoView`.
   - Data 2-12 bilangan bulat 0..999 (negatif sengaja ditolak: tinggi batang). Tautan `?u=1<b|m>~<n|t>~v,v,…` (≤120
     karakter, tanpa kompresi, semua-atau-tidak, dibaca di server). `ShareLabButton` kini menerima `param`.
   - Hemat gerak: tombol Putar nonaktif, langkah manual tetap jalan (`useLabPlayer` tidak pernah memutar).
+- **Bagian bersama Lab 06 & 07** (`components/lab/langkah/`): `PemutarLangkah` (pemutar + kecepatan + `putarAtauJeda`),
+  `TabAlgoritma`, `NarasiLangkah`, `GarisWaktu`, `DaftarPintasan`, `usePintasanPemutar` (Spasi/←/→/Home/End/Esc, hanya
+  saat lab aktif & tidak saat mengetik/fokus di tombol), dan `KodeSorotBaca`. Urai angka bersama = `lib/lab/labAngka.ts`
+  (`uraiAngka`/`uraiSatu`, pesan galat sama untuk kedua lab). Lab "langkah demi langkah" baru = rekam potret + pakai ini.
+- **Searching (Lab 07)** — linear & binary search (`lib/lab/search/*` netral, `components/lab/search/`):
+  - Pola sama dengan Sorting (rekam sekali, potret utuh, satu item laci, tab Linear/Binary, data + nilai cari bersama,
+    ringkasan akhir membandingkan perbandingan). Batas 2-32 data 0..999; `uraiDicari` untuk nilai yang dicari.
+  - Linear berhenti di kemunculan PERTAMA; satu langkah per perbandingan (kalimatnya menyebut `i ← i + 1`, sorotan
+    hanya baris IF - rentang sampai `i ← i + 1` ikut menyorot `Ketemu ← TRUE` yang tidak dijalankan).
+  - Binary: data yang belum urut DIURUTKAN dulu (salinan stabil; langkah `urutkan`, kotak meluncur), data yang sudah
+    urut tidak diberi langkah itu. Tiap tebakan = `tengah` → `banding` → `buang`. Bagian di luar Kiri..Kanan =
+    `tersingkir`. Invarian teruji: Tengah = ⌊(Kiri+Kanan)/2⌋, rentang menyempit, nilai dicari tak pernah di bagian
+    yang dibuang, perbandingan ≤ `maksBinary(n)` = ⌊log₂ n⌋ + 1.
+  - Variabel pseudocode = `Kiri`/`Tengah`/`Kanan`, BUKAN `Low`/`Mid`/`High`: nama 9618 tidak membedakan huruf
+    besar-kecil, jadi `Mid` bentrok dengan fungsi bawaan `MID` dan kodenya GAGAL di Lab 05 (tertangkap
+    `verify-searching`). Label penunjuk di papan memakai nama variabel yang sama.
+  - `PapanCari`: kotak absolut dengan `translate` dari kolom/baris (jumlah kolom dari lebar, ResizeObserver; lebar awal
+    720 sama di server & klien) supaya pengurutan meluncur lintas baris; urutan DOM per id.
+  - Tautan `?c=1<l|b>~<dicari>~v,v,…` (≤200 karakter, semua-atau-tidak, dibaca server). Tes: `npm run verify:searching`.
 
 ## Pengujian (`scripts/`)
 
@@ -1168,7 +1187,7 @@ materi array terbuka.
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
 - `verify-model3d` (butuh dev server) menulis GLB uji langsung ke bucket (melewati rules, jadi TIDAK menguji `storage.rules`) lalu membersihkannya.
-- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office

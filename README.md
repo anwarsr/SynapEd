@@ -137,7 +137,7 @@ Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
 orang lain. Materinya dipilih dari **laci daftar materi** yang dibuka lewat
 tombol ☰ di tepi kiri (di ponsel: tombol "Materi" di tengah bawah): **Array**
 (Lab 01 — 1D, 2D, 3D, N-D), **Linked List** (Lab 02), **Flowchart** (Lab 03),
-**Python** (Lab 04), **Pseudocode** (Lab 05), dan **Sorting** (Lab 06). Laci menimpa halaman
+**Python** (Lab 04), **Pseudocode** (Lab 05), **Sorting** (Lab 06), dan **Searching** (Lab 07). Laci menimpa halaman
 tanpa menggesernya. Array tampil sebagai satu materi di laci; empat versinya
 — **1D · 2D · 3D · N-D** — dipilih lewat pengalih di kepala halaman, dan laci
 kembali ke dimensi yang terakhir dipakai.
@@ -305,6 +305,19 @@ tidak menghapus papan lab lain.
     (sudah urut, terbalik, hampir urut, ada nilai kembar), arah naik/turun;
     kedua algoritma memakai data yang sama dan di akhir jumlah kerjanya
     dibandingkan; **Bagikan** menyalin tautan berisi algoritma + data.
+- **Searching** (Lab 07) — **linear search** dan **binary search** dengan
+  kendali yang sama seperti Lab 06 (pelan, maju/mundur, garis waktu):
+  - data tampil sebagai **kotak berindeks**; penunjuk `i` (linear) atau
+    `Kiri`/`Tengah`/`Kanan` (binary) di atas kotak, dan bagian yang sudah
+    diperiksa/dibuang diredupkan;
+  - binary search butuh data urut, jadi data yang belum urut **diurutkan dulu**
+    (kotak-kotak meluncur ke tempatnya) dengan penjelasan alasannya;
+  - narasi per langkah + pseudocode **Cambridge 9618** yang disorot (bisa dicoba
+    di Lab 05), penghitung perbandingan beserta batas maksimalnya (n untuk
+    linear, ⌊log₂ n⌋ + 1 untuk binary);
+  - data 2-32 angka 0-999 + nilai yang dicari: ketik, acak, atau contoh kasus
+    (ada di tengah, di awal, tidak ada, nilai kembar, 32 data); di akhir kedua
+    algoritma dibandingkan; **Bagikan** menyalin tautannya.
 - Kedua lab kode: **contoh** siap pakai (luas, genap/ganjil, jumlah 1..n,
   CASE, array, validasi masukan, rekursi, BYREF/dictionary), **Bagikan**
   (tautan berisi kode + masukan; kode dari tautan hanya ditampilkan, tidak
@@ -582,6 +595,7 @@ npm run verify:flowchart          # flowchart: ekspresi, mesin jalan, pemeriksa,
 npm run verify:pseudocode         # interpreter pseudocode 9618: bahasa, galat & baris, jejak (murni)
 npm run verify:kode               # lab kode: tautan, berkas, penyorot, saran Python, CSP worker (murni)
 npm run verify:sorting            # Lab Sorting: hasil stabil, langkah, baris kode, pseudocode dijalankan, tautan (murni)
+npm run verify:searching          # Lab Searching: hasil, Kiri/Tengah/Kanan, baris kode, pseudocode dijalankan, tautan (murni)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
@@ -594,7 +608,7 @@ npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman s
 - Refund otomatis. Kabar refund dari Midtrans hanya ditandai untuk ditindaklanjuti admin.
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
 - Soal kuis selain pilihan tunggal.
-- Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma selain pengurutan di papan array (mis. pencarian biner).
+- Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma pengurutan & pencarian lain di Lab Sorting/Searching (mis. quick sort, jump search).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
 - Flowchart: titik belok garis yang diatur manual, pinch-zoom di layar sentuh,
   subproses yang benar-benar memanggil flowchart lain, dan perulangan `for` di

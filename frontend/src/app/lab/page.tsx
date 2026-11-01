@@ -5,12 +5,13 @@ import { decodeLabSnapshot, LAB_URL_PARAM } from "@/lib/lab/labUrl";
 import { decodeFlow, FLOW_URL_PARAM } from "@/lib/lab/flowUrl";
 import { decodeKode, KODE_URL_PARAM } from "@/lib/lab/kodeUrl";
 import { decodeSort, SORT_URL_PARAM } from "@/lib/lab/sort/sortUrl";
+import { CARI_URL_PARAM, decodeCari } from "@/lib/lab/search/searchUrl";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "SynapLab – SynapEd",
   description:
-    "Papan coba-coba untuk memvisualisasikan array (1D, 2D, 3D, N-dimensi), linked list, flowchart, Python, pseudocode, dan sorting (bubble sort & merge sort): isi, telusuri, urutkan, gambar alur, tulis kode, lalu jalankan langkahnya satu per satu.",
+    "Papan coba-coba untuk memvisualisasikan array (1D, 2D, 3D, N-dimensi), linked list, flowchart, Python, pseudocode, sorting (bubble sort & merge sort), dan searching (linear search & binary search): isi, telusuri, urutkan, gambar alur, tulis kode, lalu jalankan langkahnya satu per satu.",
 };
 
 interface Props {
@@ -58,13 +59,18 @@ export default async function LabPage({ searchParams }: Props) {
   const mentahSort = params[SORT_URL_PARAM];
   const kodeSort = typeof mentahSort === "string" ? mentahSort : null;
   const sorting = kodeSort ? decodeSort(kodeSort) : null;
+  // Lab Searching: `?c=` (algoritma, nilai cari, data).
+  const mentahCari = params[CARI_URL_PARAM];
+  const kodeCari = typeof mentahCari === "string" ? mentahCari : null;
+  const searching = kodeCari ? decodeCari(kodeCari) : null;
 
   const rusak =
     (kode !== null && dibaca === null) ||
     (kodeFlow !== null && flow === null) ||
     (kodePy !== null && python === null) ||
     (kodePs !== null && pseudocode === null) ||
-    (kodeSort !== null && sorting === null);
+    (kodeSort !== null && sorting === null) ||
+    (kodeCari !== null && searching === null);
 
   return (
     <>
@@ -72,7 +78,7 @@ export default async function LabPage({ searchParams }: Props) {
 
       <main className="bg-paper pt-28 pb-20 lg:h-dvh lg:overflow-hidden lg:pt-[100px] lg:pb-5">
         <div className="container-page lg:h-full">
-          <LabShell awal={dibaca} awalFlow={flow} awalKode={{ python, pseudocode }} awalSort={sorting} tautanRusak={rusak} />
+          <LabShell awal={dibaca} awalFlow={flow} awalKode={{ python, pseudocode }} awalSort={sorting} awalCari={searching} tautanRusak={rusak} />
         </div>
       </main>
 

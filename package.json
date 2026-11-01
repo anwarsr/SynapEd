@@ -53,6 +53,7 @@
     "verify:pseudocode": "tsx scripts/verify-pseudocode.ts",
     "verify:kode": "tsx scripts/verify-kode.ts",
     "verify:sorting": "tsx scripts/verify-sorting.ts",
+    "verify:searching": "tsx scripts/verify-searching.ts",
     "verify:wheel": "tsx scripts/verify-wheel.ts",
     "verify:chat-knowledge": "tsx scripts/verify-chat-knowledge.ts",
     "verify:royalty": "tsx scripts/verify-royalty.ts",

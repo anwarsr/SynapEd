@@ -8,28 +8,14 @@
  * Modul netral.
  */
 import { mulberry32 } from "../labRandom";
+import { uraiAngka, type HasilAngka } from "../labAngka";
 import { SORT_MAX_DATA, SORT_MIN_DATA, SORT_NILAI_MAKS } from "./sortTypes";
 
-export type HasilData = { ok: true; nilai: number[] } | { ok: false; galat: string };
+export type HasilData = HasilAngka;
 
 /** Mengurai "38, 27 43;3" menjadi angka. Pemisah: koma, titik koma, atau spasi. */
 export function uraiData(teks: string): HasilData {
-  const potong = teks.split(/[\s,;]+/).filter((t) => t !== "");
-  if (potong.length === 0) return { ok: false, galat: "Isi minimal 2 angka, dipisah koma atau spasi." };
-
-  const nilai: number[] = [];
-  for (const t of potong) {
-    if (/^-\d+$/.test(t)) return { ok: false, galat: `${t}: angka negatif belum didukung - pakai 0 sampai ${SORT_NILAI_MAKS}.` };
-    if (!/^\d+$/.test(t)) return { ok: false, galat: `"${t.slice(0, 12)}" bukan bilangan bulat.` };
-    const v = Number(t);
-    if (v > SORT_NILAI_MAKS) return { ok: false, galat: `${t} terlalu besar - maksimal ${SORT_NILAI_MAKS}.` };
-    nilai.push(v);
-  }
-  if (nilai.length < SORT_MIN_DATA) return { ok: false, galat: `Minimal ${SORT_MIN_DATA} angka supaya ada yang diurutkan.` };
-  if (nilai.length > SORT_MAX_DATA) {
-    return { ok: false, galat: `Maksimal ${SORT_MAX_DATA} angka (sekarang ${nilai.length}) supaya setiap langkah tetap terbaca.` };
-  }
-  return { ok: true, nilai };
+  return uraiAngka(teks, { min: SORT_MIN_DATA, maks: SORT_MAX_DATA, nilaiMaks: SORT_NILAI_MAKS, untuk: "diurutkan" });
 }
 
 export interface ContohKasus {

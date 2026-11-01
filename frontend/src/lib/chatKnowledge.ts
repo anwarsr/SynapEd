@@ -201,6 +201,14 @@ export const PENGETAHUAN_SITUS = `## Akun
   (sudah urut, terbalik, hampir urut, ada nilai kembar), dan dibagikan lewat
   tautan. Algoritma lain (selection, insertion, quick sort) ada sebagai operasi
   urut di lab Array.
+- Searching (Lab 07): linear search dan binary search langkah demi langkah,
+  dengan kendali yang sama seperti Lab Sorting. Data tampil sebagai kotak
+  berindeks dengan penunjuk i (linear) atau Kiri/Tengah/Kanan (binary); bagian
+  yang sudah diperiksa atau dibuang diredupkan. Binary search hanya untuk data
+  urut, jadi data yang belum urut diurutkan dulu secara otomatis. Ada
+  pseudocode 9618 yang disorot, penghitung perbandingan, data 2-32 angka
+  (ketik, acak, atau contoh kasus seperti "tidak ada" dan "32 data"), nilai
+  yang dicari bisa diatur, dan bisa dibagikan lewat tautan.
 
 ## Yang belum tersedia
 Penarikan dana pendapatan, notifikasi email, pengembalian dana otomatis,

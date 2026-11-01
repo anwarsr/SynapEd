@@ -20,6 +20,7 @@
  */
 import { check, finish } from "./checks";
 import { mulberry32 } from "../frontend/src/lib/lab/labRandom";
+import { KECEPATAN_PELAN as KECEPATAN_SORT } from "../frontend/src/lib/lab/labTypes";
 import { jalankanPseudo } from "../frontend/src/lib/lab/pseudo/pseudoJalan";
 import { rekamBubble } from "../frontend/src/lib/lab/sort/sortBubble";
 import { rekamMerge } from "../frontend/src/lib/lab/sort/sortMerge";
@@ -27,7 +28,6 @@ import { barisBubble, barisMerge, kodeBubble, kodeMerge } from "../frontend/src/
 import { CONTOH_KASUS, dataAcak, uraiData } from "../frontend/src/lib/lab/sort/sortData";
 import { decodeSort, encodeSort } from "../frontend/src/lib/lab/sort/sortUrl";
 import {
-  KECEPATAN_SORT,
   SORT_MAX_DATA,
   TAHAN_MS,
   type ArahSort,
