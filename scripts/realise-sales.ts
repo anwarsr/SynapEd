@@ -33,7 +33,10 @@ async function main() {
   const orders = await db.collection("orders").get();
   const lunas = orders.docs
     .filter((d) => !hanya || d.id === hanya)
-    .filter((d) => d.get("status") === "paid" || Boolean(d.get("paidAt")));
+    .filter((d) => d.get("status") === "paid" || Boolean(d.get("paidAt")))
+    // Pesanan SynapEd Premium bukan penjualan kursus: bagi hasilnya per pemakaian
+    // (scripts/settle-premium.ts). Mencatatnya di sini = penjualan kursus "premium" palsu.
+    .filter((d) => d.get("kind") !== "premium");
 
   const pemilik = new Map<string, string | null>();
   async function ownerOf(slug: string): Promise<string | null> {

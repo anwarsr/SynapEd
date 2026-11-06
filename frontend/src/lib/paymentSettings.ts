@@ -6,6 +6,7 @@ import {
   parseFeePercent,
   validateRevenueSplit,
 } from "@/lib/royaltyTerms";
+import { DEFAULT_PREMIUM_PRICE, parseHargaPremium } from "@/lib/premiumRules";
 
 export const SETTINGS = "settings";
 export const PAYMENTS_DOC = "payments";
@@ -39,6 +40,8 @@ export interface PaymentSettings {
    * Tidak pernah lebih besar dari `platformFeePercent`.
    */
   referralPercent: number;
+  /** Harga SynapEd Premium 30 hari (rupiah). Dibekukan ke setiap pesanan premium saat dibuat. */
+  premiumPrice: number;
   updatedAt: string | null;
   updatedByUid: string | null;
 }
@@ -58,6 +61,7 @@ const DEFAULTS: PaymentSettings = {
   qrisNote: "",
   platformFeePercent: DEFAULT_PLATFORM_FEE_PERCENT,
   referralPercent: DEFAULT_REFERRAL_PERCENT,
+  premiumPrice: DEFAULT_PREMIUM_PRICE,
   updatedAt: null,
   updatedByUid: null,
 };
@@ -96,6 +100,8 @@ export async function getPaymentSettings(): Promise<PaymentSettings> {
     // Nilai rusak jatuh ke bawaan, bukan ke 0 — potongan nol yang tak sengaja
     // tidak akan terlihat sampai laporan bulanan.
     ...revenueSplitOf(d.platformFeePercent, d.referralPercent),
+    // Harga rusak jatuh ke bawaan, sama seperti potongan: harga 0 yang tak sengaja = premium gratis.
+    premiumPrice: parseHargaPremium(d.premiumPrice) ?? DEFAULT_PREMIUM_PRICE,
     updatedAt: (d.updatedAt as string | null | undefined) ?? null,
     updatedByUid: (d.updatedByUid as string | null | undefined) ?? null,
   };

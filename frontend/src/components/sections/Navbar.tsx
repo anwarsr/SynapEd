@@ -6,6 +6,7 @@ import Image from "next/image";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useActiveSection } from "@/lib/useActiveSection";
 import { useAuth } from "@/lib/useAuth";
+import NavbarPremium from "@/components/premium/NavbarPremium";
 import { cn } from "@/lib/cn";
 
 /**
@@ -23,12 +24,14 @@ import { cn } from "@/lib/cn";
  * yang tersedia). Yang disembunyikan tetap terjangkau — menu lipat memuat
  * seluruh tautan tanpa kecuali.
  */
-const NAV_LINKS: readonly { label: string; id: string; href?: string; sempit?: boolean }[] = [
+const NAV_LINKS: readonly { label: string; id: string; href?: string; sempit?: boolean; sorot?: boolean }[] = [
   { label: "Beranda", id: "hero" },
   { label: "Tentang", id: "about" },
   { label: "Kelas", id: "kelas", href: "/kelas" },
   { label: "Kursus", id: "courses" },
   { label: "Lab", id: "lab", href: "/lab", sempit: true },
+  // `sorot`: berwarna aksen supaya ajakan Premium terlihat tanpa menambah tombol.
+  { label: "Premium", id: "premium", href: "/premium", sempit: true, sorot: true },
   { label: "FAQ", id: "faq" },
 ];
 
@@ -119,7 +122,7 @@ export default function Navbar() {
                   "group relative px-3.5 py-2 text-sm font-medium",
                   "transition-colors duration-300 ease-out-soft",
                   link.sempit && "hidden lg:block",
-                  isActive ? "text-white" : "text-white/60 hover:text-white",
+                  isActive ? "text-white" : link.sorot ? "text-blue-300 hover:text-white" : "text-white/60 hover:text-white",
                 )}
               >
                 {link.label}
@@ -189,6 +192,7 @@ export default function Navbar() {
               {/* Foto profil sebagai tombol. Lebih jelas bisa diklik daripada
                   nama polos, dan tombol Keluar pindah ke halaman profil supaya
                   navbar tidak menaruh aksi merusak di sebelah tautan biasa. */}
+              <NavbarPremium uid={user.uid} />
               <Link
                 href="/profil"
                 title={`${user.email} - buka profil`}
@@ -253,7 +257,7 @@ export default function Navbar() {
                 <Tag
                   key={link.id}
                   href={href}
-                  className="rise-in block rounded-xl px-3 py-2.5 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                  className={cn("rise-in block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white", link.sorot ? "text-blue-300" : "text-white/75")}
                   style={{ "--rise-delay": `${i * 40}ms` } as React.CSSProperties}
                   onClick={() => setMobileOpen(false)}
                 >

@@ -2,7 +2,9 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { getCourse } from "@/lib/courses";
-import { getEnrollment, newEnrollment, writeEnrollment } from "@/lib/enrollments";
+import { getEnrollment, naikkanKePaid, newEnrollment, writeEnrollment } from "@/lib/enrollments";
+import { adminDb } from "@/lib/firebase/admin";
+import { beriPeriodePremium } from "@/lib/premiumCore";
 import {
   findPendingOrder,
   getOrder,
@@ -70,8 +72,9 @@ export async function createManualOrder(slug: string, referralCode?: unknown): P
     return { ok: false, error: "Kursus ini gratis - cukup tekan Daftar Kursus Ini." };
   }
 
+  // Pendaftaran lewat Premium boleh dibeli (lihat paymentActions.createOrder).
   const existing = await getEnrollment(user.uid, slug);
-  if (existing) return { ok: false, error: "Anda sudah terdaftar di kursus ini." };
+  if (existing && existing.source !== "premium") return { ok: false, error: "Anda sudah terdaftar di kursus ini." };
 
   const ref = await resolveReferral(referralCode, user.uid);
   if (!ref.ok) return { ok: false, error: ref.error };
@@ -109,6 +112,7 @@ export async function createManualOrder(slug: string, referralCode?: unknown): P
     uid: user.uid,
     userEmail: user.email,
     userName: user.name,
+    kind: "course",
     courseSlug: slug,
     courseTitle: course.title,
     amount: course.price,
@@ -252,6 +256,41 @@ export async function decideManualOrder(
     return { ok: true, message: "Pembayaran ditolak." };
   }
 
+  // SynapEd Premium: periode diberikan dulu (idempoten per orderId), baru status
+  // pesanan - urutan yang sama dengan pencatatan penjualan kursus di bawah.
+  if (order.kind === "premium") {
+    try {
+      await beriPeriodePremium(adminDb(), {
+        uid: order.uid,
+        periodId: order.orderId,
+        source: "manual",
+        gross: order.amount,
+        terms: order.royalty,
+        orderId: order.orderId,
+        grantedByUid: admin.uid,
+        note: note,
+        now: new Date(now),
+      });
+    } catch (err) {
+      console.error(`[premium] gagal memberi premium ${order.orderId}:`, err);
+      return { ok: false, error: "Pemberian premium gagal. Pesanan belum disetujui - coba lagi." };
+    }
+    await orderRef(orderId).update({
+      status: "paid",
+      paidAt: now,
+      reviewedAt: now,
+      reviewedByUid: admin.uid,
+      reviewedByName: admin.name,
+      reviewNote: note || null,
+      updatedAt: now,
+    });
+    revalidatePath("/premium");
+    revalidatePath("/admin");
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin/premium");
+    return { ok: true, message: "Pembayaran disetujui dan premium diaktifkan." };
+  }
+
   const course = await getCourse(order.courseSlug);
   if (!course) {
     return { ok: false, error: "Kursusnya sudah tidak ada. Pesanan ini tidak bisa diterapkan." };
@@ -260,7 +299,9 @@ export async function decideManualOrder(
   // `order.amount` yang dipakai, bukan `course.price` terkini: itulah nominal
   // yang benar-benar dibayar pembeli. Harga kursus bisa saja berubah setelah
   // pesanannya dibuat.
-  await writeEnrollment(newEnrollment(order.uid, course, "paid", order.amount, order.orderId));
+  const dibuat = await writeEnrollment(newEnrollment(order.uid, course, "paid", order.amount, order.orderId));
+  // Sedang dipelajari lewat Premium lalu dibeli: dinaikkan jadi milik selamanya.
+  if (!dibuat) await naikkanKePaid(order.uid, order.courseSlug, order.orderId, order.amount);
 
   // Dicatat SEBELUM status berubah. Kalau pencatatan gagal, pesanan tetap
   // menunggu tinjauan dan admin cukup menekan setujui lagi — keduanya aman

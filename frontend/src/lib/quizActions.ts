@@ -8,6 +8,7 @@ import { flattenLessons, getCourse } from "@/lib/courses";
 import { requireOwnedCourse } from "@/lib/educatorCourses";
 import { enrollmentRef, getEnrollment, isActive, type Enrollment } from "@/lib/enrollments";
 import { issueCertificateIfComplete } from "@/lib/certificates";
+import { catatPemakaianPremium } from "@/lib/premium";
 import { getQuiz, quizRef, type QuizDoc, type QuizOption, type QuizQuestion } from "@/lib/quiz";
 
 export type QuizEditResult = { ok: true; message: string } | { ok: false; error: string };
@@ -182,6 +183,7 @@ export async function submitQuiz(
 
   let attemptsUsedBefore = 0;
   let finalCompletedLessons: string[] = enrollment.completedLessons;
+  let baruSelesai = false;
 
   // Disimulasikan dengan alasan yang sama seperti finalCompletedLessons:
   // `enrollment` dibaca SEBELUM transaksi, jadi nilainya belum memuat skor
@@ -206,6 +208,7 @@ export async function submitQuiz(
       // arrayUnion di server memutuskan array FINAL yang sesungguhnya; ini
       // cuma simulasi di memori (union yang sama) supaya issueCertificateIfComplete
       // tidak perlu baca ulang Firestore setelah commit.
+      baruSelesai = passed && !current.completedLessons.includes(lessonSlug);
       finalCompletedLessons = passed
         ? Array.from(new Set([...current.completedLessons, lessonSlug]))
         : current.completedLessons;
@@ -234,6 +237,9 @@ export async function submitQuiz(
   // di setiap percobaan, supaya soal tidak bisa "dibobol" dengan mencoba
   // berkali-kali sambil membaca penjelasan tiap kali gagal.
   const revealExplanation = passed || attemptsLeft === 0;
+
+  // Bagi hasil premium: dibaca dari transaksi, jadi lulus ulang tidak dihitung dua kali.
+  await catatPemakaianPremium({ uid: user.uid, course, source: enrollment.source, baruSelesai });
 
   const newCertificateId = passed
     ? await issueCertificateIfComplete(

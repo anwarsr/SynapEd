@@ -48,8 +48,10 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
     return { ok: false, error: "Kursus ini gratis - cukup tekan tombol daftar." };
   }
 
+  // Pendaftaran lewat Premium BOLEH dibeli: saat lunas ia dinaikkan menjadi
+  // milik selamanya (naikkanKePaid) dengan kemajuan utuh.
   const existing = await getEnrollment(user.uid, slug);
-  if (existing) return { ok: false, error: "Anda sudah terdaftar di kursus ini." };
+  if (existing && existing.source !== "premium") return { ok: false, error: "Anda sudah terdaftar di kursus ini." };
 
   // Divalidasi SEBELUM menyentuh Midtrans: kode yang salah ketik lebih baik
   // dikatakan sekarang daripada diam-diam diabaikan dan perujuknya tidak dibayar.
@@ -128,6 +130,7 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
     uid: user.uid,
     userEmail: user.email,
     userName: user.name,
+    kind: "course",
     courseSlug: slug,
     courseTitle: course.title,
     amount: course.price,

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createOrder } from "@/lib/paymentActions";
+import { createPremiumOrder } from "@/lib/premiumActions";
 import { useReferralCode } from "./ReferralField";
 import { cn } from "@/lib/cn";
 
@@ -45,8 +46,13 @@ export default function BuyButton({
   slug,
   clientKey,
   production,
+  premium = false,
+  label = "Beli Kursus Ini",
 }: {
   slug: string;
+  /** Membeli SynapEd Premium 30 hari, bukan kursus `slug` (halaman /premium). */
+  premium?: boolean;
+  label?: string;
   /** Client key MEMANG publik — ia harus ikut ke browser agar Snap berjalan. */
   clientKey: string;
   production: boolean;
@@ -116,7 +122,7 @@ export default function BuyButton({
 
     let res: Awaited<ReturnType<typeof createOrder>>;
     try {
-      res = await createOrder(slug, referralCode);
+      res = premium ? await createPremiumOrder(referralCode) : await createOrder(slug, referralCode);
     } catch {
       setStatus({ kind: "error", message: "Pesanan gagal dibuat. Periksa koneksi lalu coba lagi." });
       return;
@@ -173,7 +179,7 @@ export default function BuyButton({
           "disabled:opacity-60 disabled:cursor-not-allowed",
         )}
       >
-        {status.kind === "working" ? "Menyiapkan…" : "Beli Kursus Ini"}
+        {status.kind === "working" ? "Menyiapkan…" : label}
       </button>
 
       {status.kind === "waiting" && (

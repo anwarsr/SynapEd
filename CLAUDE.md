@@ -338,7 +338,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
    untuk nilai/validasi yang dipakai klien + server + skrip tsx: `*Rules.ts`,
    `*Types.ts`, `contributors.ts`, `royaltySplit.ts`, `royaltyTerms.ts`,
    `referralRules.ts`, `classTypes.ts`, `classAssignmentRules.ts`, `profileTypes.ts`, `chatLinks.ts`,
-   `chatKnowledge.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
+   `chatKnowledge.ts`, `premiumRules.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
    `server-only` dari komponen klien menyeret firebase-admin ke bundel browser.
 5. **Semua koleksi Firestore tertutup dari klien** (`allow read, write: if false`),
    kecuali `courses/{slug}` baca publik dan `users/{uid}` baca oleh pemiliknya.
@@ -375,7 +375,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `courses/{slug}` | Kursus; `sections[].lessons[]` **ditanam** di dokumen. `visibility` (`public`/`private`; hilang = public), `ownerUid` (null untuk kursus migrasi), `price`, `passingGrade` (bawaan 70), `order` (wajib ada), `contributors[{uid,share}]` + `contributorUids[]`. Jenis pelajaran: `reading`, `video`, `assignment`, `quiz`; pelajaran `assignment` boleh punya `instructions` (rubrik teks bebas, tampil ke peserta & dipakai penilaian AI). |
 | `courses/{slug}/quizzes/{lessonSlug}` | Soal + `correctOptionId`. Tidak boleh bocor ke klien: pakai `toPublicQuiz()`. |
 | `courseChangeRequests/{id}` | Pengajuan `publish`/`unpublish`/`edit`/`delete`; `before`/`after` snapshot. Satu pending per kursus. Hanya `decideCourseRequest` yang menerapkan. |
-| `enrollments/{uid}_{slug}` (+ `quizAttempts`) | Akses & progres. `source`: free/paid/granted. |
+| `enrollments/{uid}_{slug}` (+ `quizAttempts`) | Akses & progres. `source`: free/paid/granted/premium (`premium`: `expiresAt` = masa aktif premium, lihat bagian Premium). |
 | `submissions/{id}` | Jawaban penugasan + nilai educator. Berkas di Storage `submissions/{uid}/` (PDF atau gambar). AI cuma menyarankan (`gradingActions.ts`); nilai final selalu tulisan tangan educator lewat `gradeSubmission`. |
 | `certificates/{id}` | ID acak `SYN-…`; terbit saat semua pelajaran selesai & nilai ≥ passingGrade. |
 | `reviews/{id}` | Hanya pemilik enrollment `completed`. |
@@ -385,9 +385,13 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `classSubmissions/{classId}_{postId}_{uid}` | Pengumpulan tugas kelas: `text`, `files[]`, `status` submitted/graded, `late` (dibekukan saat kirim), `grade`, `feedback`. Koleksi TERPISAH dari `classes` — `recursiveDelete` tidak menjangkaunya. |
 | `users/{uid}` | `bio`, `education`, `skills`, `phone`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
 | `usernames/{username}` | Reservasi `{uid}`. |
-| `orders/{orderId}` | Pesanan. `method` midtrans/manual, `status`, `royalty` (syarat dibekukan), `postPaidStatus`. |
-| `settings/payments` | Saklar metode, QRIS, `platformFeePercent` (bawaan 30), `referralPercent` (bawaan 10). |
-| `royaltySales/{orderId}`, `royaltyEarnings/{…}` | Buku royalti. Tanpa data pembeli. |
+| `orders/{orderId}` | Pesanan. `kind` course/premium (hilang = course), `method` midtrans/manual, `status`, `royalty` (syarat dibekukan; `PremiumTerms` untuk premium), `postPaidStatus`. Pesanan premium: `courseSlug: "premium"`. |
+| `settings/payments` | Saklar metode, QRIS, `platformFeePercent` (bawaan 30), `referralPercent` (bawaan 10), `premiumPrice` (bawaan 50000). |
+| `premiumMembers/{uid}` | `{activeUntil}` - satu-satunya sumber "premium aktif". |
+| `premiumPeriods/{periodId}` | Satu periode 30 hari: `periodId` = orderId (beli) / `admin-<uid8>-<ts36>` (pemberian, `gross` 0). `start/end/source/gross/terms/settledAt/revokedAt`. `settledAt` SELALU ditulis (null) karena dikueri kesamaan. |
+| `premiumUsage/{periodId}_{slug}` | Pelajaran yang BARU diselesaikan lewat premium per kursus; pemilik & kontributor dibekukan di pemakaian pertama. |
+| `premiumSettlements/{periodId}` | Ringkasan bagi hasil, tepat sekali. |
+| `royaltySales/{orderId}`, `royaltyEarnings/{…}` | Buku royalti. Tanpa data pembeli. Premium: `{periodId}_{slug}_{uid}` & `{periodId}_referral`, `source: "premium"`. |
 | `referralCodes/{KODE}` | Pemilik kode `{uid}`. |
 
 Storage: `avatars/{uid}` (juga `banner.jpg` — banner profil, lihat bawah), `course-assets/{uid}` (PDF, dilayani lewat
@@ -411,6 +415,61 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
     kalau berbeda, dihanguskan (juga di Midtrans).
 - **QRIS manual** (`lib/manualPaymentActions.ts`): pesanan 24 jam → bukti diunggah →
   `awaiting_review` → `decideManualOrder` (admin): enrollment → catat penjualan → `paid`.
+- Pendaftaran yang sudah ada bersumber `premium` TIDAK menghalangi membeli kursus itu; saat lunas
+  `writeEnrollment` mengembalikan false lalu `naikkanKePaid` (enrollments.ts, transaksi) menjadikannya
+  `paid` + `expiresAt: null`, kemajuan tetap. `findPendingOrder`/`findLiveManualOrder` menyaring `kind`
+  supaya kursus ber-slug "premium" tidak memakai ulang pesanan premium.
+
+## SynapEd Premium
+
+Rp50.000 (bawaan, `settings/payments.premiumPrice`, diubah di `/admin/premium` lewat `updatePremiumPrice`)
+membuka semua kursus PUBLIK BERBAYAR 30 hari. Tanpa langganan otomatis; keputusan pemilik: beli/perpanjang
+manual (menumpuk), bagi hasil sesuai pemakaian, akses berhenti tetapi kemajuan tetap.
+
+- Berkas: `premiumRules.ts` (netral: `perpanjang`, `premiumAktif`, `sisaHari`, `PremiumTerms`,
+  `bagiProporsional`, `rencanakanPembagian`), `premiumCore.ts` (`db` disuntik, dipakai app + skrip:
+  `beriPeriodePremium`, `cabutPremium`, `catatPemakaian`, `bagiHasilPeriode`, `bagiSemuaPeriode`; TANPA
+  penjaga - jangan dipindah ke berkas "use server"), `premium.ts` (server-only: `getPremium`,
+  `catatPemakaianPremium`, pembaca panel admin), `premiumActions.ts` ("use server": `createPremiumOrder`,
+  `createManualPremiumOrder`, `enrollPremium`, `statusPremiumSaya` (tanpa argumen uid), admin
+  `grantPremiumAdmin`/`revokePremiumAdmin` (sasaran email ATAU UID)/`settlePremiumNow`).
+- **Akses lewat `expiresAt`, bukan pemeriksaan baru**: pendaftaran `source: "premium"` ber-`expiresAt` =
+  `activeUntil`; `samakanPendaftaranPremium` menyamakan SEMUA pendaftaran premium pengguna setiap beri/cabut
+  (hanya `source === "premium"` - pendaftaran `paid` tidak boleh ikut terkunci). `isActive()` yang sudah
+  dipakai halaman belajar/tandai selesai/kuis/sertifikat lalu mengunci sendiri.
+- **Periode tepat sekali**: `beriPeriodePremium` = transaksi (periode ada → no-op; `create` + tangkap code 6),
+  dipanggil webhook (bagian "3a", gagal → 500 agar Midtrans mengulang) dan `decideManualOrder` (cabang
+  premium) dengan `periodId = orderId`. Bagian perujuk ditulis SAAT BAYAR (`{periodId}_referral`, dari
+  potongan); bagian educator baru saat dibagi. Kabar gagal setelah lunas TIDAK mencabut premium (pengembalian
+  dana = admin mencabut manual).
+- **Cabut** memotong periode berjalan di detik ini (pemakaiannya tetap dihitung) dan periode yang belum mulai
+  jadi nol panjang (`end = start`).
+- **Pemakaian** dicatat hanya bila pelajaran BARU selesai dan pendaftarannya `premium`: `markLessonComplete`,
+  `submitQuiz` (lulus), `submitAssignment`. Ke periode BERJALAN saja (start ≤ now < end), bukan periode tumpukan.
+- **Bagi hasil** (`rencanakanPembagian`, Σ = gross): potongan = floor(gross×fee%), perujuk dari potongan,
+  pool dibagi ke kursus ∝ pelajaran (largest remainder), lalu `splitSale(bagian, 0, kontributor beku)`; tanpa
+  pemakaian → platform; kursus tanpa pemilik → `unallocatedAmount`; syarat rusak → seluruhnya unallocated.
+  Hanya periode yang SUDAH berakhir. App Hosting tanpa penjadwal: dipicu tombol `/admin/premium` atau
+  `npm run settle:premium -- --apply` (`bagiSemuaPeriode` - membagi SEMUA periode berakhir di proyek, jadi
+  `verify-premium` hanya memanggil `bagiHasilPeriode` untuk periode ujinya). Pendapatan `source: "premium"`
+  tampil berlabel "Premium" di `/dashboard/pendapatan` (`EarningRow.premium`).
+- `realise-sales` MELEWATI pesanan `kind: "premium"` (bukan penjualan kursus).
+- **Ajakan (permintaan pemilik: tonjolkan Premium, bicarakan MANFAAT, jangan jelaskan bagi hasil ke pembeli)**:
+  `PitaPremium` (pita `bg-blue-600 keep-white` + kata "PREMIUM" raksasa samar; anggota aktif → baris "Premium
+  aktif") di beranda (di bawah `<Courses>`), `/courses` (di atas katalog), `/dashboard` (bukan anggota). Datanya
+  `getPenawaranPremium(katalog)` (premium.ts; admin → `tampil: false`; gagal baca setelan → disembunyikan) dan
+  `ringkasPenawaran` (premiumRules, cakupan sama dengan `enrollPremium`: publik berbayar) - "Hemat" hanya tampil
+  bila total harga satuan > harga premium. Navbar: entri `NAV_LINKS` "Premium" `sempit` + `sorot` (warna
+  `blue-300`; diukur muat untuk educator di 820/1024/1280/1440). `CourseCard`: "Termasuk Premium" di bawah harga
+  kursus berbayar (katalog hanya memuat kursus publik). `/premium`: angka penawaran, 4 manfaat, etalase 3 kursus
+  berbayar ber-rating tertinggi (`CourseCard`), "Pertanyaan umum" (termasuk educator) - TANPA paragraf bagi
+  hasil; admin melihat catatan alih-alih tombol beli. Educator boleh membeli (tidak ada penjaga peran).
+- UI: `/premium` (publik), `PremiumEnrollButton` di halaman kursus (premium aktif; label "Lanjutkan dengan
+  Premium" untuk pendaftaran premium yang berakhir), pemberitahuan berakhir + tautan ke `/premium` untuk
+  non-anggota, `NavbarPremium` (memanggil `statusPremiumSaya`, ingatan 60 dtk per uid; Navbar membaca sesi
+  dari Firebase Auth klien, jadi uji browser harus MASUK lewat /login - cookie saja tidak memunculkannya),
+  `LencanaPremium` di profil, spanduk pengingat ≤ `PREMIUM_PENGINGAT_HARI` (5) di `/premium` & `/dashboard`,
+  `/admin/premium` (`PremiumAdmin.tsx`).
 
 ## Royalti, kontributor, referral
 
@@ -1226,7 +1285,8 @@ materi array terbuka.
   (`verify-manual-payment` versi lama mereset QRIS ke mati — hati-hati di produksi).
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
 - `verify-model3d` (butuh dev server) menulis GLB uji langsung ke bucket (melewati rules, jadi TIDAK menguji `storage.rules`) lalu membersihkannya.
-- Suite murni tanpa server: `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
+- `verify-premium` (dev server) menyalin & memulihkan `settings/payments` PERSIS, membuat kode referral & kursus uji, lalu menghapus semua dokumen premium/pesanan/pendapatan akun uji.
+- Suite murni tanpa server: `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office

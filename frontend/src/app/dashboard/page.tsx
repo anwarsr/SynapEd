@@ -10,6 +10,9 @@ import { listMyClasses, listOwnedClasses } from "@/lib/classes";
 import { listOwnedCourses } from "@/lib/educatorCourses";
 import { listCourses } from "@/lib/courses";
 import { requireUser } from "@/lib/firebase/session";
+import { getPenawaranPremium, getPremium } from "@/lib/premium";
+import PitaPremium from "@/components/premium/PitaPremium";
+import { PREMIUM_PENGINGAT_HARI } from "@/lib/premiumRules";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Dashboard – SynapEd" };
@@ -29,13 +32,17 @@ export default async function DashboardPage() {
 
   const pengajar = user.role === "educator" || user.role === "admin";
 
-  const [enrollments, kelas, katalog, kursusDibuat, kelasDibuat] = await Promise.all([
+  const [enrollments, kelas, katalog, kursusDibuat, kelasDibuat, premium] = await Promise.all([
     listMyEnrollments(user.uid),
     listMyClasses(user.uid),
     listCourses(),
     pengajar ? listOwnedCourses(user.uid, user.name) : Promise.resolve([]),
     pengajar ? listOwnedClasses(user.uid) : Promise.resolve([]),
+    getPremium(user.uid),
   ]);
+
+  // Bukan anggota: ditawari Premium (admin tidak - ia sudah bisa membuka semua kursus).
+  const penawaran = premium.aktif ? null : await getPenawaranPremium(katalog);
 
   // Gambar, pembuat, dan deskripsi ada di katalog, bukan di snapshot enrollment.
   const kursus = new Map(katalog.map((c) => [c.slug, c]));
@@ -84,6 +91,26 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
+          {/* SynapEd Premium: status + pengingat menjelang berakhir (situs belum punya email). */}
+          {premium.aktif && premium.activeUntil && (
+            <Link
+              href="/premium"
+              className={
+                premium.sisaHari <= PREMIUM_PENGINGAT_HARI
+                  ? "mb-4 flex flex-wrap items-center justify-between gap-3 bg-amber-500/15 px-6 py-4 text-sm text-warn-text transition-colors hover:bg-amber-500/20"
+                  : "mb-4 flex flex-wrap items-center justify-between gap-3 bg-blue-500/10 px-6 py-4 text-sm text-ink-body shadow-[inset_3px_0_0_var(--color-blue-400)] transition-colors hover:bg-blue-500/15"
+              }
+            >
+              <span>
+                <span className="font-semibold">Premium aktif</span> sampai{" "}
+                {new Date(premium.activeUntil).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long", year: "numeric" })}
+                {" - "}
+                {premium.sisaHari <= PREMIUM_PENGINGAT_HARI ? `tinggal ${premium.sisaHari} hari lagi.` : `${premium.sisaHari} hari lagi.`}
+              </span>
+              <span className="font-semibold">{premium.sisaHari <= PREMIUM_PENGINGAT_HARI ? "Perpanjang →" : "Lihat status →"}</span>
+            </Link>
+          )}
+
           <dl className="mb-16 grid gap-1 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]">
             {angka.map((k) => (
               <div key={k.label} className="bg-paper-card px-7 py-6">
@@ -92,6 +119,10 @@ export default async function DashboardPage() {
               </div>
             ))}
           </dl>
+
+          {penawaran?.tampil && (
+            <PitaPremium harga={penawaran.harga} jumlah={penawaran.jumlah} totalSatuan={penawaran.totalSatuan} className="mb-16" />
+          )}
 
           <div className="grid gap-14 lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)] lg:gap-14">
             <Reveal>

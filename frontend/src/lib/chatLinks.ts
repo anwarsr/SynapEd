@@ -21,6 +21,7 @@ export const CHAT_LINKS: readonly ChatLink[] = [
   { path: "/register", ket: "daftar akun baru" },
   { path: "/login", ket: "masuk" },
   { path: "/courses", ket: "katalog semua kursus" },
+  { path: "/premium", ket: "SynapEd Premium: akses semua kursus berbayar 30 hari, status & perpanjangan" },
   {
     path: "/courses/{slug}",
     ket: "halaman detail satu kursus — HANYA slug yang benar-benar tercantum di katalog kursus, jangan menebak",

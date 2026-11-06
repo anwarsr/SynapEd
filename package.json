@@ -54,13 +54,16 @@
     "verify:kode": "tsx scripts/verify-kode.ts",
     "verify:sorting": "tsx scripts/verify-sorting.ts",
     "verify:searching": "tsx scripts/verify-searching.ts",
+    "verify:premium-rules": "tsx scripts/verify-premium-rules.ts",
+    "verify:premium": "tsx scripts/verify-premium.ts",
     "verify:wheel": "tsx scripts/verify-wheel.ts",
     "verify:chat-knowledge": "tsx scripts/verify-chat-knowledge.ts",
     "verify:royalty": "tsx scripts/verify-royalty.ts",
     "verify:referral": "tsx scripts/verify-referral.ts",
     "backfill:usernames": "tsx scripts/backfill-usernames.ts",
     "migrate:contributors": "tsx scripts/migrate-contributors.ts",
-    "realise:sales": "tsx scripts/realise-sales.ts"
+    "realise:sales": "tsx scripts/realise-sales.ts",
+    "settle:premium": "tsx scripts/settle-premium.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

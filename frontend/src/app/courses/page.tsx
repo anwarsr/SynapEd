@@ -2,6 +2,8 @@ import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import SectionTitle from "@/components/sections/SectionTitle";
 import CourseCatalog from "@/components/courses/CourseCatalog";
+import PitaPremium from "@/components/premium/PitaPremium";
+import { getPenawaranPremium } from "@/lib/premium";
 import { listCourseCategories, listCourses } from "@/lib/courses";
 import type { Metadata } from "next";
 
@@ -26,6 +28,7 @@ export default async function CoursesPage({
   const { q } = await searchParams;
   const awal = (Array.isArray(q) ? q[0] : q)?.slice(0, 80) ?? "";
   const [courses, categories] = await Promise.all([listCourses(), listCourseCategories()]);
+  const premium = await getPenawaranPremium(courses);
 
   return (
     <>
@@ -36,6 +39,16 @@ export default async function CoursesPage({
           <div className="mb-14 flex flex-col items-center text-center">
             <SectionTitle as="h1" title="Semua Kursus" />
           </div>
+
+          {premium.tampil && (
+            <PitaPremium
+              harga={premium.harga}
+              jumlah={premium.jumlah}
+              totalSatuan={premium.totalSatuan}
+              aktif={premium.aktif}
+              className="mb-12"
+            />
+          )}
 
           <CourseCatalog courses={courses} categories={categories} initialQuery={awal} />
         </div>

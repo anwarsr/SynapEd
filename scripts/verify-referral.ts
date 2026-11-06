@@ -125,38 +125,38 @@ async function run() {
     );
 
     // ── Membuat kode ────────────────────────────────────────────────────
-    await probe("/dashboard", perujuk.cookie);
-    const buatKodeId = await actionId("dashboard", "createMyReferralCode");
+    await probe("/dashboard/pendapatan", perujuk.cookie);
+    const buatKodeId = await actionId("dashboard/pendapatan", "createMyReferralCode");
     const KODE = `RINA${acak}`;
     const KODE_PEMILIK = `ANDI${acak}`;
 
     {
-      const anon = await callAction("/dashboard", buatKodeId, [KODE]);
+      const anon = await callAction("/dashboard/pendapatan", buatKodeId, [KODE]);
       check("anonim tidak bisa membuat kode", anon.includes("masuk terlebih dahulu"), "penjaga sesi");
 
       for (const salah of ["ab", "RINA-1", "SYNAPED", "12345"]) {
-        const out = await callAction("/dashboard", buatKodeId, [salah], perujuk.cookie);
+        const out = await callAction("/dashboard/pendapatan", buatKodeId, [salah], perujuk.cookie);
         check(`kode tidak sah ditolak: "${salah}"`, !out.includes("aktif"), "validasi server");
       }
 
-      const ok = await callAction("/dashboard", buatKodeId, [KODE.toLowerCase()], perujuk.cookie);
+      const ok = await callAction("/dashboard/pendapatan", buatKodeId, [KODE.toLowerCase()], perujuk.cookie);
       const u = (await db.collection("users").doc(perujuk.uid).get()).get("referralCode");
       const r = (await db.collection("referralCodes").doc(KODE).get()).get("uid");
       check("kode dibuat, dinormalkan huruf besar", ok.includes("aktif") && u === KODE && r === perujuk.uid, `${u}`);
 
-      const lagi = await callAction("/dashboard", buatKodeId, [`LAIN${acak}`], perujuk.cookie);
+      const lagi = await callAction("/dashboard/pendapatan", buatKodeId, [`LAIN${acak}`], perujuk.cookie);
       check("kode bersifat permanen: tidak bisa membuat kode kedua", lagi.includes("tidak bisa diganti"), "satu kode per akun");
 
-      const rebut = await callAction("/dashboard", buatKodeId, [KODE], pembeli2.cookie);
+      const rebut = await callAction("/dashboard/pendapatan", buatKodeId, [KODE], pembeli2.cookie);
       check("kode milik orang lain tidak bisa diklaim", rebut.includes("sudah dipakai"), "unik");
 
-      await callAction("/dashboard", buatKodeId, [KODE_PEMILIK], pemilik.cookie);
+      await callAction("/dashboard/pendapatan", buatKodeId, [KODE_PEMILIK], pemilik.cookie);
     }
 
     {
       const pelomba = await Promise.all(Array.from({ length: 6 }, (_, i) => user("user", `ref-lomba${i}`)));
       const rebutan = `REBUT${acak}`;
-      const hasil = await Promise.all(pelomba.map((p) => callAction("/dashboard", buatKodeId, [rebutan], p.cookie)));
+      const hasil = await Promise.all(pelomba.map((p) => callAction("/dashboard/pendapatan", buatKodeId, [rebutan], p.cookie)));
       const menang = hasil.filter((h) => h.includes("aktif")).length;
       const pemegang = (await Promise.all(pelomba.map(async (p) => (await db.collection("users").doc(p.uid).get()).get("referralCode") === rebutan))).filter(Boolean).length;
       check("6 akun membuat kode yang sama bersamaan: tepat satu berhasil", menang === 1 && pemegang === 1, `${menang} berhasil, ${pemegang} pemegang`);
@@ -298,14 +298,14 @@ async function run() {
 
     // ── Dashboard perujuk ───────────────────────────────────────────────
     {
-      const html = (await probeText("/dashboard", perujuk.cookie)).html;
+      const html = (await probeText("/dashboard/pendapatan", perujuk.cookie)).html;
       check("dashboard perujuk: kode & total komisi tampil", html.includes(KODE) && html.includes("20.000") && html.includes("Referral"), "10.000 × 2");
       check(
         "dashboard perujuk tidak memuat data pembeli",
         !html.includes(pembeli.uid) && !html.includes(pembeli.email) && !html.includes("Pembeli Rahasia") && !html.includes(aktif.id),
         "tanpa email, nama, uid, orderId",
       );
-      const baru = (await probeText("/dashboard", pembeli.cookie)).html;
+      const baru = (await probeText("/dashboard/pendapatan", pembeli.cookie)).html;
       check("akun tanpa kode melihat formulir pembuatan kode", baru.includes("Buat Kode"), "ReferralCodeForm");
     }
 

@@ -24,7 +24,12 @@ export interface Enrollment {
    * pembayaran nanti menulis dokumen yang bentuknya sama persis — tidak ada
    * migrasi yang perlu dijalankan saat Midtrans dipasang.
    */
-  source: "free" | "paid" | "granted";
+  /**
+   * `premium` = dibuka lewat SynapEd Premium. `expiresAt`-nya selalu disamakan
+   * dengan masa aktif premium (premiumCore.samakanPendaftaranPremium), jadi
+   * `isActive` mengunci kursus saat premium berakhir tanpa pemeriksaan baru.
+   */
+  source: "free" | "paid" | "granted" | "premium";
   orderId: string | null;
   pricePaid: number;
   currency: "IDR";
@@ -165,6 +170,26 @@ export async function writeEnrollment(enrollment: Enrollment): Promise<boolean> 
 
     tx.set(eRef, enrollment);
     tx.update(cRef, { enrolledStudents: FieldValue.increment(1) });
+    return true;
+  });
+}
+
+/**
+ * Pendaftaran premium yang kemudian DIBELI: dinaikkan menjadi `paid` selamanya,
+ * kemajuan (pelajaran, nilai, sertifikat) tetap utuh. `writeEnrollment` tidak
+ * bisa dipakai karena dokumennya sudah ada - dan memang tidak boleh menimpa.
+ *
+ * `enrolledStudents` tidak dinaikkan lagi: pengguna ini sudah dihitung saat
+ * mulai belajar lewat premium. Idempoten: sudah `paid` = tidak berbuat apa-apa.
+ *
+ * @returns true bila dinaikkan, false bila tidak ada / bukan premium.
+ */
+export async function naikkanKePaid(uid: string, courseSlug: string, orderId: string, pricePaid: number): Promise<boolean> {
+  const ref = enrollmentRef(uid, courseSlug);
+  return adminDb().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists || snap.data()?.source !== "premium") return false;
+    tx.update(ref, { source: "paid", expiresAt: null, orderId, pricePaid });
     return true;
   });
 }

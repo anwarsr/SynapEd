@@ -626,7 +626,7 @@ async function uang(p: { admin: TestUser; pemilik: TestUser; kolaborator: TestUs
     }
     // ── Dashboard per peran ─────────────────────────────────────────────
     {
-      const kolab = (await probeText("/dashboard", kolaborator.cookie)).html;
+      const kolab = (await probeText("/dashboard/pendapatan", kolaborator.cookie)).html;
       check(
         "akun biasa melihat pendapatan royaltinya (Rp117.000 dari 4 penjualan)",
         kolab.includes("Pendapatan Royalti") && kolab.includes("117.000"),
@@ -645,7 +645,7 @@ async function uang(p: { admin: TestUser; pemilik: TestUser; kolaborator: TestUs
         "tanpa email, nama, uid, orderId",
       );
 
-      const pem = (await probeText("/dashboard", pemilik.cookie)).html;
+      const pem = (await probeText("/dashboard/pendapatan", pemilik.cookie)).html;
       check(
         "educator melihat pendapatan DAN penjualan kursusnya",
         pem.includes("Pendapatan Royalti") && pem.includes("Penjualan Kursus Saya") && pem.includes("Dibagikan ke kontributor"),

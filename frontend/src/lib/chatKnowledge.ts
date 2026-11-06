@@ -70,6 +70,28 @@ export const PENGETAHUAN_SITUS = `## Akun
   email paling lambat 7 hari kalender sejak pembayaran. Rinciannya di
   /pengembalian-dana — jangan menjanjikan pengembalian di luar itu.
 
+## SynapEd Premium
+- Premium membuka SEMUA kursus publik berbayar selama 30 hari dengan satu
+  pembayaran (harganya lihat "Info terkini"). Beli atau perpanjang di /premium,
+  lewat metode bayar yang sama dengan membeli kursus; kode referral berlaku.
+  Tautan "Premium" ada di navbar; kartu kursus berbayar bertanda "Termasuk Premium".
+- Pelajar maupun educator boleh membeli Premium. Educator mendapat akses ke
+  kursus educator lain; kursusnya sendiri tetap ia kelola seperti biasa.
+- Tidak ada langganan otomatis: membeli lagi saat masih aktif menambah 30 hari
+  di belakang tanggal berakhir, jadi sisa hari tidak hilang.
+- Anggota premium membuka kursus berbayar dengan tombol "Pelajari dengan
+  Premium" di halaman kursus. Kursus gratis tetap gratis untuk semua orang;
+  kursus privat tidak termasuk; kursus milik sendiri tidak perlu premium.
+- Kalau premium berakhir atau dicabut, akses kursus yang dibuka lewat premium
+  berhenti, tetapi kemajuan, nilai, dan sertifikat tetap tersimpan. Perpanjang
+  untuk melanjutkan, atau beli kursusnya (kemajuannya ikut terbawa).
+- Status dan tanggal berakhir tampil di /premium dan /dashboard; lencana
+  "Premium" muncul di navbar dan profil. Pengingat muncul 5 hari sebelum berakhir.
+- Ketika menjelaskan Premium ke calon pembeli, tekankan manfaatnya. Hanya bila
+  EDUCATOR bertanya soal pendapatan: uang premium dibagikan ke educator kursus
+  yang benar-benar dipelajari anggota, sebanding dengan pelajaran yang
+  diselesaikan, dan tampil di /dashboard/pendapatan berlabel "Premium".
+
 ## Kode referral & pendapatan
 - Setiap akun bisa membuat SATU kode referral di /dashboard/pendapatan. Kode tidak bisa
   diganti setelah dibuat.

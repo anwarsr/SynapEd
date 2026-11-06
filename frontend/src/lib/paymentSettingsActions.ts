@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/firebase/session";
 import { paymentSettingsRef } from "@/lib/paymentSettings";
 import { QRIS_IMAGES } from "@/lib/storagePaths";
 import { validateRevenueSplit } from "@/lib/royaltyTerms";
+import { validasiHargaPremium } from "@/lib/premiumRules";
 
 export type SettingsResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -108,4 +109,30 @@ export async function updateRevenueSettings(input: {
     ok: true,
     message: `Potongan ${platformFeePercent}% dan referral ${referralPercent}% berlaku untuk pesanan berikutnya.`,
   };
+}
+
+/**
+ * Mengubah harga SynapEd Premium. Hanya berlaku untuk pesanan BARU: harga
+ * dibekukan ke setiap pesanan saat dibuat, dan pesanan tertunda dengan harga
+ * lama dihanguskan saat pembeli menekan beli lagi (createPremiumOrder).
+ */
+export async function updatePremiumPrice(input: { premiumPrice: unknown }): Promise<SettingsResult> {
+  const admin = await getCurrentUser();
+  if (admin?.role !== "admin") {
+    return { ok: false, error: "Hanya admin yang dapat mengubah harga premium." };
+  }
+
+  const invalid = validasiHargaPremium(input?.premiumPrice);
+  if (invalid) return { ok: false, error: invalid };
+  const premiumPrice = input.premiumPrice as number;
+
+  await paymentSettingsRef().set(
+    { premiumPrice, updatedAt: new Date().toISOString(), updatedByUid: admin.uid },
+    { merge: true },
+  );
+
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin/premium");
+  revalidatePath("/premium");
+  return { ok: true, message: `Harga premium Rp${premiumPrice.toLocaleString("id-ID")} berlaku untuk pembelian berikutnya.` };
 }

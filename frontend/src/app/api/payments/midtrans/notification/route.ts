@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getCourse } from "@/lib/courses";
-import { newEnrollment, writeEnrollment } from "@/lib/enrollments";
+import { naikkanKePaid, newEnrollment, writeEnrollment } from "@/lib/enrollments";
+import { adminDb } from "@/lib/firebase/admin";
+import { beriPeriodePremium } from "@/lib/premiumCore";
 import { applyNotification, getOrder, type NotificationUpdate } from "@/lib/orders";
 import { realiseOrderSale } from "@/lib/royalty";
 import {
@@ -96,6 +98,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, status: final });
   }
 
+  // ── 3a. SynapEd Premium ──────────────────────────────────────────────
+  // Lunas = satu periode 30 hari (ditumpuk bila masih aktif) + bagian perujuk.
+  // Bukan penjualan kursus: bagian educator dibagi per pemakaian sesudah
+  // periodenya berakhir. Diberikan SEBELUM status pesanan diperbarui dan
+  // gagal = 500, supaya Midtrans mengulang; pemberiannya idempoten per orderId.
+  if (order.kind === "premium") {
+    try {
+      await beriPeriodePremium(adminDb(), {
+        uid: order.uid,
+        periodId: orderId,
+        source: "midtrans",
+        gross: order.amount,
+        terms: order.royalty,
+        orderId,
+        grantedByUid: null,
+        note: "",
+        now: new Date(order.paidAt ?? update.now),
+      });
+    } catch (err) {
+      console.error(`[premium] gagal memberi premium untuk ${orderId}:`, err);
+      return NextResponse.json({ message: "Pemberian premium gagal." }, { status: 500 });
+    }
+    await applyNotification(orderId, update);
+    revalidatePath("/premium");
+    return NextResponse.json({ ok: true, status, premium: true });
+  }
+
   // ── 3. Memberi akses & mencatat penjualan ────────────────────────────
   const course = await getCourse(order.courseSlug);
 
@@ -133,6 +162,8 @@ export async function POST(request: Request) {
   const created = await writeEnrollment(
     newEnrollment(order.uid, course, "paid", order.amount, orderId),
   );
+  // Sedang dipelajari lewat Premium lalu dibeli: dinaikkan jadi milik selamanya.
+  if (!created) await naikkanKePaid(order.uid, order.courseSlug, orderId, order.amount);
 
   await applyNotification(orderId, update);
 

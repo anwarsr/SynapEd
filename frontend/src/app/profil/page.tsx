@@ -27,6 +27,7 @@ import { getProfileStats, getUserProfile, joinedAtOf } from "@/lib/userProfile";
 import { adminAuth } from "@/lib/firebase/admin";
 import { getBannerURL } from "@/lib/banner";
 import { requireUser } from "@/lib/firebase/session";
+import { getPremium } from "@/lib/premium";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Profil Saya – SynapEd" };
@@ -98,6 +99,7 @@ export default async function ProfilePage() {
   const lanjut = enrollments.find((e) => e.status !== "completed");
 
   const bergabung = joinedAtOf(akun?.metadata?.creationTime);
+  const premium = await getPremium(user.uid);
 
   return (
     <>
@@ -129,6 +131,7 @@ export default async function ProfilePage() {
           }
           sekunder={{ label: "Edit Profil", href: "/profil/edit" }}
           showEmail
+          premium={premium.aktif}
         />
 
         <div className="container-reading">

@@ -7,6 +7,8 @@ import Button from "@/components/ui/Button";
 import EnrollButton from "@/components/courses/EnrollButton";
 import BuyButton from "@/components/courses/BuyButton";
 import ManualQrisPanel from "@/components/courses/ManualQrisPanel";
+import PremiumEnrollButton from "@/components/premium/PremiumEnrollButton";
+import { getPremium } from "@/lib/premium";
 import ReferralField, { ReferralProvider } from "@/components/courses/ReferralField";
 import ShareCourseButton from "@/components/courses/ShareCourseButton";
 import { getMyReferralCode, resolveReferral } from "@/lib/referrals";
@@ -119,6 +121,15 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
   const enrollment = access?.enrollment ?? null;
   const progress = enrollment ? progressOf(course, enrollment) : null;
+
+  // ── SynapEd Premium ─────────────────────────────────────────────────
+  // Cakupan premium: kursus PUBLIK BERBAYAR. Anggota aktif mendapat tombol
+  // "Pelajari dengan Premium" sebagai ganti tombol beli; yang belum premium
+  // mendapat ajakan ke /premium; pendaftaran premium yang berakhir mendapat
+  // pesan perpanjang (kemajuannya tetap - lihat premiumCore).
+  const termasukPremium = course.price > 0 && course.visibility !== "private";
+  const premium = access && termasukPremium && !enrolled ? await getPremium(access.user.uid) : null;
+  const premiumBerakhir = !enrolled && enrollment?.source === "premium";
 
   // Formulir ulasan hanya untuk yang enrollment-nya sudah selesai. Penjaga
   // sebenarnya tetap di submitReview() — ini cuma menentukan yang terlihat.
@@ -365,8 +376,22 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                     >
                       Masuk untuk Mendaftar
                     </Button>
+                  ) : premium?.aktif ? (
+                    <PremiumEnrollButton
+                      slug={slug}
+                      label={premiumBerakhir ? "Lanjutkan dengan Premium" : "Pelajari dengan Premium"}
+                    />
                   ) : course.price > 0 ? (
                     <ReferralProvider initial={referralAwal}>
+                      {premiumBerakhir && (
+                        <p role="status" className="bg-amber-500/15 px-4 py-3 text-sm text-warn-text">
+                          Premium Anda sudah berakhir. Kemajuan belajar tetap tersimpan -{" "}
+                          <Link href="/premium" className="font-semibold underline underline-offset-4">
+                            perpanjang Premium
+                          </Link>{" "}
+                          untuk melanjutkan, atau beli kursus ini.
+                        </p>
+                      )}
                       {(midtransUsable || manualUsable) && (
                         <ReferralField />
                       )}
@@ -406,6 +431,16 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                         <span className="w-full bg-white/10 px-6 py-3 text-center text-sm text-ink-muted">
                           Pembayaran sedang tidak tersedia
                         </span>
+                      )}
+
+                      {termasukPremium && !premiumBerakhir && (
+                        <Link
+                          href="/premium"
+                          className="block bg-blue-500/10 px-4 py-3 text-center text-sm text-ink-body transition-colors hover:bg-blue-500/15"
+                        >
+                          Atau buka <span className="font-semibold text-ink">semua kursus</span> dengan{" "}
+                          <span className="font-semibold text-blue-300">Premium {formatPrice(paymentSettings.premiumPrice)}/bulan</span>
+                        </Link>
                       )}
                     </ReferralProvider>
                   ) : (

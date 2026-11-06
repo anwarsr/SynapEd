@@ -37,6 +37,14 @@ export type OrderStatus = "pending" | "awaiting_review" | "paid" | "failed" | "e
  */
 export type OrderMethod = "midtrans" | "manual";
 
+/**
+ * Apa yang dibeli. `premium` = SynapEd Premium 30 hari (`courseSlug` =
+ * `PREMIUM_SLUG`); saat lunas ia memberi periode premium, BUKAN pendaftaran
+ * kursus, dan tidak dicatat sebagai penjualan kursus (bagi hasilnya per
+ * pemakaian, lihat premiumCore.ts). Pesanan lama tanpa field ini = `course`.
+ */
+export type OrderKind = "course" | "premium";
+
 export interface Order {
   /** Sama dengan document ID. */
   orderId: string;
@@ -45,6 +53,7 @@ export interface Order {
   userEmail: string | null;
   userName: string | null;
 
+  kind: OrderKind;
   courseSlug: string;
   courseTitle: string;
 
@@ -120,6 +129,7 @@ function toOrder(d: FirebaseFirestore.DocumentData): Order {
     uid: (d.uid as string | undefined) ?? "",
     userEmail: (d.userEmail as string | null | undefined) ?? null,
     userName: (d.userName as string | null | undefined) ?? null,
+    kind: d.kind === "premium" ? "premium" : "course",
     courseSlug: (d.courseSlug as string | undefined) ?? "",
     courseTitle: (d.courseTitle as string | undefined) ?? "",
     amount: typeof d.amount === "number" ? d.amount : 0,
@@ -267,6 +277,11 @@ export async function findPendingOrder(
   uid: string,
   courseSlug: string,
   method: OrderMethod = "midtrans",
+  /**
+   * Disaring juga per jenis: pesanan Premium memakai `courseSlug` "premium",
+   * dan kursus yang kebetulan ber-slug sama tidak boleh memakai ulang pesanan Premium.
+   */
+  kind: OrderKind = "course",
 ): Promise<Order | null> {
   const snap = await adminDb()
     .collection(ORDERS)
@@ -278,7 +293,7 @@ export async function findPendingOrder(
   const now = new Date();
   for (const doc of snap.docs) {
     const order = toOrder(doc.data());
-    if (order.method !== method) continue;
+    if (order.method !== method || order.kind !== kind) continue;
     if (!isPayable(order, now)) continue;
 
     // Pesanan Midtrans tanpa snapToken tidak bisa dibuka lagi — popup Snap
@@ -329,7 +344,7 @@ export async function countOrdersAwaitingReview(): Promise<number> {
  * Component halaman kursus, dan setiap ekspor di berkas "use server" menjadi
  * endpoint yang bisa dipanggil siapa pun.
  */
-export async function findLiveManualOrder(uid: string, courseSlug: string): Promise<Order | null> {
+export async function findLiveManualOrder(uid: string, courseSlug: string, kind: OrderKind = "course"): Promise<Order | null> {
   const snap = await adminDb()
     .collection(ORDERS)
     .where("uid", "==", uid)
@@ -338,7 +353,7 @@ export async function findLiveManualOrder(uid: string, courseSlug: string): Prom
 
   const hidup = snap.docs
     .map((d) => toOrder(d.data()))
-    .filter((o) => o.method === "manual")
+    .filter((o) => o.method === "manual" && o.kind === kind)
     .filter((o) => o.status === "pending" || o.status === "awaiting_review")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 

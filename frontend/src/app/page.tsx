@@ -7,6 +7,8 @@ import Features from "@/components/sections/Features";
 import LearningPath from "@/components/sections/LearningPath";
 import Testimonials from "@/components/sections/Testimonials";
 import FAQ from "@/components/sections/FAQ";
+import PitaPremium from "@/components/premium/PitaPremium";
+import { getPenawaranPremium } from "@/lib/premium";
 import Footer from "@/components/sections/Footer";
 import { listCourseCategories, listCourses } from "@/lib/courses";
 import { listFeaturedReviews } from "@/lib/reviews";
@@ -24,6 +26,7 @@ export default async function Home() {
     listCourseCategories(),
     listFeaturedReviews(),
   ]);
+  const premium = await getPenawaranPremium(courses);
 
   // Gambar diselesaikan DI SINI, di server. Testimonials adalah komponen
   // klien, dan courseImageUrl membaca nama bucket dari env — memindahkannya
@@ -51,6 +54,14 @@ export default async function Home() {
           <Hero prompts={buildHeroPrompts(courses, categories)} />
           <About />
           <Courses courses={courses} categories={categories} />
+          {/* Ajakan Premium tepat di bawah daftar kursus: saat pengunjung sedang melihat harganya. */}
+          {premium.tampil && (
+            <div className="bg-ivory pb-24">
+              <div className="container-page">
+                <PitaPremium harga={premium.harga} jumlah={premium.jumlah} totalSatuan={premium.totalSatuan} aktif={premium.aktif} />
+              </div>
+            </div>
+          )}
           <Features />
           <LearningPath />
           <Testimonials items={testimonials} />

@@ -2,6 +2,7 @@ import Link from "next/link";
 import UserAvatar from "@/components/ui/UserAvatar";
 import ProfileBanner from "@/components/profile/ProfileBanner";
 import { roleLabel, type Role } from "@/lib/roles";
+import LencanaPremium from "@/components/premium/LencanaPremium";
 import { cn } from "@/lib/cn";
 
 const PERAN_TEKS: Record<Role, string> = {
@@ -36,7 +37,10 @@ export default function ProfileHeader({
   utama,
   sekunder,
   showEmail = false,
+  premium = false,
 }: {
+  /** Anggota SynapEd Premium yang sedang aktif: lencana di sebelah peran. */
+  premium?: boolean;
   name: string;
   /** Tanpa "@". Null bila akun belum punya username. */
   username?: string | null;
@@ -88,6 +92,7 @@ export default function ProfileHeader({
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="t-h1-profile">{name}</h1>
               <span className={cn("text-[12px] font-semibold uppercase tracking-[0.24em]", PERAN_TEKS[role])}>{roleLabel[role]}</span>
+              {premium && <LencanaPremium />}
             </div>
 
             {barisMeta && <p className="mt-3 text-[13px] text-ink-muted">{barisMeta}</p>}

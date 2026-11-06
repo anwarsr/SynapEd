@@ -12,6 +12,7 @@ import {
 import { getCurrentUser } from "@/lib/firebase/session";
 import { getQuiz } from "@/lib/quiz";
 import { issueCertificateIfComplete } from "@/lib/certificates";
+import { catatPemakaianPremium } from "@/lib/premium";
 
 export type EnrollResult =
   | { ok: true; slug: string; message: string; certificateId?: string }
@@ -122,6 +123,14 @@ export async function markLessonComplete(slug: string, lessonSlug: string): Prom
     completedLessons: FieldValue.arrayUnion(lessonSlug),
     lastLessonSlug: lessonSlug,
     lastAccessedAt: now,
+  });
+
+  // Bagi hasil premium: pelajaran yang BARU selesai dihitung ke periode berjalan.
+  await catatPemakaianPremium({
+    uid: user.uid,
+    course,
+    source: enrollment.source,
+    baruSelesai: !enrollment.completedLessons.includes(lessonSlug),
   });
 
   const newCertificateId = await issueCertificateIfComplete(user, course, enrollment, finalCompletedLessons);

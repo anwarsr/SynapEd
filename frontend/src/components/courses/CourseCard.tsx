@@ -97,8 +97,14 @@ export default function CourseCard({ course, nomor }: { course: CourseSummary; n
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-3 pt-1">
-          <span className="text-lg text-white" style={{ fontFamily: "var(--font-sans)", fontWeight: 700, letterSpacing: "-0.025em" }}>
-            {course.price > 0 ? formatPrice(course.price) : "Gratis"}
+          <span className="flex flex-col">
+            <span className="text-lg text-white" style={{ fontFamily: "var(--font-sans)", fontWeight: 700, letterSpacing: "-0.025em" }}>
+              {course.price > 0 ? formatPrice(course.price) : "Gratis"}
+            </span>
+            {/* Katalog hanya memuat kursus publik, jadi setiap kursus berbayar di sini termasuk Premium. */}
+            {course.price > 0 && (
+              <span className="mt-0.5 text-[10.5px] font-bold uppercase tracking-[0.16em] text-blue-300">Termasuk Premium</span>
+            )}
           </span>
 
           <Link

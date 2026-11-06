@@ -22,7 +22,8 @@ import type { Contributor } from "./contributors";
 export const ROYALTY_SALES = "royaltySales";
 export const ROYALTY_EARNINGS = "royaltyEarnings";
 
-export type SaleSource = "midtrans" | "manual" | "backfill";
+/** `premium` = pendapatan dari SynapEd Premium (bagi hasil per pemakaian & bagian perujuk) - lihat premiumCore.ts. */
+export type SaleSource = "midtrans" | "manual" | "backfill" | "premium";
 
 /**
  * - `order`   — syarat dibekukan di pesanan, dipakai apa adanya.

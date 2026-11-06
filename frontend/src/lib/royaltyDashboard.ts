@@ -30,6 +30,8 @@ export interface EarningRow {
   feePercent: number;
   gross: number;
   amount: number;
+  /** Dari SynapEd Premium (bagi hasil per pemakaian, atau komisi referral pembelian premium). */
+  premium: boolean;
 }
 
 export interface EarningCourse {
@@ -64,6 +66,7 @@ export async function getMyEarnings(uid: string): Promise<MyEarnings> {
         feePercent: num(e.feePercent),
         gross: num(e.gross),
         amount: num(e.amount),
+        premium: e.source === "premium",
       };
     })
     .sort((a, b) => b.saleAt.localeCompare(a.saleAt));

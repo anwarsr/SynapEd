@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getPremium } from "@/lib/premium";
 import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Reveal from "@/components/ui/Reveal";
@@ -51,6 +52,7 @@ export default async function PublicProfilePage({ params }: Props) {
   if (!profile) notFound();
 
   const isEducator = profile.role === "educator" || profile.role === "admin";
+  const premiumAktif = (await getPremium(uid)).aktif;
   // Gambar kursus diambil dari katalog (snapshot enrollment tidak menyimpannya).
   const gambar = profile.followed
     ? Object.fromEntries((await listCourses()).map((c) => [c.slug, c.thumbnail]))
@@ -68,6 +70,7 @@ export default async function PublicProfilePage({ params }: Props) {
           photoURL={profile.photoURL}
           bannerURL={profile.bannerURL}
           role={profile.role}
+          premium={premiumAktif}
           bio={profile.content.bio}
           skills={profile.content.skills}
           meta={[

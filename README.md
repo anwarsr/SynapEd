@@ -20,9 +20,9 @@ Ada tiga jenis akun.
 
 | Akun | Bisa apa |
 |---|---|
-| **Pengguna** | Belajar, membeli kursus, ikut kelas, mendapat sertifikat, menerima royalti kalau jadi kontributor, membuat kode referral |
+| **Pengguna** | Belajar, membeli kursus atau **Premium**, ikut kelas, mendapat sertifikat, menerima royalti kalau jadi kontributor, membuat kode referral |
 | **Educator** | Semua yang di atas, ditambah membuat & mengelola kursus, membuat kelas, menilai tugas peserta |
-| **Admin** | Meninjau pengajuan educator dan perubahan kursus, memeriksa pembayaran QRIS, mengatur kategori, potongan platform, dan referral |
+| **Admin** | Meninjau pengajuan educator dan perubahan kursus, memeriksa pembayaran QRIS, mengatur kategori, potongan platform, referral, dan Premium (harga, beri/cabut, bagi hasil) |
 
 Pengguna menjadi educator dengan mengajukan diri di `/educator`. Admin yang
 menyetujui.
@@ -62,6 +62,47 @@ menyetujui.
 - **Kode referral:** pembeli bisa memasukkan kode orang lain, atau kodenya
   terisi sendiri kalau membuka tautan bagikan. Harga bagi pembeli tidak
   berubah.
+
+### SynapEd Premium (`/premium`)
+
+Satu pembayaran membuka **semua kursus publik berbayar selama 30 hari**
+(bawaan Rp50.000; harganya diatur admin di `/admin/premium`).
+
+- **Membeli:** lewat Midtrans atau QRIS manual yang sama dengan membeli kursus;
+  kode referral berlaku (perujuk dibayar dari potongan platform, seperti
+  pembelian kursus).
+- **Tanpa langganan otomatis.** Membeli lagi saat masih aktif menambah 30 hari
+  di belakang tanggal berakhir, jadi sisa hari tidak hilang.
+- **Belajar:** di halaman kursus berbayar, anggota menekan *Pelajari dengan
+  Premium*. Kursus gratis tetap gratis; kursus privat tidak termasuk; kursus
+  milik sendiri tidak perlu premium.
+- **Saat berakhir/dicabut:** akses kursus lewat premium berhenti, tetapi
+  kemajuan, nilai, dan sertifikat tetap tersimpan. Memperpanjang = lanjut dari
+  posisi terakhir. Membeli kursus yang sedang dipelajari lewat premium
+  menjadikannya milik sendiri selamanya, kemajuannya ikut.
+- **Lencana & pengingat:** lencana "Premium" di navbar dan profil; spanduk
+  pengingat di `/premium` dan `/dashboard` mulai 5 hari sebelum berakhir.
+- **Ditawarkan di banyak tempat:** tautan "Premium" berwarna aksen di navbar
+  (semua pengunjung), pita ajakan di beranda (di bawah daftar kursus), di
+  katalog `/courses`, dan di `/dashboard` (bukan anggota), label "Termasuk
+  Premium" di setiap kartu kursus berbayar, dan tautan di halaman kursus.
+  Pitanya menghitung jumlah kursus & penghematan dari katalog sungguhan.
+  Admin tidak ditawari (sudah bisa membuka semua kursus).
+- **Pelajar maupun educator** bisa membeli. Educator mendapat semua kursus
+  educator lain; kursusnya sendiri tetap ia kelola seperti biasa.
+- Halaman `/premium` sengaja hanya membahas **manfaat** (kursus yang terbuka,
+  penghematan, sertifikat, kemajuan tersimpan) dan pertanyaan umum - cara uang
+  dibagi ke educator tidak dijelaskan ke pembeli.
+- **Admin** bisa memberi premium tanpa bayar (beasiswa, 1-365 hari) dan
+  mencabutnya (mis. setelah pengembalian dana, yang tetap diurus manual).
+- **Bagi hasil sesuai pemakaian.** Setiap periode 30 hari yang sudah berakhir:
+  potongan platform diambil, sisanya dibagi ke kursus berbayar yang dipelajari
+  anggota itu, sebanding dengan jumlah pelajaran yang ia selesaikan dalam
+  periode itu, lalu ke pemilik & kontributor kursus sesuai pembagiannya.
+  Periode tanpa pemakaian menjadi milik platform. Pembagian dipicu admin dengan
+  tombol *Bagikan pendapatan* di `/admin/premium`
+  (atau `npm run settle:premium -- --apply`); keduanya aman diulang. Hasilnya tampil di
+  `/dashboard/pendapatan` dengan label "Premium".
 
 ### Educator: membuat kursus
 
@@ -512,6 +553,7 @@ Admin juga bisa membuat kursus dan kelas seperti educator (menu "Kursus Saya" da
 | Notifikasi | Pengajuan menjadi educator |
 | Pengajuan Kursus | Tayang, sembunyikan, sunting, dan hapus kursus, dengan perbandingan perubahan |
 | Pembayaran | Saklar metode bayar, gambar QRIS, **potongan platform & persentase referral**, bukti bayar yang menunggu, penjualan yang perlu ditindaklanjuti |
+| Premium | Harga premium, beri/cabut premium per akun, anggota aktif, dan **bagi hasil** periode yang sudah berakhir ke educator |
 | Kategori | Kategori kursus |
 | Kelas | Seluruh kelas |
 | Ulasan | Moderasi ulasan dan **balasan admin** (tampil di kartu komentar beranda dan halaman kursus) |
@@ -586,7 +628,8 @@ diulang.
 |---|---|
 | `npm run backfill:usernames -- --apply` | Setelah fitur username ter-deploy, untuk akun lama |
 | `npm run migrate:contributors -- --apply` | Mengisi pembagian "pemilik 100%" pada kursus lama |
-| `npm run realise:sales -- --apply` | Mencatat penjualan lama ke buku royalti |
+| `npm run realise:sales -- --apply` | Mencatat penjualan lama ke buku royalti (pesanan Premium dilewati) |
+| `npm run settle:premium -- --apply` | Membagi hasil periode Premium yang sudah berakhir (sama dengan tombol di `/admin/premium`; boleh dijalankan berkala) |
 
 ---
 
@@ -608,6 +651,8 @@ npm run verify:pseudocode         # interpreter pseudocode 9618: bahasa, galat &
 npm run verify:kode               # lab kode: tautan, berkas, penyorot, saran Python, CSP worker (murni)
 npm run verify:sorting            # Lab Sorting: hasil stabil, langkah, baris kode, pseudocode dijalankan, tautan (murni)
 npm run verify:searching          # Lab Searching: hasil, Kiri/Tengah/Kanan, baris kode, pseudocode dijalankan, tautan (murni)
+npm run verify:premium-rules      # Premium: perpanjangan, bagi hasil, Σ = dibayar (murni)
+npm run verify:premium            # Premium: akses, pembayaran, cabut, bagi hasil, naik ke paid (dev server)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```

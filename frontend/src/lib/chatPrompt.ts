@@ -104,6 +104,8 @@ async function infoTerkini(): Promise<string> {
         : `Pembayaran sedang DITUTUP sementara oleh admin: kursus berbayar belum bisa dibeli untuk saat ini. Kursus gratis tetap bisa diikuti.`,
     );
     baris.push(`Pemilik kode referral mendapat ${s.referralPercent}% dari harga setiap pembelian lewat tautannya.`);
+    // Harga premium dibaca langsung (bisa diubah admin), bukan ditulis di pengetahuan.
+    baris.push(`Harga SynapEd Premium saat ini Rp${s.premiumPrice.toLocaleString("id-ID")} untuk 30 hari.`);
   } catch (e) {
     console.error("[chatPrompt] Setelan pembayaran tidak terbaca:", e);
   }

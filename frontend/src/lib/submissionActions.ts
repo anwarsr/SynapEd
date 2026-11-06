@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/firebase/session";
 import { getCourse, flattenLessons } from "@/lib/courses";
 import { enrollmentRef, getEnrollment, isActive } from "@/lib/enrollments";
 import { issueCertificateIfComplete } from "@/lib/certificates";
+import { catatPemakaianPremium } from "@/lib/premium";
 import { requireOwnedCourse } from "@/lib/educatorCourses";
 import { deleteObjects } from "@/lib/storageCleanup";
 import { SUBMISSION_FILES } from "@/lib/storagePaths";
@@ -113,6 +114,14 @@ export async function submitAssignment(
     completedLessons: FieldValue.arrayUnion(lessonSlug),
     lastLessonSlug: lessonSlug,
     lastAccessedAt: now,
+  });
+
+  // Bagi hasil premium: hanya pengumpulan PERTAMA tugas ini yang dihitung.
+  await catatPemakaianPremium({
+    uid: user.uid,
+    course,
+    source: enrollment.source,
+    baruSelesai: !enrollment.completedLessons.includes(lessonSlug),
   });
 
   revalidatePath(`/courses/${courseSlug}/learn/${lessonSlug}`);

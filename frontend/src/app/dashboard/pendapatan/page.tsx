@@ -100,7 +100,13 @@ export default async function EarningsDashboardPage() {
                   head={["Tanggal", "Kursus", "Peran", "Bagian", "Harga", "Potongan", "Pendapatan"]}
                   rows={earnings.rows.map((r) => [
                     formatDateOnly(r.saleAt),
-                    r.courseTitle,
+                    r.premium ? (
+                      <span key="k">
+                        {r.courseTitle} <span className="ml-1 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-300">Premium</span>
+                      </span>
+                    ) : (
+                      r.courseTitle
+                    ),
                     r.role === "owner" ? "Pemilik" : r.role === "referral" ? "Referral" : "Kontributor",
                     `${r.sharePercent}%`,
                     formatPrice(r.gross),
