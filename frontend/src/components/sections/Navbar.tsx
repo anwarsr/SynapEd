@@ -30,9 +30,10 @@ const NAV_LINKS: readonly { label: string; id: string; href?: string; sempit?: b
   { label: "Kelas", id: "kelas", href: "/kelas" },
   { label: "Kursus", id: "courses" },
   { label: "Lab", id: "lab", href: "/lab", sempit: true },
-  // `sorot`: berwarna aksen supaya ajakan Premium terlihat tanpa menambah tombol.
-  { label: "Premium", id: "premium", href: "/premium", sempit: true, sorot: true },
+  { label: "Premium", id: "premium", href: "/premium", sempit: true },
   { label: "FAQ", id: "faq" },
+  // `sorot`: berwarna aksen (biru) supaya SyRobo terlihat tanpa menambah tombol. Letaknya di kanan FAQ (permintaan pemilik).
+  { label: "SyRobo", id: "syrobo", href: "/syrobo", sempit: true, sorot: true },
 ];
 
 // HANYA yang benar-benar section. Mengikutkan tautan rute membuat

@@ -2,11 +2,14 @@
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import EditorTabel from "@/components/classes/quiz/EditorTabel";
+import EditorRubrik from "@/components/classes/quiz/EditorRubrik";
 import { saveQuiz } from "@/lib/classQuizActions";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { compressBanner, uploadClassImage } from "@/lib/profile";
 import { inputWibKeIso, isoKeInputWib } from "@/lib/classAssignmentRules";
 import {
+  rubrikBaru,
+  type RubrikQuiz,
   MAX_DESKRIPSI_QUIZ,
   MAX_DURASI_MENIT,
   MAX_JUDUL_QUIZ,
@@ -85,6 +88,8 @@ export default function QuizBuilder({
   const [setelan, setSetelan] = useState<SetelanQuiz>(
     awal?.settings ?? { shuffleQuestions: false, shuffleOptions: false, durationMin: null, kelompok: false },
   );
+  // Rubrik penilaian (3 tabel): hanya dikirim bila quiz kelompok.
+  const [rubrik, setRubrik] = useState<RubrikQuiz>(awal?.rubric ?? rubrikBaru());
   const [batasWaktu, setBatasWaktu] = useState(awal?.settings.durationMin !== null && awal !== undefined);
   const [menitText, setMenitText] = useState(String(awal?.settings.durationMin ?? 30));
 
@@ -209,6 +214,7 @@ export default function QuizBuilder({
           opensAt,
           questions: soal,
           settings: { ...setelan, durationMin: menit },
+          ...(setelan.kelompok === true ? { rubric: rubrik } : {}),
           ...(bannerURL !== undefined ? { bannerURL } : {}),
         },
         terbitkan,
@@ -312,6 +318,7 @@ export default function QuizBuilder({
             disabled={sibuk || terkunci}
             terkunci={terkunci}
           />
+          {setelan.kelompok === true && <EditorRubrik rubrik={rubrik} ubah={setRubrik} disabled={sibuk} terkunci={terkunci} />}
           <div>
             <Sakelar
               label="Jadwalkan waktu mulai"
@@ -776,7 +783,7 @@ function PilihModeQuiz({
 }) {
   const opsi = [
     { k: false, label: "Individu", ket: "Tiap siswa mengerjakan sendiri." },
-    { k: true, label: "Kelompok", ket: "Siswa mengisi nama kelompoknya sebelum mulai." },
+    { k: true, label: "Kelompok", ket: "Siswa mengisi nama kelompok + anggotanya sebelum mulai. Anda mengisi 3 tabel rubrik untuk menilai tiap siswa." },
   ];
   return (
     <div>

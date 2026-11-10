@@ -420,6 +420,74 @@ dialirkan server, tidak pernah signed URL (ADC lokal tidak bisa menandatangani).
   `paid` + `expiresAt: null`, kemajuan tetap. `findPendingOrder`/`findLiveManualOrder` menyaring `kind`
   supaya kursus ber-slug "premium" tidak memakai ulang pesanan premium.
 
+## SyRobo (`/syrobo`)
+
+Robot peliharaan per akun. Tanpa uang sungguhan: hanya POIN permainan.
+
+- **Berkas**: `lib/syrobo/syroboRules.ts` (NETRAL: semua angka permainan, normaliser, kondisi, detak), `syroboCore.ts` (`db` disuntik,
+  transaksi baca-ubah-tulis, TANPA penjaga - jangan dipindah ke berkas "use server"), `lib/syroboActions.ts` ("use server": tiap fungsi
+  memeriksa sesi, uid dari sesi; `suasanaSyroboSaya` hanya-baca untuk robot asisten), `app/syrobo/page.tsx` (tamu = robot contoh + ajakan
+  masuk), `components/syrobo/SyroboClient.tsx` + `SyroboRobot.tsx` (SVG + interaksi), CSS `.syrobo-*` di globals.css. Koleksi `syrobo/{uid}`.
+- **Kondisi tidak disimpan terus-menerus**: potret `kenyang/bersih` + `potretAt`, dihitung turun menurut waktu (`JAM_LAPAR_HABIS` 14 jam,
+  `JAM_KOTOR_HABIS` 20 jam); `suasana()` = senang/lapar/kotor/lapar-kotor di ambang 35. Makan/mandi memotret dulu (`potret`). Makan membuat
+  sedikit kotor.
+- **Poin dijaga server**: waktu aktif diukur lewat DETAK klien (20 dtk saat tab terlihat); server mengabaikan detak < 10 dtk dan membatasi
+  kenaikan 45 dtk per detak, jadi waktu tak bisa dipalsukan dengan memanggil action berulang. `HADIAH` (masuk hari ini, 1/10/20/30/60/120
+  menit) diklaim manual, tepat sekali per hari (`diklaim`), hitungan harian di-reset saat ganti hari WIB (`gulirHari`). Beli makanan = poin
+  berkurang di transaksi yang sama.
+- **Tampilan** (permintaan pemilik: ala Pou, "human art", jangan terlihat buatan AI): halaman = SATU layar utuh `h-dvh`, TANPA footer
+  (hanya `Navbar` melayang; `app/syrobo/page.tsx`). Gaya "stiker": garis tinta `#2B2233` tebal, bayangan keras (bukan blur/kaca/gradien neon),
+  warna datar hangat (dinding teal bergaris + panel kayu, lantai papan, karpet terakota, tirai mustard), sedikit miring, serat kertas
+  (`feTurbulence` data-URI `mix-blend-multiply`), TANPA emoji: semua ikon digambar tangan di `IkonSyrobo.tsx` (SVG 48x48). Sengaja BERBEDA dari
+  gaya situs (sudut membulat, `keep-white` agar `text-white` tak terbalik di tema terang). `SyroboKamar` = kamar yang BISA DISENTUH: lampu
+  gantung (padam/nyala, kamar meredup, robot mengantuk `gelap`), jendela (bintang jatuh), tanaman (goyang + daun gugur), buku (tips belajar),
+  jam (WIB); ucapan benda lewat `bisik` (toast induk). `SyroboClient`: HUD stiker (kenyang/bersih, nama, poin), dok ikon (Makan/Mandi/Baju/
+  Toko/Hadiah; titik oranye = butuh dirawat / ada hadiah) membuka LEMBAR kertas. Lembar HANYA menutupi robot (permintaan pemilik): posisi dasar robot tetap
+  (`bottom` konstan), tidak mengecil dan tidak diangkat, karena itu merusak animasi berjalan; robot berhenti berkeliling selama lembar terbuka
+  (`jeda`). Tidak ada tulisan petunjuk "elus/ketuk/angkat". TAMU (`SyroboTamu`): kamar sama (benda tetap bisa diketuk) tetapi robot MATI (`mati`:
+  layar padam, mata datar, tak bergerak), TANPA nama/poin/bar/dok; robot ditekan → `/login?next=/syrobo`. Halaman tetap bisa dibuka tanpa login.
+  Makan = ikon makanan melayang + mulut mengunyah; mandi = busa (`reaksi`). Dok dinaikkan di ponsel agar tak tertutup robot asisten.
+- **Interaksi** (`SyroboRobot`): elus = gerak di atasnya → badan condong mengikuti tangan (pegas kemiringan `p.r`), senang BERTAHAN selama masih dielus
+  (timer diperpanjang) lalu reda, hati dibatasi laju; ketuk = lompat (memampat-meregang) + ucapan; tahan 350 ms lalu seret = terangkat KE MANA SAJA
+  di layar (batas = jendela, dihitung dari posisi dasar robot saat angkat dimulai), lepas = jatuh lurus ke bawah dan MENETAP di tempat dilepas (bukan ke tengah); bila dilepas di dinding/udara ia jatuh sampai kakinya menyentuh lantai
+  (dijepit ke `lantai()`), lalu diam 5 dtk (`diamSampai`) sebelum berkeliling lagi.
+  BERKELILING: efek `tick` rAF memilih titik di lantai (`lantai()`: kaki 66%..di atas dok, pusat 10%..90% lebar), berjalan kecepatan tetap (72 px/dtk,
+  46 di ponsel; pegas menghaluskan), animasi `.syrobo-langkah`/`kaki-kiri/kanan`/`lengan-jalan-*`, lalu diam 2,5-7 dtk; berhenti saat diangkat/dielus/
+  makan/mandi/lembar terbuka/lampu padam/tab tersembunyi dan tak pernah jalan bila hemat gerak. Tanpa ornamen garis tipis di badan/kepala robot (dihapus
+  atas permintaan pemilik).
+  BAYANGAN (saat diangkat lalu digeser ke BAWAH titik asalnya, ia ikut turun ke kaki: `Math.max(liftY, y)`) robot dirender `SyroboRobot` sendiri (bukan induk) dan ditulis `tulisBayangan()` bersama transform robot: ikut berjalan, tertinggal di lantai
+  saat diangkat (mengecil & memudar). UCAPAN benda kamar (lampu/jendela/tanaman/buku/jam) = prop `ucapan` -> gelembung DI ATAS KEPALA robot (`top-[11%]`,
+  dijaga di dalam layar lewat `useLayoutEffect` DOM-only); toast atas hanya untuk hasil aksi (poin, makan, dll). Elus perlu 2 sapuan (1 pergantian arah).
+  Robot tidur (lampu padam): "zzz" = tiga Z SVG (garis tinta di belakang + warna di depan, BUKAN teks ber-stroke yang goresannya saling menimpa) yang muncul satu per satu (`.syrobo-z`, jeda 0/700/1400 ms); daun tanaman tanpa garis urat. Lampu bulbu antena TIDAK berkedip; lampu gantung tanpa elips cahaya (hidup/mati hanya dari terang-gelap kamar). Benda di rak: viewBox dipangkas pas dan
+  `-mb-[2px]` supaya alasnya menempel papan; jam digambar seluruhnya di dalam kotak gambar. Semua gerak =
+  PEGAS fisika di rAF (`KAKU`/`REDAM`, langsung ke `transform`, JANGAN diganti transisi CSS - patah), mata melirik kursor. Hanya animasi lokal,
+  tidak memberi poin (anti-abuse). JEBAKAN: Tailwind v4 `-translate-x-1/2` memakai properti `translate`, jadi JANGAN dipasangkan dengan `transform` inline
+  (tergeser dua kali). Pembungkus robot `pointer-events-none` + robot `pointer-events-auto` supaya benda kamar di belakangnya tetap bisa diketuk.
+- **Pakaian & slot** (`syroboRules.ts` `PAKAIAN`, `PakaianRobot.tsx`, ikon `IkonSyrobo.tsx`): 18 pakaian DIBELI di Toko (tab Pakaian) dengan poin - 9 slot KEPALA
+  (topi baseball, mahkota, kacamata, topi penyihir, topi koki, headphone, kupluk, topi jerami, topi pesta) dan 9 slot BADAN (dasi kupu-kupu, jubah,
+  rompi, syal, celemek, jaket, kemeja, ransel, medali). "Kaos garis" dan "telinga kucing" DIHAPUS atas permintaan pemilik (id lama di data dibuang `normalisasi`;
+  poin yang sudah dipakai membelinya tidak dikembalikan). Syal TANPA garis hiasan. KERAPIAN (permintaan pemilik: garis melewati batas / bentuk rusak dilarang): bentuk satu warna
+  dari beberapa bagian (mis. topi koki) digambar dengan `Siluet` (garis tebal di belakang + isian di depan) supaya tak ada garis tumpang tindih; SUB-PATH YANG DIGABUNG
+  DALAM SATU `Siluet` WAJIB BERARAH PUTAR SAMA (lingkaran `a ... 0 1 0` = berlawanan jarum jam, maka persegi ditulis `M x y V.. H.. V..Z`), kalau tidak aturan isian
+  `nonzero` membolongi area yang tumpang tindih; garis dalam selalu berujung tepat di tepi bentuknya; motif badan dipotong `clipPath`; ikon 48x48 diberi margin >= 3
+  dari tepi (svg memotong yang keluar). Periksa gambar baru dengan pratinjau (render `renderToStaticMarkup` ke HTML lalu tangkap layar) sebelum dipakai.
+  Data: `kepala`/`badan` (yang dipakai),
+  `punya[]` (dimiliki), `ukuran{kepala,badan}` (70-140%, bawaan 100). Aksi: `beliPakaianSyrobo` (sekali, poin berkurang), `pasangPakaianSyrobo(slot,id|null)` (harus
+  dimiliki & cocok slot), `ukuranPakaianSyrobo(slot,persen)` (bulat). Data lama (satu `baju`) dipindah ke slot yang sesuai & dianggap dimiliki (`normalisasi`).
+  Menggambar: tiap pakaian digambar PAS pada bentuk badan/kepala (`BENTUK_BADAN` = path badan di `SyroboRobot`, motif dipotong `clipPath`), diskalakan
+  berpusat di `TUMPU` per pakaian; topi yang menutupi kepala (`tutupAntena`) MENYEMBUNYIKAN antena. Menu Baju: per slot daftar milik + "Lepas" + slider ukuran
+  (ditampilkan langsung, disimpan 450 ms setelah berhenti menggeser).
+- **Mandi dengan spons**: menu Mandi berisi gambar spons; ditekan -> menu disembunyikan (TETAP di DOM: sentuhan yang berawal dari tombol itu harus terus terkirim),
+  spons mengikuti penunjuk, gerakan DI ATAS robot dihitung (`GOSOK_PX_PER_POIN` = 90 px per 1 poin kebersihan) dan bar Bersih naik mulus (`tambahLokal`);
+  `gosokSyrobo(n)` (maks 50/panggilan, server menjepit di 100) dikirim berkala, SATU panggilan sekaligus (gosokan yang menumpuk digabung). Penuh -> `akhiriGosok(true)`
+  menambah cadangan 50 supaya 100 pasti tersimpan (server meluruh sedikit sejak potretnya; hitungan lokal bisa tertinggal), melepas penunjuk mengakhiri mode.
+  Tombol "Mulai mandi" lama DIHAPUS. Robot berhenti berkeliling selama mode gosok.
+- **Robot asisten** (`ChatRobot`, `useSuasanaSyrobo`): hanya untuk pengguna masuk; membaca suasana lewat `suasanaSyroboSaya` tiap menit & saat
+  peristiwa `synaped:syrobo` (dikirim `SyroboClient` setiap ada perubahan). Lapar = mata sayu + cemberut + lencana oranye "!", kotor = noda +
+  lalat. Tamu tidak memanggil server.
+- **Navbar**: "SyRobo" `sorot` (biru `blue-300`), diletakkan di KANAN "FAQ" (permintaan pemilik); "Premium" SAMA dengan tautan lain (permintaan pemilik). Tes: `npm run verify:syrobo`
+  (aturan murni + transaksi di Firestore asli dengan uid uji yang dihapus; dibuktikan bisa gagal dengan membuang penjaga klaim ganda).
+
 ## SynapEd Premium
 
 Rp50.000 (bawaan, `settings/payments.premiumPrice`, diubah di `/admin/premium` lewat `updatePremiumPrice`)
@@ -459,8 +527,8 @@ manual (menumpuk), bagi hasil sesuai pemakaian, akses berhenti tetapi kemajuan t
   aktif") di beranda (di bawah `<Courses>`), `/courses` (di atas katalog), `/dashboard` (bukan anggota). Datanya
   `getPenawaranPremium(katalog)` (premium.ts; admin → `tampil: false`; gagal baca setelan → disembunyikan) dan
   `ringkasPenawaran` (premiumRules, cakupan sama dengan `enrollPremium`: publik berbayar) - "Hemat" hanya tampil
-  bila total harga satuan > harga premium. Navbar: entri `NAV_LINKS` "Premium" `sempit` + `sorot` (warna
-  `blue-300`; diukur muat untuk educator di 820/1024/1280/1440). `CourseCard`: "Termasuk Premium" di bawah harga
+  bila total harga satuan > harga premium. Navbar: entri `NAV_LINKS` "Premium" `sempit` (SAMA dengan tautan lain, tak lagi berwarna biru; yang
+  `sorot` kini "SyRobo"; muat di 820/1024/1280/1440 belum diukur ulang dengan tautan tambahan). `CourseCard`: "Termasuk Premium" di bawah harga
   kursus berbayar (katalog hanya memuat kursus publik). `/premium`: angka penawaran, 4 manfaat, etalase 3 kursus
   berbayar ber-rating tertinggi (`CourseCard`), "Pertanyaan umum" (termasuk educator) - TANPA paragraf bagi
   hasil; admin melihat catatan alih-alih tombol beli. Educator boleh membeli (tidak ada penjaga peran). Tombol "Lihat semua N kursus" di etalase memakai gaya tombol beranda (kotak `bg-white/10`, panah bergeser, `hover:bg-blue-600`), bukan tautan teks; angka 01-04 kartu manfaat = `font-extrabold text-white` (dulu `font-extralight text-blue-300`).
@@ -793,6 +861,29 @@ Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`
     `TabelHasil.tsx` (server; sel benar/salah + kunci sel yang salah setelah ditutup). `MulaiQuizButton` meminta nama kelompok (tombol nonaktif < 2 karakter, Enter
     memulai). Pantau: nama kelompok di bawah status tiap siswa + bagian "Per kelompok" (anggota, terkumpul, rata-rata); ekspor spreadsheet menambah kolom
     "Kelompok" (`JUDUL_EKSPOR_KELOMPOK`) hanya untuk quiz kelompok; `AnalisisSoal` memuat soal tabel (rata-rata sel benar + sel tersulit beserta kuncinya, hanya untuk pengajar).
+- **Rubrik INDIVIDU quiz KELOMPOK** (uji: `npm run verify:quiz-rubrik`, murni + dev server; dibuktikan bisa gagal dengan membuang penjaga uid anggota,
+  mencampur rubrik ke nilai, dan mematikan penilaian manual tabel):
+  - **Dua nilai yang BERDIRI SENDIRI** (permintaan pemilik; versi awal yang mencampur rubrik ke nilai akhir sudah DIBUANG, jangan dikembalikan):
+    NILAI KELOMPOK = murni poin soal yang diatur pengajar saat membuat soal (`hitungNilai().total`, total poin soal tetap 100); NILAI INDIVIDU = persen rubrik
+    (`rubrikPersen` = jumlah skor / (4 x jumlah poin penilaian) x 100; semua 1 = 25%, bukan 0), diberi pengajar PER SISWA (tiap siswa = satu anggota yang dinilai
+    satu per satu). Tak ada bobot. Keduanya tampil di Pantau (angka besar = kelompok, "Individu n%" di bawahnya), di hasil siswa, dan di ekspor spreadsheet
+    (`JUDUL_EKSPOR_KELOMPOK`: No, Nama, Kelompok, Nilai kelompok, Nilai individu (%), Status).
+  - **Soal manual** (`soalManual`): esai di semua quiz, dan soal TABEL pada quiz kelompok (pada quiz individu tabel tetap otomatis). Poinnya dari pengajar lewat
+    `gradeQuizEssay` (`validasiNilaiEsai` menerima tabel hanya bila kelompok; bulat 0..poin) disimpan di `essayScores`; hitungan otomatis `skorTabel` hanya
+    SARAN (tombol "Pakai saran otomatis" di `NilaiEsaiForm`, `ButirEsai.tampilan/saran`). Belum diberi poin = menunggu persetujuan (`esaiBelumDinilai`).
+  - **Status**: `perlu_dinilai` bila ada esai/tabel manual ATAU poin rubrik yang belum dinilai; menahan peringkat & ekspor (`alasanTakBisaEkspor`: "n jawaban
+    esai/tabel belum dinilai", "n rubrik individu belum dinilai").
+  - **Data**: `Quiz.rubric?: {tables: [3 x {id,title,criteria[{id,text}]}]}` (HANYA kelompok; individu menyimpan null; dokumen lama/rusak terbaca null lewat
+    `rubrikDari`; field `weight` lama diabaikan), `PercobaanQuiz.rubricScores?: {idPoin: 1..4}` dan `members?: [{uid|null,name}]`. Semua opsional di tipe supaya
+    data & skrip uji lama sah. Aturan di `classQuizRules.ts`: `validasiRubrik` (TEPAT 3 tabel, maks 10 poin/tabel; terbit butuh judul & teks terisi, draf boleh
+    kosong), `ringkasRubrik`, `validasiSkorRubrik`, `rubrikStrukturSama`, `gabungAnggota`, `SKALA_RUBRIK` (1 sangat kurang, 2 kurang, 3 baik, 4 sangat baik).
+  - **Builder**: `EditorRubrik.tsx` muncul saat memilih Kelompok (3 tabel, poin penilaian ditambah/dihapus sendiri). Setelah ada yang mengerjakan poin penilaian
+    TERKUNCI (`rubrikStrukturSama` di `saveQuiz`, diperiksa SETELAH aturan "jenis quiz tak bisa berubah"); judul/teks masih boleh.
+  - **Penilaian**: `NilaiRubrikForm` (`gradeQuizRubric`; poin = tombol skor 1-4 sebaris di bawah teks poin, bukan tabel lebar - kolom Pantau sempit; boleh disimpan
+    sebagian). Hanya pemilik/admin, hanya percobaan yang sudah dikumpulkan.
+  - **Anggota** (`MulaiQuizButton` + `startQuiz(classId, quizId, nama, anggota)`): dua cara - mengetik nama sendiri (`{names}`) atau memilih peserta kelas yang sudah
+    bergabung (`{uids}`; server memeriksa uid = anggota kelas ini bukan pengajar dan membaca NAMA dari Auth, bukan dari kiriman). Pembuat otomatis anggota
+    pertama, duplikat dibuang, total 2..10; `startQuiz` kelompok TANPA anggota ditolak. Tiap siswa tetap punya percobaan sendiri; daftar anggota tampil di Pantau & hasil.
 - **Tes**: `npm run verify:class-quiz` (aturan murni + alur penuh; dev server).
 
 ## Arsip postingan kelas
@@ -1311,6 +1402,7 @@ materi array terbuka.
 - `verify-rules` menguji rules yang **sedang ter-deploy**, bukan berkas lokal.
 - `verify-model3d` (butuh dev server) menulis GLB uji langsung ke bucket (melewati rules, jadi TIDAK menguji `storage.rules`) lalu membersihkannya.
 - `verify-premium` (dev server) menyalin & memulihkan `settings/payments` PERSIS, membuat kode referral & kursus uji, lalu menghapus semua dokumen premium/pesanan/pendapatan akun uji.
+- `verify-syrobo` tanpa dev server tetapi memakai Firestore asli (uid uji dihapus lagi).
 - Suite murni tanpa server: `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).

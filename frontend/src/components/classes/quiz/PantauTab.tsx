@@ -5,6 +5,7 @@ import AnalisisSoal from "@/components/classes/quiz/AnalisisSoal";
 import QuizIkon from "@/components/classes/quiz/QuizIkon";
 import {
   NilaiEsaiForm,
+  NilaiRubrikForm,
   PeringatkanMuridButton,
   ResetPercobaanButton,
   SegarkanOtomatis,
@@ -22,6 +23,8 @@ import {
   formatDurasi,
   hitungNilai,
   ringkasKelompok,
+  soalManual,
+  skorTabel,
   sisaDetik,
   statusQuizSiswa,
   sudahDibuka,
@@ -30,6 +33,7 @@ import {
 } from "@/lib/classQuizRules";
 import type { KelasMember } from "@/lib/classTypes";
 import type { UserCard } from "@/lib/userCards";
+import TabelHasil from "@/components/classes/quiz/TabelHasil";
 import { cn } from "@/lib/cn";
 
 /** Jam & tanggal pendek dalam WIB (zona tetap: server UTC). */
@@ -288,7 +292,7 @@ export default async function PantauTab({
               const totalSiswa = totalDetik !== null && p ? totalDetik + p.extraSec : null;
               const dipakai = lama ?? berjalanDetik;
               const frac = totalSiswa && dipakai !== null ? Math.min(1, dipakai / totalSiswa) : 0;
-              const essay = quiz.questions.filter((q) => q.type === "essay");
+              const essay = quiz.questions.filter((q) => soalManual(quiz, q));
               const bisaTambah = p && quiz.settings.durationMin !== null && !quiz.closed && (!p.submittedAt || p.finalizedBy === "waktu");
               const warna =
                 b.status === "berlangsung" ? "pantau-garis bg-blue-300" : p?.finalizedBy === "waktu" ? "bg-blue-800" : p ? "bg-blue-600" : "bg-white/10";
@@ -310,6 +314,11 @@ export default async function PantauTab({
                         {p?.groupName && (
                           <p className="truncate text-[11px] text-ink-muted" title={`Kelompok ${p.groupName}`}>
                             Kelompok {p.groupName}
+                          </p>
+                        )}
+                        {p?.members && p.members.length > 1 && (
+                          <p className="truncate text-[11px] text-ink-muted" title={p.members.map((m) => m.name).join(", ")}>
+                            Anggota: {p.members.map((m) => m.name).join(", ")}
                           </p>
                         )}
                       </div>
@@ -343,7 +352,12 @@ export default async function PantauTab({
                       {nilai ? (
                         <>
                           <span className="block text-[30px] font-semibold leading-none text-ink">{nilai.total}</span>
-                          {nilai.esaiBelumDinilai > 0 && <span className="text-[10px] uppercase tracking-[0.16em] text-blue-300">sementara</span>}
+                          {quiz.rubric && quiz.settings.kelompok && (
+                            <span className="mt-1 block text-[10px] uppercase tracking-[0.12em] text-ink-muted">
+                              Individu {nilai.rubrikPersen !== null ? `${nilai.rubrikPersen}%` : "menunggu"}
+                            </span>
+                          )}
+                          {(nilai.esaiBelumDinilai > 0 || nilai.rubrikBelumDinilai > 0) && <span className="text-[10px] uppercase tracking-[0.16em] text-blue-300">sementara</span>}
                         </>
                       ) : (
                         <span className="text-[22px] font-semibold text-ink-muted/50">-</span>
@@ -358,14 +372,31 @@ export default async function PantauTab({
                     </div>
                   )}
 
+                  {p?.submittedAt && quiz.rubric && quiz.rubric.tables.length > 0 && nilai && (
+                    <details className="group mt-3 sm:ml-[220px]">
+                      <summary className="inline-flex cursor-pointer list-none items-center gap-3 bg-white/[0.07] px-4 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-ink transition-colors duration-300 hover:bg-white/[0.14] group-open:bg-white/[0.12] group-open:shadow-[inset_0_-2px_0_var(--color-blue-500)] [&::-webkit-details-marker]:hidden">
+                        <span className="group-open:hidden">
+                          Nilai rubrik{nilai.rubrikBelumDinilai > 0 ? ` · ${nilai.rubrikBelumDinilai} poin belum dinilai` : ` · ${nilai.rubrikPersen}%`}
+                        </span>
+                        <span className="hidden group-open:inline">Tutup rubrik</span>
+                        <svg className="h-3 w-3 text-ink-muted transition-transform duration-300 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="mt-3">
+                        <NilaiRubrikForm classId={classId} quizId={quiz.id} uid={b.uid} rubrik={quiz.rubric} skorAwal={p.rubricScores ?? {}} />
+                      </div>
+                    </details>
+                  )}
+
                   {p?.submittedAt && essay.length > 0 && (
                     <details className="group mt-3 sm:ml-[220px]">
                       <summary className="inline-flex cursor-pointer list-none items-center gap-3 bg-white/[0.07] px-4 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-ink transition-colors duration-300 hover:bg-white/[0.14] group-open:bg-white/[0.12] group-open:shadow-[inset_0_-2px_0_var(--color-blue-500)] [&::-webkit-details-marker]:hidden">
                         <svg className="h-3.5 w-3.5 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M16.86 4.49l1.69-1.69a1.88 1.88 0 112.65 2.65L10.58 16.07a4.5 4.5 0 01-1.9 1.13L6 18l.8-2.69a4.5 4.5 0 011.13-1.9l8.93-8.92z" />
                         </svg>
-                        <span className="group-open:hidden">Lihat &amp; nilai jawaban esai</span>
-                        <span className="hidden group-open:inline">Tutup jawaban esai</span>
+                        <span className="group-open:hidden">{essay.some((q) => q.type === "table") ? "Lihat & nilai jawaban esai/tabel" : "Lihat & nilai jawaban esai"}</span>
+                        <span className="hidden group-open:inline">Tutup penilaian jawaban</span>
                         <svg className="h-3 w-3 text-ink-muted transition-transform duration-300 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -382,6 +413,15 @@ export default async function PantauTab({
                             jawaban: p.answers[q.id] ?? "",
                             poin: q.points,
                             nilai: typeof p.essayScores[q.id] === "number" ? p.essayScores[q.id] : null,
+                            ...(q.type === "table" && q.table
+                              ? {
+                                  tampilan: <TabelHasil tabel={q.table} jawab={p.answers[q.id]} tampilkanKunci />,
+                                  saran: (() => {
+                                    const sk = skorTabel(q.table, p.answers[q.id]);
+                                    return sk.total > 0 ? Math.round((q.points * sk.benar) / sk.total) : 0;
+                                  })(),
+                                }
+                              : {}),
                           }))}
                         />
                       </div>

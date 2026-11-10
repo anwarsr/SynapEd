@@ -14,6 +14,7 @@ import {
   MAX_BARIS_TABEL,
   MAX_KOLOM_TABEL,
   analisisSoal,
+  rubrikBaru,
   bersihkanJawaban,
   barisEkspor,
   hapusBarisTabel,
@@ -113,7 +114,7 @@ function aturanMurni() {
     campur.ok && campur.value.questions[0].table?.cells[0].text === "" && campur.value.questions[0].table?.cells[0].key === "Kunci" && campur.value.questions[0].table?.cells[1].key === "" && campur.value.questions[0].table?.cells[1].text === "Judul",
     JSON.stringify(campur.ok ? campur.value.questions[0].table?.cells : null),
   );
-  const mode = validasiQuiz({ title: "Quiz", questions: [], settings: { kelompok: true } }, false);
+  const mode = validasiQuiz({ title: "Quiz", questions: [], settings: { kelompok: true }, rubric: rubrikBaru() }, false);
   check("pengaturan kelompok terbaca; bawaan individu", mode.ok && mode.value.settings.kelompok === true && (() => { const r = validasiQuiz({ title: "Quiz", questions: [], settings: {} }, false); return r.ok && r.value.settings.kelompok === false; })(), "kelompok");
 
   console.log("\nTabel: penilaian per sel");
@@ -222,6 +223,7 @@ async function alur() {
     const mulaiId = await actionId("kelas/[id]/quiz/[quizId]", "startQuiz");
     const jawabId = await actionId("kelas/[id]/quiz/[quizId]", "saveQuizAnswers");
     const kirimId = await actionId("kelas/[id]/quiz/[quizId]", "submitQuiz");
+    const nilaiManualId = await actionId("educator/classes/[id]", "gradeQuizEssay");
 
     // Tabel dengan kunci yang mudah dicari di HTML (kalau bocor, ketahuan).
     const t = tabel3();
@@ -233,7 +235,8 @@ async function alur() {
       { id: "t1", type: "table", text: "Lengkapi tabel negara", points: 60, options: [], correct: null, table: t },
       { id: "m1", type: "mcq", text: "Pilihan ganda", points: 40, options: [{ id: "a", text: "A" }, { id: "b", text: "B" }], correct: "a", table: null },
     ];
-    const isi = (over: Record<string, unknown> = {}) => ({ title: "Quiz Tabel", description: "", questions: soal, settings: { shuffleQuestions: false, shuffleOptions: false, durationMin: null, kelompok: true }, ...over });
+    const rubrik = { tables: [1, 2, 3].map((n) => ({ id: `r${n}`, title: `Rubrik ${n}`, criteria: [{ id: `r${n}k1`, text: `Poin ${n}` }] })), weight: 30 };
+    const isi = (over: Record<string, unknown> = {}) => ({ title: "Quiz Tabel", description: "", questions: soal, rubric: rubrik, settings: { shuffleQuestions: false, shuffleOptions: false, durationMin: null, kelompok: true }, ...over });
     const simpan = (cookie: string, qid: string | null, i: unknown, terbit = true) => callAction(`${jalur}/quiz/new`, simpanId, [classId, qid, i, terbit], cookie);
 
     console.log("\nMembuat quiz kelompok bertabel");
@@ -256,12 +259,12 @@ async function alur() {
     check("...dan tak ada percobaan terbentuk", !(await db.collection("classQuizAttempts").doc(`${classId}_${quizId}_${s1.uid}`).get()).exists, "tak ada dokumen");
     check("nama 1 karakter ditolak", (await J(s1.cookie, mulaiId, [classId, quizId, "A"])).includes("Nama kelompok minimal"), "min 2");
     check("nama bukan teks ditolak", (await J(s1.cookie, mulaiId, [classId, quizId, { x: 1 }])).includes("Nama kelompok minimal"), "bukan string");
-    check("mulai dengan nama sah (dirapikan)", (await J(s1.cookie, mulaiId, [classId, quizId, "  Kelompok    Satu "])).includes("Quiz dimulai"), "ok");
+    check("mulai dengan nama sah (dirapikan)", (await J(s1.cookie, mulaiId, [classId, quizId, "  Kelompok    Satu ", { names: ["Budi"] }])).includes("Quiz dimulai"), "ok");
     const a1 = (await db.collection("classQuizAttempts").doc(`${classId}_${quizId}_${s1.uid}`).get()).data();
     check("nama kelompok tercatat di percobaan siswa itu", a1?.groupName === "Kelompok Satu", String(a1?.groupName));
     await J(s1.cookie, mulaiId, [classId, quizId, "Nama Lain"]);
     check("klik ganda Mulai tak menimpa nama kelompok", (await db.collection("classQuizAttempts").doc(`${classId}_${quizId}_${s1.uid}`).get()).data()?.groupName === "Kelompok Satu", "nama tetap");
-    check("anggota kedua memakai nama kelompok yang sama", (await J(s2.cookie, mulaiId, [classId, quizId, "kelompok satu"])).includes("Quiz dimulai"), "ok");
+    check("anggota kedua memakai nama kelompok yang sama", (await J(s2.cookie, mulaiId, [classId, quizId, "kelompok satu", { names: ["Ani"] }])).includes("Quiz dimulai"), "ok");
     check("bukan anggota tak bisa mulai", (await J(luar.cookie, mulaiId, [classId, quizId, "Tim Luar"])).includes("Hanya peserta"), "ditolak");
 
     console.log("\nKunci tabel tidak bocor");
@@ -277,9 +280,14 @@ async function alur() {
     const tersimpanJawab = (await db.collection("classQuizAttempts").doc(`${classId}_${quizId}_${s1.uid}`).get()).data()?.answers ?? {};
     check("hanya sel isian yang sah tersimpan", Object.keys(uraiJawabanTabel(tersimpanJawab.t1)).sort().join() === "4,5,7", String(tersimpanJawab.t1));
     check("kumpulkan quiz", (await J(s1.cookie, kirimId, [classId, quizId, { t1: kirim, m1: "a" }])).includes("Quiz dikumpulkan"), "ok");
-    // 2 dari 4 sel benar → 60 × 2/4 = 30, ditambah pilihan ganda 40
+    // Quiz KELOMPOK: soal tabel dinilai MANUAL oleh pengajar (menunggu persetujuan). Sebelum itu nilai sementara = pilihan ganda saja (40).
+    const sementara = await probeText(`/kelas/${classId}/quiz/${quizId}`, s1.cookie);
+    check("tabel pada quiz kelompok MENUNGGU penilaian: nilai sementara 40 + keterangan menunggu", sementara.html.includes(">40<") && sementara.html.includes("menunggu"), "manual");
+    check("siswa tak bisa memberi poin tabel", (await callAction(jalur, nilaiManualId, [classId, quizId, s1.uid, { t1: 60 }], s1.cookie)).includes("tidak berhak"), "penjaga pemilik");
+    check("poin tabel di atas batas ditolak", (await callAction(jalur, nilaiManualId, [classId, quizId, s1.uid, { t1: 61 }], owner.cookie)).includes("tidak sah"), "maks 60");
+    check("pengajar memberi poin tabel 30 (2/4 sel x 60)", (await callAction(jalur, nilaiManualId, [classId, quizId, s1.uid, { t1: 30 }], owner.cookie)).includes("Nilai esai disimpan"), "manual");
     const hasil = await probeText(`/kelas/${classId}/quiz/${quizId}`, s1.cookie);
-    check("nilai = 70 (tabel 2/4 sel x 60 = 30, pilihan ganda 40)", hasil.html.includes(">70<"), "kredit sebagian");
+    check("nilai = 70 (tabel 30 dari pengajar + pilihan ganda 40)", hasil.html.includes(">70<"), "setelah dinilai");
     check("sebelum quiz ditutup: kunci tabel TIDAK tampil di halaman hasil", RAHASIA.every((k) => !hasil.html.includes(k)) && hasil.html.includes("Kunci jawaban dibuka setelah"), "tertutup");
     check("jawaban siswa sendiri tampil", hasil.html.includes(RAHASIA[0].toLowerCase()), "jawaban sendiri");
     check("kunci tak bocor ke siswa lain yang belum selesai", RAHASIA.every((k) => !(halaman.html + hasil.html).includes(k)), "tanpa kunci");

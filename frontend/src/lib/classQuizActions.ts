@@ -17,6 +17,7 @@ import {
   selesaikanBilaPerlu,
 } from "@/lib/classQuizzes";
 import { listClassMembers } from "@/lib/classes";
+import { getUserCards } from "@/lib/userCards";
 import { formatWib } from "@/lib/classAssignmentRules";
 import {
   MAX_QUIZ_PER_KELAS,
@@ -34,6 +35,12 @@ import {
   validasiNamaKelompok,
   validasiNilaiEsai,
   validasiQuiz,
+  validasiSkorRubrik,
+  rubrikStrukturSama,
+  rubrikAktif,
+  bersihkanNamaAnggota,
+  gabungAnggota,
+  type AnggotaKelompok,
   type PercobaanQuiz,
   type Quiz,
 } from "@/lib/classQuizRules";
@@ -71,7 +78,7 @@ async function bukaKembali(quiz: Quiz, daftar: readonly PercobaanQuiz[]): Promis
   await Promise.all(
     daftar.map(async (p) => {
       if (!p.submittedAt || p.finalizedBy === "siswa" || p.finalizedBy === null) return;
-      if (Object.keys(p.essayScores).length > 0) return;
+      if (Object.keys(p.essayScores).length > 0 || Object.keys(p.rubricScores ?? {}).length > 0) return;
       if (harusSelesai(quiz, { ...p, submittedAt: null }, sekarang)) return;
       await percobaanRef(p.id).update({ submittedAt: null, finalizedBy: null });
     }),
@@ -126,6 +133,10 @@ export async function saveQuiz(classId: string, quizId: string | null, input: un
       // Percobaan yang sudah ada tak punya nama kelompok (atau tak seharusnya): mode tak boleh berganti.
       if ((lama.settings.kelompok === true) !== (isi.value.settings.kelompok === true)) {
         return { ok: false, error: "Jenis quiz (individu/kelompok) tidak bisa diubah karena sudah ada yang mengerjakan." };
+      }
+      // Skor rubrik tersimpan per poin penilaian: poin tak boleh bertambah/berkurang setelah ada yang mengerjakan.
+      if (!rubrikStrukturSama(lama.rubric, isi.value.rubric)) {
+        return { ok: false, error: "Poin penilaian rubrik tidak bisa ditambah atau dihapus karena sudah ada yang mengerjakan. Judul, teks, dan bobotnya masih bisa diubah." };
       }
     }
 
@@ -248,6 +259,32 @@ export async function gradeQuizEssay(classId: string, quizId: string, studentUid
   return { ok: true, message: "Nilai esai disimpan." };
 }
 
+/**
+ * Skor rubrik seorang siswa (quiz kelompok): id poin penilaian → 1..4. Hanya pemilik kelas/admin, hanya untuk
+ * percobaan yang sudah dikumpulkan. Nilai akhir (kuis + rubrik) dihitung ulang dari skor ini (`hitungNilai`).
+ */
+export async function gradeQuizRubric(classId: string, quizId: string, studentUid: string, scores: unknown): Promise<QuizResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
+  if (!(await requireOwnedClass(user, classId))) return { ok: false, error: "Anda tidak berhak menilai quiz ini." };
+
+  const quiz = await getQuiz(classId, quizId);
+  if (!quiz) return { ok: false, error: "Quiz tidak ditemukan." };
+  if (!rubrikAktif(quiz.rubric)) return { ok: false, error: "Quiz ini tidak memakai rubrik penilaian." };
+
+  const awal = await getPercobaan(classId, quizId, studentUid);
+  if (!awal) return { ok: false, error: "Siswa itu belum mengerjakan quiz." };
+  const p = await selesaikanBilaPerlu(quiz, awal, Date.now());
+  if (!p.submittedAt) return { ok: false, error: "Siswa itu masih mengerjakan. Nilai setelah dikumpulkan." };
+
+  const skor = validasiSkorRubrik(quiz.rubric, scores);
+  if (!skor) return { ok: false, error: "Skor rubrik tidak sah (bilangan bulat 1 sampai 4 untuk poin penilaian yang ada)." };
+
+  await percobaanRef(p.id).update({ rubricScores: { ...(p.rubricScores ?? {}), ...skor } });
+  segarkan(classId, quizId);
+  return { ok: true, message: "Skor rubrik disimpan." };
+}
+
 /** Menghapus percobaan seorang siswa supaya ia bisa mengulang dari awal. */
 export async function resetQuizAttempt(classId: string, quizId: string, studentUid: string): Promise<QuizResult> {
   const user = await getCurrentUser();
@@ -280,7 +317,7 @@ async function siapkanSiswa(classId: string, quizId: string) {
  * Siswa menekan Mulai. Quiz KELOMPOK mewajibkan nama kelompok (dicek ULANG di server - kolom di
  * browser bisa dilewati); quiz individu mengabaikannya. Nama dicatat di percobaan siswa itu.
  */
-export async function startQuiz(classId: string, quizId: string, namaKelompok?: unknown): Promise<QuizResult> {
+export async function startQuiz(classId: string, quizId: string, namaKelompok?: unknown, anggota?: unknown): Promise<QuizResult> {
   const s = await siapkanSiswa(classId, quizId);
   if (s.galat !== null) return { ok: false, error: s.galat };
   const { user, quiz } = s;
@@ -293,10 +330,38 @@ export async function startQuiz(classId: string, quizId: string, namaKelompok?: 
   if (quiz.questions.length === 0) return { ok: false, error: "Quiz ini belum punya soal." };
 
   let groupName: string | null = null;
+  let members: AnggotaKelompok[] = [];
   if (quiz.settings.kelompok === true) {
     const nama = validasiNamaKelompok(namaKelompok);
     if (!nama.ok) return { ok: false, error: nama.error };
     groupName = nama.value;
+
+    const a = anggota && typeof anggota === "object" ? (anggota as Record<string, unknown>) : {};
+    const lain: AnggotaKelompok[] = [];
+
+    // Dipilih dari anggota kelas: uid WAJIB anggota kelas ini (bukan pengajar, bukan diri sendiri); NAMA dibaca dari
+    // Auth di server, bukan dari kiriman browser.
+    const uids = Array.isArray(a.uids) ? Array.from(new Set(a.uids.filter((x): x is string => typeof x === "string"))) : [];
+    if (uids.length > 0) {
+      const sah = new Set((await listClassMembers(classId)).filter((m) => m.role === "member").map((m) => m.uid));
+      const kartu = await getUserCards(uids.filter((u) => u !== user.uid));
+      for (const uid of uids) {
+        if (uid === user.uid) continue;
+        if (!sah.has(uid)) return { ok: false, error: "Ada anggota yang dipilih bukan peserta kelas ini." };
+        lain.push({ uid, name: kartu.get(uid)?.name ?? "Peserta" });
+      }
+    }
+    // Diketik sendiri: nama 2-40 karakter, tanpa uid.
+    const ketik = Array.isArray(a.names) ? a.names : [];
+    for (const raw of ketik) {
+      const n = bersihkanNamaAnggota(raw);
+      if (!n) return { ok: false, error: "Nama anggota harus 2-40 karakter." };
+      lain.push({ uid: null, name: n });
+    }
+
+    const gabung = gabungAnggota({ uid: user.uid, name: user.name }, lain);
+    if (!gabung.ok) return { ok: false, error: gabung.error };
+    members = gabung.value;
   }
 
   const id = idPercobaan(classId, quizId, user.uid);
@@ -314,6 +379,7 @@ export async function startQuiz(classId: string, quizId: string, namaKelompok?: 
       extraSec: 0,
       essayScores: {},
       groupName,
+      ...(quiz.settings.kelompok === true ? { members, rubricScores: {} } : {}),
     });
   } catch (e) {
     if ((e as { code?: number }).code !== 6) throw e;

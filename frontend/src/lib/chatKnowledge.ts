@@ -175,6 +175,38 @@ export const PENGETAHUAN_SITUS = `## Akun
   "Minta Saran AI" mengisi draf nilai + catatan, tetapi educator tetap harus
   meninjau dan menyimpannya sendiri.
 
+## Quiz kelompok & rubrik
+- Quiz kelas bisa dibuat individu atau kelompok. Quiz kelompok: pengajar mengisi
+  3 tabel rubrik penilaian (poin penilaian bisa ditambah, skor 1 sampai 4:
+  sangat kurang, kurang, baik, sangat baik). Sebelum mulai siswa memasukkan nama
+  kelompok dan anggotanya (mengetik sendiri atau memilih anggota kelas yang
+  sudah bergabung).
+- Ada dua nilai yang berdiri sendiri: nilai kelompok (poin soal yang diatur
+  pengajar; soal esai dan tabel pada quiz kelompok dinilai manual oleh pengajar
+  atau admin, jadi nilainya menunggu penilaian) dan nilai individu (persen
+  rubrik, diberi pengajar untuk tiap anggota satu per satu). Ekspor
+  spreadsheet memuat keduanya.
+
+## SyRobo
+- /syrobo adalah robot peliharaan di akun masing-masing (perlu masuk). Robot
+  bisa lapar dan kotor seiring waktu: beri makan (makanan dibeli di "Kotak
+  makanan" dengan poin) dan mandikan. Robot juga bisa diganti nama dan bajunya
+  (18 pakaian dibeli di Toko dengan poin: slot kepala seperti topi, mahkota,
+  kacamata, headphone, kupluk, topi pesta, dan slot badan seperti dasi, jubah,
+  rompi, jaket, ransel, medali; ukuran
+  tiap pakaian bisa diatur). Memandikan: ambil spons di menu Mandi lalu
+  gosokkan ke robot sampai bar Bersih penuh, serta merespons saat
+  dielus, diketuk, atau ditahan lalu diangkat ke mana saja di layar (ia menetap di tempat dilepas) dan
+  berjalan-jalan sendiri di kamarnya. Sebelum masuk robotnya mati; ditekan akan
+  membawa ke halaman masuk. Benda di
+  kamarnya juga bisa diketuk: lampu (kamar gelap), jendela, tanaman, buku
+  (tips belajar), dan jam. Halamannya satu layar penuh tanpa footer.
+- Poin didapat dari "Poin harian": hadiah masuk hari ini, lalu hadiah saat
+  waktu aktif di halaman SyRobo mencapai 1, 10, 20, 30 menit, 1 jam, dan 2 jam.
+  Hadiah diklaim manual dan hitungannya mulai dari nol setiap hari (WIB).
+- Robot asisten di pojok layar ikut menunjukkan kondisi SyRobo pengguna yang
+  sudah masuk: tampak lapar atau kotor bila SyRobo-nya butuh dirawat.
+
 ## SynapLab
 - /lab adalah papan untuk memahami struktur data dan pemrograman sambil
   mencobanya, terbuka untuk siapa saja tanpa login. Halaman /lab dibuka dengan
