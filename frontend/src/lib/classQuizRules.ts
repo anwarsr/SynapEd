@@ -29,12 +29,17 @@ export const MAX_JAWABAN_ESAI = 5000;
 export const MAX_DURASI_MENIT = 600;
 export const MAX_TAMBAH_MENIT = 600;
 export const MAX_QUIZ_PER_KELAS = 30;
+export const MAX_BARIS_TABEL = 12;
+export const MAX_KOLOM_TABEL = 8;
+export const MAX_TEKS_SEL = 80;
+export const MIN_NAMA_KELOMPOK = 2;
+export const MAX_NAMA_KELOMPOK = 40;
 /** Toleransi jaringan: kiriman yang tiba sedikit setelah batas masih dihitung. */
 export const TOLERANSI_DETIK = 5;
 
 // ── Bentuk data ─────────────────────────────────────────────────────────
 
-export type JenisSoal = "mcq" | "essay";
+export type JenisSoal = "mcq" | "essay" | "table";
 
 export interface OpsiSoal {
   id: string;
@@ -48,8 +53,30 @@ export interface SoalQuiz {
   points: number;
   /** Kosong untuk esai. */
   options: OpsiSoal[];
-  /** Id opsi yang benar; null untuk esai. RAHASIA sampai quiz ditutup. */
+  /** Id opsi yang benar; null untuk esai & tabel. RAHASIA sampai quiz ditutup. */
   correct: string | null;
+  /**
+   * Hanya untuk jenis "table" (selain itu null/tidak ada). Berisi KUNCI di sel isian, jadi
+   * tidak boleh dikirim ke klien siswa - pakai `soalUntukSiswa`, yang membuang kuncinya.
+   */
+  table?: TabelSoal | null;
+}
+
+/**
+ * Satu sel tabel. Sel TETAP (`fill: false`) menampilkan `text` ke siswa; sel ISIAN (`fill: true`)
+ * dikosongkan untuk siswa dan `key` adalah jawaban yang benar.
+ */
+export interface SelTabel {
+  text: string;
+  fill: boolean;
+  key: string;
+}
+
+/** Tabel baris x kolom (`cells` urut baris demi baris: indeks = baris * kolom + kolom). */
+export interface TabelSoal {
+  rows: number;
+  cols: number;
+  cells: SelTabel[];
 }
 
 export interface SetelanQuiz {
@@ -57,6 +84,11 @@ export interface SetelanQuiz {
   shuffleOptions: boolean;
   /** Menit per siswa sejak menekan Mulai; null = tanpa batas waktu. */
   durationMin: number | null;
+  /**
+   * Quiz KELOMPOK: siswa mengisi nama kelompoknya sebelum mulai (dicatat di percobaannya).
+   * Tiap siswa tetap punya percobaan & nilainya sendiri. Hilang = individu.
+   */
+  kelompok?: boolean;
 }
 
 /**
@@ -112,6 +144,8 @@ export interface PercobaanQuiz {
   extraSec: number;
   /** Poin esai dari pengajar: soalId → poin. */
   essayScores: Record<string, number>;
+  /** Nama kelompok yang diisi siswa saat mulai (hanya quiz kelompok); null/hilang = individu. */
+  groupName?: string | null;
 }
 
 // ── Util umum ───────────────────────────────────────────────────────────
@@ -144,6 +178,188 @@ export function bagiRataPoin(n: number, total = TOTAL_POIN): number[] {
 
 export function jumlahPoin(soal: readonly { points: number }[]): number {
   return soal.reduce((n, s) => n + s.points, 0);
+}
+
+// ── Soal tabel ──────────────────────────────────────────────────────────
+
+const bulat2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Tabel awal: baris & kolom pertama = judul (tetap), sisanya sel isian. */
+export function tabelBaru(baris = 3, kolom = 3): TabelSoal {
+  return ubahUkuranTabel({ rows: 0, cols: 0, cells: [] }, baris, kolom);
+}
+
+/**
+ * Mengubah ukuran tabel: sel yang masih ada dipertahankan (menurut baris/kolomnya), sel baru = judul bila
+ * di baris/kolom pertama, selain itu sel isian kosong. Ukuran dijepit ke batas.
+ */
+export function ubahUkuranTabel(t: TabelSoal, baris: number, kolom: number): TabelSoal {
+  const rows = Math.min(Math.max(1, Math.floor(baris) || 1), MAX_BARIS_TABEL);
+  const cols = Math.min(Math.max(1, Math.floor(kolom) || 1), MAX_KOLOM_TABEL);
+  const cells: SelTabel[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const lama = r < t.rows && c < t.cols ? t.cells[r * t.cols + c] : undefined;
+      cells.push(lama ? { ...lama } : { text: "", fill: r !== 0 && c !== 0, key: "" });
+    }
+  }
+  return { rows, cols, cells };
+}
+
+/** Membuang satu baris (minimal tersisa 1). */
+export function hapusBarisTabel(t: TabelSoal, baris: number): TabelSoal {
+  if (t.rows <= 1 || baris < 0 || baris >= t.rows) return t;
+  return { rows: t.rows - 1, cols: t.cols, cells: t.cells.filter((_, i) => Math.floor(i / t.cols) !== baris) };
+}
+
+/** Membuang satu kolom (minimal tersisa 1). */
+export function hapusKolomTabel(t: TabelSoal, kolom: number): TabelSoal {
+  if (t.cols <= 1 || kolom < 0 || kolom >= t.cols) return t;
+  return { rows: t.rows, cols: t.cols - 1, cells: t.cells.filter((_, i) => i % t.cols !== kolom) };
+}
+
+/** Indeks sel isian, urut. */
+export function indeksIsian(t: TabelSoal): number[] {
+  return t.cells.flatMap((c, i) => (c.fill ? [i] : []));
+}
+
+/** Pembanding jawaban sel: abaikan huruf besar-kecil, spasi berlebih, dan bentuk huruf (NFKC). */
+export function normalisasiSel(teksSel: string): string {
+  return teksSel.normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Jawaban tabel disimpan sebagai SATU teks JSON `{"<indeks sel>": "<isi>"}` (hanya sel yang diisi) supaya
+ * tetap muat di `answers: Record<string, string>`. Teks rusak = tidak ada jawaban.
+ */
+export function uraiJawabanTabel(raw: string | undefined): Record<number, string> {
+  if (!raw) return {};
+  try {
+    const o: unknown = JSON.parse(raw);
+    if (!o || typeof o !== "object" || Array.isArray(o)) return {};
+    const out: Record<number, string> = {};
+    for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
+      const i = Number(k);
+      if (Number.isInteger(i) && i >= 0 && typeof v === "string") out[i] = v;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Kebalikan `uraiJawabanTabel`; tak ada isian sama sekali → "" (dihitung belum dijawab). */
+export function susunJawabanTabel(peta: Record<number, string>): string {
+  const bersih: Record<string, string> = {};
+  for (const [k, v] of Object.entries(peta)) if (v.trim()) bersih[k] = v;
+  return Object.keys(bersih).length > 0 ? JSON.stringify(bersih) : "";
+}
+
+export interface SkorTabel {
+  benar: number;
+  /** Jumlah sel isian. */
+  total: number;
+  /** Indeks sel isian → benar? */
+  perSel: Record<number, boolean>;
+}
+
+/** Berapa sel isian yang benar. Sel isian yang kuncinya kosong (draf) tak pernah benar. */
+export function skorTabel(t: TabelSoal | null | undefined, jawab: string | undefined): SkorTabel {
+  const isian = t ? indeksIsian(t) : [];
+  const j = uraiJawabanTabel(jawab);
+  const perSel: Record<number, boolean> = {};
+  let benar = 0;
+  for (const i of isian) {
+    const dijawab = normalisasiSel(j[i] ?? "");
+    const ok = dijawab !== "" && dijawab === normalisasiSel(t!.cells[i].key);
+    perSel[i] = ok;
+    if (ok) benar++;
+  }
+  return { benar, total: isian.length, perSel };
+}
+
+function validasiTabel(raw: unknown, no: number, terbitkan: boolean): Hasil<TabelSoal> {
+  const t = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const rows = typeof t.rows === "number" ? t.rows : Number(t.rows);
+  const cols = typeof t.cols === "number" ? t.cols : Number(t.cols);
+  if (!Number.isInteger(rows) || rows < 1 || rows > MAX_BARIS_TABEL) {
+    return { ok: false, error: `Soal ${no}: tabel harus 1-${MAX_BARIS_TABEL} baris.` };
+  }
+  if (!Number.isInteger(cols) || cols < 1 || cols > MAX_KOLOM_TABEL) {
+    return { ok: false, error: `Soal ${no}: tabel harus 1-${MAX_KOLOM_TABEL} kolom.` };
+  }
+  const mentah = Array.isArray(t.cells) ? t.cells : [];
+  if (mentah.length !== rows * cols) return { ok: false, error: `Soal ${no}: isi tabel tidak sesuai ukurannya.` };
+
+  const cells: SelTabel[] = mentah.map((item) => {
+    const c = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    const fill = c.fill === true;
+    // Sel isian tak membawa teks (siswa melihatnya kosong); sel tetap tak punya kunci.
+    return { text: fill ? "" : teks(c.text, MAX_TEKS_SEL), fill, key: fill ? teks(c.key, MAX_TEKS_SEL) : "" };
+  });
+
+  if (terbitkan) {
+    const isian = cells.flatMap((c, i) => (c.fill ? [i] : []));
+    if (isian.length === 0) return { ok: false, error: `Soal ${no}: tabel perlu minimal satu sel isian untuk siswa.` };
+    const tanpaKunci = isian.find((i) => !cells[i].key);
+    if (tanpaKunci !== undefined) {
+      return {
+        ok: false,
+        error: `Soal ${no}: sel isian di baris ${Math.floor(tanpaKunci / cols) + 1}, kolom ${(tanpaKunci % cols) + 1} belum ada kunci jawabannya.`,
+      };
+    }
+  }
+  return { ok: true, value: { rows, cols, cells } };
+}
+
+function tabelSama(a: TabelSoal | null | undefined, b: TabelSoal | null | undefined): boolean {
+  if (!a || !b) return !a && !b;
+  return a.rows === b.rows && a.cols === b.cols && a.cells.every((c, i) => c.fill === b.cells[i].fill && c.text === b.cells[i].text && c.key === b.cells[i].key);
+}
+
+// ── Quiz kelompok ───────────────────────────────────────────────────────
+
+/** Nama kelompok dari kolom isian: karakter kontrol dibuang, spasi dirapikan, panjang 2-40. */
+export function validasiNamaKelompok(raw: unknown): Hasil<string> {
+  const bersih =
+    typeof raw === "string"
+      ? Array.from(raw)
+          .filter((ch) => ch.charCodeAt(0) >= 32 && ch.charCodeAt(0) !== 127)
+          .join("")
+          .replace(/\s+/g, " ")
+          .trim()
+      : "";
+  if (bersih.length < MIN_NAMA_KELOMPOK) return { ok: false, error: `Nama kelompok minimal ${MIN_NAMA_KELOMPOK} karakter.` };
+  if (bersih.length > MAX_NAMA_KELOMPOK) return { ok: false, error: `Nama kelompok maksimal ${MAX_NAMA_KELOMPOK} karakter.` };
+  return { ok: true, value: bersih };
+}
+
+export interface RingkasKelompok {
+  nama: string;
+  anggota: number;
+  terkumpul: number;
+  /** Rata-rata nilai yang sudah terkumpul; null bila belum ada. */
+  rata: number | null;
+}
+
+/** Per kelompok (nama dibandingkan tanpa beda huruf besar-kecil): jumlah anggota, yang terkumpul, rata-rata nilai. */
+export function ringkasKelompok(quiz: Pick<Quiz, "questions">, daftar: readonly PercobaanQuiz[]): RingkasKelompok[] {
+  const peta = new Map<string, { nama: string; anggota: number; terkumpul: number; jumlah: number }>();
+  for (const p of daftar) {
+    const nama = p.groupName?.trim();
+    if (!nama) continue;
+    const kunci = nama.toLowerCase();
+    const k = peta.get(kunci) ?? { nama, anggota: 0, terkumpul: 0, jumlah: 0 };
+    k.anggota++;
+    if (p.submittedAt) {
+      k.terkumpul++;
+      k.jumlah += hitungNilai(quiz, p).total;
+    }
+    peta.set(kunci, k);
+  }
+  return [...peta.values()]
+    .map((k) => ({ nama: k.nama, anggota: k.anggota, terkumpul: k.terkumpul, rata: k.terkumpul > 0 ? bulat2(k.jumlah / k.terkumpul) : null }))
+    .sort((a, b) => (b.rata ?? -1) - (a.rata ?? -1) || a.nama.localeCompare(b.nama, "id"));
 }
 
 // ── Validasi masukan builder ────────────────────────────────────────────
@@ -183,7 +399,7 @@ export function validasiQuiz(raw: unknown, terbitkan: boolean): Hasil<IsiQuiz> {
     if (!id || soalIds.has(id)) return { ok: false, error: `Soal ${no} tidak sah.` };
     soalIds.add(id);
 
-    const type: JenisSoal = q.type === "essay" ? "essay" : "mcq";
+    const type: JenisSoal = q.type === "essay" ? "essay" : q.type === "table" ? "table" : "mcq";
     const text = teks(q.text, MAX_TEKS_SOAL);
     if (!text && terbitkan) return { ok: false, error: `Soal ${no} belum ada pertanyaannya.` };
 
@@ -218,7 +434,14 @@ export function validasiQuiz(raw: unknown, terbitkan: boolean): Hasil<IsiQuiz> {
       options = [];
     }
 
-    questions.push({ id, type, text, points, options, correct });
+    let table: TabelSoal | null = null;
+    if (type === "table") {
+      const t = validasiTabel(q.table, no, terbitkan);
+      if (!t.ok) return t;
+      table = t.value;
+    }
+
+    questions.push({ id, type, text, points, options, correct, table });
   }
 
   const total = jumlahPoin(questions);
@@ -259,6 +482,7 @@ export function validasiQuiz(raw: unknown, terbitkan: boolean): Hasil<IsiQuiz> {
         shuffleQuestions: s.shuffleQuestions === true,
         shuffleOptions: s.shuffleOptions === true,
         durationMin,
+        kelompok: s.kelompok === true,
       },
     },
   };
@@ -277,6 +501,7 @@ export function strukturSama(lama: readonly SoalQuiz[], baru: readonly SoalQuiz[
       a.type === b.type &&
       a.text === b.text &&
       a.correct === b.correct &&
+      tabelSama(a.table, b.table) &&
       a.options.length === b.options.length &&
       a.options.every((o, j) => o.id === b.options[j].id && o.text === b.options[j].text)
     );
@@ -432,6 +657,12 @@ export function hitungNilai(quiz: Pick<Quiz, "questions">, p: Pick<PercobaanQuiz
       const n = benar ? s.points : 0;
       perSoal[s.id] = n;
       otomatis += n;
+    } else if (s.type === "table") {
+      // Kredit sebagian: poin soal dibagi rata ke sel isian, tiap sel yang benar dapat bagiannya.
+      const sk = skorTabel(s.table, p.answers[s.id]);
+      const n = sk.total > 0 ? bulat2((s.points * sk.benar) / sk.total) : 0;
+      perSoal[s.id] = n;
+      otomatis += n;
     } else {
       const skor = p.essayScores[s.id];
       if (typeof skor === "number") {
@@ -444,7 +675,7 @@ export function hitungNilai(quiz: Pick<Quiz, "questions">, p: Pick<PercobaanQuiz
       }
     }
   }
-  return { otomatis, esai, total: otomatis + esai, esaiBelumDinilai: belum, perSoal };
+  return { otomatis: bulat2(otomatis), esai: bulat2(esai), total: bulat2(otomatis + esai), esaiBelumDinilai: belum, perSoal };
 }
 
 export type StatusQuizSiswa = "belum" | "berlangsung" | "perlu_dinilai" | "dinilai";
@@ -546,6 +777,8 @@ export function alasanTakBisaEkspor(quiz: Pick<Quiz, "questions">, daftar: reado
 }
 
 export const JUDUL_EKSPOR = ["No", "Nama", "Poin", "Status"] as const;
+/** Quiz kelompok: kolom nama kelompok menyusul setelah nama. */
+export const JUDUL_EKSPOR_KELOMPOK = ["No", "Nama", "Kelompok", "Poin", "Status"] as const;
 
 /**
  * Baris lembar nilai: nama + poin (angka, bukan teks, supaya bisa dijumlah di
@@ -553,16 +786,18 @@ export const JUDUL_EKSPOR = ["No", "Nama", "Poin", "Status"] as const;
  * dengan poin kosong - bukan 0, supaya tak tertukar dengan nilai nol sungguhan.
  */
 export function barisEkspor(
-  quiz: Pick<Quiz, "questions">,
+  quiz: Pick<Quiz, "questions"> & { settings?: Pick<SetelanQuiz, "kelompok"> },
   peserta: readonly { nama: string; p: PercobaanQuiz | null }[],
 ): (string | number | null)[][] {
+  const kelompok = quiz.settings?.kelompok === true;
   const urut = peserta
     .map((x) => {
       const status = statusQuizSiswa(quiz, x.p);
       const poin = x.p?.submittedAt ? hitungNilai(quiz, x.p).total : null;
-      return { nama: x.nama, poin, status };
+      return { nama: x.nama, poin, status, grup: x.p?.groupName ?? "" };
     })
     .sort((a, b) => (b.poin ?? -1) - (a.poin ?? -1) || a.nama.localeCompare(b.nama, "id"));
+  if (kelompok) return [[...JUDUL_EKSPOR_KELOMPOK], ...urut.map((r, i) => [i + 1, r.nama, r.grup, r.poin, LABEL_STATUS_QUIZ[r.status]])];
   return [[...JUDUL_EKSPOR], ...urut.map((r, i) => [i + 1, r.nama, r.poin, LABEL_STATUS_QUIZ[r.status]])];
 }
 
@@ -598,6 +833,8 @@ export interface AnalisisButir {
   rataSkorPersen: number | null;
   /** Esai: jumlah jawaban yang sudah diberi poin. */
   dinilai: number;
+  /** Tabel: sel isian yang paling sering salah/kosong (baris & kolom mulai dari 1); null bila belum ada peserta. */
+  selTersulit?: { baris: number; kolom: number; persenSalah: number; kunci: string } | null;
 }
 
 const persenDari = (n: number, dari: number) => (dari > 0 ? Math.round((n / dari) * 100) : 0);
@@ -621,6 +858,32 @@ export function analisisSoal(quiz: Pick<Quiz, "questions">, daftar: readonly Per
           nomor: i + 1, id: s.id, jenis: "essay", teks: s.text, poin: s.points, peserta: n,
           benar: 0, salah: 0, kosong, persenSalah: rata === null ? 0 : 100 - rata,
           opsi: [], terbanyakId: null, rataSkorPersen: rata, dinilai: skor.length,
+        };
+      }
+      if (s.type === "table") {
+        const isian = s.table ? indeksIsian(s.table) : [];
+        const benarPerSel = new Map<number, number>(isian.map((i) => [i, 0]));
+        let benarSel = 0;
+        let kosong = 0;
+        for (const p of terkumpul) {
+          const sk = skorTabel(s.table, p.answers[s.id]);
+          benarSel += sk.benar;
+          if (!p.answers[s.id]) kosong++;
+          for (const i of isian) if (sk.perSel[i]) benarPerSel.set(i, (benarPerSel.get(i) ?? 0) + 1);
+        }
+        const rata = n > 0 && isian.length > 0 ? Math.round((benarSel / (n * isian.length)) * 100) : null;
+        let tersulit: AnalisisButir["selTersulit"] = null;
+        if (n > 0 && s.table) {
+          const cols = s.table.cols;
+          const i = isian.reduce((a, b) => ((benarPerSel.get(b) ?? 0) < (benarPerSel.get(a) ?? 0) ? b : a), isian[0]);
+          if (i !== undefined) {
+            tersulit = { baris: Math.floor(i / cols) + 1, kolom: (i % cols) + 1, persenSalah: 100 - persenDari(benarPerSel.get(i) ?? 0, n), kunci: s.table.cells[i].key };
+          }
+        }
+        return {
+          nomor: i + 1, id: s.id, jenis: "table", teks: s.text, poin: s.points, peserta: n,
+          benar: 0, salah: 0, kosong, persenSalah: rata === null ? 0 : 100 - rata,
+          opsi: [], terbanyakId: null, rataSkorPersen: rata, dinilai: n, selTersulit: tersulit,
         };
       }
       const hitung = new Map<string, number>(s.options.map((o) => [o.id, 0]));
@@ -651,13 +914,33 @@ function str(v: unknown, bawaan = ""): string {
   return typeof v === "string" ? v : bawaan;
 }
 
+/** Pembaca tabel yang toleran (data lama/rusak → null, tak pernah melempar). */
+function tabelDari(raw: unknown): TabelSoal | null {
+  const t = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+  if (!t) return null;
+  const rows = Number(t.rows);
+  const cols = Number(t.cols);
+  if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || cols < 1 || rows > MAX_BARIS_TABEL || cols > MAX_KOLOM_TABEL) return null;
+  const mentah = Array.isArray(t.cells) ? t.cells : [];
+  if (mentah.length !== rows * cols) return null;
+  return {
+    rows,
+    cols,
+    cells: mentah.map((item) => {
+      const c = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+      const fill = c.fill === true;
+      return { text: fill ? "" : str(c.text), fill, key: fill ? str(c.key) : "" };
+    }),
+  };
+}
+
 function soalDari(raw: unknown): SoalQuiz[] {
   if (!Array.isArray(raw)) return [];
   const out: SoalQuiz[] = [];
   for (const item of raw) {
     const q = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
     if (typeof q.id !== "string" || !q.id) continue;
-    const type: JenisSoal = q.type === "essay" ? "essay" : "mcq";
+    const type: JenisSoal = q.type === "essay" ? "essay" : q.type === "table" ? "table" : "mcq";
     const options: OpsiSoal[] =
       type === "mcq" && Array.isArray(q.options)
         ? q.options
@@ -672,6 +955,7 @@ function soalDari(raw: unknown): SoalQuiz[] {
       points: typeof q.points === "number" && Number.isFinite(q.points) ? q.points : 0,
       options,
       correct: type === "mcq" && typeof q.correct === "string" && options.some((o) => o.id === q.correct) ? q.correct : null,
+      table: type === "table" ? tabelDari(q.table) : null,
     });
   }
   return out;
@@ -687,7 +971,7 @@ export function toQuiz(id: string, d: Record<string, unknown>): Quiz {
     title: str(d.title),
     description: str(d.description),
     questions: soalDari(d.questions),
-    settings: { shuffleQuestions: s.shuffleQuestions === true, shuffleOptions: s.shuffleOptions === true, durationMin: dur },
+    settings: { shuffleQuestions: s.shuffleQuestions === true, shuffleOptions: s.shuffleOptions === true, durationMin: dur, kelompok: s.kelompok === true },
     published: d.published === true,
     bannerURL: typeof d.bannerURL === "string" && d.bannerURL ? d.bannerURL : null,
     opensAt: typeof d.opensAt === "string" && Number.isFinite(Date.parse(d.opensAt)) ? d.opensAt : null,
@@ -727,6 +1011,7 @@ export function toPercobaan(id: string, d: Record<string, unknown>): PercobaanQu
     },
     extraSec: typeof d.extraSec === "number" && d.extraSec > 0 ? Math.floor(d.extraSec) : 0,
     essayScores: peta(d.essayScores, (v) => (typeof v === "number" && Number.isFinite(v) ? v : null)),
+    groupName: typeof d.groupName === "string" && d.groupName ? d.groupName : null,
   };
 }
 
@@ -747,6 +1032,15 @@ export function bersihkanJawaban(quiz: Pick<Quiz, "questions">, raw: unknown): R
     if (typeof v !== "string") continue;
     if (s.type === "mcq") {
       if (s.options.some((o) => o.id === v)) out[s.id] = v;
+    } else if (s.type === "table") {
+      // Hanya sel ISIAN yang sah; kunci lain (sel tetap, indeks di luar tabel) dibuang.
+      const isian = new Set(s.table ? indeksIsian(s.table) : []);
+      const peta: Record<number, string> = {};
+      for (const [i, t] of Object.entries(uraiJawabanTabel(v))) {
+        if (isian.has(Number(i))) peta[Number(i)] = t.replace(/\r/g, "").slice(0, MAX_TEKS_SEL);
+      }
+      const hasil = susunJawabanTabel(peta);
+      if (hasil) out[s.id] = hasil;
     } else {
       const t = v.replace(/\r/g, "").slice(0, MAX_JAWABAN_ESAI);
       if (t.trim()) out[s.id] = t;

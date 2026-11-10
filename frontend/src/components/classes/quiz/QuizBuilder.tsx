@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import EditorTabel from "@/components/classes/quiz/EditorTabel";
 import { saveQuiz } from "@/lib/classQuizActions";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { compressBanner, uploadClassImage } from "@/lib/profile";
@@ -18,6 +19,7 @@ import {
   bagiRataPoin,
   idBaru,
   jumlahPoin,
+  tabelBaru,
   type JenisSoal,
   type Quiz,
   type SetelanQuiz,
@@ -34,7 +36,8 @@ const TOMBOL_IKON =
 
 function soalBaru(ada: readonly SoalQuiz[], type: JenisSoal): SoalQuiz {
   const id = idBaru(ada.map((s) => s.id));
-  if (type === "essay") return { id, type, text: "", points: 0, options: [], correct: null };
+  if (type === "essay") return { id, type, text: "", points: 0, options: [], correct: null, table: null };
+  if (type === "table") return { id, type, text: "", points: 0, options: [], correct: null, table: tabelBaru() };
   const o1 = idBaru([]);
   const o2 = idBaru([o1]);
   return {
@@ -47,12 +50,14 @@ function soalBaru(ada: readonly SoalQuiz[], type: JenisSoal): SoalQuiz {
       { id: o2, text: "" },
     ],
     correct: o1,
+    table: null,
   };
 }
 
 /**
- * Pembuat quiz ala Google Form: tiap nomor punya jenis (pilihan ganda / esai),
- * poin sendiri, dan - untuk pilihan ganda - kunci jawaban. Total poin dijaga
+ * Pembuat quiz ala Google Form: tiap nomor punya jenis (pilihan ganda / esai / tabel),
+ * poin sendiri, dan - untuk pilihan ganda & sel isian tabel - kunci jawaban.
+ * Quiz bisa INDIVIDU atau KELOMPOK (siswa mengisi nama kelompok sebelum mulai). Total poin dijaga
  * tepat 100 saat diterbitkan ("Bagi rata poin" membantu).
  *
  * `terkunci` (sudah ada yang mengerjakan): hanya poin, judul, deskripsi, dan
@@ -78,7 +83,7 @@ export default function QuizBuilder({
   const [deskripsi, setDeskripsi] = useState(awal?.description ?? "");
   const [soal, setSoal] = useState<SoalQuiz[]>(awal?.questions ?? []);
   const [setelan, setSetelan] = useState<SetelanQuiz>(
-    awal?.settings ?? { shuffleQuestions: false, shuffleOptions: false, durationMin: null },
+    awal?.settings ?? { shuffleQuestions: false, shuffleOptions: false, durationMin: null, kelompok: false },
   );
   const [batasWaktu, setBatasWaktu] = useState(awal?.settings.durationMin !== null && awal !== undefined);
   const [menitText, setMenitText] = useState(String(awal?.settings.durationMin ?? 30));
@@ -124,7 +129,7 @@ export default function QuizBuilder({
   function ubahJenis(q: SoalQuiz, type: JenisSoal) {
     if (type === q.type) return;
     const dasar = soalBaru([], type);
-    ubahSoal(q.id, { type, options: dasar.options, correct: dasar.correct });
+    ubahSoal(q.id, { type, options: dasar.options, correct: dasar.correct, table: dasar.table });
   }
 
   function ubahOpsi(q: SoalQuiz, oid: string, text: string) {
@@ -158,7 +163,13 @@ export default function QuizBuilder({
       const id = idBaru(s.map((x) => x.id));
       const opsi = q.options.map((o) => ({ id: idBaru([]), text: o.text }));
       const idx = q.options.findIndex((o) => o.id === q.correct);
-      const salinan: SoalQuiz = { ...q, id, options: opsi, correct: idx >= 0 ? opsi[idx].id : null };
+      const salinan: SoalQuiz = {
+        ...q,
+        id,
+        options: opsi,
+        correct: idx >= 0 ? opsi[idx].id : null,
+        table: q.table ? { ...q.table, cells: q.table.cells.map((c) => ({ ...c })) } : null,
+      };
       const pos = s.findIndex((x) => x.id === q.id);
       return [...s.slice(0, pos + 1), salinan, ...s.slice(pos + 1)];
     });
@@ -295,6 +306,12 @@ export default function QuizBuilder({
           Setelan quiz
         </p>
         <div className="space-y-4">
+          <PilihModeQuiz
+            kelompok={setelan.kelompok === true}
+            ubah={(k) => setSetelan((st) => ({ ...st, kelompok: k }))}
+            disabled={sibuk || terkunci}
+            terkunci={terkunci}
+          />
           <div>
             <Sakelar
               label="Jadwalkan waktu mulai"
@@ -461,6 +478,8 @@ export default function QuizBuilder({
                   )}
                   <p className="ml-8 text-xs text-ink-muted">Klik lingkaran untuk menandai jawaban yang benar.</p>
                 </div>
+              ) : q.type === "table" ? (
+                <EditorTabel idDasar={q.id} tabel={q.table ?? tabelBaru()} ubah={(t) => ubahSoal(q.id, { table: t })} disabled={sibuk || kunci} />
               ) : (
                 <p className="mt-4 bg-white/[0.04] px-4 py-3 text-sm text-ink-muted">
                   Siswa menjawab dengan teks bebas. Esai dinilai manual oleh pengajar (0 sampai poin soal) lewat tombol Pantau pada quiz.
@@ -492,6 +511,7 @@ export default function QuizBuilder({
             [
               { t: "mcq", l: "+ Pilihan ganda" },
               { t: "essay", l: "+ Esai" },
+              { t: "table", l: "+ Tabel" },
             ] as const
           ).map((b) => (
             <button
@@ -561,6 +581,7 @@ export default function QuizBuilder({
 const JENIS: { id: JenisSoal; label: string; ket: string; ikon: string }[] = [
   { id: "mcq", label: "Pilihan ganda", ket: "Dinilai otomatis", ikon: "M5 12h14M5 6h14M5 18h9" },
   { id: "essay", label: "Esai", ket: "Dinilai pengajar", ikon: "M4 6h16M4 12h16M4 18h10" },
+  { id: "table", label: "Tabel", ket: "Dinilai otomatis per sel", ikon: "M3 6h18M3 12h18M3 18h18M9 3v18M15 3v18" },
 ];
 
 /**
@@ -735,6 +756,59 @@ function Ikon({ d }: { d: string }) {
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" d={d} />
     </svg>
+  );
+}
+
+/**
+ * Individu / kelompok. Kelompok: siswa mengisi nama kelompok sebelum mulai; tiap siswa TETAP punya
+ * percobaan & nilai sendiri (nama kelompok dicatat di percobaannya dan tampil di Pantau & ekspor).
+ */
+function PilihModeQuiz({
+  kelompok,
+  ubah,
+  disabled,
+  terkunci,
+}: {
+  kelompok: boolean;
+  ubah: (kelompok: boolean) => void;
+  disabled?: boolean;
+  terkunci?: boolean;
+}) {
+  const opsi = [
+    { k: false, label: "Individu", ket: "Tiap siswa mengerjakan sendiri." },
+    { k: true, label: "Kelompok", ket: "Siswa mengisi nama kelompoknya sebelum mulai." },
+  ];
+  return (
+    <div>
+      <p className="text-sm font-semibold text-ink">Jenis quiz</p>
+      <div role="radiogroup" aria-label="Jenis quiz" className="mt-2 grid max-w-[480px] grid-cols-2 gap-1">
+        {opsi.map((o) => {
+          const aktif = kelompok === o.k;
+          return (
+            <button
+              key={o.label}
+              type="button"
+              role="radio"
+              aria-checked={aktif}
+              disabled={disabled}
+              onClick={() => ubah(o.k)}
+              className={cn(
+                "px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                aktif ? "bg-blue-600 text-[#fff]" : "bg-white/[0.06] text-ink hover:bg-white/10",
+              )}
+            >
+              <span className="block text-sm font-semibold">{o.label}</span>
+              <span className={cn("mt-0.5 block text-[12px] leading-[1.5]", aktif ? "text-[#fff]/80" : "text-ink-muted")}>{o.ket}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[13px] leading-[1.6] text-ink-muted">
+        {terkunci
+          ? "Jenis quiz tidak bisa diubah karena sudah ada yang mengerjakan."
+          : "Pada quiz kelompok, nilai tetap dihitung per siswa; nama kelompok tampil di Pantau dan ekspor spreadsheet."}
+      </p>
+    </div>
   );
 }
 

@@ -47,7 +47,7 @@ export default async function QuizTab({
       {isOwner && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <p className="max-w-[52ch] text-sm leading-[1.7] text-ink-muted">
-            Buat quiz pilihan ganda dan esai ala Google Form. Pantau pengerjaan siswa lewat tombol <strong>Pantau</strong> pada tiap quiz.
+            Buat quiz ala Google Form: pilihan ganda, esai, dan tabel, untuk dikerjakan individu atau per kelompok. Pantau pengerjaan siswa lewat tombol <strong>Pantau</strong> pada tiap quiz.
           </p>
           <Link
             href={`/educator/classes/${classId}/quiz/new`}
@@ -119,8 +119,9 @@ export default async function QuizTab({
                     ))}
                   </dl>
 
-                  {(quiz.settings.shuffleQuestions || (quiz.published && quiz.opensAt)) && (
+                  {(quiz.settings.kelompok || quiz.settings.shuffleQuestions || (quiz.published && quiz.opensAt)) && (
                     <p className="mt-2.5 flex flex-wrap gap-x-3 text-[12px] font-semibold text-ink-muted">
+                      {quiz.settings.kelompok && <span className="text-blue-300">Kelompok</span>}
                       {quiz.settings.shuffleQuestions && <span>Soal diacak</span>}
                       {quiz.published && quiz.opensAt && (
                         <span>

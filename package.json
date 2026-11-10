@@ -34,6 +34,7 @@
     "verify:model3d": "tsx scripts/verify-model3d.ts",
     "verify:class-archive": "tsx scripts/verify-class-archive.ts",
     "verify:class-quiz": "tsx scripts/verify-class-quiz.ts",
+    "verify:quiz-tabel": "tsx scripts/verify-quiz-tabel.ts",
     "verify:tema-kustom": "tsx scripts/verify-tema-kustom.ts",
     "verify:linkify": "tsx scripts/verify-linkify.ts",
     "verify:admin-nama": "tsx scripts/verify-admin-nama.ts",

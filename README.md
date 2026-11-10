@@ -428,7 +428,7 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   Kelola anggota, dengan dialog konfirmasi. Hanya keanggotaan yang dihapus (jawaban tugas & quiz
   tetap tersimpan); siswa bisa bergabung lagi dengan kode undangan selama kodenya belum diganti.
 - **Quiz kelas** (tab **Quiz**, di kanan Tugas): pengajar/admin membuat quiz ala Google Form di
-  `/educator/classes/<id>/quiz/new` - tiap nomor bisa **pilihan ganda** (dengan kunci) atau **esai**,
+  `/educator/classes/<id>/quiz/new` - tiap nomor bisa **pilihan ganda** (dengan kunci), **esai**, atau **tabel** (pengajar mengatur jumlah baris & kolom; tiap sel dijadikan teks tetap, mis. judul, atau sel isian siswa yang diberi kunci; dinilai otomatis per sel dengan kredit sebagian, huruf besar-kecil dan spasi berlebih diabaikan). Quiz bisa **individu** atau **kelompok**: pada quiz kelompok siswa wajib mengisi nama kelompoknya sebelum mulai (nilai tetap per siswa; nama kelompok tampil di Pantau beserta ringkasan per kelompok dan di ekspor spreadsheet),
   punya poin sendiri, total TEPAT 100 saat diterbitkan (ada tombol *Bagi rata poin*). Setelan: **jadwal mulai**
   (hari/tanggal/jam WIB, atau langsung terbuka begitu diterbitkan), acak
   urutan soal & pilihan per siswa (sulit mencontek), batas waktu pengerjaan (habis → otomatis

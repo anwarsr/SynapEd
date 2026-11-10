@@ -12,7 +12,7 @@ import {
   warnQuizStudents,
 } from "@/lib/classQuizActions";
 import QuizIkon from "@/components/classes/quiz/QuizIkon";
-import { MAX_TAMBAH_MENIT } from "@/lib/classQuizRules";
+import { MAX_NAMA_KELOMPOK, MAX_TAMBAH_MENIT, MIN_NAMA_KELOMPOK } from "@/lib/classQuizRules";
 import { TOMBOL_KOTAK, TOMBOL_KOTAK_BAHAYA } from "@/lib/quizUi";
 import { cn } from "@/lib/cn";
 
@@ -118,15 +118,52 @@ export function PeringatkanMuridButton({ classId, quizId, jumlah }: { classId: s
   );
 }
 
-/** Siswa menekan Mulai: percobaan dibuat di server (waktu mulai = saat ini), lalu halaman dimuat ulang. */
-export function MulaiQuizButton({ classId, quizId }: { classId: string; quizId: string }) {
+/**
+ * Siswa menekan Mulai: percobaan dibuat di server (waktu mulai = saat ini), lalu halaman dimuat ulang.
+ * Quiz KELOMPOK meminta nama kelompok dulu; server memeriksanya lagi (kolom ini hanya kemudahan).
+ */
+export function MulaiQuizButton({ classId, quizId, kelompok = false }: { classId: string; quizId: string; kelompok?: boolean }) {
   const { pending, error, jalankan } = useAksi();
+  const [nama, setNama] = useState("");
+  const kurang = kelompok && nama.trim().length < MIN_NAMA_KELOMPOK;
+
+  function mulai() {
+    if (pending || kurang) return;
+    jalankan(() => startQuiz(classId, quizId, kelompok ? nama : undefined));
+  }
+
   return (
     <div>
+      {kelompok && (
+        <div className="mb-6 max-w-[440px]">
+          <label htmlFor="nama-kelompok" className="text-[11px] font-bold uppercase tracking-[0.3em] text-ink-muted">
+            Nama kelompok
+          </label>
+          <input
+            id="nama-kelompok"
+            value={nama}
+            onChange={(e) => setNama(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                mulai();
+              }
+            }}
+            maxLength={MAX_NAMA_KELOMPOK}
+            disabled={pending}
+            autoComplete="off"
+            placeholder="Contoh: Kelompok 3"
+            className="mt-2 block w-full bg-white/[0.06] px-4 py-3.5 text-[16px] text-ink outline-none placeholder:text-ink-muted shadow-[inset_0_-2px_0_transparent] focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] disabled:opacity-60"
+          />
+          <p className="mt-2 text-[13px] leading-[1.7] text-ink-muted">
+            Isi sebelum mulai (minimal {MIN_NAMA_KELOMPOK} karakter). Nama ini tidak bisa diubah setelah quiz dimulai, jadi samakan dengan teman satu kelompok.
+          </p>
+        </div>
+      )}
       <button
         type="button"
-        disabled={pending}
-        onClick={() => jalankan(() => startQuiz(classId, quizId))}
+        disabled={pending || kurang}
+        onClick={mulai}
         className="group inline-flex items-center gap-3 bg-blue-600 px-9 py-4 text-[14px] font-semibold tracking-[0.04em] text-[#fff] transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
         {pending ? "Memulai…" : "Mulai mengerjakan"}

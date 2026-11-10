@@ -116,6 +116,8 @@ export interface SoalSiswa {
   text: string;
   points: number;
   options: { id: string; text: string }[];
+  /** Soal tabel: bentuk yang dilihat siswa - sel isian TANPA kunci, sel tetap dengan teksnya. */
+  table: { rows: number; cols: number; cells: { text: string; fill: boolean }[] } | null;
 }
 
 /**
@@ -140,6 +142,8 @@ export function soalUntukSiswa(quiz: Quiz, p: PercobaanQuiz): SoalSiswa[] {
           const o = opsi.get(oid);
           return o ? [{ id: o.id, text: o.text }] : [];
         }),
+        // KUNCI sel isian dibuang di sini - hanya `fill` yang tahu mana yang harus diisi siswa.
+        table: s.type === "table" && s.table ? { rows: s.table.rows, cols: s.table.cols, cells: s.table.cells.map((c) => ({ text: c.text, fill: c.fill })) } : null,
       },
     ];
   });

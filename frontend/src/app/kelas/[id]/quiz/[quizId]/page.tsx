@@ -129,6 +129,9 @@ export default async function QuizSiswaPage({ params }: Props) {
                           ? `Waktu ${durasi} menit dihitung sejak Anda menekan Mulai. Begitu habis, jawaban otomatis dikumpulkan.`
                           : "Tidak ada batas waktu. Kerjakan dengan tenang.",
                         "Jawaban tersimpan otomatis. Quiz hanya bisa dikerjakan satu kali.",
+                        ...(quiz.settings.kelompok
+                          ? ["Quiz ini dikerjakan per KELOMPOK: isi nama kelompok Anda di bawah sebelum mulai. Tiap anggota tetap mengerjakan dan dinilai sendiri."]
+                          : []),
                         ...(quiz.settings.shuffleQuestions ? ["Urutan soal diacak untuk tiap siswa."] : []),
                       ].map((t, i) => (
                         <li key={i} className="flex items-center gap-5 py-4">
@@ -138,7 +141,7 @@ export default async function QuizSiswaPage({ params }: Props) {
                       ))}
                     </ol>
                     <div className="mt-10">
-                      <MulaiQuizButton classId={id} quizId={quizId} />
+                      <MulaiQuizButton classId={id} quizId={quizId} kelompok={quiz.settings.kelompok === true} />
                     </div>
                   </>
                 )}
@@ -155,6 +158,7 @@ export default async function QuizSiswaPage({ params }: Props) {
                 soal={soalUntukSiswa(quiz, p)}
                 jawabanAwal={p.answers}
                 sisaAwal={sisaDetik(quiz, p, sekarang)}
+                kelompok={p.groupName ?? null}
               />
             </div>
           )}

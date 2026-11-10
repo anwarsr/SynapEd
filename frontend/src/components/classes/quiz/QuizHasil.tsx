@@ -1,4 +1,5 @@
 import { formatDurasi, durasiDetik, hitungNilai, TOTAL_POIN, type PercobaanQuiz, type Quiz } from "@/lib/classQuizRules";
+import TabelHasil from "@/components/classes/quiz/TabelHasil";
 import { soalUntukSiswa } from "@/lib/classQuizzes";
 import { cn } from "@/lib/cn";
 
@@ -34,6 +35,11 @@ export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: 
         {n.esaiBelumDinilai > 0 && (
           <p className="mt-3 text-sm leading-[1.7] text-blue-300">
             Nilai sementara. {n.esaiBelumDinilai} soal esai masih menunggu penilaian pengajar; nilai akhir menyusul.
+          </p>
+        )}
+        {percobaan.groupName && (
+          <p className="mt-3 text-[13px] text-ink-muted">
+            Kelompok <strong className="font-semibold text-ink">{percobaan.groupName}</strong>
           </p>
         )}
         <p className="mt-3 text-[13px] text-ink-muted">
@@ -91,6 +97,8 @@ export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: 
                     </li>
                   )}
                 </ul>
+              ) : s.type === "table" && q?.table ? (
+                <TabelHasil tabel={q.table} jawab={jawab} tampilkanKunci={kunciTerbuka} />
               ) : (
                 <p className="mt-3 whitespace-pre-line break-words bg-white/[0.05] px-3.5 py-3 text-sm leading-[1.7] text-ink-body">
                   {jawab || <span className="text-ink-muted">(tidak dijawab)</span>}

@@ -31,6 +31,7 @@ import {
   idPercobaan,
   strukturSama,
   urutanUntukSiswa,
+  validasiNamaKelompok,
   validasiNilaiEsai,
   validasiQuiz,
   type PercobaanQuiz,
@@ -121,6 +122,10 @@ export async function saveQuiz(classId: string, quizId: string | null, input: un
       }
       if (lama.published && !terbitkan) {
         return { ok: false, error: "Quiz yang sudah dikerjakan tidak bisa dijadikan draf. Gunakan Tutup quiz." };
+      }
+      // Percobaan yang sudah ada tak punya nama kelompok (atau tak seharusnya): mode tak boleh berganti.
+      if ((lama.settings.kelompok === true) !== (isi.value.settings.kelompok === true)) {
+        return { ok: false, error: "Jenis quiz (individu/kelompok) tidak bisa diubah karena sudah ada yang mengerjakan." };
       }
     }
 
@@ -271,7 +276,11 @@ async function siapkanSiswa(classId: string, quizId: string) {
   return { galat: null, user, quiz } as const;
 }
 
-export async function startQuiz(classId: string, quizId: string): Promise<QuizResult> {
+/**
+ * Siswa menekan Mulai. Quiz KELOMPOK mewajibkan nama kelompok (dicek ULANG di server - kolom di
+ * browser bisa dilewati); quiz individu mengabaikannya. Nama dicatat di percobaan siswa itu.
+ */
+export async function startQuiz(classId: string, quizId: string, namaKelompok?: unknown): Promise<QuizResult> {
   const s = await siapkanSiswa(classId, quizId);
   if (s.galat !== null) return { ok: false, error: s.galat };
   const { user, quiz } = s;
@@ -282,6 +291,13 @@ export async function startQuiz(classId: string, quizId: string): Promise<QuizRe
     return { ok: false, error: `Quiz ini baru dibuka pada ${formatWib(quiz.opensAt)}.` };
   }
   if (quiz.questions.length === 0) return { ok: false, error: "Quiz ini belum punya soal." };
+
+  let groupName: string | null = null;
+  if (quiz.settings.kelompok === true) {
+    const nama = validasiNamaKelompok(namaKelompok);
+    if (!nama.ok) return { ok: false, error: nama.error };
+    groupName = nama.value;
+  }
 
   const id = idPercobaan(classId, quizId, user.uid);
   try {
@@ -297,6 +313,7 @@ export async function startQuiz(classId: string, quizId: string): Promise<QuizRe
       order: urutanUntukSiswa(quiz, user.uid),
       extraSec: 0,
       essayScores: {},
+      groupName,
     });
   } catch (e) {
     if ((e as { code?: number }).code !== 6) throw e;

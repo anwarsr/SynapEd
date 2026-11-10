@@ -768,6 +768,31 @@ Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`
   sedang mengerjakan, amber bila waktu habis), dan garis waktu aktivitas bertitik. Tautan kembali = `BackLink`.
 - **Peringkat**: nilai tertinggi → durasi tercepat → mulai lebih dulu; hanya percobaan terkumpul dengan
   esai dinilai penuh; tiga teratas (nama+foto+nilai+waktu) dilihat siswa, selebihnya hanya pengelola.
+- **Soal TABEL & quiz KELOMPOK** (uji: `npm run verify:quiz-tabel`, murni + dev server; dibuktikan bisa gagal dengan 4 mutasi sekaligus - kunci ikut
+  terkirim ke klien, nama kelompok tak diperiksa, kredit sebagian jadi semua-atau-tidak, penguncian mode dilepas):
+  - **Data**: `SoalQuiz.type` = `"mcq" | "essay" | "table"`; `SoalQuiz.table?: {rows, cols, cells[{text, fill, key}]}` (sel urut baris demi baris, indeks =
+    baris x kolom + kolom; batas `MAX_BARIS_TABEL` 12 x `MAX_KOLOM_TABEL` 8, teks sel <= 80). Sel TETAP (`fill:false`) = `text` yang dilihat siswa; sel ISIAN
+    (`fill:true`) = `text` kosong dan `key` = jawaban benar. `validasiTabel` menormalkan (sel isian membuang teksnya, sel tetap membuang kuncinya); saat TERBIT
+    wajib minimal satu sel isian dan SEMUA sel isian punya kunci (pesan menyebut baris/kolomnya), draf boleh belum lengkap. Field `table`/`settings.kelompok`/
+    `groupName` semuanya OPSIONAL di tipe & normaliser (`tabelDari`, `toQuiz`, `toPercobaan`) supaya data & skrip uji lama tetap sah.
+  - **Jawaban** disimpan di `answers[soalId]` sebagai SATU teks JSON `{"<indeks sel>":"<isi>"}` hanya untuk sel yang diisi (`uraiJawabanTabel`/`susunJawabanTabel`;
+    tak ada isian = "" = belum dijawab). `bersihkanJawaban` membuang indeks yang bukan sel isian, nilai bukan teks, dan memotong ke `MAX_TEKS_SEL`.
+  - **Nilai**: `skorTabel` = sel isian benar bila jawaban (dinormalkan `normalisasiSel`: NFKC, spasi dirapikan, huruf kecil) = kunci; kunci kosong tak pernah benar.
+    `hitungNilai`: poin soal dibagi rata ke sel isian, KREDIT SEBAGIAN `bulat2(poin x benar / total)`; `otomatis/esai/total` dibulatkan 2 desimal
+    (pecahan seperti 3,33 sah; jangan menampilkan `total` tanpa pembulatan). Tabel tak pernah masuk antrean penilaian manual (`esaiBelumDinilai` hanya esai).
+  - **Kunci tak boleh bocor**: `soalUntukSiswa` mengirim tabel TANPA `key` (hanya `{text, fill}`); `TabelHasil` (server) hanya membaca kunci bila `quiz.closed`
+    (aturan sama dengan pilihan ganda). Uji mencari kunci unik di HTML halaman pengerjaan & hasil. Siswa uji harus mengetik jawaban BERBEDA huruf besar-kecilnya dari
+    kunci, kalau tidak jawaban mereka sendiri terbaca sebagai kebocoran. Soal tabel ikut `strukturSama` (kunci/ukuran terkunci setelah ada yang mengerjakan; poin bebas).
+  - **Kelompok**: `settings.kelompok` (dipilih di `PilihModeQuiz` pada Setelan quiz; bawaan individu). `startQuiz(classId, quizId, namaKelompok?)` MEWAJIBKAN nama
+    (`validasiNamaKelompok`: karakter kontrol dibuang, spasi dirapikan, 2-40 karakter) dan mencatatnya di `groupName` percobaan; diperiksa di SERVER (kolom di browser
+    hanya kemudahan; panggilan langsung tanpa nama ditolak dan tidak membuat percobaan). Quiz individu mengabaikan nama (`groupName: null`). Tiap siswa TETAP punya
+    percobaan, nilai, dan peringkat sendiri - bukan satu kiriman per kelompok. `create()` yang gagal (klik ganda) tidak menimpa nama. Mode (individu/kelompok) TERKUNCI
+    setelah ada percobaan (`saveQuiz`), karena percobaan lama tak punya nama kelompok. Nama kelompok dibandingkan tanpa beda huruf besar-kecil di `ringkasKelompok`.
+  - **UI**: `EditorTabel.tsx` (pengajar: stepper baris/kolom, tombol silang membuang baris/kolom tertentu, tombol di tiap sel mengganti tetap/isian dan membawa isi
+    yang sudah diketik; `+ Tabel` di bawah daftar soal; `PilihJenis` memuat "Tabel"), `TabelPengerja.tsx` (siswa, menggulir mendatar sendiri di ponsel),
+    `TabelHasil.tsx` (server; sel benar/salah + kunci sel yang salah setelah ditutup). `MulaiQuizButton` meminta nama kelompok (tombol nonaktif < 2 karakter, Enter
+    memulai). Pantau: nama kelompok di bawah status tiap siswa + bagian "Per kelompok" (anggota, terkumpul, rata-rata); ekspor spreadsheet menambah kolom
+    "Kelompok" (`JUDUL_EKSPOR_KELOMPOK`) hanya untuk quiz kelompok; `AnalisisSoal` memuat soal tabel (rata-rata sel benar + sel tersulit beserta kuncinya, hanya untuk pengajar).
 - **Tes**: `npm run verify:class-quiz` (aturan murni + alur penuh; dev server).
 
 ## Arsip postingan kelas

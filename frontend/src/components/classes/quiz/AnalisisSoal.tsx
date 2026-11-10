@@ -1,4 +1,6 @@
 import type { AnalisisButir } from "@/lib/classQuizRules";
+
+const LABEL_JENIS = { mcq: "Pilihan ganda", essay: "Esai", table: "Tabel" } as const;
 import { cn } from "@/lib/cn";
 
 /**
@@ -28,14 +30,14 @@ export default function AnalisisSoal({ butir, peserta }: { butir: readonly Anali
               <div className="flex items-start justify-between gap-6">
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-blue-300">
-                    Soal {String(b.nomor).padStart(2, "0")} · {b.jenis === "essay" ? "Esai" : "Pilihan ganda"} · {b.poin} poin
+                    Soal {String(b.nomor).padStart(2, "0")} · {LABEL_JENIS[b.jenis]} · {b.poin} poin
                     {urut === 0 && b.persenSalah > 0 && <span className="ml-2 text-ink">paling sulit</span>}
                   </p>
                   <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-sm font-semibold leading-[1.6] text-ink">{b.teks}</p>
                 </div>
                 <p className="shrink-0 text-right">
-                  <span className="block text-[34px] font-semibold leading-none text-ink">{b.jenis === "essay" && b.rataSkorPersen === null ? "-" : `${b.persenSalah}%`}</span>
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">{b.jenis === "essay" ? "kurang poin" : "tidak benar"}</span>
+                  <span className="block text-[34px] font-semibold leading-none text-ink">{b.jenis !== "mcq" && b.rataSkorPersen === null ? "-" : `${b.persenSalah}%`}</span>
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">{b.jenis === "essay" ? "kurang poin" : b.jenis === "table" ? "sel kurang tepat" : "tidak benar"}</span>
                 </p>
               </div>
 
@@ -68,6 +70,19 @@ export default function AnalisisSoal({ butir, peserta }: { butir: readonly Anali
                     Benar {b.benar} · Salah {b.salah} · Tidak menjawab {b.kosong}
                   </p>
                 </>
+              ) : b.jenis === "table" ? (
+                <div className="mt-3 text-xs leading-[1.7] text-ink-muted">
+                  <p>
+                    Rata-rata sel yang benar <strong className="font-semibold text-ink">{b.rataSkorPersen ?? 0}%</strong> dari semua sel isian peserta.
+                    {b.kosong > 0 && ` ${b.kosong} peserta tidak mengisi.`}
+                  </p>
+                  {b.selTersulit && (
+                    <p className="mt-1">
+                      Sel tersulit: baris {b.selTersulit.baris}, kolom {b.selTersulit.kolom} (kunci <strong className="font-semibold text-ink">{b.selTersulit.kunci}</strong>),{" "}
+                      {b.selTersulit.persenSalah}% kurang tepat.
+                    </p>
+                  )}
+                </div>
               ) : (
                 <p className="mt-3 text-xs leading-[1.7] text-ink-muted">
                   {b.rataSkorPersen === null

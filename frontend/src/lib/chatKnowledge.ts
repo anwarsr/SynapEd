@@ -117,8 +117,9 @@ export const PENGETAHUAN_SITUS = `## Akun
   komponen dan punya mode Pratinjau sebelum mengirim.
   Pengajar juga bisa mengarsipkan pengumuman atau tugas (hilang dari tampilan siswa,
   tersimpan di tab Arsip (di kanan tab Tugas) yang hanya terlihat pengajar, bisa dipulihkan).
-  Tab Quiz (di kanan Tugas): pengajar membuat quiz pilihan ganda dan esai seperti
-  Google Form dengan poin tiap nomor (total 100), setelan jadwal mulai (hari, tanggal, jam; atau langsung dibuka), acak urutan soal per siswa,
+  Tab Quiz (di kanan Tugas): pengajar membuat quiz pilihan ganda, esai, dan tabel seperti
+  Google Form (soal tabel: pengajar mengatur jumlah baris dan kolom, sel isian dinilai otomatis per sel;
+  quiz bisa individu atau kelompok, pada quiz kelompok siswa mengisi nama kelompoknya sebelum mulai) dengan poin tiap nomor (total 100), setelan jadwal mulai (hari, tanggal, jam; atau langsung dibuka), acak urutan soal per siswa,
   batas waktu (habis waktu otomatis dikumpulkan) dan tambahan waktu. Siswa mengerjakan satu
   kali, tiap quiz punya papan peringkat 1-3 (nilai tertinggi, seri dipilih yang tercepat),
   dan kunci jawaban baru terbuka setelah pengajar menutup quiz. Pengajar memantau siswa lewat tombol Pantau

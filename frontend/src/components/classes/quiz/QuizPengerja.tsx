@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import TabelPengerja from "@/components/classes/quiz/TabelPengerja";
 import { saveQuizAnswers, submitQuiz } from "@/lib/classQuizActions";
 import { MAX_JAWABAN_ESAI, formatDurasi } from "@/lib/classQuizRules";
 import type { SoalSiswa } from "@/lib/classQuizzes";
@@ -25,6 +26,7 @@ export default function QuizPengerja({
   soal,
   jawabanAwal,
   sisaAwal,
+  kelompok = null,
 }: {
   classId: string;
   quizId: string;
@@ -33,6 +35,8 @@ export default function QuizPengerja({
   jawabanAwal: Record<string, string>;
   /** Sisa detik saat halaman dirender; null = tanpa batas waktu. */
   sisaAwal: number | null;
+  /** Nama kelompok (quiz kelompok), tampil di bilah atas. */
+  kelompok?: string | null;
 }) {
   const router = useRouter();
   const [jawaban, setJawaban] = useState<Record<string, string>>(jawabanAwal);
@@ -106,6 +110,11 @@ export default function QuizPengerja({
       {/* Bilah waktu melekat di atas */}
       <div className="sticky top-[84px] z-30 mb-5 flex flex-wrap items-center gap-x-5 gap-y-1 bg-header/95 px-5 py-3 backdrop-blur-md">
         <p className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{judul}</p>
+        {kelompok && (
+          <p className="max-w-[40%] truncate text-sm text-ink-muted" title={`Kelompok ${kelompok}`}>
+            Kelompok <strong className="font-semibold text-ink">{kelompok}</strong>
+          </p>
+        )}
         <p className="text-sm text-ink-muted">
           {terjawab}/{soal.length} terjawab
         </p>
@@ -160,6 +169,14 @@ export default function QuizPengerja({
                   );
                 })}
               </div>
+            ) : s.type === "table" && s.table ? (
+              <TabelPengerja
+                idDasar={`tb-${s.id}`}
+                tabel={s.table}
+                nilai={jawaban[s.id] ?? ""}
+                ubah={(v) => setJawaban((j) => ({ ...j, [s.id]: v }))}
+                disabled={pending}
+              />
             ) : (
               <div className="mt-4">
                 <label className="sr-only" htmlFor={`es-${s.id}`}>

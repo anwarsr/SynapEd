@@ -21,6 +21,7 @@ import {
   durasiDetik,
   formatDurasi,
   hitungNilai,
+  ringkasKelompok,
   sisaDetik,
   statusQuizSiswa,
   sudahDibuka,
@@ -139,6 +140,7 @@ export default async function PantauTab({
   const bisaPeringatkan = !quiz.closed && sudahDibuka(quiz, sekarang);
   const alasanEkspor = alasanTakBisaEkspor(quiz, percobaan);
   const analisis = analisisSoal(quiz, percobaan);
+  const ringkas = quiz.settings.kelompok ? ringkasKelompok(quiz, percobaan) : [];
   const adaBerjalan = hitung("berlangsung") > 0 && !quiz.closed;
 
   const peristiwa = percobaan
@@ -243,6 +245,35 @@ export default async function PantauTab({
         </ul>
       </section>
 
+      {/* Quiz kelompok: ringkasan per kelompok (nama dibandingkan tanpa beda huruf besar-kecil). */}
+      {quiz.settings.kelompok && (
+        <section className="mt-10" aria-label="Ringkasan per kelompok">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-ink-muted">Per kelompok</p>
+          {ringkas.length === 0 ? (
+            <p className="bg-white/5 px-6 py-6 text-sm leading-[1.7] text-ink-muted">Belum ada kelompok. Nama kelompok muncul begitu siswa memulai quiz.</p>
+          ) : (
+            <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+              {ringkas.map((k) => (
+                <li key={k.nama.toLowerCase()} className="flex items-end justify-between gap-4 bg-paper-card px-5 py-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold text-ink" title={k.nama}>
+                      {k.nama}
+                    </p>
+                    <p className="mt-0.5 text-xs text-ink-muted">
+                      {k.terkumpul}/{k.anggota} anggota terkumpul
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-right">
+                    <span className="block text-[28px] font-semibold leading-none text-ink">{k.rata ?? "-"}</span>
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">rata-rata</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       <div className="mt-12 grid gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_250px]">
         {/* ── Lintasan siswa: satu garis waktu per siswa ── */}
         <div className="min-w-0">
@@ -276,6 +307,11 @@ export default async function PantauTab({
                           {b.status === "berlangsung" && <span className="pantau-titik h-1.5 w-1.5 rounded-full bg-blue-300" aria-hidden="true" />}
                           {LABEL_STATUS_QUIZ[b.status]}
                         </p>
+                        {p?.groupName && (
+                          <p className="truncate text-[11px] text-ink-muted" title={`Kelompok ${p.groupName}`}>
+                            Kelompok {p.groupName}
+                          </p>
+                        )}
                       </div>
                     </div>
 
