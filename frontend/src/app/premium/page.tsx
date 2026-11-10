@@ -155,7 +155,7 @@ export default async function PremiumPage({ searchParams }: Props) {
               <ol className="mt-12 grid gap-1 sm:grid-cols-2">
                 {manfaat.map((m, i) => (
                   <li key={m.judul} className="bg-paper-card p-6">
-                    <span className="block text-4xl font-extralight tabular-nums leading-none text-blue-300">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="block text-4xl font-extrabold tabular-nums leading-none tracking-[-0.03em] text-white">{String(i + 1).padStart(2, "0")}</span>
                     <span className="mt-4 block text-lg font-semibold text-ink">{m.judul}</span>
                     <span className="mt-2 block text-sm leading-relaxed text-ink-muted">{m.isi}</span>
                   </li>
@@ -164,10 +164,17 @@ export default async function PremiumPage({ searchParams }: Props) {
 
               {etalase.length > 0 && (
                 <div className="mt-16">
-                  <div className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
+                  <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                     <h2 className="t-h3">Langsung terbuka untuk Anda</h2>
-                    <Link href="/courses" className="text-sm font-semibold text-blue-300 underline-offset-4 hover:underline">
-                      Lihat semua {jumlahKursus} kursus →
+                    {/* Gaya sama dengan tombol "Lihat semua kursus" di beranda: kotak, panah bergeser, biru saat hover. */}
+                    <Link
+                      href="/courses"
+                      className="group inline-flex items-center gap-2.5 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out-soft hover:bg-blue-600"
+                    >
+                      Lihat semua {jumlahKursus} kursus
+                      <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1">
+                        →
+                      </span>
                     </Link>
                   </div>
                   <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">

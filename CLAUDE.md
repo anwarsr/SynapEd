@@ -176,7 +176,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
   nama, dan bintang berada DI TENGAH banner (sedikit di atas titik tengah, di atas peredam
   hitam 45%); nama kursus + isi komentar di bawah banner, rata tengah.
 - **Banner bawaan** = `#0D2131` (senada kartu komentar `#12293A` tapi lebih tua); peredam hitam hanya dipasang bila ada gambar.
-- **/kelas & ruang kelas**: kepala `#081520` (sedikit lebih tua dari latar `#0B1A24`), judul "Kelas saya" putih penuh tanpa garis kuning (`mark-on-dark` tak dipakai lagi di sini), TANPA PNG (`ClassHeroProps` dihapus), kartu/isian persegi tanpa border, font Plus Jakarta Sans (bukan `font-mono`).
+- **/kelas & ruang kelas**: kepala `#081520` (sedikit lebih tua dari latar `#0B1A24`), judul "Kelas saya" putih penuh tanpa garis kuning (`mark-on-dark` tak dipakai lagi di sini), TANPA PNG (`ClassHeroProps` dihapus), kartu/isian persegi tanpa border, font Plus Jakarta Sans (bukan `font-mono`). **Kartu kelas** (`ClassCard`) = kotak identitas `PitaKelas` (client) + isi (`Link` ke kelas), bukan satu tautan utuh: pita FOTO setinggi kartu (112px, sm 224px), BAWAAN terbuka; seluruh kotak (foto + latar berwarna) menyusut ke kiri jadi kotak tipis 12px (`width` 900ms; gambar menempel di sisi KANAN kotak sehingga ikut bergeser ke kiri; TINGGI kartu dikunci pada tinggi saat foto terbuka lewat `min-height` yang diukur `ResizeObserver` hanya selagi terbuka & tidak bergerak, jadi kartu tak menjalar ke bawah; isi kartu TIDAK dipudarkan - versi itu terlihat berkedip, jangan dikembalikan) sebagai indikator yang bisa ditekan, ditekan lagi = melebar dari kiri; isi kartu (`flex-1`) ikut ke kiri dan melebar mengisi ruangnya, tanpa ruang kosong. TANPA kotak inisial, tanpa panah, dan lebar tak pernah berubah sehingga isi kartu tidak bergeser. `PitaKelas` juga MEMBUNGKUS isi kartu (`children` + `className`; pemanggil tak boleh membungkus isinya sendiri). Kelas tanpa foto = tanpa pita, hanya isi. Prop `tipis` sudah dihapus; tiap kartu independen. Dua tempat: `/kelas` & dashboard (`ClassCard`, tertutup 88px berinisial) dan `/educator/classes` (baris padat, prop `tipis`: tertutup tetap 14px dengan panah kecil di tengah; dulu memakai `ClassSpine` statis - jangan kembali ke itu). Nada `bg-navy` di `classColor` memakai `text-white` untuk inisial (dulu `text-paper` gelap di atas hitam = tak terbaca).
 - **/dashboard** (pendapatan): tanpa label "Akun Saya"; kartu/tabel persegi tanpa border, statistik dipisah celah 4px.
 - **Halaman profil** tanpa border/radius (kartu `bg-paper-card`, hover `#16324A`); `Tag`
   amber/rust kini tint transparan + teks terang (bukan kotak krem/oranye pucat).
@@ -395,7 +395,7 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `referralCodes/{KODE}` | Pemilik kode `{uid}`. |
 
 Storage: `avatars/{uid}` (juga `banner.jpg` — banner profil, lihat bawah), `course-assets/{uid}` (PDF, dilayani lewat
-`/api/courses/[slug]/asset`), `course-thumbnails/{uid}` (publik), `payment-qris`
+`/api/courses/[slug]/asset`: inline HANYA untuk `mimeTampil` (PDF/JPG/PNG/TXT; tipe ditetapkan dari ekstensi + `nosniff`, non-PDF ber-CSP `sandbox`), selainnya selalu `attachment`; `?download=1` memaksa unduh; "Berkas Pendukung" di `LearnShell` = buka di tab baru + tombol Unduh untuk jenis itu), `course-thumbnails/{uid}` (publik), `payment-qris`
 (publik), `payment-proofs/{uid}` (lewat `/api/payments/proof`, admin),
 `submissions/{uid}` (lewat `/api/submissions/file`), `class-files/{uid}/{classId}/`
 (lampiran pengajar, lewat `/api/classes/attachment`), `class-submissions/{uid}/{classId}/{postId}/`
@@ -463,7 +463,7 @@ manual (menumpuk), bagi hasil sesuai pemakaian, akses berhenti tetapi kemajuan t
   `blue-300`; diukur muat untuk educator di 820/1024/1280/1440). `CourseCard`: "Termasuk Premium" di bawah harga
   kursus berbayar (katalog hanya memuat kursus publik). `/premium`: angka penawaran, 4 manfaat, etalase 3 kursus
   berbayar ber-rating tertinggi (`CourseCard`), "Pertanyaan umum" (termasuk educator) - TANPA paragraf bagi
-  hasil; admin melihat catatan alih-alih tombol beli. Educator boleh membeli (tidak ada penjaga peran).
+  hasil; admin melihat catatan alih-alih tombol beli. Educator boleh membeli (tidak ada penjaga peran). Tombol "Lihat semua N kursus" di etalase memakai gaya tombol beranda (kotak `bg-white/10`, panah bergeser, `hover:bg-blue-600`), bukan tautan teks; angka 01-04 kartu manfaat = `font-extrabold text-white` (dulu `font-extralight text-blue-300`).
 - UI: `/premium` (publik), `PremiumEnrollButton` di halaman kursus (premium aktif; label "Lanjutkan dengan
   Premium" untuk pendaftaran premium yang berakhir), pemberitahuan berakhir + tautan ke `/premium` untuk
   non-anggota, `NavbarPremium` (memanggil `statusPremiumSaya`, ingatan 60 dtk per uid; Navbar membaca sesi
@@ -619,7 +619,7 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
   memuat kedua folder kelas (tanpa itu `deleteObjects` diam-diam tidak menghapus apa-apa).
 - Penyaji berkas: lampiran → anggota/pemilik (bukan anggota = 404); jawaban →
   pengirim atau `requireOwnedClass` (siswa lain = 403). Keduanya memeriksa ulang
-  awalan path dan selalu `attachment` + `nosniff`.
+  awalan path dan selalu `nosniff`; bawaannya `attachment`, dan `?lihat=1` membuka INLINE hanya untuk `mimeTampil` (classAssignmentRules: .pdf/.jpg/.jpeg/.png/.txt; Content-Type ditetapkan SERVER dari ekstensi, teks/gambar diberi CSP `sandbox`, PDF tanpa sandbox karena penampil PDF peramban gagal di bawahnya). Office/ZIP tak bisa ditampilkan peramban, tetap diunduh walau diminta inline. `Lampiran`: berkas yang bisa dilihat dibuka di tab baru + tautan "Unduh" terpisah.
 - **Koreksi AI** (`classGradingActions.ts`: `suggestClassGrade`, `saveAiGradingSettings`;
   tombol di `ClassGradeForm.tsx`, kartu `AiGradingSettings.tsx`):
   - Hanya SARAN, persis seperti `suggestGrade` kursus: tidak pernah menulis nilai;

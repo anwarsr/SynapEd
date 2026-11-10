@@ -45,5 +45,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "Berkas tidak sah." }, { status: 400 });
   }
 
-  return sajikanBerkas(berkas.path, berkas.name);
+  return sajikanBerkas(berkas.path, berkas.name, new URL(request.url).searchParams.get("lihat") === "1");
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import EducatorShell from "@/components/educator/EducatorShell";
 import Reveal from "@/components/ui/Reveal";
 import ClassForm from "@/components/classes/ClassForm";
-import { ClassSpine } from "@/components/classes/ClassPlate";
+import PitaKelas from "@/components/classes/PitaKelas";
 import { formatDateOnly } from "@/lib/adminUsers";
 import { listOwnedClasses } from "@/lib/classes";
 import { requireEducator } from "@/lib/firebase/session";
@@ -64,9 +64,7 @@ export default async function MyClassesPage() {
                   <li key={k.id}>
                     <Reveal delay={i * 90}>
                       <div className="flex overflow-hidden bg-paper-card transition-colors duration-300 ease-out-soft hover:bg-card-hover">
-                        <ClassSpine nama={k.name} variant="tipis" gambar={k.imageURL} />
-
-                        <div className="min-w-0 flex-1 p-5">
+                        <PitaKelas nama={k.name} gambar={k.imageURL ?? null} className="p-5">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
                               <Link
@@ -112,7 +110,7 @@ export default async function MyClassesPage() {
                               {k.description}
                             </p>
                           )}
-                        </div>
+                      </PitaKelas>
                       </div>
                     </Reveal>
                   </li>

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { canViewLesson, getCourseAccess } from "@/lib/courseAccess";
 import { adminStorage } from "@/lib/firebase/admin";
+import { mimeTampil } from "@/lib/classAssignmentRules";
 
 /**
  * Jembatan ke satu berkas lampiran pelajaran — bukan proxy Storage umum.
@@ -66,15 +67,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // memuat karakter apa saja, dan header yang rusak membuat unduhan gagal.
   const filename = (attachment?.name ?? "materi").replace(/["\\\r\n]/g, "");
 
-  return new NextResponse(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      "Content-Type": metadata.contentType ?? attachment?.mime ?? "application/octet-stream",
-      "Content-Length": String(buffer.length),
-      "Content-Disposition": `${asDownload ? "attachment" : "inline"}; filename="${filename}"`,
-      // Berkas ini hanya boleh dilihat peserta yang berhak; cache bersama
-      // seperti CDN tidak boleh menyimpannya.
-      "Cache-Control": "private, no-store",
-    },
-  });
+  // INLINE hanya untuk jenis yang aman ditampilkan peramban (PDF, JPG/PNG, TXT) dan Content-Type-nya ditetapkan
+  // dari ekstensi, bukan dipercaya dari metadata unggahan; jenis lain selalu diunduh. Dulu semua jenis dikirim
+  // inline dengan tipe dari metadata, sehingga berkas HTML/SVG dari educator dieksekusi di domain ini.
+  const mimeLihat = asDownload ? null : mimeTampil(filename);
+  const headers: Record<string, string> = {
+    "Content-Type": mimeLihat ?? metadata.contentType ?? attachment?.mime ?? "application/octet-stream",
+    "Content-Length": String(buffer.length),
+    "Content-Disposition": `${mimeLihat ? "inline" : "attachment"}; filename="${filename}"`,
+    "X-Content-Type-Options": "nosniff",
+    // Berkas ini hanya boleh dilihat peserta yang berhak; cache bersama
+    // seperti CDN tidak boleh menyimpannya.
+    "Cache-Control": "private, no-store",
+  };
+  if (mimeLihat && mimeLihat !== "application/pdf") {
+    headers["Content-Security-Policy"] = "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'";
+  }
+  return new NextResponse(new Uint8Array(buffer), { status: 200, headers });
 }

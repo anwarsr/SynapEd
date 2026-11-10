@@ -406,6 +406,7 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
 - **Gerakan tangan untuk objek 3D**: di mode layar penuh objek 3D ada tombol tangan; kamera depan membaca tangan
   (tangan terbuka bergerak = memutar objek ke kanan/kiri/atas/bawah, telunjuk saja = menunjuk komponen lalu tahan sebentar untuk menampilkan keterangannya, dua jari naik-turun = zoom, kepalan = jeda).
   Panel kontrolnya bawaan berupa batang tegak tipis di tepi kanan (berubah biru saat tangan terdeteksi, bisa diseret naik-turun, tekan untuk membuka, tombol minus untuk mengecilkan lagi). Pratinjau hanya menampilkan kerangka tangan (wajah tidak ditampilkan); gambar kamera hanya diproses di perangkat sendiri, tidak direkam atau dikirim.
+- **Kartu kelas** di /kelas dan dashboard: foto profil kelas tampil setinggi kartu di tepi kiri; tekan untuk menutupnya ke kiri (tersisa kotak tipis dan isi kartu melebar mengisi ruangnya), tekan kotak tipis itu untuk membukanya lagi.
 - **Roda pemilih** (`/educator/classes/<id>/wheel`, pintasan di bawah kotak kode undangan):
   roda untuk mengundi siswa yang menjawab. Bisa membuat beberapa roda per kelas, mengisinya
   dengan anggota kelas dan/atau nama sendiri, dan menyesuaikan nama, warna, lama putaran, serta
@@ -446,6 +447,7 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   tab **Arsip** (di kanan tab Tugas; hanya pengelola yang melihatnya). Yang terarsip
   hilang total bagi siswa (umpan, daftar tugas, lampiran, balasan, pengumpulan baru) tetapi
   datanya utuh; di zona Arsip bisa dibuka, **Pulihkan**, atau dihapus permanen.
+- **Berkas pendukung kursus**: PDF, gambar, dan TXT dibuka langsung di tab baru dan tetap bisa diunduh lewat tombol "Unduh"; Office/ZIP langsung diunduh. Kartu objek 3D di pengumuman kini berlabel "3D" tebal (bukan ikon kubus).
 - **Objek 3D di pengumuman** (educator/admin pemilik kelas): lampirkan berkas
   `.glb` (maks 20 MB) dari kotak tulis, lengkap dengan **judul** objek. Di umpan, murid
   melihat kotak berjudul dulu; diklik, kotaknya memanjang ke bawah (itulah "pintunya")
@@ -481,7 +483,7 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   pengumpulan masih dibuka, kiriman bisa **dibatalkan lalu dikirim ulang**
   (berkas yang sudah dikirim ikut terhapus).
 - Pengajar melihat daftar seluruh siswa per tugas di
-  `/educator/classes/[id]/tugas/[postId]`, mengunduh jawabannya, lalu memberi
+  `/educator/classes/[id]/tugas/[postId]`, membuka atau mengunduh jawabannya (PDF, gambar, dan TXT langsung terbuka di tab baru tanpa diunduh; Office/ZIP tetap diunduh), lalu memberi
   **nilai + komentar** yang langsung terlihat oleh siswa. Di layar lebar, kolom
   kiri (instruksi & daftar siswa) dan kolom kanan (Ringkasan & Koreksi AI)
   digulir terpisah, sehingga pengaturan AI tetap terjangkau saat menilai.

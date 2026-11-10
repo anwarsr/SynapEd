@@ -131,6 +131,25 @@ export function ekstensiOf(name: string): string {
   return m ? m[0].toLowerCase() : "";
 }
 
+/**
+ * Jenis berkas yang boleh DIBUKA LANGSUNG di peramban (tab baru) tanpa diunduh. Hanya yang peramban tampilkan
+ * tanpa menjalankan skrip dari berkasnya: PDF, gambar rasterisasi, dan teks polos. DOCX/PPTX/XLSX/ZIP tak bisa
+ * ditampilkan peramban, jadi tetap diunduh. MIME diambil dari ekstensi (bukan dari metadata/browser) dan dikirim
+ * ulang oleh server, jadi berkas bernama .txt berisi HTML tetap tampil sebagai teks.
+ */
+const MIME_TAMPIL: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".txt": "text/plain; charset=utf-8",
+};
+
+/** MIME untuk membuka berkas langsung di peramban, atau null bila hanya bisa diunduh. */
+export function mimeTampil(name: string): string | null {
+  return MIME_TAMPIL[ekstensiOf(name)] ?? null;
+}
+
 /** MIME baku sebuah nama berkas, atau null kalau ekstensinya tidak dikenal. */
 export function mimeOfName(name: string): string | null {
   return BERKAS[ekstensiOf(name)]?.mime ?? null;

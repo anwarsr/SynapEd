@@ -32,7 +32,7 @@ const NADA: readonly NadaKelas[] = [
   { tint: "bg-blue-50", deep: "text-blue-700", garis: "border-blue-100", tag: "blue" },
   { tint: "bg-amber-100", deep: "text-amber-700", garis: "border-amber-100", tag: "amber" },
   { tint: "bg-rust-100", deep: "text-rust-700", garis: "border-rust-100", tag: "rust" },
-  { tint: "bg-navy", deep: "text-paper", garis: "border-navy", tag: "neutral" },
+  { tint: "bg-navy", deep: "text-white", garis: "border-navy", tag: "neutral" },
 ];
 
 export function nadaKelas(nama: string): NadaKelas {

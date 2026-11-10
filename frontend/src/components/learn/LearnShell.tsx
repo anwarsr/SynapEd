@@ -6,6 +6,7 @@ import type { Progress } from "@/lib/enrollments";
 import type { PublicQuiz } from "@/lib/quiz";
 import { lessonIcons } from "@/lib/courseUi";
 import { formatBytes, lessonAssetUrl, previewKind, toEmbedUrl } from "@/lib/videoEmbed";
+import { mimeTampil } from "@/lib/classAssignmentRules";
 import { cn } from "@/lib/cn";
 import { useChatLessonContext } from "@/components/ui/ChatContext";
 import LessonCompleteButton from "./LessonCompleteButton";
@@ -442,12 +443,14 @@ export default function LearnShell({
                     <ul className="space-y-2">
                       {attachments.map((file) => {
                         const size = formatBytes(file.size);
+                        // PDF/gambar/teks dibuka di tab baru + tombol Unduh; sisanya langsung diunduh.
+                        const bisaLihat = mimeTampil(file.name) !== null;
                         return (
-                          <li key={file.path}>
+                          <li key={file.path} className="flex items-stretch gap-px bg-paper-card transition-[transform,background-color] duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-card-hover">
                             <a
-                              href={lessonAssetUrl(course.slug, file.path, true)}
-                              download={file.name}
-                              className="group flex items-center gap-3 bg-paper-card px-4 py-3 transition-[transform,background-color] duration-200 ease-out-soft hover:-translate-y-0.5 hover:bg-card-hover"
+                              href={lessonAssetUrl(course.slug, file.path, !bisaLihat)}
+                              {...(bisaLihat ? { target: "_blank", rel: "noopener noreferrer" } : { download: file.name })}
+                              className="group flex min-w-0 flex-1 items-center gap-3 px-4 py-3"
                             >
                               <span className="w-9 h-9 bg-white/10 flex items-center justify-center shrink-0">
                                 <svg className="w-4 h-4 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
@@ -458,12 +461,32 @@ export default function LearnShell({
                                 <span className="block text-sm text-ink truncate group-hover:text-blue-700 transition-colors">
                                   {file.name}
                                 </span>
-                                {size && <span className="block text-xs text-ink-muted">{size}</span>}
+                                {size && (
+                                  <span className="block text-xs text-ink-muted">
+                                    {size}
+                                    {bisaLihat ? " · Buka" : ""}
+                                  </span>
+                                )}
                               </span>
-                              <svg className="w-4 h-4 text-ink-faint shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                              </svg>
+                              {!bisaLihat && (
+                                <svg className="w-4 h-4 text-ink-faint shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                                </svg>
+                              )}
                             </a>
+                            {bisaLihat && (
+                              <a
+                                href={lessonAssetUrl(course.slug, file.path, true)}
+                                download={file.name}
+                                aria-label={`Unduh ${file.name}`}
+                                className="flex shrink-0 items-center gap-1.5 px-4 text-xs font-semibold text-ink-muted transition-colors duration-200 hover:text-blue-700"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                                </svg>
+                                Unduh
+                              </a>
+                            )}
                           </li>
                         );
                       })}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Tag from "@/components/ui/Tag";
-import { ClassSpine } from "@/components/classes/ClassPlate";
+import PitaKelas from "@/components/classes/PitaKelas";
 import { nadaKelas } from "@/lib/classColor";
 import { formatDateOnly } from "@/lib/adminUsers";
 
@@ -55,13 +55,11 @@ export default function ClassCard({
   const nada = nadaKelas(kelas.name);
 
   return (
-    <Link
-      href={href}
-      className="group flex overflow-hidden bg-paper-card transition-all duration-240 ease-out-soft hover:bg-card-hover hover:-translate-y-[3px]"
-    >
-      <ClassSpine nama={kelas.name} gambar={kelas.imageURL ?? null} />
-
-      <span className="min-w-0 flex-1 p-5 sm:p-6">
+    // Kartu = pita warna (tombol: melebar menampilkan foto kelas) + isi (tautan ke ruang kelas).
+    // Pita sengaja BUKAN bagian dari tautan, supaya menekannya tidak membuka kelas.
+    <div className="group flex overflow-hidden bg-paper-card transition-all duration-240 ease-out-soft hover:bg-card-hover hover:-translate-y-[3px]">
+      <PitaKelas nama={kelas.name} gambar={kelas.imageURL ?? null} className="p-0">
+      <Link href={href} className="block h-full min-w-0 p-5 sm:p-6">
         <span className="flex flex-wrap items-start justify-between gap-3">
           <span
             className="text-[21px] leading-[1.3] text-ink transition-colors duration-200 group-hover:text-blue-700"
@@ -88,7 +86,8 @@ export default function ClassCard({
           <Figur angka={kelas.postCount} label="postingan" />
           <span className="text-[13px] text-ink-muted">Dibuat {formatDateOnly(kelas.createdAt)}</span>
         </span>
-      </span>
-    </Link>
+      </Link>
+      </PitaKelas>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { ekstensiOf, type KelasBerkas } from "@/lib/classAssignmentRules";
+import { ekstensiOf, mimeTampil, type KelasBerkas } from "@/lib/classAssignmentRules";
 import { formatBytes } from "@/lib/videoEmbed";
 import { cn } from "@/lib/cn";
 
@@ -11,7 +11,7 @@ function nadaLencana(ext: string): string {
 }
 
 /**
- * Daftar berkas sebagai kartu unduhan.
+ * Daftar berkas sebagai kartu: PDF, gambar, dan teks dibuka langsung (tab baru), sisanya diunduh.
  *
  * Tanpa hook dan tanpa "use client", jadi bisa dirender dari komponen server
  * maupun klien. `hrefs` disusun pemanggil karena route penyajinya berbeda
@@ -33,11 +33,14 @@ export default function Lampiran({
     <ul className={cn("grid gap-2 sm:grid-cols-2", className)}>
       {files.map((f, i) => {
         const ext = ekstensiOf(f.name);
+        // PDF/gambar/teks dibuka langsung di tab baru; sisanya (Office, ZIP) hanya bisa diunduh.
+        const bisaLihat = mimeTampil(f.name) !== null;
         return (
-          <li key={f.path} className="min-w-0">
+          <li key={f.path} className="flex min-w-0 items-stretch gap-px bg-white/[0.06] transition-colors duration-200 hover:bg-blue-50/40">
             <a
-              href={hrefs[i]}
-              className="group flex min-w-0 items-center gap-3 bg-white/[0.06] px-3 py-2.5 transition-colors duration-200 hover:bg-blue-50/40"
+              href={bisaLihat ? `${hrefs[i]}&lihat=1` : hrefs[i]}
+              {...(bisaLihat ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              className="group flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5"
             >
               <span
                 aria-hidden="true"
@@ -53,10 +56,20 @@ export default function Lampiran({
                   {f.name}
                 </span>
                 <span className="block text-xs text-ink-muted">
-                  {formatBytes(f.size) ?? "Berkas"} · Unduh
+                  {formatBytes(f.size) ?? "Berkas"} · {bisaLihat ? "Buka" : "Unduh"}
                 </span>
               </span>
             </a>
+            {bisaLihat && (
+              <a
+                href={hrefs[i]}
+                aria-label={`Unduh ${f.name}`}
+                title="Unduh"
+                className="flex shrink-0 items-center px-3 text-xs font-semibold text-ink-muted transition-colors duration-200 hover:text-blue-700"
+              >
+                Unduh
+              </a>
+            )}
           </li>
         );
       })}
