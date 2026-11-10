@@ -34,6 +34,7 @@ export const CHAT_LINKS: readonly ChatLink[] = [
   { path: "/komentar", ket: "semua ulasan/komentar peserta tentang kursus" },
   { path: "/kelas", ket: "kelas yang diikuti dan bergabung ke kelas dengan kode undangan" },
   { path: "/lab", ket: "SynapLab, papan visualisasi struktur data" },
+  { path: "/syrobo", ket: "SyRobo: robot peliharaan - beri makan, mandikan, ganti baju, kumpulkan poin harian" },
   { path: "/educator", ket: "pengajuan menjadi educator" },
   { path: "/educator/courses", ket: "(educator) membuat & mengelola kursus" },
   { path: "/educator/classes", ket: "(educator) membuat & mengelola kelas" },

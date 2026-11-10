@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { useAuth } from "@/lib/useAuth";
+import { suasanaSyroboSaya } from "@/lib/syroboActions";
+import type { Suasana } from "@/lib/syrobo/syroboRules";
 
 /**
  * Peluncur asisten AI berwujud robot (tanpa lingkaran latar).
@@ -85,6 +88,7 @@ export default function ChatRobot({
   onPos: (p: RobotPos) => void;
 }) {
   const [siap, setSiap] = useState(false);
+  const suasanaSyrobo = useSuasanaSyrobo();
   const [mode, setMode] = useState<RobotMode>("diam");
   const [hemat, setHemat] = useState(false);
   const [menu, setMenu] = useState<Sisi | null>(null);
@@ -441,7 +445,7 @@ export default function ChatRobot({
           dragging ? "cursor-grabbing" : "cursor-grab",
         )}
       >
-        <RobotFace />
+        <RobotFace suasana={suasanaSyrobo} />
       </button>
 
       {/* Gelembung ajakan */}
@@ -514,7 +518,10 @@ export default function ChatRobot({
  * antena, dua mata yang berkedip, pipi, dan senyum. Bayangan lembut menjaga
  * kepala putih tetap terbaca di atas latar apa pun.
  */
-function RobotFace() {
+function RobotFace({ suasana }: { suasana: Suasana | null }) {
+  // Indikator SyRobo: lapar = mata sayu + cemberut + lencana oranye; kotor = noda & lalat.
+  const lapar = suasana === "lapar" || suasana === "lapar-kotor";
+  const kotor = suasana === "kotor" || suasana === "lapar-kotor";
   const svgRef = useRef<SVGSVGElement>(null);
   const mataRef = useRef<SVGGElement>(null);
 
@@ -566,11 +573,67 @@ function RobotFace() {
       <rect x="13" y="20" width="38" height="30" rx="11" fill="#0F2A44" />
       {/* mata: berkedip, dan pasangannya (.robot-mata) melirik mengikuti kursor */}
       <g ref={mataRef} className="robot-mata">
-        <ellipse className="robot-eye" cx="23.5" cy="33" rx="4.2" ry="5" fill="#8DB8FF" />
-        <ellipse className="robot-eye" cx="40.5" cy="33" rx="4.2" ry="5" fill="#8DB8FF" />
+        <ellipse className="robot-eye" cx="23.5" cy="33" rx="4.2" ry={lapar ? 2.4 : 5} fill="#8DB8FF" />
+        <ellipse className="robot-eye" cx="40.5" cy="33" rx="4.2" ry={lapar ? 2.4 : 5} fill="#8DB8FF" />
       </g>
-      {/* senyum */}
-      <path d="M26 42.5c2.2 2.8 9.8 2.8 12 0" stroke="#8DB8FF" strokeWidth="2.6" strokeLinecap="round" />
+      {/* senyum, atau cemberut bila SyRobo lapar / kotor */}
+      <path
+        d={lapar || kotor ? "M26 45c2.2 -2.8 9.8 -2.8 12 0" : "M26 42.5c2.2 2.8 9.8 2.8 12 0"}
+        stroke="#8DB8FF"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
+      {kotor && (
+        <g>
+          <ellipse cx="14" cy="52" rx="4" ry="2.2" fill="#7A5B3A" opacity=".65" />
+          <ellipse cx="50" cy="19" rx="3.2" ry="1.9" fill="#7A5B3A" opacity=".6" />
+          <g className="syrobo-lalat">
+            <circle cx="10" cy="12" r="1.5" fill="#fff" />
+            <circle cx="56" cy="9" r="1.3" fill="#fff" />
+          </g>
+        </g>
+      )}
+      {lapar && (
+        <g>
+          <circle cx="54" cy="14" r="7" fill="#E0833B" />
+          <text x="54" y="18" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff">
+            !
+          </text>
+        </g>
+      )}
     </svg>
   );
+}
+
+/**
+ * Suasana SyRobo milik pengguna yang sedang masuk, untuk ekspresi robot asisten di semua halaman. Tamu tidak
+ * memanggil server sama sekali. Disegarkan tiap menit selagi tab terlihat dan seketika saat halaman SyRobo
+ * mengabarkan perubahan (`synaped:syrobo`).
+ */
+function useSuasanaSyrobo(): Suasana | null {
+  const { status } = useAuth();
+  const [suasana, setSuasana] = useState<Suasana | null>(null);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let hidup = true;
+    const muat = () => {
+      if (document.visibilityState !== "visible") return;
+      suasanaSyroboSaya()
+        .then((s) => {
+          if (hidup) setSuasana(s ? s.suasana : null);
+        })
+        .catch(() => undefined);
+    };
+    muat();
+    const id = setInterval(muat, 60_000);
+    window.addEventListener("synaped:syrobo", muat);
+    return () => {
+      hidup = false;
+      clearInterval(id);
+      window.removeEventListener("synaped:syrobo", muat);
+    };
+  }, [status]);
+
+  return status === "authenticated" ? suasana : null;
 }

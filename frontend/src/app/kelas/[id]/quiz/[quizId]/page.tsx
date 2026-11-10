@@ -16,6 +16,8 @@ import {
 import { formatWib } from "@/lib/classAssignmentRules";
 import { TOTAL_POIN, sisaDetik, sudahDibuka } from "@/lib/classQuizRules";
 import { requireUser } from "@/lib/firebase/session";
+import { listClassMembers } from "@/lib/classes";
+import { getUserCards } from "@/lib/userCards";
 import PeringatanQuiz from "@/components/classes/quiz/PeringatanQuiz";
 import type { Metadata } from "next";
 
@@ -51,6 +53,14 @@ export default async function QuizSiswaPage({ params }: Props) {
   const p = awal ? await selesaikanBilaPerlu(quiz, awal, sekarang) : null;
 
   const mengerjakan = p !== null && !p.submittedAt;
+
+  // Quiz kelompok: peserta lain yang sudah bergabung, untuk dipilih sebagai anggota kelompok (tanpa diri sendiri & pengajar).
+  let anggotaKelas: { uid: string; nama: string }[] = [];
+  if (quiz.settings.kelompok === true && !p) {
+    const lain = (await listClassMembers(id)).filter((m) => m.role === "member" && m.uid !== user.uid).map((m) => m.uid);
+    const kartu = await getUserCards(lain);
+    anggotaKelas = lain.map((uid) => ({ uid, nama: kartu.get(uid)?.name ?? "Peserta" })).sort((a, b) => a.nama.localeCompare(b.nama, "id"));
+  }
 
   const durasi = quiz.settings.durationMin !== null ? quiz.settings.durationMin + quiz.extraMin : null;
   const belumDibuka = !sudahDibuka(quiz, sekarang);
@@ -130,7 +140,7 @@ export default async function QuizSiswaPage({ params }: Props) {
                           : "Tidak ada batas waktu. Kerjakan dengan tenang.",
                         "Jawaban tersimpan otomatis. Quiz hanya bisa dikerjakan satu kali.",
                         ...(quiz.settings.kelompok
-                          ? ["Quiz ini dikerjakan per KELOMPOK: isi nama kelompok Anda di bawah sebelum mulai. Tiap anggota tetap mengerjakan dan dinilai sendiri."]
+                          ? ["Quiz ini dikerjakan per KELOMPOK: isi nama kelompok dan anggotanya di bawah sebelum mulai (ketik sendiri atau pilih dari anggota kelas). Tiap anggota tetap mengerjakan dan dinilai sendiri; selain soal, pengajar menilai kalian dengan rubrik, jadi nilai akhir menunggu penilaian itu."]
                           : []),
                         ...(quiz.settings.shuffleQuestions ? ["Urutan soal diacak untuk tiap siswa."] : []),
                       ].map((t, i) => (
@@ -141,7 +151,7 @@ export default async function QuizSiswaPage({ params }: Props) {
                       ))}
                     </ol>
                     <div className="mt-10">
-                      <MulaiQuizButton classId={id} quizId={quizId} kelompok={quiz.settings.kelompok === true} />
+                      <MulaiQuizButton classId={id} quizId={quizId} kelompok={quiz.settings.kelompok === true} anggotaKelas={anggotaKelas} />
                     </div>
                   </>
                 )}

@@ -1,4 +1,4 @@
-import { formatDurasi, durasiDetik, hitungNilai, TOTAL_POIN, type PercobaanQuiz, type Quiz } from "@/lib/classQuizRules";
+import { formatDurasi, durasiDetik, hitungNilai, soalManual, TOTAL_POIN, type PercobaanQuiz, type Quiz } from "@/lib/classQuizRules";
 import TabelHasil from "@/components/classes/quiz/TabelHasil";
 import { soalUntukSiswa } from "@/lib/classQuizzes";
 import { cn } from "@/lib/cn";
@@ -27,19 +27,31 @@ export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: 
   return (
     <div className="mx-auto max-w-[760px] font-medium">
       <div className="bg-paper-card p-6 shadow-[inset_0_3px_0_var(--color-blue-500)]">
-        <p className="t-label text-ink-muted">Hasil Anda</p>
+        <p className="t-label text-ink-muted">{quiz.settings.kelompok ? "Nilai kelompok" : "Hasil Anda"}</p>
         <p className="mt-3 flex items-baseline gap-2">
           <span className="text-[56px] font-semibold leading-none text-ink">{n.total}</span>
           <span className="text-lg text-ink-muted">/ {TOTAL_POIN}</span>
         </p>
-        {n.esaiBelumDinilai > 0 && (
+        {(n.esaiBelumDinilai > 0 || n.rubrikBelumDinilai > 0) && (
           <p className="mt-3 text-sm leading-[1.7] text-blue-300">
-            Nilai sementara. {n.esaiBelumDinilai} soal esai masih menunggu penilaian pengajar; nilai akhir menyusul.
+            Nilai sementara
+            {n.esaiBelumDinilai > 0 && `. ${n.esaiBelumDinilai} soal esai/tabel masih menunggu penilaian pengajar`}
+            {n.rubrikBelumDinilai > 0 && `. Penilaian rubrik individu dari pengajar belum selesai (${n.rubrikBelumDinilai} poin)`}
+            ; nilai akhir menyusul.
+          </p>
+        )}
+        {quiz.settings.kelompok && quiz.rubric && (
+          <p className="mt-4 bg-white/[0.05] px-4 py-3 text-sm leading-[1.7] text-ink-body">
+            <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-ink-muted">Nilai individu Anda</span>
+            <span className="mt-1 block text-[28px] font-semibold leading-none text-ink">
+              {n.rubrikPersen !== null ? `${n.rubrikPersen}%` : <span className="text-base font-medium text-ink-muted">menunggu penilaian rubrik pengajar</span>}
+            </span>
           </p>
         )}
         {percobaan.groupName && (
           <p className="mt-3 text-[13px] text-ink-muted">
             Kelompok <strong className="font-semibold text-ink">{percobaan.groupName}</strong>
+            {percobaan.members && percobaan.members.length > 1 && <> · {percobaan.members.map((m) => m.name).join(", ")}</>}
           </p>
         )}
         <p className="mt-3 text-[13px] text-ink-muted">
@@ -60,7 +72,7 @@ export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: 
           const jawab = percobaan.answers[s.id];
           const dapat = n.perSoal[s.id] ?? 0;
           const benar = s.type === "mcq" && q?.correct !== null && jawab === q?.correct;
-          const belumDinilai = s.type === "essay" && typeof percobaan.essayScores[s.id] !== "number";
+          const belumDinilai = soalManual(quiz, s) && typeof percobaan.essayScores[s.id] !== "number";
 
           return (
             <li key={s.id} className="bg-paper-card p-5">

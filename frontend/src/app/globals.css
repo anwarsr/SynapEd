@@ -2166,3 +2166,84 @@ html[data-lindungi="true"] img { -webkit-user-drag: none; }
 .kelas-jakarta input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .kelas-jakarta input[type="number"]::-webkit-outer-spin-button,
 .kelas-jakarta input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ── SyRobo (/syrobo) ─────────────────────────────────────────────────── */
+.syrobo-napas { animation: syrobo-napas 3.6s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes syrobo-napas { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 0.985); } }
+.syrobo-hop { animation: syrobo-hop 600ms cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: 50% 100%; }
+@keyframes syrobo-hop { 0% { transform: translateY(0) scale(1, 1); } 30% { transform: translateY(-26px) scale(0.96, 1.05); } 60% { transform: translateY(0) scale(1.06, 0.92); } 100% { transform: translateY(0) scale(1, 1); } }
+.syrobo-goyang { animation: syrobo-goyang 700ms ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes syrobo-goyang { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+.syrobo-hati { animation: syrobo-hati 1.2s ease-out forwards; pointer-events: none; }
+@keyframes syrobo-hati { from { opacity: 0.95; transform: translateY(0) scale(0.7); } to { opacity: 0; transform: translateY(-70px) scale(1.3); } }
+.syrobo-ucap { animation: syrobo-ucap 260ms cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes syrobo-ucap { from { opacity: 0; transform: translate(-50%, calc(-100% + 8px)) scale(0.94); } to { opacity: 1; transform: translate(-50%, -100%) scale(1); } }
+.syrobo-kaki { animation: syrobo-kaki 520ms ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 0; }
+@keyframes syrobo-kaki { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
+.syrobo-kedip { animation: syrobo-kedip 1.6s ease-in-out infinite; }
+@keyframes syrobo-kedip { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.syrobo-kruyuk { animation: syrobo-kruyuk 1.1s ease-in-out infinite; }
+@keyframes syrobo-kruyuk { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+.syrobo-lalat { animation: syrobo-lalat 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes syrobo-lalat { 0% { transform: translate(0, 0); } 25% { transform: translate(10px, -6px); } 50% { transform: translate(-4px, 8px); } 75% { transform: translate(-12px, -3px); } 100% { transform: translate(0, 0); } }
+.syrobo-mata { animation: syrobo-kedipmata 4.4s infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes syrobo-kedipmata { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+@media (prefers-reduced-motion: reduce) {
+    .syrobo-napas, .syrobo-hop, .syrobo-goyang, .syrobo-kaki, .syrobo-kedip, .syrobo-kruyuk, .syrobo-lalat, .syrobo-mata, .syrobo-hati { animation: none; }
+}
+
+/* SyRobo: tambahan animasi (mode permainan) */
+.syrobo-hop { animation: syrobo-hop2 760ms cubic-bezier(0.3, 0.9, 0.3, 1); transform-origin: 50% 100%; }
+@keyframes syrobo-hop2 { 0% { transform: translateY(0) scale(1.08, 0.9); } 25% { transform: translateY(-34px) scale(0.95, 1.07); } 55% { transform: translateY(0) scale(1.08, 0.9); } 75% { transform: translateY(-8px) scale(0.99, 1.02); } 100% { transform: translateY(0) scale(1, 1); } }
+.syrobo-lengan-kiri { animation: syrobo-lengan 3.4s ease-in-out infinite; transform-box: view-box; }
+.syrobo-lengan-kanan { animation: syrobo-lengan 3.4s ease-in-out -1.7s infinite reverse; transform-box: view-box; }
+@keyframes syrobo-lengan { 0%, 100% { rotate: 0deg; } 50% { rotate: 4deg; } }
+.syrobo-antena { animation: syrobo-antena 2.8s ease-in-out infinite; transform-box: view-box; transform-origin: 100px 40px; }
+@keyframes syrobo-antena { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
+.syrobo-jubah { animation: syrobo-jubah 3.2s ease-in-out infinite; transform-box: view-box; transform-origin: 100px 138px; }
+@keyframes syrobo-jubah { 0%, 100% { transform: skewX(0deg); } 50% { transform: skewX(2.5deg); } }
+.syrobo-kunyah { animation: syrobo-kunyah 380ms ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes syrobo-kunyah { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(0.8, 0.35); } }
+.syrobo-busa { animation: syrobo-busa 2.2s ease-in-out infinite backwards; }
+@keyframes syrobo-busa { 0% { opacity: 0; transform: translateY(14px) scale(0.5); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-46px) scale(1.15); } }
+.syrobo-suap { animation: syrobo-suap 900ms cubic-bezier(0.5, 0, 0.3, 1) forwards; pointer-events: none; }
+@keyframes syrobo-suap { 0% { opacity: 0; transform: translate(0, 0) scale(1.1); } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--tx, 0), var(--ty, -180px)) scale(0.3); } }
+.syrobo-bintang { animation: syrobo-kedip 3.2s ease-in-out infinite; }
+.syrobo-lampu { animation: syrobo-lampu 5s ease-in-out infinite; transform-origin: 50% 0; }
+@keyframes syrobo-lampu { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+.syrobo-lembar { animation: syrobo-lembar 380ms cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes syrobo-lembar { from { opacity: 0; transform: translateY(24px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+    .syrobo-lengan-kiri, .syrobo-lengan-kanan, .syrobo-antena, .syrobo-jubah, .syrobo-kunyah, .syrobo-busa, .syrobo-suap, .syrobo-bintang, .syrobo-lampu, .syrobo-lembar { animation: none; }
+}
+
+/* SyRobo: kamar bergaya gambar tangan */
+.syrobo-zzz { animation: syrobo-zzz 2.4s ease-in-out infinite; }
+@keyframes syrobo-zzz { 0%, 100% { transform: translate(0, 0); opacity: 0.55; } 50% { transform: translate(6px, -8px); opacity: 1; } }
+.syrobo-meteor { animation: syrobo-meteor 1.1s ease-in forwards; }
+@keyframes syrobo-meteor { 0% { transform: translate(-10px, 10px); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(120px, 70px); opacity: 0; } }
+.syrobo-goyangan { animation: syrobo-goyangan 900ms ease-in-out; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes syrobo-goyangan { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 45% { transform: rotate(7deg); } 70% { transform: rotate(-4deg); } }
+.syrobo-daun { animation: syrobo-daun 1.6s ease-in forwards; pointer-events: none; }
+@keyframes syrobo-daun { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(14px, 70px) rotate(220deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .syrobo-zzz, .syrobo-meteor, .syrobo-goyangan, .syrobo-daun { animation: none; }
+}
+
+/* SyRobo: berjalan keliling kamar */
+.syrobo-langkah { animation: syrobo-langkah 420ms ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes syrobo-langkah { 0%, 100% { transform: translateY(0) scale(1.02, 0.97); } 50% { transform: translateY(-6px) scale(0.99, 1.02); } }
+.syrobo-kaki-kiri, .syrobo-kaki-kanan { animation: syrobo-kaki-jalan 840ms ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0; }
+.syrobo-kaki-kanan { animation-delay: -420ms; }
+@keyframes syrobo-kaki-jalan { 0%, 100% { transform: rotate(-17deg); } 50% { transform: rotate(17deg); } }
+.syrobo-lengan-jalan-kiri, .syrobo-lengan-jalan-kanan { animation: syrobo-lengan-jalan 840ms ease-in-out infinite; transform-box: view-box; }
+.syrobo-lengan-jalan-kanan { animation-delay: -420ms; }
+@keyframes syrobo-lengan-jalan { 0%, 100% { rotate: -10deg; } 50% { rotate: 10deg; } }
+@media (prefers-reduced-motion: reduce) {
+    .syrobo-langkah, .syrobo-kaki-kiri, .syrobo-kaki-kanan, .syrobo-lengan-jalan-kiri, .syrobo-lengan-jalan-kanan { animation: none; }
+}
+
+/* SyRobo tidur: huruf Z muncul satu per satu, naik pelan, lalu memudar; diulang */
+.syrobo-z { animation: syrobo-z 3.6s ease-in-out infinite backwards; transform-box: fill-box; transform-origin: center; }
+@keyframes syrobo-z { 0% { opacity: 0; transform: translate(0, 5px) scale(0.6); } 14% { opacity: 1; transform: translate(0, 0) scale(1); } 72% { opacity: 1; transform: translate(2px, -3px) scale(1); } 100% { opacity: 0; transform: translate(4px, -8px) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .syrobo-z { animation: none; } }

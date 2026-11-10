@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     uids.map((uid) => ({ nama: kartu.get(uid)?.name ?? "Peserta", p: peta.get(uid) ?? null })),
   );
 
-  const berkas = buatXlsx({ nama: "Nilai", baris, lebar: quiz.settings.kelompok ? [6, 34, 24, 10, 26] : [6, 34, 10, 26] });
+  const berkas = buatXlsx({ nama: "Nilai", baris, lebar: quiz.settings.kelompok ? [6, 34, 24, 15, 18, 28] : [6, 34, 10, 26] });
   const nama = `nilai-${quiz.title}`.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "nilai-quiz";
   return new NextResponse(new Uint8Array(berkas), {
     status: 200,
