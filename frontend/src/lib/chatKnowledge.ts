@@ -204,7 +204,15 @@ export const PENGETAHUAN_SITUS = `## Akun
   tiap pakaian bisa diatur). Memandikan: ambil spons di menu Mandi lalu
   gosokkan ke robot sampai bar Bersih penuh, serta merespons saat
   dielus, diketuk, atau ditahan lalu diangkat ke mana saja di layar (ia menetap di tempat dilepas) dan
-  berjalan-jalan sendiri di kamarnya. Sebelum masuk robotnya mati; ditekan akan
+  berjalan-jalan sendiri di kamarnya. Menu dok: Main Room (kamar utama), Makan,
+  Mandi, Baju, Toko (tiap menu membawa robot ke ruangannya sendiri: dapur, kamar
+  mandi, ruang ganti, toko, yang bendanya bisa disentuh), Games, dan Hadiah.
+  Pemilik SynapEd Premium aktif mendapat gratis 4 pakaian khusus (topi militer,
+  baju militer (cokelat), mahkota raja, jubah raja) dan 10 makanan dewa; satu makanan dewa
+  mengenyangkan penuh dan menjaga bar kenyang tidak turun selama 24 jam. Menu
+  Games berisi Tanjakan Robo (mobil menanjak bukit, pengendaranya robot, mirip
+  Hill Climb Racing). Koin yang dikumpulkan di game bisa ditukar poin bintang di menu
+  Toko (tab Koin Game, di samping tab Pakaian): 100 koin = 1 bintang, dengan batas setoran harian). Sebelum masuk robotnya mati; ditekan akan
   membawa ke halaman masuk. Benda di
   kamarnya juga bisa diketuk: lampu (kamar gelap), jendela, tanaman, buku
   (tips belajar), dan jam. Halamannya satu layar penuh tanpa footer.

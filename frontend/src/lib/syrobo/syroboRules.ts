@@ -35,6 +35,48 @@ export const MAKANAN: readonly Makanan[] = [
 ];
 export const MAKANAN_MAKS_STOK = 20;
 
+/**
+ * 10 MAKANAN DEWA - hanya untuk pemilik SynapEd Premium AKTIF (gratis selama premium aktif, tanpa stok & tanpa poin).
+ * Memakannya mengenyangkan penuh dan MEMBEKUKAN bar kenyang selama `JAM_BEKU_DEWA` jam: tidak turun sama sekali,
+ * lalu turun normal lagi sesudahnya. Selama beku, makanan dewa lain tak bisa dimakan (tak ada gunanya menumpuk).
+ */
+export const JAM_BEKU_DEWA = 24;
+export type MakananDewaId =
+  | "ambrosia"
+  | "nektar"
+  | "apelEmas"
+  | "anggurDewa"
+  | "madu"
+  | "persikAbadi"
+  | "nasiLangit"
+  | "kueBulan"
+  | "supNaga"
+  | "rotiBintang";
+export interface MakananDewa {
+  id: MakananDewaId;
+  nama: string;
+  /** Kalimat pendek tentang makanannya (tampil di menu). */
+  cerita: string;
+}
+export const MAKANAN_DEWA: readonly MakananDewa[] = [
+  { id: "ambrosia", nama: "Ambrosia", cerita: "Santapan para dewa Olimpus." },
+  { id: "nektar", nama: "Nektar Langit", cerita: "Manis, hangat, berpendar tipis." },
+  { id: "apelEmas", nama: "Apel Emas", cerita: "Dipetik dari taman di ujung dunia." },
+  { id: "anggurDewa", nama: "Anggur Dewa", cerita: "Satu tandan, seribu rasa." },
+  { id: "madu", nama: "Madu Surgawi", cerita: "Dibuat lebah yang tak pernah tidur." },
+  { id: "persikAbadi", nama: "Persik Abadi", cerita: "Berbuah sekali tiap tiga ribu tahun." },
+  { id: "nasiLangit", nama: "Nasi Langit", cerita: "Butirnya jatuh bersama bintang." },
+  { id: "kueBulan", nama: "Kue Bulan", cerita: "Dipanggang di tungku bulan purnama." },
+  { id: "supNaga", nama: "Sup Naga", cerita: "Mengepul, pedas, dan agung." },
+  { id: "rotiBintang", nama: "Roti Bintang", cerita: "Mengembang di antara rasi bintang." },
+];
+export function makananDewaSah(x: unknown): x is MakananDewaId {
+  return typeof x === "string" && MAKANAN_DEWA.some((m) => m.id === x);
+}
+export function cariMakananDewa(id: MakananDewaId): MakananDewa {
+  return MAKANAN_DEWA.find((m) => m.id === id) as MakananDewa;
+}
+
 /** Pakaian menempati SLOT: satu di kepala, satu di badan (bisa dipakai bersamaan). */
 export type SlotPakaian = "kepala" | "badan";
 export type PakaianId =
@@ -55,7 +97,11 @@ export type PakaianId =
   | "jaket"
   | "kemeja"
   | "ransel"
-  | "medali";
+  | "medali"
+  | "topiKaisar"
+  | "bajuKaisar"
+  | "mahkotaRaja"
+  | "jubahRaja";
 export interface Pakaian {
   id: PakaianId;
   nama: string;
@@ -63,8 +109,10 @@ export interface Pakaian {
   harga: number;
   /** Topi yang menutupi kepala: antena robot tersembunyi di baliknya. */
   tutupAntena: boolean;
+  /** Pakaian PREMIUM: tidak dijual; terbuka & bisa dipakai gratis HANYA selama SynapEd Premium aktif. */
+  premium?: boolean;
 }
-/** Semua pakaian DIBELI di toko dengan poin (18 buah: 9 untuk kepala, 9 untuk badan). */
+/** 18 pakaian biasa DIBELI di toko dengan poin, ditambah 4 pakaian PREMIUM (gratis selama premium aktif). */
 export const PAKAIAN: readonly Pakaian[] = [
   { id: "topi", nama: "Topi baseball", slot: "kepala", harga: 40, tutupAntena: true },
   { id: "mahkota", nama: "Mahkota", slot: "kepala", harga: 120, tutupAntena: true },
@@ -84,7 +132,12 @@ export const PAKAIAN: readonly Pakaian[] = [
   { id: "kemeja", nama: "Kemeja", slot: "badan", harga: 70, tutupAntena: false },
   { id: "ransel", nama: "Ransel", slot: "badan", harga: 75, tutupAntena: false },
   { id: "medali", nama: "Medali", slot: "badan", harga: 90, tutupAntena: false },
+  { id: "topiKaisar", nama: "Topi militer", slot: "kepala", harga: 0, tutupAntena: true, premium: true },
+  { id: "mahkotaRaja", nama: "Mahkota raja", slot: "kepala", harga: 0, tutupAntena: true, premium: true },
+  { id: "bajuKaisar", nama: "Baju militer", slot: "badan", harga: 0, tutupAntena: false, premium: true },
+  { id: "jubahRaja", nama: "Jubah raja", slot: "badan", harga: 0, tutupAntena: false, premium: true },
 ];
+export const PAKAIAN_PREMIUM: readonly PakaianId[] = PAKAIAN.filter((p) => p.premium).map((p) => p.id);
 /** Ukuran pakaian (persen dari ukuran bawaannya), diatur per slot. */
 export const UKURAN_MIN = 70;
 export const UKURAN_MAKS = 140;
@@ -93,6 +146,15 @@ export const UKURAN_BAWAAN = 100;
 /** Menggosok dengan spons: tiap segini piksel gosokan = 1 poin kebersihan; satu panggilan maksimal segini poin. */
 export const GOSOK_PX_PER_POIN = 90;
 export const GOSOK_MAKS_PER_PANGGILAN = 50;
+
+/**
+ * Koin game "Tanjakan Robo" bisa ditukar poin bintang SyRobo: `KOIN_PER_POIN` koin = 1 poin. Game berjalan di browser, jadi angka koin
+ * TIDAK bisa dipercaya sepenuhnya; server membatasinya: tiap setoran maksimal `KOIN_SETOR_MAKS`, dan total setoran per hari (WIB)
+ * maksimal `KOIN_HARIAN_MAKS` (= 15 poin/hari). Saldo koin disimpan di `koinGame`; menukar = kelipatan penuh `KOIN_PER_POIN`.
+ */
+export const KOIN_PER_POIN = 100;
+export const KOIN_SETOR_MAKS = 300;
+export const KOIN_HARIAN_MAKS = 1500;
 
 /** Hadiah poin: `menit` = waktu aktif di situs hari ini (0 = cukup masuk hari ini). */
 export const HADIAH: readonly { menit: number; poin: number }[] = [
@@ -130,6 +192,11 @@ export interface DataSyrobo {
   aktifDetik: number;
   detakAt: string | null;
   diklaim: number[];
+  /** Saldo koin game yang belum ditukar, dan koin yang sudah disetor hari ini (reset ganti hari WIB). */
+  koinGame: number;
+  koinSetorHari: number;
+  /** Bar kenyang dibekukan (tak turun) sampai waktu ini - efek makanan dewa. null = tidak beku. */
+  bekuLaparSampai: string | null;
 }
 
 export function tanggalWib(now: Date): string {
@@ -182,6 +249,9 @@ export function dataBaru(now: Date): DataSyrobo {
     aktifDetik: 0,
     detakAt: null,
     diklaim: [],
+    koinGame: 0,
+    koinSetorHari: 0,
+    bekuLaparSampai: null,
   };
 }
 
@@ -195,12 +265,14 @@ export function normalisasi(raw: unknown, now: Date): DataSyrobo {
   for (const m of MAKANAN) stok[m.id] = jepit(Math.floor(angka(stokRaw[m.id], d.stok[m.id])), 0, MAKANAN_MAKS_STOK);
   // Pakaian: yang dipakai harus sudah dimiliki dan cocok dengan slotnya. Data lama menyimpan SATU `baju`; itu dipindah ke slot yang
   // sesuai dan dianggap sudah dimiliki (pemilik lama sudah memakainya gratis).
-  const punya = (Array.isArray(r.punya) ? r.punya : []).filter(pakaianSah).filter((x, i, a) => a.indexOf(x) === i);
+  const punya = (Array.isArray(r.punya) ? r.punya : []).filter(pakaianSah).filter((x, i, a) => a.indexOf(x) === i && !cariPakaian(x).premium);
   const lama = typeof r.baju === "string" && pakaianSah(r.baju) ? r.baju : null;
   if (lama && !punya.includes(lama)) punya.push(lama);
   const pilih = (slot: SlotPakaian, mentah: unknown): PakaianId | null => {
     const id = pakaianSah(mentah) ? mentah : lama && cariPakaian(lama).slot === slot && r.kepala === undefined && r.badan === undefined ? lama : null;
-    return id && cariPakaian(id).slot === slot && punya.includes(id) ? id : null;
+    // Pakaian premium tak masuk `punya` (terbuka lewat keanggotaan); ia tetap tersimpan sebagai yang dipakai, dan baru
+    // disembunyikan oleh `tampilkan` bila premium sedang tidak aktif.
+    return id && cariPakaian(id).slot === slot && (punya.includes(id) || cariPakaian(id).premium === true) ? id : null;
   };
   const kepala = pilih("kepala", r.kepala);
   const badan = pilih("badan", r.badan);
@@ -224,6 +296,9 @@ export function normalisasi(raw: unknown, now: Date): DataSyrobo {
     diklaim: Array.isArray(r.diklaim)
       ? r.diklaim.filter((x): x is number => typeof x === "number" && HADIAH.some((h) => h.menit === x))
       : [],
+    koinGame: Math.max(0, Math.floor(angka(r.koinGame, 0))),
+    koinSetorHari: Math.max(0, Math.floor(angka(r.koinSetorHari, 0))),
+    bekuLaparSampai: typeof r.bekuLaparSampai === "string" && !Number.isNaN(Date.parse(r.bekuLaparSampai)) ? r.bekuLaparSampai : null,
   };
 }
 
@@ -231,16 +306,27 @@ export function normalisasi(raw: unknown, now: Date): DataSyrobo {
 export function gulirHari(d: DataSyrobo, now: Date): DataSyrobo {
   const hari = tanggalWib(now);
   if (d.hari === hari) return d;
-  return { ...d, hari, aktifDetik: 0, detakAt: null, diklaim: [] };
+  return { ...d, hari, aktifDetik: 0, detakAt: null, diklaim: [], koinSetorHari: 0 };
 }
 
 /** Kenyang & bersih SAAT INI, dihitung dari potret terakhir. */
 export function kondisiSaatIni(d: DataSyrobo, now: Date): { kenyang: number; bersih: number } {
-  const jam = Math.max(0, (now.getTime() - Date.parse(d.potretAt)) / 3600_000);
+  const t0 = Date.parse(d.potretAt);
+  const jam = Math.max(0, (now.getTime() - t0) / 3600_000);
+  // Makanan dewa: kenyang baru mulai turun SESUDAH masa beku berakhir (bersih tetap turun seperti biasa).
+  const beku = d.bekuLaparSampai ? Date.parse(d.bekuLaparSampai) : NaN;
+  const mulaiLapar = Number.isFinite(beku) && beku > t0 ? beku : t0;
+  const jamLapar = Math.max(0, (now.getTime() - mulaiLapar) / 3600_000);
   return {
-    kenyang: jepit(d.kenyang - (jam * 100) / JAM_LAPAR_HABIS),
+    kenyang: jepit(d.kenyang - (jamLapar * 100) / JAM_LAPAR_HABIS),
     bersih: jepit(d.bersih - (jam * 100) / JAM_KOTOR_HABIS),
   };
+}
+
+/** Sisa masa beku kenyang (ms) pada `now`; 0 bila tidak beku. */
+export function sisaBekuMs(d: Pick<DataSyrobo, "bekuLaparSampai">, now: Date): number {
+  const beku = d.bekuLaparSampai ? Date.parse(d.bekuLaparSampai) : NaN;
+  return Number.isFinite(beku) ? Math.max(0, beku - now.getTime()) : 0;
 }
 
 /** Potret baru dari kondisi saat ini (dipanggil sebelum mengubah salah satunya). */

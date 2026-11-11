@@ -62,6 +62,10 @@ export const TUMPU: Record<PakaianId, [number, number]> = {
   kemeja: [100, 170],
   ransel: [100, 170],
   medali: [100, 150],
+  topiKaisar: [100, 52],
+  mahkotaRaja: [100, 46],
+  bajuKaisar: [100, 170],
+  jubahRaja: [100, 138],
 };
 
 function Skala({ id, persen, children }: { id: PakaianId; persen: number; children: React.ReactNode }) {
@@ -77,6 +81,20 @@ export function PakaianBelakang({ id, persen }: { id: PakaianId | null; persen: 
       <Skala id="jubah" persen={persen}>
         <g {...GARIS}>
           <path d="M68 140Q36 190 46 236L100 228 154 236Q164 190 132 140Z" fill="#7B5CFF" className="syrobo-jubah" />
+        </g>
+      </Skala>
+    );
+  }
+  if (id === "jubahRaja") {
+    return (
+      <Skala id="jubahRaja" persen={persen}>
+        <g {...GARIS}>
+          <path d="M68 140Q34 190 42 238L100 230 158 238Q166 190 132 140Z" fill="#A82B3F" className="syrobo-jubah" />
+          {/* tepi bawah berbulu ermine */}
+          <path d="M42 238L100 230 158 238Q159 226 157 220Q100 214 43 220Q41 228 42 238Z" fill="#FBF1DA" className="syrobo-jubah" />
+          <g fill={TINTA} stroke="none" className="syrobo-jubah">
+            <path d="M58 222l2.500 9-3.200.2zM84 222l2.500 9-3.200.2zM112 222l2.500 9-3.200.2zM140 222l2.500 9-3.200.2z" />
+          </g>
         </g>
       </Skala>
     );
@@ -119,6 +137,44 @@ export function PakaianBadan({ id, persen, klip }: { id: PakaianId | null; perse
             {/* kainnya di belakang badan; di sini hanya kerah dan kancing */}
             <path d="M82 140Q100 150 118 140" fill="none" />
             <circle cx="100" cy="146" r="5" fill="#F2C14E" />
+          </>
+        )}
+
+        {id === "bajuKaisar" && (
+          <>
+            {/* seragam militer cokelat: kerah, kancing emas, dua saku bertutup, pundak, ikat pinggang */}
+            <path d={BENTUK_BADAN} fill="#7C5B37" />
+            <g clipPath={`url(#${klip})`}>
+              <rect x="60" y="188" width="80" height="11" fill="#3B2A1A" strokeWidth={0} />
+              <path d="M100 150V212" fill="none" stroke="#54391F" strokeWidth={2.600} />
+            </g>
+            <rect x="92" y="186" width="16" height="15" rx="2.500" fill="#D9B24A" strokeWidth={2.600} />
+            <path d="M84 136L100 156L116 136Z" fill="#5E4328" />
+            <path d="M80 136L92 150L100 156L84 136Z" fill="#6A4B2D" strokeWidth={0} />
+            <rect x="76" y="162" width="18" height="15" rx="2" fill="#6A4B2D" strokeWidth={2.600} />
+            <rect x="106" y="162" width="18" height="15" rx="2" fill="#6A4B2D" strokeWidth={2.600} />
+            <circle cx="85" cy="170" r="1.800" fill="#D9B24A" strokeWidth={0} />
+            <circle cx="115" cy="170" r="1.800" fill="#D9B24A" strokeWidth={0} />
+            <circle cx="100" cy="166" r="2.400" fill="#D9B24A" strokeWidth={2} />
+            <circle cx="100" cy="178" r="2.400" fill="#D9B24A" strokeWidth={2} />
+            {lengan("#7C5B37", true)}
+            <rect x="68" y="131" width="20" height="8" rx="2" fill="#54391F" strokeWidth={2.600} />
+            <rect x="112" y="131" width="20" height="8" rx="2" fill="#54391F" strokeWidth={2.600} />
+          </>
+        )}
+
+        {id === "jubahRaja" && (
+          <>
+            {/* kain merah ada di belakang; di depan: kerah ermine lebar, ekor hitam, dan bros emas berantai */}
+            <path d="M72 134Q100 160 128 134L136 148Q100 176 64 148Z" fill="#FBF1DA" />
+            <path d="M76 146Q74 176 80 206L90 206Q86 176 86 154Z" fill="#FBF1DA" />
+            <path d="M124 146Q126 176 120 206L110 206Q114 176 114 154Z" fill="#FBF1DA" />
+            <g fill={TINTA} stroke="none">
+              <path d="M84 150l2.600 10-3.400.4zM100 158l2.600 10-3.400.4zM116 150l2.600 10-3.400.4zM81 184l2.600 9-3.400.4zM119 184l2.600 9-3.400.4z" />
+            </g>
+            <path d="M88 142Q100 150 112 142" fill="none" strokeWidth={2.6} />
+            <circle cx="100" cy="150" r="5.500" fill="#F2C14E" strokeWidth={2.800} />
+            <circle cx="100" cy="150" r="2" fill="#E56B5D" strokeWidth={0} />
           </>
         )}
 
@@ -224,6 +280,38 @@ export function PakaianKepala({ id, persen }: { id: PakaianId | null; persen: nu
             <circle cx="100" cy="30" r="3.6" fill="#E56B5D" strokeWidth={2.4} />
             <circle cx="78" cy="38" r="2.8" fill="#6BA7D8" strokeWidth={2.2} />
             <circle cx="122" cy="38" r="2.8" fill="#6BA7D8" strokeWidth={2.2} />
+          </>
+        )}
+
+        {id === "topiKaisar" && (
+          <>
+            {/* topi militer cokelat: kubah, pita gelap, lidah topi yang tampak dari depan, lencana emas */}
+            <path d="M54 56C52 32 66 20 100 20S148 32 146 56Z" fill="#7C5B37" />
+            <path d="M62 36C68 28 80 24 92 23C80 28 72 34 68 44Z" fill="#9A7549" strokeWidth={0} opacity=".7" />
+            <path d="M52 50H148V60Q100 67 52 60Z" fill="#54391F" />
+            <path d="M60 60H140Q143 71 100 73Q57 71 60 60Z" fill="#2F2014" />
+            <circle cx="100" cy="42" r="8.500" fill="#D9B24A" strokeWidth={2.600} />
+            <path d={bintang(100, 42, 5.200, 2.200)} fill="#54391F" strokeWidth={0} />
+            <circle cx="62" cy="54" r="3" fill="#D9B24A" strokeWidth={2} />
+            <circle cx="138" cy="54" r="3" fill="#D9B24A" strokeWidth={2} />
+          </>
+        )}
+
+        {id === "mahkotaRaja" && (
+          <>
+            {/* mahkota raja: topi beludru merah, pita emas bergerigi lima, pinggiran ermine berbintik, permata */}
+            <path d="M62 50C62 14 138 14 138 50Z" fill="#B3344A" />
+            <path d="M54 52L57 22L78 38L100 6L122 38L143 22L146 52Z" fill="#F2C14E" />
+            <path d="M52 44H148V56Q100 63 52 56Z" fill="#FBF1DA" />
+            <g fill={TINTA} stroke="none">
+              <path d="M66 50l2.400 8-3.200.4zM92 53l2.400 8-3.200.4zM118 53l2.400 8-3.200.4zM136 50l2.400 8-3.200.4z" />
+            </g>
+            <circle cx="100" cy="28" r="4.400" fill="#E56B5D" strokeWidth={2.600} />
+            <circle cx="77" cy="38" r="3.400" fill="#6BA7D8" strokeWidth={2.400} />
+            <circle cx="123" cy="38" r="3.400" fill="#6BA7D8" strokeWidth={2.400} />
+            <circle cx="100" cy="6" r="4.600" fill="#F2C14E" strokeWidth={2.600} />
+            <circle cx="57" cy="22" r="3.400" fill="#F2C14E" strokeWidth={2.400} />
+            <circle cx="143" cy="22" r="3.400" fill="#F2C14E" strokeWidth={2.400} />
           </>
         )}
 

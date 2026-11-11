@@ -10,18 +10,27 @@
  *   4. beli/beri makan/mandi: poin & stok akurat, ditolak bila tak cukup / sudah kenyang / sudah bersih;
  *   5. nama divalidasi; data rusak dinormalkan; data lama (satu `baju`) dipindah ke slot pakaian;
  *   6. pakaian: dibeli dengan poin (sekali), dipasang per slot (kepala/badan) hanya bila dimiliki & cocok slot, ukuran 70-140%;
- *   7. menggosok dengan spons: menambah kebersihan, dibatasi per panggilan, berhenti di 100.
+ *   7. menggosok dengan spons: menambah kebersihan, dibatasi per panggilan, berhenti di 100;
+ *   8. PREMIUM: 4 pakaian kaisar/raja & 10 makanan dewa hanya untuk premium aktif (dicek server), tak dijual, tak tersimpan di `punya`,
+ *      disembunyikan bila premium berakhir; makanan dewa membekukan bar kenyang 24 jam lalu turun normal.
  */
 import { getFirestore } from "firebase-admin/firestore";
 import { check, finish } from "./checks";
 import { initAdmin } from "./project";
-import { beli, beliPakaian, beriMakan, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
+import { beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
 import {
   AMBANG_LAPAR,
   DETAK_MAKS_DETIK,
   HADIAH,
+  JAM_BEKU_DEWA,
+  KOIN_HARIAN_MAKS,
+  KOIN_PER_POIN,
+  KOIN_SETOR_MAKS,
   JAM_LAPAR_HABIS,
+  MAKANAN_DEWA,
   PAKAIAN,
+  PAKAIAN_PREMIUM,
+  sisaBekuMs,
   dataBaru,
   kondisiSaatIni,
   namaSah,
@@ -147,6 +156,72 @@ async function main() {
     const hariBaru = await bacaSyrobo(db, uid, besok);
     check("ganti hari mengosongkan hitungan harian", hariBaru.aktifDetik === 0 && hariBaru.diklaim.length === 0 && hariBaru.hari === tanggalWib(besok), hariBaru.hari);
     check("poin, stok, dan pakaian bertahan lintas hari", hariBaru.poin === poinAkhir && hariBaru.stok.roti === 1 && hariBaru.punya.includes("kacamata"), `${hariBaru.poin}/${hariBaru.stok.roti}/${hariBaru.punya.join()}`);
+
+    // 8. Premium: pakaian kaisar/raja & makanan dewa
+    console.log("\nPremium: pakaian & makanan dewa");
+    check("4 pakaian premium (topi kaisar, mahkota raja, baju kaisar, jubah raja)", PAKAIAN_PREMIUM.join() === "topiKaisar,mahkotaRaja,bajuKaisar,jubahRaja", PAKAIAN_PREMIUM.join());
+    check("10 makanan dewa", MAKANAN_DEWA.length === 10 && new Set(MAKANAN_DEWA.map((m) => m.id)).size === 10, String(MAKANAN_DEWA.length));
+    const tp = new Date("2026-03-20T03:00:00Z");
+    const pa = await pasangPakaian(db, uid, "kepala", "topiKaisar", tp, false);
+    check("tanpa premium: memasang topi kaisar ditolak", !pa.ok && pa.error.includes("Premium"), pa.ok ? "lolos" : pa.error);
+    const pb = await beliPakaian(db, uid, "mahkotaRaja", tp, true);
+    check("pakaian premium tak bisa DIBELI (walau premium aktif)", !pb.ok && pb.error.includes("tidak dijual"), pb.ok ? "lolos" : pb.error);
+    const pc = await pasangPakaian(db, uid, "kepala", "topiKaisar", tp, true);
+    check("premium aktif: terpasang tanpa dibeli, dan terbuka di daftar", pc.ok && pc.robot.kepala === "topiKaisar" && pc.robot.punya.includes("jubahRaja") && pc.robot.premium === true, pc.ok ? String(pc.robot.kepala) : pc.error);
+    check("slot salah tetap ditolak (jubah raja ke kepala)", !(await pasangPakaian(db, uid, "kepala", "jubahRaja", tp, true)).ok, "slot");
+    const pd = await bacaSyrobo(db, uid, tp, false);
+    check("premium berakhir: pakaian premium disembunyikan (data tetap)", pd.kepala === null && !pd.punya.includes("topiKaisar") && pd.premium === false, String(pd.kepala));
+    const mentah = (await ref.get()).data();
+    check("pakaian premium tak pernah masuk `punya` di database", !(mentah?.punya ?? []).some((x: string) => PAKAIAN_PREMIUM.includes(x as never)) && mentah?.kepala === "topiKaisar", JSON.stringify(mentah?.punya));
+    check("premium aktif lagi: pakaian kembali tampil", (await bacaSyrobo(db, uid, tp, true)).kepala === "topiKaisar", "kembali");
+
+    const tolakDewa = await beriMakanDewa(db, uid, "ambrosia", tp, false);
+    check("makanan dewa tanpa premium ditolak", !tolakDewa.ok && tolakDewa.error.includes("Premium"), tolakDewa.ok ? "lolos" : tolakDewa.error);
+    check("makanan dewa tak dikenal ditolak", !(await beriMakanDewa(db, uid, "pizza", tp, true)).ok, "id asing");
+    const dewa = await beriMakanDewa(db, uid, "ambrosia", tp, true);
+    check("makanan dewa: kenyang penuh & beku 24 jam", dewa.ok && dewa.robot.kenyangSekarang === 100 && dewa.robot.bekuLaparSampai !== null, dewa.ok ? String(dewa.robot.bekuLaparSampai) : dewa.error);
+    const d12 = await bacaSyrobo(db, uid, new Date(tp.getTime() + 12 * 3600_000), true);
+    check("12 jam kemudian bar kenyang TIDAK turun (masih 100)", d12.kenyangSekarang === 100, String(d12.kenyangSekarang));
+    const d23 = await bacaSyrobo(db, uid, new Date(tp.getTime() + 23.9 * 3600_000), true);
+    check("23,9 jam kemudian masih 100", d23.kenyangSekarang === 100, String(d23.kenyangSekarang));
+    const d38 = await bacaSyrobo(db, uid, new Date(tp.getTime() + (JAM_BEKU_DEWA + 7) * 3600_000), true);
+    check("sesudah beku: turun normal (7 jam setelahnya = 50)", Math.abs(d38.kenyangSekarang - 50) <= 1, String(d38.kenyangSekarang));
+    check("bersih tetap turun selama kenyang beku", (await bacaSyrobo(db, uid, new Date(tp.getTime() + 10 * 3600_000), true)).bersihSekarang < 90, "bersih turun");
+    const ulangDewa = await beriMakanDewa(db, uid, "nektar", new Date(tp.getTime() + 3600_000), true);
+    check("selama beku, makanan dewa lain ditolak (sisa jam disebut)", !ulangDewa.ok && ulangDewa.error.includes("sisa"), ulangDewa.ok ? "lolos" : ulangDewa.error);
+    const lagi = await beriMakanDewa(db, uid, "nektar", new Date(tp.getTime() + 25 * 3600_000), true);
+    check("sesudah beku berakhir boleh makan dewa lagi", lagi.ok, lagi.ok ? "ok" : lagi.error);
+    check("sisaBekuMs benar (±24 jam setelah makan)", Math.abs(sisaBekuMs({ bekuLaparSampai: new Date(tp.getTime() + 24 * 3600_000).toISOString() }, tp) - 24 * 3600_000) < 1, "24 jam");
+    const mandiBeku = await mandikan(db, uid, new Date(tp.getTime() + 25 * 3600_000 + 7200_000), true);
+    check("memotret ulang (mandi) tidak menghilangkan/menggandakan beku", mandiBeku.ok || mandiBeku.error.length > 0, "ok");
+
+    // 9. Koin game -> poin bintang
+    console.log("\nKoin game: setor & tukar");
+    const tk = new Date("2026-04-01T03:00:00Z");
+    const poin0 = (await bacaSyrobo(db, uid, tk)).poin;
+    check("setoran tak sah ditolak (0, negatif, pecahan, teks, di atas batas)", (await Promise.all([0, -5, 2.5, "9", KOIN_SETOR_MAKS + 1].map((n) => simpanKoinGame(db, uid, n, tk)))).every((h) => !h.ok), "semua ditolak");
+    const s1 = await simpanKoinGame(db, uid, 150, tk);
+    check("setor 150 koin: saldo 150", s1.ok && s1.robot.koinGame === 150, s1.ok ? String(s1.robot.koinGame) : s1.error);
+    const tkBelum = await tukarKoinGame(db, uid, tk);
+    check("saldo 150 → tukar 1 poin, sisa 50 koin", tkBelum.ok && tkBelum.robot.poin === poin0 + 1 && tkBelum.robot.koinGame === 50, tkBelum.ok ? `${tkBelum.robot.poin}/${tkBelum.robot.koinGame}` : tkBelum.error);
+    const tkKurang = await tukarKoinGame(db, uid, tk);
+    check("saldo 50 (< 100) tidak bisa ditukar", !tkKurang.ok && tkKurang.error.includes(String(KOIN_PER_POIN)), tkKurang.ok ? "lolos" : tkKurang.error);
+    await simpanKoinGame(db, uid, 250, tk); // saldo 300
+    const tkBanyak = await tukarKoinGame(db, uid, tk);
+    check("saldo 300 → tukar 3 poin sekaligus, sisa 0", tkBanyak.ok && tkBanyak.robot.poin === poin0 + 4 && tkBanyak.robot.koinGame === 0, tkBanyak.ok ? `${tkBanyak.robot.poin}/${tkBanyak.robot.koinGame}` : tkBanyak.error);
+    // batas harian: 150 + 250 sudah disetor = 400; sisa jatah 1100
+    let tersimpan = 400;
+    while (tersimpan + KOIN_SETOR_MAKS <= KOIN_HARIAN_MAKS) {
+      await simpanKoinGame(db, uid, KOIN_SETOR_MAKS, tk);
+      tersimpan += KOIN_SETOR_MAKS;
+    }
+    const potong = await simpanKoinGame(db, uid, KOIN_SETOR_MAKS, tk);
+    const harian = (await bacaSyrobo(db, uid, tk)).koinSetorHari;
+    check("jatah harian dipotong: total setoran hari itu tak melebihi batas", harian === KOIN_HARIAN_MAKS && (potong.ok ? potong.robot.koinSetorHari === KOIN_HARIAN_MAKS : true), `${harian}/${KOIN_HARIAN_MAKS}`);
+    const lewat = await simpanKoinGame(db, uid, 1, tk);
+    check("jatah habis: setoran berikutnya ditolak", !lewat.ok && lewat.error.includes("hari ini"), lewat.ok ? "lolos" : lewat.error);
+    const hariLain = await simpanKoinGame(db, uid, 10, new Date(tk.getTime() + 24 * 3600_000));
+    check("ganti hari (WIB) jatah harian pulih, saldo koin lama tetap", hariLain.ok && hariLain.robot.koinSetorHari === 10 && hariLain.robot.koinGame >= 10, hariLain.ok ? `${hariLain.robot.koinSetorHari}/${hariLain.robot.koinGame}` : hariLain.error);
   } finally {
     await ref.delete().catch(() => undefined);
   }

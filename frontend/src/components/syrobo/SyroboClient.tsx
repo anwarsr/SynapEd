@@ -1,17 +1,23 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SyroboRobot, { type ReaksiRobot } from "./SyroboRobot";
 import SyroboKamar from "./SyroboKamar";
+import SyroboRuangan, { type JenisRuangan } from "./SyroboRuangan";
+import GameTanjakan from "./GameTanjakan";
 import { Ikon, type IkonDok } from "./IkonSyrobo";
 import { cn } from "@/lib/cn";
 import {
   beliMakananSyrobo,
   beliPakaianSyrobo,
   beriMakanSyrobo,
+  beriMakanDewaSyrobo,
   detakSyrobo,
   gantiNamaSyrobo,
   gosokSyrobo,
   klaimSyrobo,
+  simpanKoinGameSyrobo,
+  tukarKoinGameSyrobo,
   pasangPakaianSyrobo,
   ukuranPakaianSyrobo,
 } from "@/lib/syroboActions";
@@ -22,13 +28,18 @@ import {
   DETAK_KLIEN_MS,
   GOSOK_PX_PER_POIN,
   HADIAH,
+  KOIN_PER_POIN,
+  KOIN_SETOR_MAKS,
   MAKANAN,
+  MAKANAN_DEWA,
   NAMA_MAKS,
   PAKAIAN,
   UKURAN_MAKS,
   UKURAN_MIN,
   kondisiSaatIni,
+  sisaBekuMs,
   suasana as hitungSuasana,
+  type MakananDewaId,
   type MakananId,
   type PakaianId,
   type SlotPakaian,
@@ -86,9 +97,13 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   const [nama, setNama] = useState(awal.nama);
   const [ubahNama, setUbahNama] = useState(false);
   const [lembar, setLembar] = useState<Lembar>(null);
-  const [tokoTab, setTokoTab] = useState<"makanan" | "pakaian">("makanan");
+  const [tokoTab, setTokoTab] = useState<"makanan" | "pakaian" | "koin">("makanan");
+  const [makanTab, setMakanTab] = useState<"biasa" | "dewa">("biasa");
+  /** Ruangan yang sedang dimasuki: tiap menu (Makan/Mandi/Baju/Toko) punya ruangannya sendiri; "Main Room" = kamar utama. */
+  const [ruang, setRuang] = useState<"kamar" | JenisRuangan>("kamar");
+  const [main, setMain] = useState(false);
   const [reaksi, setReaksi] = useState<ReaksiRobot | null>(null);
-  const [suap, setSuap] = useState<{ n: number; id: MakananId } | null>(null);
+  const [suap, setSuap] = useState<{ n: number; id: MakananId | MakananDewaId } | null>(null);
   const [gelap, setGelap] = useState(false);
   const [ucapan, setUcapan] = useState<{ teks: string; n: number } | null>(null);
   /** Mode menggosok: spons mengikuti penunjuk; menggosok robot menambah bar Bersih. */
@@ -194,6 +209,28 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     setSuap({ n: nReaksi.current, id });
     setTimeout(() => setSuap(null), 1000);
     void jalan(() => beriMakanSyrobo(id), "Nyam nyam!");
+  }
+
+  /** Koin hasil game dikirim ke akun (dipecah per KOIN_SETOR_MAKS). Server yang membatasi jatah harian. */
+  async function setorKoin(n: number) {
+    let sisa = n;
+    while (sisa > 0) {
+      const k = Math.min(sisa, KOIN_SETOR_MAKS);
+      sisa -= k;
+      const h = await simpanKoinGameSyrobo(k).catch(() => null);
+      if (!h) return tampilPesan("Koin game belum tersimpan: server tak terjangkau.", true);
+      terima(h, `${n} koin game disimpan. Tukar di menu Toko (tab Koin Game).`);
+      if (!h.ok) return;
+    }
+  }
+
+  function makanDewa(id: MakananDewaId) {
+    if (sibuk) return;
+    picu("makan");
+    nReaksi.current += 1;
+    setSuap({ n: nReaksi.current, id });
+    setTimeout(() => setSuap(null), 1000);
+    void jalan(() => beriMakanDewaSyrobo(id), "Kenyang penuh! Bar kenyang terkunci 24 jam.");
   }
 
   // ── Menggosok dengan spons ────────────────────────────────────────────
@@ -323,22 +360,50 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   const ss = String(aktif % 60).padStart(2, "0");
 
   const dok: { id: IkonDok; nama: string; titik?: boolean }[] = [
+    { id: "ruang", nama: "Main Room" },
     { id: "makan", nama: "Makan", titik: suasana === "lapar" || suasana === "lapar-kotor" },
     { id: "mandi", nama: "Mandi", titik: suasana === "kotor" || suasana === "lapar-kotor" },
     { id: "baju", nama: "Baju" },
     { id: "toko", nama: "Toko" },
+    { id: "game", nama: "Games" },
     { id: "hadiah", nama: "Hadiah", titik: adaKlaim },
   ];
+  const RUANG_DARI_MENU: Partial<Record<IkonDok, JenisRuangan>> = { makan: "dapur", mandi: "mandi", baju: "ganti", toko: "toko" };
+
+  /** Menu dok: tiap menu ruangan memindahkan robot ke ruangannya; menekan lagi menutup lembarnya (tetap di ruangan). */
+  function tekanDok(id: IkonDok) {
+    if (id === "ruang") {
+      setRuang("kamar");
+      setLembar(null);
+      return;
+    }
+    const tujuan = RUANG_DARI_MENU[id];
+    if (tujuan) setRuang(tujuan);
+    setLembar(lembar === id ? null : id);
+  }
+
+  // Sisa masa beku kenyang (makanan dewa), untuk lencana di HUD.
+  const sisaBeku = sisaBekuMs(robot, sekarang);
+  const bekuTeks = `${Math.floor(sisaBeku / 3600_000)}j ${String(Math.floor((sisaBeku % 3600_000) / 60_000)).padStart(2, "0")}m`;
 
   return (
     // `keep-white`: adegan ini punya warnanya sendiri, `text-white` tak boleh terbalik di tema terang.
     <div className={cn("keep-white relative h-dvh w-full overflow-hidden overscroll-none bg-[#538589]", gosok && "cursor-none")}>
-      <SyroboKamar gelap={gelap} ubahGelap={setGelap} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
+      {ruang === "kamar" ? (
+        <SyroboKamar gelap={gelap} ubahGelap={setGelap} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
+      ) : (
+        <SyroboRuangan key={`ruang-${ruang}`} jenis={ruang} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
+      )}
 
       {/* ── HUD ─────────────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-x-0 top-[88px] z-30 flex flex-wrap items-start justify-between gap-3 px-4 sm:px-6">
         <div className={cn("pointer-events-auto -rotate-1 space-y-1.5 rounded-xl bg-[#FBF1DA] px-3.5 py-2.5", STIKER)}>
           <Status ikon="makan" nama="Kenyang" nilai={kondisi.kenyang} rendahDi={AMBANG_LAPAR} />
+          {sisaBeku > 0 && (
+            <p className="-mt-0.5 flex items-center gap-1.5 text-[11px] font-extrabold text-[#8A5F00]">
+              <Ikon nama="ambrosia" className="h-5 w-5" /> Terkunci kenyang · {bekuTeks}
+            </p>
+          )}
           <Status ikon="mandi" nama="Bersih" nilai={kondisi.bersih} rendahDi={AMBANG_KOTOR} />
         </div>
 
@@ -405,7 +470,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           ukuranBadan={ukuranEdit.badan ?? robot.ukuran.badan}
           suasana={suasana}
           reaksi={reaksi}
-          gelap={gelap}
+          gelap={gelap && ruang === "kamar"}
           jeda={lembar !== null || gosok}
           ucapan={ucapan}
         />
@@ -439,24 +504,72 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
           {lembar === "makan" && (
             <>
-              <h2 className="text-lg font-extrabold">Beri makan</h2>
-              <ul className="mt-3 grid grid-cols-4 gap-2">
-                {MAKANAN.map((m) => (
-                  <li key={m.id}>
-                    <button
-                      type="button"
-                      disabled={sibuk || robot.stok[m.id] < 1 || kondisi.kenyang >= 98}
-                      onClick={() => makan(m.id)}
-                      className={cn("relative flex w-full flex-col items-center gap-0.5 rounded-lg bg-[#F6E3C0] py-2 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95 disabled:opacity-45", STIKER)}
-                    >
-                      <Ikon nama={m.id} className="h-10 w-10" />
-                      <span className="text-xs font-extrabold">{m.nama}</span>
-                      <span className="absolute -right-1.5 -top-2 min-w-6 rounded-full border-2 border-[#2B2233] bg-[#6BA7D8] px-1.5 text-center text-xs font-extrabold">{robot.stok[m.id]}</span>
-                    </button>
-                  </li>
+              <div className="flex items-center gap-2 pr-12">
+                <h2 className="mr-2 text-lg font-extrabold">Dapur</h2>
+                {(["biasa", "dewa"] as const).map((k) => (
+                  <button key={k} type="button" aria-pressed={makanTab === k} onClick={() => setMakanTab(k)} className={cn(TOMBOL_KECIL, "py-1", makanTab === k && "bg-[#6BA7D8]")}>
+                    {k === "biasa" ? "Makanan" : "Makanan Dewa"}
+                  </button>
                 ))}
-              </ul>
-              <p className="mt-3 text-xs font-semibold text-[#2B2233]/70">Stok habis? Beli makanan di Toko dengan poin.</p>
+              </div>
+              {makanTab === "biasa" ? (
+                <>
+                  <ul className="mt-3 grid grid-cols-4 gap-2">
+                    {MAKANAN.map((m) => (
+                      <li key={m.id}>
+                        <button
+                          type="button"
+                          disabled={sibuk || robot.stok[m.id] < 1 || kondisi.kenyang >= 98}
+                          onClick={() => makan(m.id)}
+                          className={cn("relative flex w-full flex-col items-center gap-0.5 rounded-lg bg-[#F6E3C0] py-2 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95 disabled:opacity-45", STIKER)}
+                        >
+                          <Ikon nama={m.id} className="h-10 w-10" />
+                          <span className="text-xs font-extrabold">{m.nama}</span>
+                          <span className="absolute -right-1.5 -top-2 min-w-6 rounded-full border-2 border-[#2B2233] bg-[#6BA7D8] px-1.5 text-center text-xs font-extrabold">{robot.stok[m.id]}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-xs font-semibold text-[#2B2233]/70">Stok habis? Beli makanan di Toko dengan poin. Sentuh benda-benda di dapur ini juga!</p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-xs font-semibold text-[#2B2233]/75">
+                    {robot.premium
+                      ? sisaBeku > 0
+                        ? `${robot.nama} masih kenyang oleh makanan dewa. Bar kenyang tidak turun selama ${bekuTeks} lagi.`
+                        : "Gratis selama SynapEd Premium aktif. Satu santapan dewa membuat bar kenyang penuh dan TIDAK turun selama 24 jam."
+                      : "Khusus pemilik SynapEd Premium. Satu santapan dewa membuat bar kenyang penuh dan tidak turun selama 24 jam."}
+                  </p>
+                  <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                    {MAKANAN_DEWA.map((m) => (
+                      <li key={m.id}>
+                        <button
+                          type="button"
+                          title={m.cerita}
+                          disabled={sibuk || !robot.premium || sisaBeku > 0}
+                          onClick={() => makanDewa(m.id)}
+                          className={cn("relative flex w-full flex-col items-center gap-0.5 rounded-lg bg-[#FFE7A8] py-2 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50", STIKER)}
+                        >
+                          <Ikon nama={m.id} className="h-10 w-10" />
+                          <span className="px-1 text-center text-[11px] font-extrabold leading-tight">{m.nama}</span>
+                          {!robot.premium && (
+                            <svg viewBox="0 0 16 16" className="absolute -right-1.5 -top-2 h-6 w-6 rounded-full border-2 border-[#2B2233] bg-[#F6E3C0] p-1" fill="none" stroke={"#2B2233"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Terkunci">
+                              <rect x="3.500" y="7" width="9" height="6.500" rx="1.500" fill="#F2C14E" />
+                              <path d="M5.500 7V5a2.500 2.500 0 015 0v2" />
+                            </svg>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {!robot.premium && (
+                    <Link href="/premium" className={cn(TOMBOL_UTAMA, "mt-3 inline-block")}>
+                      Buka dengan SynapEd Premium
+                    </Link>
+                  )}
+                </>
+              )}
             </>
           )}
 
@@ -547,7 +660,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
             <>
               <div className="flex items-center gap-2 pr-10">
                 <h2 className="mr-2 text-lg font-extrabold">Toko</h2>
-                {(["makanan", "pakaian"] as const).map((t) => (
+                {(["makanan", "pakaian", "koin"] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -555,7 +668,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                     onClick={() => setTokoTab(t)}
                     className={cn(TOMBOL_KECIL, "py-1", tokoTab === t && "bg-[#6BA7D8]")}
                   >
-                    {t === "makanan" ? "Makanan" : "Pakaian"}
+                    {t === "makanan" ? "Makanan" : t === "pakaian" ? "Pakaian" : "Koin Game"}
                   </button>
                 ))}
               </div>
@@ -574,7 +687,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                     </li>
                   ))}
                 </ul>
-              ) : (
+              ) : tokoTab === "pakaian" ? (
                 <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                   {PAKAIAN.map((p) => {
                     const punya = robot.punya.includes(p.id);
@@ -583,9 +696,20 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                         <Ikon nama={p.id} className="h-10 w-10 shrink-0" />
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-extrabold">{p.nama}</span>
-                          <span className="block text-xs font-semibold text-[#2B2233]/65">untuk {NAMA_SLOT[p.slot].toLowerCase()}</span>
+                          <span className="block text-xs font-semibold text-[#2B2233]/65">
+                            untuk {NAMA_SLOT[p.slot].toLowerCase()}
+                            {p.premium && " · khusus Premium"}
+                          </span>
                         </span>
-                        {punya ? (
+                        {p.premium ? (
+                          robot.premium ? (
+                            <span className="text-xs font-extrabold text-[#2F6F4A]">Terbuka (Premium)</span>
+                          ) : (
+                            <Link href="/premium" className={cn(TOMBOL_KECIL, "flex items-center gap-1 bg-[#FFE7A8]")}>
+                              Premium
+                            </Link>
+                          )
+                        ) : punya ? (
                           <span className="text-xs font-extrabold text-[#2F6F4A]">Dimiliki</span>
                         ) : (
                           <button type="button" disabled={sibuk || robot.poin < p.harga} onClick={() => void jalan(() => beliPakaianSyrobo(p.id), `${p.nama} dibeli. Pasang di menu Baju.`)} className={cn(TOMBOL_KECIL, "flex items-center gap-1")}>
@@ -596,7 +720,44 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                     );
                   })}
                 </ul>
+              ) : (
+                <div className={cn("mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-[#FFE7A8] px-3 py-2.5", STIKER)}>
+                  <Ikon nama="game" className="h-10 w-10 shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-extrabold">Tukar koin game jadi bintang</span>
+                    <span className="block text-xs font-semibold text-[#2B2233]/70">
+                      Saldo {robot.koinGame} koin · {KOIN_PER_POIN} koin = 1 <Ikon nama="bintang" className="inline h-3.5 w-3.5 align-[-2px]" /> · maksimal 1.500 koin disetor per hari
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    disabled={sibuk || robot.koinGame < KOIN_PER_POIN}
+                    onClick={() => void jalan(() => tukarKoinGameSyrobo(), `Koin ditukar jadi ${Math.floor(robot.koinGame / KOIN_PER_POIN)} poin!`)}
+                    className={TOMBOL_UTAMA}
+                  >
+                    Tukar {Math.floor(robot.koinGame / KOIN_PER_POIN)}
+                  </button>
+                </div>
               )}
+            </>
+          )}
+
+          {lembar === "game" && (
+            <>
+              <h2 className="text-lg font-extrabold">Games</h2>
+              <ul className="mt-3 grid gap-2">
+                <li className={cn("flex items-center gap-3 rounded-lg bg-[#F6E3C0] px-3 py-2.5", STIKER)}>
+                  <Ikon nama="game" className="h-12 w-12 shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-extrabold">Tanjakan Robo</span>
+                    <span className="block text-xs font-semibold text-[#2B2233]/70">Kendarai mobil menanjak bukit tanpa ujung. Kumpulkan koin & bensin. Ponsel: dua pedal; desktop: panah / A D.</span>
+                  </span>
+                  <button type="button" onClick={() => setMain(true)} className={TOMBOL_UTAMA}>
+                    Main
+                  </button>
+                </li>
+              </ul>
+              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Koin yang kamu kumpulkan di game masuk ke akun dan bisa ditukar poin bintang di menu Toko, tab Koin Game (100 koin = 1 bintang, maksimal 1.500 koin per hari).</p>
             </>
           )}
 
@@ -648,29 +809,32 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
       )}
 
       {/* ── Dok ─────────────────────────────────────────────────── */}
-      <nav aria-label="Menu SyRobo" className="absolute inset-x-0 bottom-[92px] z-[40] flex justify-center gap-2 px-3 sm:bottom-4 sm:gap-3">
+      <nav aria-label="Menu SyRobo" className="absolute inset-x-0 bottom-[92px] z-[40] flex justify-center gap-1.5 px-2 sm:bottom-4 sm:gap-2.5 sm:px-3">
         {dok.map((d, i) => {
-          const aktifTombol = lembar === d.id;
+          const aktifTombol = d.id === "ruang" ? ruang === "kamar" && lembar === null : lembar === d.id;
           return (
             <button
               key={d.id}
               type="button"
               aria-pressed={aktifTombol}
-              onClick={() => setLembar(aktifTombol ? null : d.id)}
+              aria-label={d.nama}
+              onClick={() => tekanDok(d.id)}
               className={cn(
-                "relative flex h-[68px] w-[60px] flex-col items-center justify-center gap-0.5 rounded-xl text-[#2B2233] transition-[transform,box-shadow,background-color] duration-200 sm:w-[74px]",
+                "relative flex h-[62px] w-[48px] flex-col items-center justify-center gap-0.5 rounded-xl text-[#2B2233] transition-[transform,box-shadow,background-color] duration-200 sm:h-[68px] sm:w-[72px]",
                 STIKER,
                 i % 2 ? "rotate-1" : "-rotate-1",
                 aktifTombol ? "-translate-y-2 rotate-0 bg-[#6BA7D8]" : "bg-[#FBF1DA] hover:-translate-y-1 hover:rotate-0 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
               )}
             >
-              <Ikon nama={d.id} className="h-8 w-8" />
-              <span className="text-[11px] font-extrabold">{d.nama}</span>
+              <Ikon nama={d.id} className="h-7 w-7 sm:h-8 sm:w-8" />
+              <span className="text-[8.500px] font-extrabold leading-none sm:text-[11px]">{d.nama}</span>
               {d.titik && <span aria-hidden="true" className="syrobo-kedip absolute -right-1.5 -top-1.5 h-4 w-4 rounded-full border-2 border-[#2B2233] bg-[#E0833B]" />}
             </button>
           );
         })}
       </nav>
+
+      {main && <GameTanjakan onKeluar={() => setMain(false)} onSetor={(n) => void setorKoin(n)} />}
 
       {/* Spons yang mengikuti penunjuk selama menggosok */}
       <div
