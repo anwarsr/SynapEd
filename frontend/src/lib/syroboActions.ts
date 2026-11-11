@@ -2,7 +2,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { getPremium } from "@/lib/premium";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, detak, gantiNama, gosok, klaim, pasangPakaian, ukuranPakaian, bacaSyrobo, type HasilSyrobo } from "@/lib/syrobo/syroboCore";
+import { aktifkanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, detak, gantiNama, gosok, klaim, pasangPakaian, ukuranPakaian, bacaSyrobo, type HasilSyrobo } from "@/lib/syrobo/syroboCore";
 import type { Suasana } from "@/lib/syrobo/syroboRules";
 
 /**
@@ -65,6 +65,12 @@ export async function simpanKoinGameSyrobo(n: unknown): Promise<HasilSyrobo> {
 export async function tukarKoinGameSyrobo(): Promise<HasilSyrobo> {
   const uid = await uidSesi();
   return uid ? tukarKoinGame(adminDb(), uid, new Date(), await premiumDari(uid)) : BELUM_MASUK;
+}
+
+/** Easter egg: kode cheat diketik di halaman SyRobo. Uid dari sesi; server yang memeriksa kode & jatah harian. */
+export async function cheatSyrobo(kode: unknown): Promise<HasilSyrobo> {
+  const uid = await uidSesi();
+  return uid ? aktifkanCheat(adminDb(), uid, kode, new Date(), await premiumDari(uid)) : BELUM_MASUK;
 }
 
 /** Lampu Main Room padam: robot tidur dan energinya pulih. Uid dari sesi; tanpa argumen. */

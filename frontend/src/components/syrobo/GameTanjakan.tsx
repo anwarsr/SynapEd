@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import PanelSuara from "./PanelSuara";
+import { SuaraGame, bacaPengaturan, simpanPengaturan, type PengaturanSuara } from "./suaraGame";
 import {
   landai,
   ANTAR_RODA,
@@ -735,8 +737,7 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
   const kendali = useRef({ gasTombol: false, remTombol: false, gasKey: false, remKey: false, loncatTombol: false, loncatKey: false, nosTombol: false, nosKey: false });
   const fase = useRef<Fase>("siap");
   const rekor = useRef(0);
-  const suara = useRef<{ ctx: AudioContext; osc: OscillatorNode; gain: GainNode } | null>(null);
-  const suaraAktif = useRef(false);
+  const suara = useRef<SuaraGame | null>(null);
   const ulangRef = useRef<() => void>(() => undefined);
   /** Koin run ini yang sudah dikirim ke akun (supaya tak terkirim dua kali). */
   const disetor = useRef(0);
@@ -750,8 +751,9 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
   const [nosOn, setNosOn] = useState(false);
   const [nitroOn, setNitroOn] = useState(false);
   const [tangki, setTangki] = useState(0);
-  const suaraToggleRef = useRef<() => void>(() => undefined);
-  const [bunyi, setBunyi] = useState(false);
+  const ubahMusik = useRef<() => void>(() => undefined);
+  const ubahEfek = useRef<() => void>(() => undefined);
+  const [peng, setPeng] = useState<PengaturanSuara>(() => bacaPengaturan());
   const [potret, setPotret] = useState(false);
 
   const setFase = useCallback((f: Fase) => {
@@ -831,7 +833,8 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
       if (KEY_NOS.has(e.key)) {
         kendali.current.nosKey = true;
         setNosOn(true);
-      } else if ((e.key === "m" || e.key === "M") && !e.repeat) suaraToggleRef.current();
+      } else if ((e.key === "m" || e.key === "M") && !e.repeat) ubahMusik.current();
+      else if ((e.key === "n" || e.key === "N") && !e.repeat) ubahEfek.current();
       else if (KEY_LONCAT.has(e.key)) {
         kendali.current.loncatKey = true;
         setLoncatOn(true);
@@ -874,46 +877,39 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
     };
   }, [setFase]);
 
-  // Suara mesin sederhana (WebAudio), hanya bila dinyalakan pemain.
-  const nyalakanSuara = useCallback((aktif: boolean) => {
-    suaraAktif.current = aktif;
-    setBunyi(aktif);
-    if (!aktif) {
-      if (suara.current) suara.current.gain.gain.value = 0;
-      return;
-    }
-    if (suara.current) return;
-    try {
-      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      const ctx = new AC();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sawtooth";
-      osc.frequency.value = 60;
-      gain.gain.value = 0;
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      suara.current = { ctx, osc, gain };
-    } catch {
-      suaraAktif.current = false;
-      setBunyi(false);
-    }
+  // Suara (efek + musik) dibuat dengan WebAudio; pilihan hidup/mati disimpan di perangkat dan dipakai bersama Bola Gabung.
+  const pasangMusik = useCallback((b: boolean) => {
+    suara.current?.setMusik(b);
+    setPeng((p) => {
+      const n = { ...p, musik: b };
+      simpanPengaturan(n);
+      return n;
+    });
+  }, []);
+  const pasangEfek = useCallback((b: boolean) => {
+    suara.current?.setEfek(b);
+    setPeng((p) => {
+      const n = { ...p, efek: b };
+      simpanPengaturan(n);
+      return n;
+    });
   }, []);
   useEffect(() => {
-    suaraToggleRef.current = () => nyalakanSuara(!suaraAktif.current);
-  }, [nyalakanSuara]);
-  useEffect(
-    () => () => {
-      try {
-        suara.current?.osc.stop();
-        void suara.current?.ctx.close();
-      } catch {
-        /* diabaikan */
-      }
+    ubahMusik.current = () => pasangMusik(!(suara.current?.pengaturan.musik ?? true));
+    ubahEfek.current = () => pasangEfek(!(suara.current?.pengaturan.efek ?? true));
+  }, [pasangMusik, pasangEfek]);
+  useEffect(() => {
+    suara.current = new SuaraGame("tanjakan", bacaPengaturan());
+    const buka = () => suara.current?.buka();
+    window.addEventListener("pointerdown", buka);
+    window.addEventListener("keydown", buka);
+    return () => {
+      window.removeEventListener("pointerdown", buka);
+      window.removeEventListener("keydown", buka);
+      suara.current?.tutup();
       suara.current = null;
-    },
-    [],
-  );
+    };
+  }, []);
 
   // Putaran utama: fisika langkah tetap + gambar.
   useEffect(() => {
@@ -927,6 +923,12 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
     let hudT = 0;
     let waktu = 0;
     let koinSebelum = 0;
+    let bensinSebelum = BENSIN_AWAL;
+    let nosSebelum = 0;
+    let jedaSebelum = 0;
+    let udaraSebelum = 0;
+    let vySebelum = 0;
+    let selesaiBunyi = false;
     const hemat = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const ukur = () => {
@@ -949,6 +951,7 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
       const loncat = k.loncatKey || k.loncatTombol;
       const nos = k.nosKey || k.nosTombol;
 
+      if (!d.selesai) selesaiBunyi = false;
       if (fase.current === "main" && !d.selesai) {
         akum += dt;
         let n = 0;
@@ -985,20 +988,19 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
         }
         if (d.koin > koinSebelum) {
           koinSebelum = d.koin;
-          if (suaraAktif.current && suara.current) {
-            const { ctx: ac } = suara.current;
-            const o = ac.createOscillator();
-            const g = ac.createGain();
-            o.type = "square";
-            o.frequency.setValueAtTime(880, ac.currentTime);
-            o.frequency.setValueAtTime(1320, ac.currentTime + 0.06);
-            g.gain.setValueAtTime(0.05, ac.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.16);
-            o.connect(g).connect(ac.destination);
-            o.start();
-            o.stop(ac.currentTime + 0.17);
-          }
+          suara.current?.koin();
         }
+        if (d.bensin > bensinSebelum + 8) suara.current?.bensin();
+        bensinSebelum = d.bensin;
+        if (d.nosAmbil.size > nosSebelum) suara.current?.ambilNitro();
+        nosSebelum = d.nosAmbil.size;
+        if (d.jedaLoncat > jedaSebelum + 0.3) suara.current?.loncat();
+        jedaSebelum = d.jedaLoncat;
+        // mendarat: roda menyentuh tanah lagi setelah sebentar di udara
+        const menapak = d.roda[0].kontak || d.roda[1].kontak;
+        if (menapak && udaraSebelum > 0.25) suara.current?.mendarat(Math.abs(vySebelum));
+        udaraSebelum = menapak ? 0 : udaraSebelum + dt;
+        vySebelum = d.vy;
         if (d.selesai) {
           const baru = d.jarak > rekor.current;
           if (baru) {
@@ -1010,18 +1012,21 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
             }
           }
           fase.current = "selesai";
+          if (!selesaiBunyi) {
+            selesaiBunyi = true;
+            if (d.selesai === "jatuh") suara.current?.tabrak();
+            else suara.current?.habisBensin();
+          }
           setorRef.current();
           setHud({ jarak: d.jarak, koin: d.koin, bensin: d.bensin, fase: "selesai", selesai: d.selesai, rekor: rekor.current, rekorBaru: baru });
         }
       }
 
-      // suara mesin mengikuti kecepatan
-      if (suara.current) {
-        const aktif = suaraAktif.current && fase.current === "main";
-        const v = Math.hypot(d.vx, d.vy);
-        suara.current.gain.gain.value = aktif ? (gas ? 0.045 : 0.02) : 0;
-        suara.current.osc.frequency.value = 55 + v * 0.16 + (gas ? 30 : 0);
-      }
+      // suara mesin, desis nitro, dan musik mengikuti jalannya permainan
+      const berjalan = fase.current === "main";
+      suara.current?.mesin(Math.hypot(d.vx, d.vy), gas, berjalan);
+      suara.current?.nitro(berjalan && d.nosAktif);
+      suara.current?.atur(berjalan);
 
       // partikel
       for (const p of partikel.current) {
@@ -1300,24 +1305,24 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
           )}
         </div>
 
-        <div className="pointer-events-auto flex flex-col gap-2 pointer-fine:invisible kecil:gap-1">
-          <button type="button" onClick={keluar} aria-label="Keluar dari game" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
+        <div className="pointer-events-auto flex flex-col gap-2 kecil:gap-1">
+          <button type="button" onClick={keluar} aria-label="Keluar dari game" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 pointer-fine:hidden kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
             <svg viewBox="0 0 16 16" className="h-6 w-6 kecil:h-4 kecil:w-4" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
             </svg>
           </button>
-          <button type="button" onClick={() => jedaRef.current()} aria-label="Jeda" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
+          <button type="button" onClick={() => jedaRef.current()} aria-label="Jeda" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 pointer-fine:hidden kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
             <svg viewBox="0 0 16 16" className="h-5 w-5 kecil:h-3.5 kecil:w-3.5" fill="currentColor" aria-hidden="true">
               <rect x="3" y="2.5" width="3.4" height="11" rx="1" />
               <rect x="9.6" y="2.5" width="3.4" height="11" rx="1" />
             </svg>
           </button>
-          <button type="button" aria-pressed={bunyi} onClick={() => nyalakanSuara(!bunyi)} aria-label={bunyi ? "Matikan suara" : "Nyalakan suara"} className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0", bunyi && "bg-[#6BA7D8]")}>
-            <svg viewBox="0 0 20 20" className="h-5 w-5 kecil:h-4 kecil:w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 8h3l4-3v10l-4-3H3z" fill="currentColor" />
-              {bunyi ? <path d="M13.5 7.5a3.5 3.5 0 010 5M15.5 5.5a6 6 0 010 9" /> : <path d="M13.5 8l4 4M17.5 8l-4 4" />}
-            </svg>
-          </button>
+          <PanelSuara
+            peng={peng}
+            onMusik={pasangMusik}
+            onEfek={pasangEfek}
+            tombolClass={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}
+          />
         </div>
       </div>
 
@@ -1363,7 +1368,7 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
           REM
         </button>
         </div>
-        <p className="mb-2 hidden rounded-lg bg-[#FBF1DA]/90 px-3 py-1 text-xs font-bold pointer-fine:block">← / A rem · → / D gas · Spasi loncat · Shift nitro · M suara · R ulang · Esc jeda</p>
+        <p className="mb-2 hidden rounded-lg bg-[#FBF1DA]/90 px-3 py-1 text-xs font-bold pointer-fine:block">← / A rem · → / D gas · Spasi loncat · Shift nitro · M musik · N efek · R ulang · Esc jeda</p>
         <div className="pointer-events-none flex flex-col items-end gap-2 pointer-fine:invisible kecil:gap-1.5">
           <button
             type="button"

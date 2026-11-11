@@ -25,6 +25,12 @@ export const REM = 820;
 export const KECEPATAN_MAKS = 470;
 /** Cengkeraman ban: gaya gerak tak boleh melebihi TRAKSI x gaya tekan roda (mencegah selip/melesat). */
 export const TRAKSI = 1.1;
+/**
+ * Bantuan menanjak: di lereng naik mesin mengimbangi sebagian gravitasi searah lereng (`BANTU_TANJAK` x berat) dan ban lebih mencengkeram
+ * (`TRAKSI_TANJAK` tambahan di lereng terjal), supaya mobil tidak melambat sampai nyaris berhenti di bukit seperti sebelumnya.
+ */
+export const BANTU_TANJAK = 0.4;
+export const TRAKSI_TANJAK = 0.7;
 export const KEPALA = { x: 4, y: -36, r: 10 } as const;
 /** Titik badan yang ditahan tanah (koordinat lokal sasis). */
 export const TITIK_BADAN: readonly [number, number][] = [
@@ -311,7 +317,11 @@ export function langkah(d: Dunia, m: Masukan, dt: number): void {
       if (vt > 25) ft = -REM * Math.min(1, beban + 0.2);
       else ft = -MESIN * 0.32 * beban * Math.max(0, 1 + Math.min(0, vt) / 320);
     } else ft = -vt * 0.9;
-    ft = jepit(ft, -traksi * F * 1.6, traksi * F);
+    // Menanjak (g.ty < 0): imbangi gravitasi searah lereng dan perbesar cengkeraman, hanya selagi gas/nitro menekan.
+    const naik = Math.max(0, -g.ty);
+    if (dorong && vt < vMaks) ft += (BANTU_TANJAK * G * naik) / 2;
+    const traksiLereng = traksi * (1 + (dorong ? TRAKSI_TANJAK * Math.min(1, naik * 1.6) : 0));
+    ft = jepit(ft, -traksiLereng * F * 1.6, traksiLereng * F);
     // Rem tak boleh membalik arah dalam satu langkah (menahan getar).
     if (rem && !gas && vt > 0 && -ft * dt > vt) ft = -vt / dt;
     const ftx = ft * g.tx;

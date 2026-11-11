@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { gambarBola, siapkanBola } from "./bolaGambar";
 import { gambarLatar, siapkanLatar, temaUntuk } from "./bolaLatar";
+import PanelSuara from "./PanelSuara";
+import { SuaraGame, bacaPengaturan, simpanPengaturan, type PengaturanSuara } from "./suaraGame";
 import {
   GARIS_Y,
   LEBAR,
@@ -101,6 +103,10 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
   /** Dunia yang skornya sudah disetor: satu permainan hanya disetor sekali (selesai, ulang, atau keluar). */
   const disetor = useRef<DuniaBola | null>(null);
   const setorRef = useRef(onSetor);
+  const suara = useRef<SuaraGame | null>(null);
+  const [peng, setPeng] = useState<PengaturanSuara>(() => bacaPengaturan());
+  const ubahMusik = useRef<() => void>(() => undefined);
+  const ubahEfek = useRef<() => void>(() => undefined);
   const ulangRef = useRef<() => void>(() => undefined);
   const jedaRef = useRef<() => void>(() => undefined);
   const jatuhRef = useRef<() => void>(() => undefined);
@@ -142,9 +148,30 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
     jatuhRef.current = () => {
       if (fase.current === "siap") setFase("main");
       if (fase.current !== "main") return;
-      jatuhkan(dunia.current, bidik.current);
+      if (jatuhkan(dunia.current, bidik.current)) suara.current?.jatuh();
     };
   }, [ulang, setFase, onSetor, setor]);
+
+  const pasangMusik = useCallback((b: boolean) => {
+    suara.current?.setMusik(b);
+    setPeng((p) => {
+      const n = { ...p, musik: b };
+      simpanPengaturan(n);
+      return n;
+    });
+  }, []);
+  const pasangEfek = useCallback((b: boolean) => {
+    suara.current?.setEfek(b);
+    setPeng((p) => {
+      const n = { ...p, efek: b };
+      simpanPengaturan(n);
+      return n;
+    });
+  }, []);
+  useEffect(() => {
+    ubahMusik.current = () => pasangMusik(!(suara.current?.pengaturan.musik ?? true));
+    ubahEfek.current = () => pasangEfek(!(suara.current?.pengaturan.efek ?? true));
+  }, [pasangMusik, pasangEfek]);
 
   // Rekor + layar tegak.
   useEffect(() => {
@@ -168,6 +195,8 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
       if (KEY_KIRI.has(e.key)) tombol.current.kiri = true;
       else if (KEY_KANAN.has(e.key)) tombol.current.kanan = true;
       else if (KEY_JATUH.has(e.key) && !e.repeat) jatuhRef.current();
+      else if ((e.key === "m" || e.key === "M") && !e.repeat) ubahMusik.current();
+      else if ((e.key === "n" || e.key === "N") && !e.repeat) ubahEfek.current();
       else if ((e.key === "r" || e.key === "R") && !e.repeat) ulangRef.current();
       else if ((e.key === "Escape" || e.key === "p" || e.key === "P") && !e.repeat) jedaRef.current();
     };
@@ -196,6 +225,10 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
     const ctx = cv.getContext("2d");
     if (!ctx) return;
     siapkanBola();
+    suara.current = new SuaraGame("bola", bacaPengaturan());
+    const bukaSuara = () => suara.current?.buka();
+    window.addEventListener("pointerdown", bukaSuara);
+    window.addEventListener("keydown", bukaSuara);
     // lukis suasana latar lain di sela waktu luang supaya peralihan nanti tak tersendat
     const pemanasan = [250, 700, 1150].map((ms, i) => window.setTimeout(() => siapkanLatar(cv.clientWidth, cv.clientHeight, i + 1), ms));
     let id = 0;
@@ -239,6 +272,9 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
         if (n >= 8) akum = 0;
         waktu += dt;
 
+        for (const kuat of d.dentum) suara.current?.dentum(kuat);
+        d.dentum.length = 0;
+        for (const e of d.efek) suara.current?.gabung(e.n);
         for (const e of d.efek) {
           if (hemat) break;
           percik.current.push({ x: e.x, y: e.y, vx: 0, vy: 0, umur: 0, maks: 0.45, warna: WARNA[e.n], r: RADIUS[e.n], cincin: true });
@@ -262,10 +298,13 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
           }
           fase.current = "selesai";
           setorRef2.current();
+          suara.current?.selesai();
+          if (baru) setTimeout(() => suara.current?.rekor(), 900);
           setHud({ skor: d.skor, rekor: rekor.current, rekorBaru: baru, berikut: d.berikut, tertinggi: d.tertinggi, fase: "selesai" });
         }
       }
       d.efek = [];
+      suara.current?.atur(fase.current === "main");
 
       for (const p of percik.current) {
         p.umur += dt;
@@ -384,6 +423,10 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
     return () => {
       cancelAnimationFrame(id);
       pemanasan.forEach((x) => window.clearTimeout(x));
+      window.removeEventListener("pointerdown", bukaSuara);
+      window.removeEventListener("keydown", bukaSuara);
+      suara.current?.tutup();
+      suara.current = null;
       ro.disconnect();
     };
   }, []);
@@ -449,24 +492,30 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
         </div>
         </div>
 
-        <div className="pointer-events-auto flex flex-col gap-2 pointer-fine:invisible kecil:gap-1">
-          <button type="button" onClick={keluar} aria-label="Keluar dari game" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
+        <div className="pointer-events-auto flex flex-col gap-2 kecil:gap-1">
+          <button type="button" onClick={keluar} aria-label="Keluar dari game" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 pointer-fine:hidden kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
             <svg viewBox="0 0 16 16" className="h-6 w-6 kecil:h-4 kecil:w-4" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
             </svg>
           </button>
-          <button type="button" onClick={() => jedaRef.current()} aria-label="Jeda" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
+          <button type="button" onClick={() => jedaRef.current()} aria-label="Jeda" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 pointer-fine:hidden kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
             <svg viewBox="0 0 16 16" className="h-5 w-5 kecil:h-3.5 kecil:w-3.5" fill="currentColor" aria-hidden="true">
               <rect x="3" y="2.5" width="3.4" height="11" rx="1" />
               <rect x="9.6" y="2.5" width="3.4" height="11" rx="1" />
             </svg>
           </button>
+          <PanelSuara
+            peng={peng}
+            onMusik={pasangMusik}
+            onEfek={pasangEfek}
+            tombolClass={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}
+          />
         </div>
       </div>
 
       {/* Petunjuk desktop (hanya teks) */}
       <p className="pointer-events-none absolute bottom-3 right-3 hidden max-w-[16rem] rounded-lg bg-[#FBF1DA]/90 px-3 py-1.5 text-xs font-bold leading-relaxed pointer-fine:block">
-        Mouse / ← → bidik · Klik / Spasi jatuhkan · R ulang · Esc jeda
+        Mouse / ← → bidik · Klik / Spasi jatuhkan · M musik · N efek · R ulang · Esc jeda
       </p>
       {potret && hud.fase === "main" && <p className="pointer-events-none absolute inset-x-0 bottom-3 mx-auto w-fit rounded-lg bg-[#FBF1DA]/90 px-3 py-1 text-[11px] font-bold pointer-fine:hidden">Geser untuk membidik, lepas untuk menjatuhkan</p>}
 

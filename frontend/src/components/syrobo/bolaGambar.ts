@@ -107,6 +107,11 @@ function titikKeRuas(p: V3, a: V3, b: V3): number {
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
+/** Derau berlapis 2D (dari derau 3D di titik tetap) untuk variasi warna kulit. */
+function fbm2d(x: number, y: number, oktaf = 3): number {
+  return fbm(x, y, 7.3, oktaf);
+}
+
 interface Jenis {
   /** Warna dasar corak di titik O (koordinat benda, setelah dimiringkan). */
   warna: (o: V3) => V3;
@@ -296,53 +301,97 @@ function buatJenis(n: number): Jenis {
       };
     }
     case 7: {
-      // bola basket: kulit oranye berbintik, lima garis hitam
+      // bola basket: kulit karet oranye berbintik (butir timbul), satu garis tengah melingkar, satu garis tegak, dan dua garis
+      // lengkung "( )" di kiri-kanan; alur hitam sedikit masuk dengan tepi gelap
+      const sudut = 0.62;
+      const nKiri: V3 = [Math.cos(sudut), 0, Math.sin(sudut)];
+      const nKanan: V3 = [-Math.cos(sudut), 0, Math.sin(sudut)];
+      const jarakBidang = (o: V3, n: V3, d: number) => Math.abs(dot(o, n) - d);
       return {
-        miring: [0.4, 0.55],
-        kilap: [0.4, 28],
+        miring: [0.14, 0.22],
+        kilap: [0.35, 26],
         warna: (o) => {
-          const bintik = derau(o[0] * 60, o[1] * 60, o[2] * 60);
-          let c = campur(hx("#CF6528"), hx("#DE7733"), fbm(o[0] * 4, o[1] * 4, o[2] * 4, 2));
-          c = kali(c, 0.88 + bintik * 0.24);
-          const lingkar = (d: number, l: number) => 1 - sm(l * 0.55, l, d);
-          const w = 0.034;
-          const garis = Math.max(
-            lingkar(Math.abs(o[1]), w),
-            lingkar(Math.abs(o[0]), w),
-            lingkar(Math.abs(Math.acos(clamp(Math.abs(o[2]), 0, 1)) - 1.0) * 0.55, w),
-            lingkar(Math.abs(Math.acos(clamp(Math.abs(o[0] * 0.6 + o[2] * 0.8), 0, 1)) - 1.12) * 0.55, w),
+          // butir: bintik-bintik kecil rapat, tiap butir sedikit terang di tengah dan gelap di tepinya
+          const bt = derau(o[0] * 150, o[1] * 150, o[2] * 150) * 0.6 + derau(o[2] * 150 + 5, o[0] * 150 + 3, o[1] * 150 + 9) * 0.4;
+          let c = campur(hx("#BF4F17"), hx("#E0722B"), fbm2d(o[0] * 3 + o[2], o[1] * 3, 3));
+          c = kali(c, 0.8 + bt * 0.42);
+          const g = Math.min(
+            Math.abs(o[1]),
+            Math.abs(o[0]),
+            jarakBidang(o, nKiri, 0.1),
+            jarakBidang(o, nKanan, 0.1),
           );
-          return campur(c, hx("#1C1820"), garis);
+          const alur = 1 - sm(0.02, 0.034, g);
+          const bayang = sm(0.03, 0.05, g) * (1 - sm(0.05, 0.085, g));
+          c = kali(c, 1 - 0.28 * bayang);
+          return campur(c, hx("#14100E"), alur);
         },
       };
     }
     case 8: {
-      // bola sepak: 12 pentagon hitam dan 20 segi enam putih (sel Voronoi dari 32 pusat)
-      const phi = (1 + Math.sqrt(5)) / 2;
-      const pusat: V3[] = [];
-      for (const a of [-1, 1]) for (const b of [-1, 1]) pusat.push(norm([0, a, b * phi]), norm([a, b * phi, 0]), norm([b * phi, 0, a]));
-      const penta = pusat.length;
-      for (const a of [-1, 1]) for (const b of [-1, 1]) for (const c of [-1, 1]) pusat.push(norm([a, b, c]));
-      for (const a of [-1, 1]) for (const b of [-1, 1]) pusat.push(norm([0, a / phi, b * phi]), norm([a / phi, b * phi, 0]), norm([b * phi, 0, a / phi]));
+      // bola sepak: 12 pentagon hitam (dibatasi sisi lurus) dikelilingi 20 segi enam putih; tiap panel sedikit menggembung
+      const fi = (1 + Math.sqrt(5)) / 2;
+      const vertex: V3[] = [];
+      for (const a of [-1, 1]) for (const b of [-1, 1]) vertex.push(norm([0, a, b * fi]), norm([a, b * fi, 0]), norm([b * fi, 0, a]));
+      const wajah: V3[] = [];
+      for (const a of [-1, 1]) for (const b of [-1, 1]) for (const c of [-1, 1]) wajah.push(norm([a, b, c]));
+      for (const a of [-1, 1]) for (const b of [-1, 1]) wajah.push(norm([0, a / fi, b * fi]), norm([a / fi, b * fi, 0]), norm([b * fi, 0, a / fi]));
+      // untuk tiap pentagon: lima bidang sisinya (ke arah lima segi enam tetangga), pada jarak sudut apotema 0,288 rad
+      const APOTEMA = 0.288;
+      const sisi = vertex.map((c) => {
+        const tetangga = wajah
+          .map((h) => ({ h, d: dot(h, c) }))
+          .sort((x, y) => y.d - x.d)
+          .slice(0, 5)
+          .map(({ h }) => {
+            const t = norm([h[0] - dot(h, c) * c[0], h[1] - dot(h, c) * c[1], h[2] - dot(h, c) * c[2]]);
+            const q: V3 = [c[0] * Math.cos(APOTEMA) + t[0] * Math.sin(APOTEMA), c[1] * Math.cos(APOTEMA) + t[1] * Math.sin(APOTEMA), c[2] * Math.cos(APOTEMA) + t[2] * Math.sin(APOTEMA)];
+            return { u: t, ambang: dot(q, t) };
+          });
+        return tetangga;
+      });
       return {
         miring: [0.5, 0.4],
         kilap: [0.6, 44],
         warna: (o) => {
+          let dv = -2;
+          let iv = 0;
+          for (let i = 0; i < vertex.length; i++) {
+            const d = dot(o, vertex[i]);
+            if (d > dv) {
+              dv = d;
+              iv = i;
+            }
+          }
+          // margin ke sisi pentagon terdekat (negatif = di dalam pentagon)
+          let margin = 9;
+          for (const f of sisi[iv]) margin = Math.min(margin, f.ambang - dot(o, f.u));
+          const dalam = dv > 0.9 && margin > 0;
+          // segi enam: sel Voronoi dari 20 pusatnya (garis antar-segi-enam)
           let d1 = -2;
           let d2 = -2;
-          let i1 = 0;
-          for (let i = 0; i < pusat.length; i++) {
-            const d = dot(o, pusat[i]);
+          let iw = 0;
+          for (let i = 0; i < wajah.length; i++) {
+            const d = dot(o, wajah[i]);
             if (d > d1) {
               d2 = d1;
               d1 = d;
-              i1 = i;
+              iw = i;
             } else if (d > d2) d2 = d;
           }
-          let c = i1 < penta ? hx("#15131A") : hx("#F3F1EA");
-          if (i1 >= penta) c = kali(c, 0.97 + derau(o[0] * 22, o[1] * 22, o[2] * 22) * 0.04);
-          const sambung = 1 - sm(0.003, 0.016, d1 - d2);
-          return campur(c, i1 < penta ? hx("#2C2933") : hx("#4A4655"), sambung * 0.9);
+          const gembung = 1 - 0.12 * Math.pow(Math.acos(clamp(d1, -1, 1)) / 0.45, 2);
+          let c: V3;
+          if (dalam) {
+            c = campur(hx("#0F0D14"), hx("#1B1922"), derau(o[0] * 40, o[1] * 40, o[2] * 40) * 0.5);
+          } else {
+            c = campur(hx("#F6F4EE"), hx("#ECE9E0"), h3(iw, 5, 1) * 0.8);
+            c = kali(c, gembung);
+          }
+          // jahitan: tepi pentagon + garis antar segi enam (hanya di luar pentagon)
+          const jahitPenta = 1 - sm(0.008, 0.022, Math.abs(margin));
+          const jahitHex = dalam ? 0 : 1 - sm(0.005, 0.02, d1 - d2);
+          const garis = Math.max(jahitPenta * (dv > 0.9 ? 1 : 0), jahitHex);
+          return campur(c, hx("#34313F"), garis * 0.92);
         },
       };
     }
@@ -410,7 +459,7 @@ const ARAH_CAHAYA = norm([-0.5, -0.62, 0.6]);
 
 function buatSprite(n: number): Sprite {
   const jenis = buatJenis(n);
-  const S = n < 4 ? 112 : n < 7 ? 144 : 176;
+  const S = n < 4 ? 128 : n < 7 ? 176 : 224;
   const corak = document.createElement("canvas");
   corak.width = S;
   corak.height = S;
@@ -498,6 +547,62 @@ export function gambarBola(ctx: Ctx, x: number, y: number, r: number, n: number,
   ctx.arc(0, 0, r - 0.4, 0, TAU);
   ctx.lineWidth = Math.max(1, Math.min(1.8, r * 0.05));
   ctx.strokeStyle = "rgba(30,22,42,0.55)";
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Ikon kartu Bola Gabung: wadah dengan tiga bola sungguhan menumpuk dan percik penggabungan. Persegi `u` px. */
+export function ikonBola(ctx: Ctx, u: number): void {
+  const k = u / 120;
+  ctx.save();
+  ctx.scale(k, k);
+  ctx.beginPath();
+  ctx.roundRect(0, 0, 120, 120, 18);
+  ctx.clip();
+  const bg = ctx.createLinearGradient(0, 0, 120, 120);
+  bg.addColorStop(0, "#F8D8C6");
+  bg.addColorStop(1, "#E7AE9E");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 120, 120);
+  ctx.fillStyle = "rgba(255,255,255,0.25)";
+  ctx.beginPath();
+  ctx.arc(30, 20, 40, 0, TAU);
+  ctx.fill();
+  // kaca wadah (sisi & dasar)
+  ctx.fillStyle = "rgba(255,248,235,0.5)";
+  ctx.beginPath();
+  ctx.roundRect(14, 14, 92, 98, 10);
+  ctx.fill();
+  // bola: dasar kiri (basket), dasar kanan (sepak), atas (tenis)
+  gambarBola(ctx, 41, 86, 25, 7, 1, 0.5);
+  gambarBola(ctx, 80, 85, 26, 8, 1, -0.3);
+  gambarBola(ctx, 61, 47, 18, 3, 1, 0.9);
+  // percik penggabungan
+  ctx.strokeStyle = "#FBF1DA";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  for (const [x1, y1, x2, y2] of [
+    [84, 22, 90, 16],
+    [88, 32, 96, 32],
+    [30, 26, 24, 20],
+    [34, 36, 26, 38],
+  ] as const) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  // bingkai wadah di depan
+  ctx.strokeStyle = "#2B2233";
+  ctx.lineWidth = 5;
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(14, 14);
+  ctx.lineTo(14, 102);
+  ctx.quadraticCurveTo(14, 112, 24, 112);
+  ctx.lineTo(96, 112);
+  ctx.quadraticCurveTo(106, 112, 106, 102);
+  ctx.lineTo(106, 14);
   ctx.stroke();
   ctx.restore();
 }

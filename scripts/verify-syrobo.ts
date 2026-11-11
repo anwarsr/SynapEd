@@ -17,8 +17,14 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { check, finish } from "./checks";
 import { initAdmin } from "./project";
-import { bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
+import { aktifkanCheat, mandikan as mandikanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
 import {
+  CHEAT_MENIT,
+  CHEAT_POIN,
+  KODE_CHEAT,
+  KODE_CHEAT_DEWA,
+  MAKANAN_DEWA as DAFTAR_DEWA,
+  sisaEmasMs,
   AMBANG_LELAH,
   AMBANG_TIDUR,
   JAM_LELAH_HABIS,
@@ -257,9 +263,9 @@ async function main() {
     check("padamkan lampu: robot tidur, energi dipotret", tdr.ok && tdr.robot.tidur && Math.round(tdr.robot.energiSekarang) === 20, tdr.ok ? `${tdr.robot.energiSekarang}` : tdr.error);
     const tdr2 = await tidurkan(db, uid, new Date(te.getTime() + 10 * MENIT));
     check("padamkan lampu lagi: tak mengulang potret (tetap sejak semula)", tdr2.ok && tdr2.robot.tidurSejak === te.toISOString(), tdr2.ok ? String(tdr2.robot.tidurSejak) : tdr2.error);
-    const tBangun = new Date(te.getTime() + 30 * MENIT);
+    const tBangun = new Date(te.getTime() + 5 * MENIT); // tidur penuh 10 menit: 5 menit = +50
     const bgn = await bangunkan(db, uid, tBangun);
-    check("nyalakan lampu setelah 30 menit tidur: energi 20 → 70, tidak tidur lagi", bgn.ok && !bgn.robot.tidur && bgn.robot.tidurSejak === null && Math.round(bgn.robot.energi) === 70, bgn.ok ? `${bgn.robot.energi}` : bgn.error);
+    check("nyalakan lampu setelah 5 menit tidur (penuh = 10 menit): energi 20 → 70, tidak tidur lagi", bgn.ok && !bgn.robot.tidur && bgn.robot.tidurSejak === null && Math.round(bgn.robot.energi) === 70, bgn.ok ? `${bgn.robot.energi}` : bgn.error);
     const bgn2 = await bangunkan(db, uid, new Date(tBangun.getTime() + 5 * MENIT));
     check("nyalakan lampu lagi: tak mengubah potret energi", bgn2.ok && bgn.ok && bgn2.robot.energiAt === bgn.robot.energiAt && Math.round(bgn2.robot.energi) === 70, bgn2.ok ? bgn2.robot.energiAt : bgn2.error);
     const sesudah = await bacaSyrobo(db, uid, new Date(tBangun.getTime() + (JAM_LELAH_HABIS * 3600_000) / 10));
@@ -268,6 +274,70 @@ async function main() {
     check("data lama tanpa field energi terbaca segar (energi 100, tidak tidur)", dataLamaE.energi === 100 && dataLamaE.tidurSejak === null, `${dataLamaE.energi}`);
     const dataRusakE = normalisasi({ energi: "x", energiAt: "bukan-tanggal", tidurSejak: 5 }, te);
     check("energi/tanggal rusak jatuh ke bawaan", dataRusakE.energi === 100 && dataRusakE.tidurSejak === null && !Number.isNaN(Date.parse(dataRusakE.energiAt)), "ok");
+
+    const td0 = new Date("2026-05-20T03:00:00Z").getTime();
+    // 11. Easter egg: kode cheat (emas 10 menit + 50 poin, sekali sehari WIB) & aura makanan dewa
+    console.log("\nCheat & aura dewa");
+    const tc = new Date("2026-06-01T03:00:00Z"); // 10:00 WIB
+    const poinC = (await bacaSyrobo(db, uid, tc)).poin;
+    const salah = await aktifkanCheat(db, uid, "kingolg", tc);
+    check("kode salah ditolak tanpa mengubah apa pun", !salah.ok && (await bacaSyrobo(db, uid, tc)).poin === poinC, salah.ok ? "lolos" : salah.error);
+    const bukanTeks = await aktifkanCheat(db, uid, 123, tc);
+    check("kode bukan teks ditolak", !bukanTeks.ok, "ditolak");
+    const c1 = await aktifkanCheat(db, uid, " kingolga ", tc);
+    check("kode benar (huruf kecil & spasi diabaikan): +" + CHEAT_POIN + " poin dan robot emas", c1.ok && c1.robot.poin === poinC + CHEAT_POIN && c1.robot.emas && Math.abs(c1.robot.emasSisaMs - CHEAT_MENIT * 60_000) < 1000, c1.ok ? `${c1.robot.poin} emas=${c1.robot.emas}` : c1.error);
+    const c2 = await aktifkanCheat(db, uid, KODE_CHEAT, new Date(tc.getTime() + 5 * MENIT));
+    check("kedua kali di hari yang sama ditolak (poin tak bertambah)", !c2.ok && c2.error.includes("hari ini") && (await bacaSyrobo(db, uid, tc)).poin === poinC + CHEAT_POIN, c2.ok ? "lolos" : c2.error);
+    const habisEmas = await bacaSyrobo(db, uid, new Date(tc.getTime() + (CHEAT_MENIT + 1) * MENIT));
+    check("emas berakhir sesudah " + CHEAT_MENIT + " menit", !habisEmas.emas && habisEmas.emasSisaMs === 0, `emas=${habisEmas.emas}`);
+    const jam23 = await aktifkanCheat(db, uid, KODE_CHEAT, new Date("2026-06-01T16:59:00Z")); // 23:59 WIB, hari yang sama
+    check("23:59 WIB masih hari yang sama: tetap ditolak", !jam23.ok, jam23.ok ? "lolos" : jam23.error);
+    const cheatBesok = await aktifkanCheat(db, uid, KODE_CHEAT, new Date("2026-06-01T17:01:00Z")); // 00:01 WIB hari berikutnya
+    check("lewat tengah malam WIB jatah pulih: +" + CHEAT_POIN + " poin lagi", cheatBesok.ok && cheatBesok.robot.poin === poinC + CHEAT_POIN * 2 && cheatBesok.robot.emas, cheatBesok.ok ? `${cheatBesok.robot.poin}` : cheatBesok.error);
+    check("emas hanya ada selama sisa waktunya (murni)", sisaEmasMs({ emasSampai: null }, tc) === 0 && sisaEmasMs({ emasSampai: new Date(tc.getTime() + 1000).toISOString() }, tc) === 1000, "ok");
+    const tanggalRusak = normalisasi({ cheatHari: "kemarin", emasSampai: "xx" }, tc);
+    check("cheatHari/emasSampai rusak jatuh ke null", tanggalRusak.cheatHari === null && tanggalRusak.emasSampai === null, "ok");
+
+    // tidur memblokir makan & mandi (robot harus dibangunkan dulu)
+    await ref.update({ tidurSejak: new Date(td0).toISOString(), energi: 50, energiAt: new Date(td0).toISOString() });
+    const makanTidur = await beriMakan(db, uid, "roti", new Date(td0));
+    check("robot tidur: tak bisa diberi makan", !makanTidur.ok && makanTidur.error.includes("tidur"), makanTidur.ok ? "lolos" : makanTidur.error);
+    const mandiTidur = await mandikanCheat(db, uid, new Date(td0));
+    check("robot tidur: tak bisa dimandikan", !mandiTidur.ok && mandiTidur.error.includes("tidur"), mandiTidur.ok ? "lolos" : mandiTidur.error);
+    const dewaTidur = await beriMakanDewa(db, uid, "madu", new Date(td0), true);
+    check("robot tidur: tak bisa diberi makanan dewa (walau premium)", !dewaTidur.ok && dewaTidur.error.includes("tidur"), dewaTidur.ok ? "lolos" : dewaTidur.error);
+    await bangunkan(db, uid, new Date(td0 + MENIT));
+    check("tidur tak berakhir sendiri: dibaca sehari kemudian masih tidur (energi penuh)", (await (async () => {
+      await tidurkan(db, uid, new Date(td0 + 2 * MENIT));
+      return bacaSyrobo(db, uid, new Date(td0 + 26 * 3600_000));
+    })()).tidur === true, "masih tidur");
+    await bangunkan(db, uid, new Date(td0 + 27 * 3600_000));
+
+    // cheat kedua: DEIDOSTUDIO = 1 tiap makanan dewa, sekali seumur akun
+    await ref.update({ bekuLaparSampai: null, dewaId: null, tidurSejak: null, stokDewa: {}, cheatDewa: false });
+    const tdew = new Date("2026-08-01T03:00:00Z");
+    const tanpaStokDewa = await beriMakanDewa(db, uid, "madu", tdew, false);
+    check("tanpa Premium & tanpa stok: makanan dewa ditolak", !tanpaStokDewa.ok, tanpaStokDewa.ok ? "lolos" : tanpaStokDewa.error);
+    const cd = await aktifkanCheat(db, uid, KODE_CHEAT_DEWA.toLowerCase(), tdew);
+    check("DEIDOSTUDIO: semua makanan dewa masing-masing 1", cd.ok && DAFTAR_DEWA.every((m) => cd.robot.stokDewa[m.id] === 1) && cd.robot.cheatDewa, cd.ok ? JSON.stringify(cd.robot.stokDewa) : cd.error);
+    const cd2 = await aktifkanCheat(db, uid, KODE_CHEAT_DEWA, new Date(tdew.getTime() + 3 * 24 * 3600_000));
+    check("DEIDOSTUDIO kedua kali (bahkan hari berikutnya) ditolak, stok tak bertambah", !cd2.ok && cd2.error.includes("satu kali") && (await bacaSyrobo(db, uid, tdew)).stokDewa.madu === 1, cd2.ok ? "lolos" : cd2.error);
+    const makanStok = await beriMakanDewa(db, uid, "madu", tdew, false);
+    check("tanpa Premium tetapi punya stok: makanan dewa bisa dimakan dan stok berkurang jadi 0", makanStok.ok && makanStok.robot.stokDewa.madu === 0 && makanStok.robot.dewaId === "madu", makanStok.ok ? String(makanStok.robot.stokDewa.madu) : makanStok.error);
+    const stokLain = (await bacaSyrobo(db, uid, tdew)).stokDewa;
+    check("makanan dewa lain tak ikut berkurang", DAFTAR_DEWA.filter((m) => m.id !== "madu").every((m) => stokLain[m.id] === 1), "ok");
+    const premiumGratis = await beriMakanDewa(db, uid, "nektar", new Date(tdew.getTime() + 25 * 3600_000), true);
+    check("Premium aktif makan gratis: stok tidak berkurang", premiumGratis.ok && premiumGratis.robot.stokDewa.nektar === 1, premiumGratis.ok ? String(premiumGratis.robot.stokDewa.nektar) : premiumGratis.error);
+    check("stokDewa rusak terbaca 0 (bukan angka negatif/teks)", normalisasi({ stokDewa: { madu: -5, nektar: "x", ambrosia: 3.9 } }, tdew).stokDewa.madu === 0 && normalisasi({ stokDewa: { ambrosia: 3.9 } }, tdew).stokDewa.ambrosia === 3, "ok");
+
+    // aura makanan dewa: tersimpan saat dimakan, tampil hanya selama kenyang masih beku
+    const td = new Date("2026-07-01T03:00:00Z");
+    await ref.update({ bekuLaparSampai: null, dewaId: null });
+    const dewaAura = await beriMakanDewa(db, uid, "madu", td, true);
+    check("makan makanan dewa menyimpan auranya (dewaId) selama beku", dewaAura.ok && dewaAura.robot.dewaId === "madu", dewaAura.ok ? String(dewaAura.robot.dewaId) : dewaAura.error);
+    const sesudahBeku = await bacaSyrobo(db, uid, new Date(td.getTime() + (JAM_BEKU_DEWA + 1) * 3600_000), true);
+    check("aura hilang setelah masa beku 24 jam berakhir", sesudahBeku.dewaId === null, String(sesudahBeku.dewaId));
+    check("dewaId tak sah terbaca null", normalisasi({ dewaId: "bukan-makanan" }, td).dewaId === null, "ok");
   } finally {
     await ref.delete().catch(() => undefined);
   }

@@ -6,6 +6,8 @@ import SyroboKamar from "./SyroboKamar";
 import SyroboRuangan, { type JenisRuangan } from "./SyroboRuangan";
 import GameTanjakan from "./GameTanjakan";
 import GameBola from "./GameBola";
+import GameLari from "./GameLari";
+import IkonGame from "./IkonGame";
 import { Ikon, type IkonDok } from "./IkonSyrobo";
 import { cn } from "@/lib/cn";
 import {
@@ -13,6 +15,7 @@ import {
   beliPakaianSyrobo,
   beriMakanSyrobo,
   beriMakanDewaSyrobo,
+  cheatSyrobo,
   bangunkanSyrobo,
   tidurkanSyrobo,
   detakSyrobo,
@@ -30,6 +33,9 @@ import {
   AMBANG_LAPAR,
   AMBANG_LELAH,
   AMBANG_TIDUR,
+  KODE_CHEAT,
+  KODE_CHEAT_DEWA,
+  sisaEmasMs,
   energiSaatIni,
   DETAK_KLIEN_MS,
   GOSOK_PX_PER_POIN,
@@ -78,7 +84,10 @@ const TOMBOL_UTAMA = cn(
 const NAMA_SLOT: Record<SlotPakaian, string> = { kepala: "Kepala", badan: "Badan" };
 
 /** Bilah status: ikon + batang bergaris tinta, memerah saat rendah. */
-function Status({ ikon, nama, nilai, rendahDi }: { ikon: "makan" | "mandi"; nama: string; nilai: number; rendahDi: number }) {
+/** Jumlah semua makanan dewa yang dimiliki (stok dari cheat). */
+const DAFTAR_STOK_DEWA = (r: { stokDewa: Record<string, number> }) => Object.values(r.stokDewa).reduce((a, b) => a + b, 0);
+
+function Status({ ikon, nama, nilai, rendahDi }: { ikon: "makan" | "mandi" | "tidur"; nama: string; nilai: number; rendahDi: number }) {
   const rendah = nilai < rendahDi;
   return (
     <div className="flex items-center gap-1.5 sm:gap-2" title={`${nama} ${Math.round(nilai)}%`}>
@@ -108,12 +117,18 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   const [makanTab, setMakanTab] = useState<"biasa" | "dewa">("biasa");
   /** Ruangan yang sedang dimasuki: tiap menu (Makan/Mandi/Baju/Toko) punya ruangannya sendiri; "Main Room" = kamar utama. */
   const [ruang, setRuang] = useState<"kamar" | JenisRuangan>("kamar");
-  const [main, setMain] = useState<null | "tanjakan" | "bola">(null);
+  const [main, setMain] = useState<null | "tanjakan" | "bola" | "lari">(null);
   const [reaksi, setReaksi] = useState<ReaksiRobot | null>(null);
   const [suap, setSuap] = useState<{ n: number; id: MakananId | MakananDewaId } | null>(null);
   // Lampu padam = robot tidur. Dimulai dari keadaan tersimpan: lampu yang dipadamkan sebelum pergi tetap padam saat kembali.
   const [gelap, setGelap] = useState(awal.tidur);
   const [ucapan, setUcapan] = useState<{ teks: string; n: number } | null>(null);
+  /** Ledakan efek makanan dewa sesaat setelah dimakan (aura tenangnya menyala terus selama kenyang beku). */
+  const [ledakDewa, setLedakDewa] = useState<{ id: MakananDewaId; n: number } | null>(null);
+  const cheatRef = useRef<(kode: string) => void>(() => undefined);
+  /** Selama permintaan lampu belum selesai, kabar dari server (detak) tak boleh membalik keadaan lampu. */
+  const lampuBusy = useRef(false);
+  const mainRef = useRef<null | string>(null);
   /** Mode menggosok: spons mengikuti penunjuk; menggosok robot menambah bar Bersih. */
   const [gosok, setGosok] = useState(false);
   /** Poin kebersihan dari gosokan yang belum/baru dikirim (ditambahkan ke bar secara lokal supaya bar bergerak mulus). */
@@ -147,6 +162,8 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
         setJam({ selisih: Date.parse(h.robot.sekarang) - now, tiba: now, now });
         setRobot(h.robot);
         setNama(h.robot.nama);
+        // Tidur disimpan di server: lampu mengikutinya (muat ulang / pindah halaman / tab lain tak membangunkan robot).
+        if (!lampuBusy.current) setGelap(h.robot.tidur);
         kabarkan();
       }
       const teks = h.ok ? sukses : h.error;
@@ -154,6 +171,31 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     },
     [tampilPesan],
   );
+
+  // EASTER EGG: mengenali ketikan KODE_CHEAT (huruf apa pun, tanpa pengubah) selama tak sedang mengetik di kolom isian atau main game.
+  useEffect(() => {
+    cheatRef.current = cheat;
+    mainRef.current = main;
+  });
+  useEffect(() => {
+    let buf = "";
+    const panjang = Math.max(KODE_CHEAT.length, KODE_CHEAT_DEWA.length);
+    const turun = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || mainRef.current) return;
+      buf = (buf + e.key.toUpperCase()).slice(-panjang);
+      for (const kode of [KODE_CHEAT, KODE_CHEAT_DEWA]) {
+        if (buf.endsWith(kode)) {
+          buf = "";
+          cheatRef.current(kode);
+          break;
+        }
+      }
+    };
+    window.addEventListener("keydown", turun);
+    return () => window.removeEventListener("keydown", turun);
+  }, []);
 
   // Detak waktu aktif + jam lokal 1 dtk (hanya selagi tab terlihat). Server yang berwenang; jam lokal hanya
   // agar penghitung terus berjalan di antara dua detak.
@@ -186,7 +228,9 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   const kondisi = { kenyang: kondisiAsli.kenyang, bersih: Math.min(100, kondisiAsli.bersih + tambahLokal) };
   const suasana = hitungSuasana(kondisi);
   const energi = energiSaatIni(robot, sekarang);
-  const tidur = gelap && ruang === "kamar";
+  const emas = sisaEmasMs(robot, sekarang) > 0;
+  // Tidur tak bergantung ruangan: robot tetap tidur di dapur/kamar mandi/dll sampai DIBANGUNKAN (lampu Main Room dinyalakan).
+  const tidur = gelap;
   const lelah = energi < AMBANG_LELAH;
   const butuhTidur = energi < AMBANG_TIDUR;
   // Waktu aktif tampil = nilai server + waktu sejak data tiba (maks satu selang detak, supaya tak melampaui server).
@@ -197,13 +241,17 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     bersihRef.current = kondisiAsli.bersih;
   });
 
-  async function jalan(fn: () => Promise<HasilSyrobo>, sukses?: string) {
-    if (sibuk) return;
+  /** Menjalankan satu aksi server; mengembalikan true bila diterima. */
+  async function jalan(fn: () => Promise<HasilSyrobo>, sukses?: string): Promise<boolean> {
+    if (sibuk) return false;
     setSibuk(true);
     try {
-      terima(await fn(), sukses);
+      const h = await fn();
+      terima(h, sukses);
+      return h.ok;
     } catch {
       tampilPesan("Tidak bisa menghubungi server. Coba lagi.", true);
+      return false;
     } finally {
       setSibuk(false);
     }
@@ -212,9 +260,15 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   /** Lampu Main Room: padam = tidur (energi pulih), menyala = bangun. Server yang menghitung energinya. */
   function ubahLampu(g: boolean) {
     setGelap(g);
-    void (g ? tidurkanSyrobo() : bangunkanSyrobo()).then((h) => {
-      if (h.ok) terima(h);
-    }).catch(() => undefined);
+    lampuBusy.current = true;
+    void (g ? tidurkanSyrobo() : bangunkanSyrobo())
+      .then((h) => {
+        if (h.ok) terima(h);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        lampuBusy.current = false;
+      });
   }
 
   function picu(jenis: ReaksiRobot["jenis"]) {
@@ -224,6 +278,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
   function makan(id: MakananId) {
     if (sibuk) return;
+    if (tidur) return tampilPesan(`${robot.nama} sedang tidur. Nyalakan lampu di Main Room untuk membangunkannya.`, true);
     picu("makan");
     nReaksi.current += 1;
     setSuap({ n: nReaksi.current, id });
@@ -246,11 +301,25 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
   function makanDewa(id: MakananDewaId) {
     if (sibuk) return;
+    if (tidur) return tampilPesan(`${robot.nama} sedang tidur. Nyalakan lampu di Main Room untuk membangunkannya.`, true);
     picu("makan");
     nReaksi.current += 1;
     setSuap({ n: nReaksi.current, id });
     setTimeout(() => setSuap(null), 1000);
-    void jalan(() => beriMakanDewaSyrobo(id), "Kenyang penuh! Bar kenyang terkunci 24 jam.");
+    void jalan(() => beriMakanDewaSyrobo(id), "Kenyang penuh! Bar kenyang terkunci 24 jam.").then((ok) => {
+      if (!ok) return;
+      nReaksi.current += 1;
+      setLedakDewa({ id, n: nReaksi.current });
+      setTimeout(() => setLedakDewa(null), 7000);
+    });
+  }
+
+  /** EASTER EGG: mengetik KODE_CHEAT di halaman ini. Server memeriksa kode & jatah harian; di sini hanya menampilkan hasilnya. */
+  function cheat(kode: string) {
+    const sukses = kode === KODE_CHEAT_DEWA ? "10 makanan dewa masuk ke Dapur, tab Makanan Dewa." : "+50 poin bintang! Robotmu emas selama 10 menit.";
+    void jalan(() => cheatSyrobo(kode), sukses).then((ok) => {
+      if (ok) setUcapan({ teks: "Cheat activated", n: Date.now() });
+    });
   }
 
   // ── Menggosok dengan spons ────────────────────────────────────────────
@@ -425,6 +494,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
             </p>
           )}
           <Status ikon="mandi" nama="Bersih" nilai={kondisi.bersih} rendahDi={AMBANG_KOTOR} />
+          <Status ikon="tidur" nama="Energi" nilai={energi} rendahDi={AMBANG_LELAH} />
           {(lelah || tidur) && (
             <p role="status" className={cn("text-[11px] font-extrabold sm:text-xs", tidur ? "text-[#3B4E8F]" : butuhTidur ? "text-[#B23A26]" : "text-[#8A5F00]")}>
               {tidur
@@ -502,6 +572,9 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           reaksi={reaksi}
           gelap={tidur}
           energi={energi}
+          emas={emas}
+          dewa={robot.dewaId}
+          ledakDewa={ledakDewa}
           jeda={lembar !== null || gosok}
           lantaiMin={ruang === "kamar" ? 0.66 : 0.72}
           ucapan={ucapan}
@@ -515,7 +588,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           key={lembar}
           aria-label={lembar}
           className={cn(
-            "syrobo-lembar absolute inset-x-3 bottom-[170px] z-[35] max-h-[min(24dvh,200px)] overflow-y-auto rounded-xl p-4 max-sm:inset-x-2 max-sm:bottom-[164px] max-sm:max-h-[22dvh] max-sm:p-2.5 max-sm:text-[12px] max-sm:shadow-[3px_3px_0_#2B2233] max-sm:[&_h2]:text-sm max-sm:[&_p]:text-[11px] max-sm:[&_ul]:mt-1.5 max-sm:[&_ul]:gap-1 max-sm:[&_li_svg]:h-7 max-sm:[&_li_svg]:w-7 max-sm:[&_li_span]:text-[10px] sm:inset-x-auto sm:bottom-[100px] sm:left-1/2 sm:w-[min(580px,92%)] sm:max-h-[min(30dvh,260px)] sm:-translate-x-1/2 sm:p-5",
+            "syrobo-lembar absolute inset-x-3 bottom-[170px] z-[35] max-h-[min(24dvh,200px)] overflow-y-auto rounded-xl p-4 max-sm:inset-x-auto max-sm:left-1/2 max-sm:w-[76%] max-sm:-translate-x-1/2 max-sm:bottom-[164px] max-sm:max-h-[18dvh] max-sm:p-2.5 max-sm:pr-12 max-sm:text-[12px] max-sm:shadow-[3px_3px_0_#2B2233] max-sm:[&_h2]:text-sm max-sm:[&_p]:text-[11px] max-sm:[&_ul]:mt-1.5 max-sm:[&_ul]:gap-1 max-sm:[&_li_svg]:h-7 max-sm:[&_li_svg]:w-7 max-sm:[&_li_span]:text-[10px] sm:inset-x-auto sm:bottom-[100px] sm:left-1/2 sm:w-[min(580px,92%)] sm:max-h-[min(30dvh,260px)] sm:-translate-x-1/2 sm:p-5",
             KERTAS,
             STIKER,
             "shadow-[5px_5px_0_#2B2233]",
@@ -527,9 +600,9 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
             type="button"
             onClick={() => setLembar(null)}
             aria-label="Tutup"
-            className={cn(TOMBOL_KECIL, "absolute right-2.5 top-2.5 flex h-11 w-11 items-center justify-center p-0 leading-none max-sm:right-1.5 max-sm:top-1.5 max-sm:h-8 max-sm:w-8")}
+            className={cn(TOMBOL_KECIL, "absolute right-2.5 top-2.5 flex h-11 w-11 items-center justify-center p-0 leading-none max-sm:right-1.5 max-sm:top-1.5")}
           >
-            <svg viewBox="0 0 16 16" className="block h-6 w-6 max-sm:h-4 max-sm:w-4" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
+            <svg viewBox="0 0 16 16" className="block h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
             </svg>
           </button>
@@ -571,7 +644,9 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                       ? sisaBeku > 0
                         ? `${robot.nama} masih kenyang oleh makanan dewa. Bar kenyang tidak turun selama ${bekuTeks} lagi.`
                         : "Gratis selama SynapEd Premium aktif. Satu santapan dewa membuat bar kenyang penuh dan TIDAK turun selama 24 jam."
-                      : "Khusus pemilik SynapEd Premium. Satu santapan dewa membuat bar kenyang penuh dan tidak turun selama 24 jam."}
+                      : DAFTAR_STOK_DEWA(robot) > 0
+                        ? `Kamu punya ${DAFTAR_STOK_DEWA(robot)} makanan dewa. Satu santapan membuat bar kenyang penuh dan tidak turun selama 24 jam.`
+                        : "Khusus pemilik SynapEd Premium. Satu santapan dewa membuat bar kenyang penuh dan tidak turun selama 24 jam."}
                   </p>
                   <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
                     {MAKANAN_DEWA.map((m) => (
@@ -579,13 +654,16 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                         <button
                           type="button"
                           title={m.cerita}
-                          disabled={sibuk || !robot.premium || sisaBeku > 0}
+                          disabled={sibuk || (!robot.premium && robot.stokDewa[m.id] < 1) || sisaBeku > 0}
                           onClick={() => makanDewa(m.id)}
                           className={cn("relative flex w-full flex-col items-center gap-0.5 rounded-lg bg-[#FFE7A8] py-2 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50", STIKER)}
                         >
                           <Ikon nama={m.id} className="h-10 w-10" />
                           <span className="px-1 text-center text-[11px] font-extrabold leading-tight">{m.nama}</span>
-                          {!robot.premium && (
+                          {!robot.premium && robot.stokDewa[m.id] > 0 && (
+                            <span className="absolute -right-1.5 -top-2 min-w-6 rounded-full border-2 border-[#2B2233] bg-[#6BA7D8] px-1.5 text-center text-xs font-extrabold">{robot.stokDewa[m.id]}</span>
+                          )}
+                          {!robot.premium && robot.stokDewa[m.id] < 1 && (
                             <svg viewBox="0 0 16 16" className="absolute -right-1.5 -top-2 h-6 w-6 rounded-full border-2 border-[#2B2233] bg-[#F6E3C0] p-1" fill="none" stroke={"#2B2233"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Terkunci">
                               <rect x="3.500" y="7" width="9" height="6.500" rx="1.500" fill="#F2C14E" />
                               <path d="M5.500 7V5a2.500 2.500 0 015 0v2" />
@@ -595,7 +673,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                       </li>
                     ))}
                   </ul>
-                  {!robot.premium && (
+                  {!robot.premium && DAFTAR_STOK_DEWA(robot) < 1 && (
                     <Link href="/premium" className={cn(TOMBOL_UTAMA, "mt-3 inline-block")}>
                       Buka dengan SynapEd Premium
                     </Link>
@@ -779,7 +857,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
               <h2 className="text-lg font-extrabold">Games</h2>
               <ul className="mt-3 grid gap-2">
                 <li className={cn("flex items-center gap-3 rounded-lg bg-[#F6E3C0] px-3 py-2.5", STIKER)}>
-                  <Ikon nama="game" className="h-12 w-12 shrink-0" />
+                  <IkonGame jenis="tanjakan" className="h-14 w-14 shrink-0 rounded-[10px] border-2 border-[#2B2233]" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-extrabold">Tanjakan Robo</span>
                     <span className="block text-xs font-semibold text-[#2B2233]/70">Kendarai mobil menanjak bukit tanpa ujung. Kumpulkan koin & bensin. Ponsel: dua pedal; desktop: panah / A D.</span>
@@ -789,12 +867,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                   </button>
                 </li>
                 <li className={cn("flex items-center gap-3 rounded-lg bg-[#F6E3C0] px-3 py-2.5", STIKER)}>
-                  <svg viewBox="0 0 48 48" className="h-12 w-12 shrink-0" aria-hidden="true">
-                    <circle cx="17" cy="30" r="12" fill="#F0903A" stroke="#2B2233" strokeWidth="2.6" />
-                    <circle cx="33" cy="30" r="12" fill="#F0903A" stroke="#2B2233" strokeWidth="2.6" />
-                    <circle cx="24" cy="14" r="9" fill="#E0584D" stroke="#2B2233" strokeWidth="2.6" />
-                    <ellipse cx="13" cy="25" rx="3.600" ry="2" transform="rotate(-40 13 25)" fill="#fff" opacity=".6" />
-                  </svg>
+                  <IkonGame jenis="bola" className="h-14 w-14 shrink-0 rounded-[10px] border-2 border-[#2B2233]" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-extrabold">Bola Gabung</span>
                     <span className="block text-xs font-semibold text-[#2B2233]/70">Jatuhkan bola; dua bola sama besar lebur jadi lebih besar. Ponsel: geser lalu lepas; desktop: mouse + klik / spasi.</span>
@@ -803,8 +876,18 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                     Main
                   </button>
                 </li>
+                <li className={cn("flex items-center gap-3 rounded-lg bg-[#F6E3C0] px-3 py-2.5", STIKER)}>
+                  <IkonGame jenis="lari" className="h-14 w-14 shrink-0 rounded-[10px] border-2 border-[#2B2233]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-extrabold">Lari Robo</span>
+                    <span className="block text-xs font-semibold text-[#2B2233]/70">Lari tanpa henti: loncati peti, menunduk di bawah drone, dash menembus tembok. 100 skor = 1 bintang. Desktop: Spasi loncat, Shift dash, Ctrl menunduk.</span>
+                  </span>
+                  <button type="button" onClick={() => setMain("lari")} className={TOMBOL_UTAMA}>
+                    Main
+                  </button>
+                </li>
               </ul>
-              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Koin yang kamu kumpulkan di game masuk ke akun dan bisa ditukar poin bintang di menu Toko, tab Koin Game (100 koin = 1 bintang, maksimal 1.500 koin per hari). Di Bola Gabung, tiap 10 skor = 1 koin (1.000 skor = 1 bintang).</p>
+              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Koin yang kamu kumpulkan di game masuk ke akun dan bisa ditukar poin bintang di menu Toko, tab Koin Game (100 koin = 1 bintang, maksimal 1.500 koin per hari). Di Bola Gabung, tiap 10 skor = 1 koin (1.000 skor = 1 bintang); di Lari Robo, tiap 100 skor = 1 bintang.</p>
             </>
           )}
 
@@ -885,6 +968,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
       {main === "tanjakan" && <GameTanjakan onKeluar={() => setMain(null)} onSetor={(n) => void setorKoin(n)} />}
       {main === "bola" && <GameBola onKeluar={() => setMain(null)} onSetor={(n) => void setorKoin(n)} />}
+      {main === "lari" && <GameLari onKeluar={() => setMain(null)} onSetor={(n) => void setorKoin(n)} />}
 
       {/* Spons yang mengikuti penunjuk selama menggosok */}
       <div

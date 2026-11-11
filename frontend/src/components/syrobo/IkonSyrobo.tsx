@@ -9,7 +9,7 @@ export const TINTA = "#2B2233";
 const GARIS = { stroke: TINTA, strokeWidth: 2.6, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
 export type IkonDok = "ruang" | "makan" | "mandi" | "baju" | "toko" | "game" | "hadiah";
-type NamaIkon = IkonDok | MakananId | MakananDewaId | PakaianId | "bintang" | "spons";
+type NamaIkon = IkonDok | MakananId | MakananDewaId | PakaianId | "bintang" | "spons" | "tidur";
 
 /** Lingkaran sebagai sub-path (digabung dalam satu `Siluet`). */
 const ling = (cx: number, cy: number, r: number) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0z`;
@@ -422,6 +422,14 @@ function gambar(nama: NamaIkon) {
         <>
           <path d="M24 3l6 13 14 1.800-10.400 9.700 2.800 14L24 34.800 11.600 41.500l2.800-14L4 17.800 18 16z" fill="#E3A857" />
           <path d="M24 12l2.800 6 6.500.8-4.800 4.500 1.300 6.400L24 26.400l-5.800 3.300 1.300-6.400-4.800-4.500 6.500-.8z" fill="#F5D08B" strokeWidth={1.8} />
+        </>
+      );
+    case "tidur":
+      return (
+        <>
+          <path d="M30 6a18 18 0 1011 29A15 15 0 0130 6z" fill="#F2C14E" />
+          <path d="M5 8h8l-8 9h8" strokeWidth={3} />
+          <path d="M36 9h6l-6 7h6" strokeWidth={2.4} />
         </>
       );
     case "spons":

@@ -60,6 +60,7 @@
     "verify:syrobo": "tsx scripts/verify-syrobo.ts",
     "verify:tanjakan": "tsx scripts/verify-tanjakan.ts",
     "verify:bola": "tsx scripts/verify-bola.ts",
+    "verify:lari": "tsx scripts/verify-lari.ts",
     "verify:kursus-3d": "tsx --tsconfig frontend/tsconfig.json --conditions=react-server scripts/verify-kursus-3d.ts",
     "verify:quiz-rubrik": "tsx scripts/verify-quiz-rubrik.ts",
     "verify:wheel": "tsx scripts/verify-wheel.ts",

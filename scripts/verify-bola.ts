@@ -145,6 +145,21 @@ console.log("\nTumpukan & pantulan");
   check("bola yang menuruni bola lain ikut berputar", Math.abs(kecil.sudut) > 0.5, kecil.sudut.toFixed(2));
 }
 
+{
+  // Peristiwa benturan untuk efek suara: bola jatuh keras ke lantai tercatat, dan daftarnya tak membengkak jika tak dikosongkan.
+  const d = duniaBolaBaru(2);
+  taruh(d, 2, LEBAR / 2, 60);
+  jalan(d, 1.2);
+  check("bola yang jatuh keras ke lantai mencatat benturan", d.dentum.length > 0 && d.dentum.every((k) => k > 0 && Number.isFinite(k)), `${d.dentum.length}`);
+  const ramai = duniaBolaBaru(4);
+  for (let t = 0; t < 40 && !ramai.selesai; t++) {
+    jatuhkan(ramai, 40 + ((t * 71) % 200));
+    ramai.jeda = 0;
+    jalan(ramai, 0.3);
+  }
+  check("daftar benturan dibatasi walau tak pernah dikosongkan", ramai.dentum.length <= 24, `${ramai.dentum.length}`);
+}
+
 console.log("\nSelesai & ketahanan");
 const penuh = duniaBolaBaru(9);
 let yy = TINGGI;

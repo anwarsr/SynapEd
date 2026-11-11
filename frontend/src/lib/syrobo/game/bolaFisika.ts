@@ -11,15 +11,18 @@
 export const LEBAR = 270;
 export const TINGGI = 480;
 /** Garis batas: bola yang puncaknya di atas garis ini (dan diam) terlalu lama = selesai. */
-export const GARIS_Y = 86;
+export const GARIS_Y = 100;
 /** Tinggi tempat bola dijatuhkan (pusat bola). */
-export const SPAWN_Y = 44;
+export const SPAWN_Y = 52;
 
 export const G = 2000;
 /** Pantulan antarbola / dinding / lantai. Pantulan HANYA bila tumbukannya cukup keras (> BATAS_PANTUL): bola yang sekadar bersandar tak bergetar. */
 export const PANTUL = 0.32;
 export const PANTUL_LANTAI = 0.38;
 export const BATAS_PANTUL = 140;
+/** Benturan sekeras ini (px/dtk) dicatat di `dentum` supaya bisa dibunyikan. */
+export const BATAS_BUNYI = 90;
+const DENTUM_MAKS = 24;
 /** Gesekan antarbola: rendah supaya tiap bola licin dan tak saling lengket. */
 /** Cengkeram lantai wadah (tinggi): bola menggelinding di lantai, tidak berseluncur. */
 export const GESEKAN_LANTAI = 1.2;
@@ -37,7 +40,7 @@ export const BATAS_DIAM = 2.4;
 export const JEDA_JATUH = 0.42;
 
 /** Jari-jari, warna dasar, dan nilai skor per tingkat (tingkat 0..10). */
-export const RADIUS: readonly number[] = [12, 16, 21, 26, 32, 39, 47, 56, 66, 77, 90];
+export const RADIUS: readonly number[] = [15, 20, 26, 32, 39, 48, 57, 68, 81, 94, 110];
 export const WARNA: readonly string[] = ["#3FA9B8", "#F08A3A", "#F3F1EA", "#C9DA3A", "#F2EBDD", "#2C3E8F", "#F2C233", "#D9742B", "#F3F1EA", "#E0584D", "#3C7FC4"];
 /** Jenis bola tiap tingkat (urutan sama dengan RADIUS): hanya tampilan, fisikanya tetap lingkaran. */
 export const NAMA: readonly string[] = ["Kelereng", "Bola pingpong", "Bola golf", "Bola tenis", "Bola bisbol", "Bola bowling", "Bola voli", "Bola basket", "Bola sepak", "Bola pantai", "Bola dunia"];
@@ -82,6 +85,8 @@ export interface DuniaBola {
   jeda: number;
   /** Penggabungan yang baru terjadi (dikosongkan pemakai setelah digambar/dibunyikan). */
   efek: Efek[];
+  /** Kekuatan benturan (kecepatan normal, px/dtk) yang baru terjadi, untuk efek suara; dikosongkan pemakai. Dibatasi panjangnya. */
+  dentum: number[];
   /** Jumlah penggabungan sepanjang permainan. */
   gabungan: number;
   /** Tingkat tertinggi yang pernah dicapai. */
@@ -107,7 +112,7 @@ function tingkatBaru(d: DuniaBola): number {
 }
 
 export function duniaBolaBaru(seed = (Math.random() * 4294967296) >>> 0): DuniaBola {
-  const d: DuniaBola = { bola: [], skor: 0, selesai: false, nextId: 1, seed: seed >>> 0, sekarang: 0, berikut: 0, jeda: 0, efek: [], gabungan: 0, tertinggi: 0 };
+  const d: DuniaBola = { bola: [], skor: 0, selesai: false, nextId: 1, seed: seed >>> 0, sekarang: 0, berikut: 0, jeda: 0, efek: [], dentum: [], gabungan: 0, tertinggi: 0 };
   d.sekarang = tingkatBaru(d);
   d.berikut = tingkatBaru(d);
   return d;
@@ -205,6 +210,7 @@ function subLangkah(d: DuniaBola, dt: number): void {
         const vn = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny;
         const massaEfektif = 1 / (1 / ma + 1 / mc);
         let impuls = 0;
+        if (vn < -BATAS_BUNYI && d.dentum.length < DENTUM_MAKS) d.dentum.push(-vn);
         if (vn < 0) {
           const e = -vn > BATAS_PANTUL ? PANTUL : 0;
           impuls = (-(1 + e) * vn) * massaEfektif;
@@ -238,17 +244,20 @@ function subLangkah(d: DuniaBola, dt: number): void {
       if (b.x - b.r <= 1e-6) {
         b.x = b.r;
         const masuk = Math.max(0, -b.vx);
+        if (masuk > BATAS_BUNYI && d.dentum.length < DENTUM_MAKS) d.dentum.push(masuk);
         if (b.vx < 0) b.vx = -b.vx * (masuk > BATAS_PANTUL ? PANTUL : 0);
         if (terakhir) gesekPermukaan(b, -1, 0, m * masuk, GESEKAN);
       } else if (b.x + b.r >= LEBAR - 1e-6) {
         b.x = LEBAR - b.r;
         const masuk = Math.max(0, b.vx);
+        if (masuk > BATAS_BUNYI && d.dentum.length < DENTUM_MAKS) d.dentum.push(masuk);
         if (b.vx > 0) b.vx = -b.vx * (masuk > BATAS_PANTUL ? PANTUL : 0);
         if (terakhir) gesekPermukaan(b, 1, 0, m * masuk, GESEKAN);
       }
       if (b.y + b.r >= TINGGI - 1e-6) {
         b.y = TINGGI - b.r;
         const masuk = Math.max(0, b.vy);
+        if (masuk > BATAS_BUNYI && d.dentum.length < DENTUM_MAKS) d.dentum.push(masuk);
         if (b.vy > 0) b.vy = -b.vy * (masuk > BATAS_PANTUL ? PANTUL_LANTAI : 0);
         if (terakhir) {
           // lantai bergerigi: cengkeram kuat (menggelinding, bukan seluncur) + sedikit hambatan guling supaya akhirnya berhenti

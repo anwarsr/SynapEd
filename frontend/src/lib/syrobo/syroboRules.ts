@@ -22,9 +22,19 @@ export const AMBANG_KOTOR = 35;
  * berkedip = perlu tidur. Seperti kenyang/bersih, energi tidak ditulis terus-menerus: potret + waktu (`energiAt`), dan `tidurSejak` menandai tidur.
  */
 export const JAM_LELAH_HABIS = 10;
-export const JAM_TIDUR_PENUH = 1;
+export const JAM_TIDUR_PENUH = 10 / 60;
 export const AMBANG_LELAH = 35;
 export const AMBANG_TIDUR = 15;
+/**
+ * EASTER EGG (permintaan pemilik): mengetik `KODE_CHEAT` di halaman SyRobo (sudah masuk) membuat robot berwarna EMAS selama
+ * `CHEAT_MENIT` menit dan memberi `CHEAT_POIN` poin bintang. Hanya SEKALI per hari WIB (`DataSyrobo.cheatHari`). Server yang memutuskan
+ * (kode dibandingkan ulang, jatah harian, waktu); klien hanya mengenali ketikannya.
+ */
+export const KODE_CHEAT = "KINGOLGA";
+export const CHEAT_POIN = 50;
+export const CHEAT_MENIT = 10;
+/** Cheat kedua: sekali SEUMUR AKUN, memberi 1 buah tiap makanan dewa (stok `stokDewa`, bisa dimakan tanpa Premium). */
+export const KODE_CHEAT_DEWA = "DEIDOSTUDIO";
 /** Makan membuat robot sedikit kotor. */
 export const KOTOR_SAAT_MAKAN = 8;
 
@@ -79,6 +89,9 @@ export const MAKANAN_DEWA: readonly MakananDewa[] = [
   { id: "supNaga", nama: "Sup Naga", cerita: "Mengepul, pedas, dan agung." },
   { id: "rotiBintang", nama: "Roti Bintang", cerita: "Mengembang di antara rasi bintang." },
 ];
+export function stokDewaKosong(): Record<MakananDewaId, number> {
+  return Object.fromEntries(MAKANAN_DEWA.map((m) => [m.id, 0])) as Record<MakananDewaId, number>;
+}
 export function makananDewaSah(x: unknown): x is MakananDewaId {
   return typeof x === "string" && MAKANAN_DEWA.some((m) => m.id === x);
 }
@@ -212,6 +225,15 @@ export interface DataSyrobo {
   koinSetorHari: number;
   /** Bar kenyang dibekukan (tak turun) sampai waktu ini - efek makanan dewa. null = tidak beku. */
   bekuLaparSampai: string | null;
+  /** Makanan dewa yang terakhir dimakan: auranya menyala selama bar kenyang masih beku (24 jam). null = tak ada. */
+  dewaId: MakananDewaId | null;
+  /** Stok makanan dewa (dari cheat): dimakan tanpa Premium dan berkurang 1 tiap dimakan. Pemilik Premium aktif makan gratis tanpa stok. */
+  stokDewa: Record<MakananDewaId, number>;
+  /** Cheat makanan dewa sudah dipakai (sekali seumur akun). */
+  cheatDewa: boolean;
+  /** Tanggal WIB cheat terakhir dipakai (jatah sekali sehari) dan waktu emasnya berakhir. */
+  cheatHari: string | null;
+  emasSampai: string | null;
   /** Potret energi (0..100) pada `energiAt`; `tidurSejak` terisi selama robot tidur (lampu Main Room padam). */
   energi: number;
   energiAt: string;
@@ -271,6 +293,11 @@ export function dataBaru(now: Date): DataSyrobo {
     koinGame: 0,
     koinSetorHari: 0,
     bekuLaparSampai: null,
+    dewaId: null,
+    stokDewa: stokDewaKosong(),
+    cheatDewa: false,
+    cheatHari: null,
+    emasSampai: null,
     energi: 100,
     energiAt: now.toISOString(),
     tidurSejak: null,
@@ -321,6 +348,16 @@ export function normalisasi(raw: unknown, now: Date): DataSyrobo {
     koinGame: Math.max(0, Math.floor(angka(r.koinGame, 0))),
     koinSetorHari: Math.max(0, Math.floor(angka(r.koinSetorHari, 0))),
     bekuLaparSampai: typeof r.bekuLaparSampai === "string" && !Number.isNaN(Date.parse(r.bekuLaparSampai)) ? r.bekuLaparSampai : null,
+    dewaId: makananDewaSah(r.dewaId) ? r.dewaId : null,
+    stokDewa: (() => {
+      const mentah = (r.stokDewa && typeof r.stokDewa === "object" ? r.stokDewa : {}) as Record<string, unknown>;
+      const st = stokDewaKosong();
+      for (const m of MAKANAN_DEWA) st[m.id] = jepit(Math.floor(angka(mentah[m.id], 0)), 0, MAKANAN_MAKS_STOK);
+      return st;
+    })(),
+    cheatDewa: r.cheatDewa === true,
+    cheatHari: typeof r.cheatHari === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.cheatHari) ? r.cheatHari : null,
+    emasSampai: typeof r.emasSampai === "string" && !Number.isNaN(Date.parse(r.emasSampai)) ? r.emasSampai : null,
     energi: jepit(angka(r.energi, d.energi)),
     energiAt: typeof r.energiAt === "string" && !Number.isNaN(Date.parse(r.energiAt)) ? r.energiAt : d.energiAt,
     tidurSejak: typeof r.tidurSejak === "string" && !Number.isNaN(Date.parse(r.tidurSejak)) ? r.tidurSejak : null,
@@ -357,6 +394,12 @@ export function energiSaatIni(d: Pick<DataSyrobo, "energi" | "energiAt" | "tidur
 /** Potret energi baru pada `now` (dipanggil sebelum tidur/bangun mengubah laju). */
 export function potretEnergi(d: DataSyrobo, now: Date): DataSyrobo {
   return { ...d, energi: energiSaatIni(d, now), energiAt: now.toISOString() };
+}
+
+/** Sisa waktu emas (ms) pada `now`; 0 bila tak sedang emas. */
+export function sisaEmasMs(d: Pick<DataSyrobo, "emasSampai">, now: Date): number {
+  const e = d.emasSampai ? Date.parse(d.emasSampai) : NaN;
+  return Number.isFinite(e) ? Math.max(0, e - now.getTime()) : 0;
 }
 
 /** Sisa masa beku kenyang (ms) pada `now`; 0 bila tidak beku. */

@@ -86,6 +86,21 @@ for (let i = 0; i < 120 * 12 && !lari.selesai; i++) {
 }
 check("kecepatan puncak 12 dtk gas penuh tetap wajar (< 620 px/dtk)", vMaks < 620, vMaks.toFixed(0));
 
+// Menanjak: gas penuh sepanjang jalan (bensin dijaga penuh), kecepatan di lereng naik 0,4-0,7 harus tetap tinggi (bukan merayap).
+const tj = duniaBaru();
+const vTanjak: number[] = [];
+for (let i = 0; i < 80 / DT && !tj.selesai; i++) {
+  tj.bensin = BENSIN_AWAL;
+  langkah(tj, { gas: true, rem: false }, DT);
+  const naik = -landai(tj.x);
+  if (naik >= 0.4 && naik < 0.7) vTanjak.push(Math.hypot(tj.vx, tj.vy));
+}
+vTanjak.sort((x, y) => x - y);
+const medTanjak = vTanjak[Math.floor(vTanjak.length / 2)] ?? 0;
+const p10Tanjak = vTanjak[Math.floor(vTanjak.length * 0.1)] ?? 0;
+check("menanjak lereng 0,4-0,7: kecepatan median ≥ 240 px/dtk", vTanjak.length > 300 && medTanjak >= 240, `n=${vTanjak.length} median=${medTanjak.toFixed(0)}`);
+check("menanjak lereng 0,4-0,7: 10% terlambat tetap ≥ 100 px/dtk (tak nyaris berhenti)", p10Tanjak >= 100, p10Tanjak.toFixed(0));
+
 const rem = duniaBaru();
 jalan(rem, 2.5, { gas: true, rem: false });
 const sebelum = Math.hypot(rem.vx, rem.vy);

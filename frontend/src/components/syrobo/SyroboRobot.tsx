@@ -4,7 +4,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { TINTA } from "./IkonSyrobo";
 import { PakaianBadan, PakaianBelakang, PakaianKepala } from "./PakaianRobot";
-import { AMBANG_LELAH, AMBANG_TIDUR, cariPakaian, UKURAN_BAWAAN, type PakaianId, type Suasana } from "@/lib/syrobo/syroboRules";
+import EfekDewa from "./EfekDewa";
+import { AMBANG_LELAH, AMBANG_TIDUR, cariPakaian, UKURAN_BAWAAN, type MakananDewaId, type PakaianId, type Suasana } from "@/lib/syrobo/syroboRules";
 
 /**
  * Tubuh SyRobo (SVG digambar tangan: garis tinta tebal, warna datar hangat, bentuk sedikit tak simetris) + interaksi:
@@ -69,6 +70,9 @@ export default function SyroboRobot({
   lantaiMin = 0.66,
   mati = false,
   energi = 100,
+  emas = false,
+  dewa = null,
+  ledakDewa = null,
   onMati,
   ucapan,
   className,
@@ -89,6 +93,11 @@ export default function SyroboRobot({
   mati?: boolean;
   /** Energi 0..100: hati di dada meredup seiring kelelahan; sangat tipis & berkedip = perlu tidur (matikan lampu Main Room). */
   energi?: number;
+  /** Cheat: robot berwarna EMAS (logam emas bergradasi + kilau + aura). */
+  emas?: boolean;
+  /** Aura makanan dewa yang masih menyala (selama kenyang beku) dan ledakan sesaat saat baru dimakan (`n` berganti tiap makan). */
+  dewa?: MakananDewaId | null;
+  ledakDewa?: { id: MakananDewaId; n: number } | null;
   onMati?: () => void;
   /** Ucapan dari benda kamar yang diketuk: muncul di atas kepala robot. `n` berganti tiap ketukan. */
   ucapan?: { teks: string; n: number } | null;
@@ -102,6 +111,7 @@ export default function SyroboRobot({
   const wadah = useRef<HTMLDivElement>(null);
   const bayang = useRef<HTMLSpanElement>(null);
   const gelembung = useRef<HTMLDivElement>(null);
+  const ekorGelembung = useRef<HTMLSpanElement>(null);
   const badan = useRef<HTMLDivElement>(null);
   const mata = useRef<SVGGElement>(null);
   const gerakEl = useRef<HTMLDivElement>(null);
@@ -392,19 +402,55 @@ export default function SyroboRobot({
     return () => clearTimeout(id);
   }, [ucapan]);
 
-  // Gelembung dijaga tetap di dalam layar (geser mendatar bila terlalu ke tepi; turun bila menabrak navbar).
-  useLayoutEffect(() => {
+  /**
+   * Menata gelembung ucapan: SELALU tepat di atas kepala robot. Dihitung dari ukuran tata letak gelembung (offsetWidth/Height) dan kotak
+   * robot - BUKAN dari getBoundingClientRect gelembung, yang ikut terkena animasi masuk dan dulu membuat ia terukur salah tempat lalu
+   * didorong turun menimpa robot. Geser mendatar bila terlalu ke tepi layar; bila di atas robot tak ada ruang (robot di dekat navbar)
+   * gelembung pindah ke SAMPING kepala (ekornya disembunyikan), tak pernah menimpa robot.
+   */
+  function tataGelembung() {
     const el = gelembung.current;
-    if (!el) return;
-    el.style.marginLeft = "0px";
-    el.style.marginTop = "0px";
-    const r = el.getBoundingClientRect();
+    const kotak = wadah.current?.getBoundingClientRect();
+    if (!el || !kotak) return;
+    const bw = el.offsetWidth;
+    const bh = el.offsetHeight;
     const W = window.innerWidth;
+    const pusatX = kotak.left + kotak.width / 2;
+    const dasarY = kotak.top + kotak.height * 0.11;
+    const kiri = pusatX - bw / 2;
+    const atas = dasarY - bh;
+    const ekor = ekorGelembung.current;
     let dx = 0;
-    if (r.left < 8) dx = 8 - r.left;
-    else if (r.right > W - 8) dx = W - 8 - r.right;
-    el.style.marginLeft = `${dx}px`;
-    if (r.top < 84) el.style.marginTop = `${84 - r.top}px`;
+    let dy = 0;
+    let samping = false;
+    if (atas >= 84) {
+      if (kiri < 8) dx = 8 - kiri;
+      else if (kiri + bw > W - 8) dx = W - 8 - (kiri + bw);
+    } else {
+      const kananMuat = kotak.right + 10 + bw <= W - 8;
+      const kiriMuat = kotak.left - 10 - bw >= 8;
+      if (kananMuat || kiriMuat) {
+        samping = true;
+        const targetKiri = kananMuat ? kotak.right + 10 : kotak.left - 10 - bw;
+        dx = targetKiri - kiri;
+        dy = Math.max(84, kotak.top + kotak.height * 0.12) - atas;
+      } else {
+        // layar sangat sempit: tetap di atas, dijepit di bawah navbar (boleh menutupi sedikit antena, bukan kepala)
+        dy = 84 - atas;
+        if (kiri < 8) dx = 8 - kiri;
+        else if (kiri + bw > W - 8) dx = W - 8 - (kiri + bw);
+      }
+    }
+    el.style.marginLeft = `${dx.toFixed(1)}px`;
+    el.style.marginTop = `${dy.toFixed(1)}px`;
+    if (ekor) ekor.style.display = samping ? "none" : "";
+  }
+  useLayoutEffect(() => {
+    if (!ucap) return;
+    tataGelembung();
+    // robot bisa berjalan/diangkat selagi gelembung tampil: tata ulang berkala
+    const id = setInterval(tataGelembung, 100);
+    return () => clearInterval(id);
   }, [ucap]);
 
   function bicara(teks: string) {
@@ -564,6 +610,8 @@ export default function SyroboRobot({
   const senang = aksi === "elus" || aksi === "mandi";
   const makan = aksi === "makan";
   const ngantuk = gelap && !mati && !angkat && !senang && !makan;
+  const kulit = emas ? `url(#${klip}-e1)` : KULIT;
+  const plat = emas ? `url(#${klip}-e2)` : PLAT;
   const lelah = energi < AMBANG_LELAH;
   const butuhTidur = energi < AMBANG_TIDUR;
   /** Kelelahan (belum tidur): mata sayu & mulut datar. */
@@ -591,6 +639,10 @@ export default function SyroboRobot({
       }}
       className={cn("pointer-events-auto relative mx-auto w-[min(40vw,22dvh)] touch-none select-none [-webkit-touch-callout:none] will-change-transform sm:w-[min(46vw,26dvh,260px)]", mati ? "cursor-pointer" : "cursor-grab active:cursor-grabbing", className)}
     >
+      {emas && <span aria-hidden="true" className="emas-aura" />}
+      {dewa && !(ledakDewa && ledakDewa.id === dewa) && <EfekDewa id={dewa} />}
+      {ledakDewa && <EfekDewa key={ledakDewa.n} id={ledakDewa.id} kuat />}
+
       {ucap && (
         <div
           ref={gelembung}
@@ -598,7 +650,7 @@ export default function SyroboRobot({
           className="syrobo-ucap absolute left-1/2 top-[11%] z-20 w-max max-w-[15rem] -translate-x-1/2 -translate-y-full rounded-[14px_16px_14px_6px] border-[2.5px] border-[#2B2233] bg-[#FFF8E6] px-3.5 py-1.5 text-center text-sm font-bold text-[#2B2233] shadow-[3px_3px_0_#2B2233]"
         >
           {ucap}
-          <span aria-hidden="true" className="absolute left-1/2 top-full -mt-[7px] h-3 w-3 -translate-x-1/2 rotate-45 border-b-[2.5px] border-r-[2.5px] border-[#2B2233] bg-[#FFF8E6]" />
+          <span ref={ekorGelembung} aria-hidden="true" className="absolute left-1/2 top-full -mt-[7px] h-3 w-3 -translate-x-1/2 rotate-45 border-b-[2.5px] border-r-[2.5px] border-[#2B2233] bg-[#FFF8E6]" />
         </div>
       )}
 
@@ -656,30 +708,43 @@ export default function SyroboRobot({
           aria-label={mati ? "Robot SyRobo (mati). Ketuk untuk masuk" : `Robot SyRobo, suasana ${suasana}`}
           {...GARIS}
         >
+          {emas && (
+            <defs>
+              <linearGradient id={`${klip}-e1`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#FFF3B0" />
+                <stop offset="0.45" stopColor="#F4C940" />
+                <stop offset="1" stopColor="#C88A1C" />
+              </linearGradient>
+              <linearGradient id={`${klip}-e2`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#F7D567" />
+                <stop offset="1" stopColor="#B87814" />
+              </linearGradient>
+            </defs>
+          )}
           <PakaianBelakang id={pakaianBadan} persen={ukuranBadan} />
 
           {/* kaki: ayunannya ditulis tiap bingkai dari kecepatan jalan (lihat efek gaya jalan); saat diangkat menjuntai berayun */}
           <g ref={kakiKi} className={angkat ? "syrobo-kaki" : undefined} style={{ transformBox: "fill-box", transformOrigin: "50% 0%" }}>
-            <path d="M76 202c0-2 2-3 4-3h9c2 0 4 1 4 3l1 21c0 4-2 6-6 6h-6c-4 0-6-2-6-6z" fill={PLAT} />
+            <path d="M76 202c0-2 2-3 4-3h9c2 0 4 1 4 3l1 21c0 4-2 6-6 6h-6c-4 0-6-2-6-6z" fill={plat} />
           </g>
           <g ref={kakiKa} className={angkat ? "syrobo-kaki" : undefined} style={{ transformBox: "fill-box", transformOrigin: "50% 0%" }}>
-            <path d="M107 202c0-2 2-3 4-3h9c2 0 4 1 4 3l1 21c0 4-2 6-6 6h-6c-4 0-6-2-6-6z" fill={PLAT} />
+            <path d="M107 202c0-2 2-3 4-3h9c2 0 4 1 4 3l1 21c0 4-2 6-6 6h-6c-4 0-6-2-6-6z" fill={plat} />
           </g>
           {/* lengan: pangkalnya menyelinap di balik badan (bahu) sehingga lengan menyatu dengan badan, bukan menempel terpisah */}
           <g
             ref={lenganKi}
             style={{ transformOrigin: "68px 152px", transform: angkat ? "rotate(35deg)" : senang ? "rotate(-14deg)" : undefined, transition: "transform 520ms cubic-bezier(0.34,1.3,0.64,1)" }}
           >
-            <path d="M71 145C58 143 48 147 46 156L45 189C45 194 48 197 52 197C56 197 59 194 59 189L60 166C60 161 63 158 68 157Z" fill={PLAT} />
+            <path d="M71 145C58 143 48 147 46 156L45 189C45 194 48 197 52 197C56 197 59 194 59 189L60 166C60 161 63 158 68 157Z" fill={plat} />
           </g>
           <g
             ref={lenganKa}
             style={{ transformOrigin: "132px 152px", transform: angkat ? "rotate(-35deg)" : senang ? "rotate(14deg)" : undefined, transition: "transform 520ms cubic-bezier(0.34,1.3,0.64,1)" }}
           >
-            <path d="M129 145C142 143 152 147 154 156L155 189C155 194 152 197 148 197C144 197 141 194 141 189L140 166C140 161 137 158 132 157Z" fill={PLAT} />
+            <path d="M129 145C142 143 152 147 154 156L155 189C155 194 152 197 148 197C144 197 141 194 141 189L140 166C140 161 137 158 132 157Z" fill={plat} />
           </g>
           {/* badan */}
-          <path d="M78 136c-9 0-13 4-13 11l-1 46c0 8 5 12 13 12h46c8 0 13-4 13-12l-1-46c0-7-4-11-13-11z" fill={KULIT} />
+          <path d="M78 136c-9 0-13 4-13 11l-1 46c0 8 5 12 13 12h46c8 0 13-4 13-12l-1-46c0-7-4-11-13-11z" fill={kulit} />
           {/* layar dada berbentuk hati = ukuran energi: meredup saat lelah; sangat tipis & berkedip = perlu tidur; bernapas pelan saat tidur */}
           <path
             d="M100 182c-9-6-15-11-15-17 0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 6-6 11-15 17z"
@@ -706,10 +771,10 @@ export default function SyroboRobot({
             </g>
           )}
           {/* telinga/baut */}
-          <circle cx="33" cy="86" r="9" fill={PLAT} />
-          <circle cx="167" cy="86" r="9" fill={PLAT} />
+          <circle cx="33" cy="86" r="9" fill={plat} />
+          <circle cx="167" cy="86" r="9" fill={plat} />
           {/* kepala */}
-          <path d="M66 38c-18 0-27 8-27 26v46c0 17 9 26 27 26h68c18 0 27-9 27-26V64c0-18-9-26-27-26z" fill={KULIT} />
+          <path d="M66 38c-18 0-27 8-27 26v46c0 17 9 26 27 26h68c18 0 27-9 27-26V64c0-18-9-26-27-26z" fill={kulit} />
           <path d="M56 58c-1 0-2 1-2 2v52c0 2 2 4 4 4h84c2 0 4-2 4-4V60c0-1-1-2-2-2z" fill={LAYAR} />
 
           {/* pipi */}
@@ -782,6 +847,20 @@ export default function SyroboRobot({
               <BauBusuk x={178} y={118} s={1.1} />
               <Lalat x={44} y={36} s={1.7} r={-20} garis="#2B2233" />
               <Lalat x={160} y={28} s={1.3} r={15} garis="#2B2233" jejak={false} />
+            </g>
+          )}
+
+          {emas && (
+            <g strokeWidth={0} fill="#FFFBE0">
+              {[
+                [58, 56, 0],
+                [146, 70, 0.6],
+                [84, 150, 1.1],
+                [128, 176, 0.3],
+                [100, 40, 0.9],
+              ].map(([x, y, t], i) => (
+                <path key={i} className="emas-kilau" style={{ animationDelay: `${t}s` }} d={`M${x} ${y - 8}L${x + 2} ${y - 2}L${x + 8} ${y}L${x + 2} ${y + 2}L${x} ${y + 8}L${x - 2} ${y + 2}L${x - 8} ${y}L${x - 2} ${y - 2}Z`} />
+              ))}
             </g>
           )}
 

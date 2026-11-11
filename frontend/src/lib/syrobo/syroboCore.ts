@@ -10,6 +10,13 @@
  */
 import type { Firestore } from "firebase-admin/firestore";
 import {
+  CHEAT_MENIT,
+  CHEAT_POIN,
+  KODE_CHEAT,
+  KODE_CHEAT_DEWA,
+  MAKANAN_DEWA,
+  sisaEmasMs,
+  tanggalWib,
   HADIAH,
   poinHadiah,
   JAM_BEKU_DEWA,
@@ -49,6 +56,8 @@ import {
 
 export const SYROBO = "syrobo";
 
+const PESAN_TIDUR = (nama: string) => `${nama} sedang tidur. Nyalakan lampu di Main Room untuk membangunkannya.`;
+
 /** Bentuk yang dikirim ke klien: data + kondisi yang sudah dihitung pada `sekarang`. */
 export interface TampilanSyrobo extends DataSyrobo {
   /** SynapEd Premium aktif saat ini (dari server): membuka pakaian & makanan dewa premium. */
@@ -61,6 +70,9 @@ export interface TampilanSyrobo extends DataSyrobo {
   tidur: boolean;
   /** Menit hadiah yang sudah boleh diklaim saat ini. */
   siapKlaim: number[];
+  /** Robot sedang EMAS (cheat) dan sisa waktunya (ms). */
+  emas: boolean;
+  emasSisaMs: number;
   sekarang: string;
 }
 
@@ -78,6 +90,10 @@ export function tampilkan(d: DataSyrobo, now: Date, premium = false): TampilanSy
     // Pakaian premium terbuka SELAMA premium aktif (tak pernah disimpan di `punya`).
     punya: premium ? [...d.punya, ...PAKAIAN_PREMIUM.filter((x) => !d.punya.includes(x))] : d.punya,
     bekuLaparSampai: sisaBekuMs(d, now) > 0 ? d.bekuLaparSampai : null,
+    // Aura makanan dewa hanya menyala selama bar kenyang masih beku.
+    dewaId: sisaBekuMs(d, now) > 0 ? d.dewaId : null,
+    emas: sisaEmasMs(d, now) > 0,
+    emasSisaMs: sisaEmasMs(d, now),
     kenyangSekarang: Math.round(k.kenyang),
     bersihSekarang: Math.round(k.bersih),
     suasana: suasana(k),
@@ -139,6 +155,7 @@ export function beriMakan(db: Firestore, uid: string, id: unknown, now = new Dat
   return ubahSyrobo(db, uid, now, premium, (d0) => {
     if (!makananSah(id)) return "Makanan tidak dikenal.";
     const m = cariMakanan(id as MakananId);
+    if (d0.tidurSejak) return PESAN_TIDUR(d0.nama);
     if (d0.stok[id] < 1) return `Kamu tidak punya ${m.nama}. Beli dulu di kotak makanan.`;
     const d = potret(d0, now);
     if (d.kenyang >= 98) return "Robotmu sudah kenyang.";
@@ -158,7 +175,9 @@ export function beriMakan(db: Firestore, uid: string, id: unknown, now = new Dat
 export function beriMakanDewa(db: Firestore, uid: string, id: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
   return ubahSyrobo(db, uid, now, premium, (d0) => {
     if (!makananDewaSah(id)) return "Makanan dewa tidak dikenal.";
-    if (!premium) return "Makanan dewa khusus pemilik SynapEd Premium aktif.";
+    if (d0.tidurSejak) return PESAN_TIDUR(d0.nama);
+    // Premium aktif makan gratis tanpa stok; selain itu harus punya stoknya (dari cheat).
+    if (!premium && d0.stokDewa[id] < 1) return "Makanan dewa khusus pemilik SynapEd Premium aktif (atau yang punya stoknya).";
     const sisa = sisaBekuMs(d0, now);
     if (sisa > 0) return `${d0.nama} masih kenyang oleh makanan dewa (sisa ${Math.ceil(sisa / 3600_000)} jam).`;
     const d = potret(d0, now);
@@ -167,6 +186,8 @@ export function beriMakanDewa(db: Firestore, uid: string, id: unknown, now = new
       kenyang: 100,
       bersih: Math.max(0, d.bersih - KOTOR_SAAT_MAKAN),
       bekuLaparSampai: new Date(now.getTime() + JAM_BEKU_DEWA * 3600_000).toISOString(),
+      dewaId: id,
+      stokDewa: premium ? d.stokDewa : { ...d.stokDewa, [id]: d.stokDewa[id] - 1 },
     };
   });
 }
@@ -213,8 +234,29 @@ export function bangunkan(db: Firestore, uid: string, now = new Date(), premium 
   });
 }
 
+/**
+ * EASTER EGG: kode cheat. Server membandingkan ulang kode, menjatah SEKALI per hari WIB, lalu memberi poin dan membuat robot emas
+ * `CHEAT_MENIT` menit. Mengaktifkan lagi di hari yang sama ditolak tanpa mengubah apa pun.
+ */
+export function aktifkanCheat(db: Firestore, uid: string, kode: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
+  return ubahSyrobo(db, uid, now, premium, (d) => {
+    const k = typeof kode === "string" ? kode.trim().toUpperCase() : "";
+    if (k === KODE_CHEAT_DEWA) {
+      if (d.cheatDewa) return "Cheat ini hanya bisa dipakai satu kali per akun.";
+      const stokDewa = { ...d.stokDewa };
+      for (const m of MAKANAN_DEWA) stokDewa[m.id] = Math.min(MAKANAN_MAKS_STOK, stokDewa[m.id] + 1);
+      return { ...d, stokDewa, cheatDewa: true };
+    }
+    if (k !== KODE_CHEAT) return "Kode tidak dikenal.";
+    const hari = tanggalWib(now);
+    if (d.cheatHari === hari) return "Cheat sudah dipakai hari ini. Coba lagi besok.";
+    return { ...d, poin: d.poin + CHEAT_POIN, cheatHari: hari, emasSampai: new Date(now.getTime() + CHEAT_MENIT * 60_000).toISOString() };
+  });
+}
+
 export function mandikan(db: Firestore, uid: string, now = new Date(), premium = false): Promise<HasilSyrobo> {
   return ubahSyrobo(db, uid, now, premium, (d0) => {
+    if (d0.tidurSejak) return PESAN_TIDUR(d0.nama);
     const d = potret(d0, now);
     if (d.bersih >= 95) return "Robotmu sudah bersih.";
     return { ...d, bersih: 100 };
@@ -263,6 +305,7 @@ export function ukuranPakaian(db: Firestore, uid: string, slot: unknown, persen:
 export function gosok(db: Firestore, uid: string, tambah: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
   return ubahSyrobo(db, uid, now, premium, (d0) => {
     if (typeof tambah !== "number" || !Number.isFinite(tambah) || tambah <= 0) return "Gosokan tidak sah.";
+    if (d0.tidurSejak) return PESAN_TIDUR(d0.nama);
     const d = potret(d0, now);
     if (d.bersih >= 100) return "Robotmu sudah bersih.";
     return { ...d, bersih: Math.min(100, d.bersih + Math.min(GOSOK_MAKS_PER_PANGGILAN, tambah)) };
