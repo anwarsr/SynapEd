@@ -463,6 +463,10 @@ Robot peliharaan per akun. Tanpa uang sungguhan: hanya POIN permainan.
   PEGAS fisika di rAF (`KAKU`/`REDAM`, langsung ke `transform`, JANGAN diganti transisi CSS - patah), mata melirik kursor. Hanya animasi lokal,
   tidak memberi poin (anti-abuse). JEBAKAN: Tailwind v4 `-translate-x-1/2` memakai properti `translate`, jadi JANGAN dipasangkan dengan `transform` inline
   (tergeser dua kali). Pembungkus robot `pointer-events-none` + robot `pointer-events-auto` supaya benda kamar di belakangnya tetap bisa diketuk.
+- **Ponsel & akses kamar** (perbaikan pemilik): dok ikon `z-[40]` dan lembar `z-[35]` di BAWAH navbar (`z-50`) supaya tak menutupinya; root `overscroll-none` dan saat robot diangkat `<html>` diberi `overscroll-behavior: none` (dipulihkan di `selesai`) supaya seret ke bawah tak jadi tarik-untuk-muat-ulang. Benda kamar (jendela/tanaman/buku/jam) `disabled` + `pointer-events-none` bila tamu (`login={false}` dari `SyroboTamu`) ATAU lampu padam; lampu hanya nonaktif untuk tamu (masuk + gelap = lampu tetap bisa dinyalakan lagi).
+- **Navbar menu lipat** muncul di bawah `lg` (bukan `md`): "Desktop site" di ponsel (±980px) tidak lagi kehilangan tautan yang disembunyikan di bawah lg.
+- **Builder quiz**: bilah poin bawah `sticky bottom-0` di dalam kolom (bukan `fixed`), jadi berhenti di atas footer pada ponsel.
+- **Ornamen kotor & lapar** (permintaan pemilik: "human art", jangan terlihat buatan AI; lalat bukan titik): `syrobo/OrnamenKondisi.tsx` dipakai SyroboRobot DAN ChatRobot - `NodaLumpur` (bercak tak beraturan, dipipihkan), `BauBusuk` (tiga ikal naik), `Lalat` (badan beruas, dua sayap bening ber-urat yang mengepak `.syrobo-sayap`, kaki, mata merah, jejak putus-putus), `AirLiur` (tetes di ujung mulut saat lapar), `GemuruhPerut` (goresan patah-patah). Lencana "!" robot asisten dan busur perut lama DIHAPUS. Gaya garis: SyRobo memberi `garis="#2B2233"`, robot asisten polos. Tombol silang lembar menu (makan/mandi/baju/toko/hadiah) 44px dengan ikon 24px.
 - **Pakaian & slot** (`syroboRules.ts` `PAKAIAN`, `PakaianRobot.tsx`, ikon `IkonSyrobo.tsx`): 18 pakaian DIBELI di Toko (tab Pakaian) dengan poin - 9 slot KEPALA
   (topi baseball, mahkota, kacamata, topi penyihir, topi koki, headphone, kupluk, topi jerami, topi pesta) dan 9 slot BADAN (dasi kupu-kupu, jubah,
   rompi, syal, celemek, jaket, kemeja, ransel, medali). "Kaos garis" dan "telinga kucing" DIHAPUS atas permintaan pemilik (id lama di data dibuang `normalisasi`;
@@ -836,54 +840,57 @@ Pengumuman, Tugas, Quiz, Arsip, Anggota, Tentang. `ClassRoom` merender `QuizTab`
   sedang mengerjakan, amber bila waktu habis), dan garis waktu aktivitas bertitik. Tautan kembali = `BackLink`.
 - **Peringkat**: nilai tertinggi → durasi tercepat → mulai lebih dulu; hanya percobaan terkumpul dengan
   esai dinilai penuh; tiga teratas (nama+foto+nilai+waktu) dilihat siswa, selebihnya hanya pengelola.
-- **Soal TABEL & quiz KELOMPOK** (uji: `npm run verify:quiz-tabel`, murni + dev server; dibuktikan bisa gagal dengan 4 mutasi sekaligus - kunci ikut
-  terkirim ke klien, nama kelompok tak diperiksa, kredit sebagian jadi semua-atau-tidak, penguncian mode dilepas):
+- **Soal TABEL & quiz KELOMPOK** (uji: `npm run verify:quiz-tabel`, murni + dev server):
   - **Data**: `SoalQuiz.type` = `"mcq" | "essay" | "table"`; `SoalQuiz.table?: {rows, cols, cells[{text, fill, key}]}` (sel urut baris demi baris, indeks =
     baris x kolom + kolom; batas `MAX_BARIS_TABEL` 12 x `MAX_KOLOM_TABEL` 8, teks sel <= 80). Sel TETAP (`fill:false`) = `text` yang dilihat siswa; sel ISIAN
-    (`fill:true`) = `text` kosong dan `key` = jawaban benar. `validasiTabel` menormalkan (sel isian membuang teksnya, sel tetap membuang kuncinya); saat TERBIT
-    wajib minimal satu sel isian dan SEMUA sel isian punya kunci (pesan menyebut baris/kolomnya), draf boleh belum lengkap. Field `table`/`settings.kelompok`/
-    `groupName` semuanya OPSIONAL di tipe & normaliser (`tabelDari`, `toQuiz`, `toPercobaan`) supaya data & skrip uji lama tetap sah.
+    (`fill:true`) = kosong, **TANPA KUNCI JAWABAN** (permintaan pemilik: pengajar yang memeriksa isian). Field `key` masih ada di tipe supaya data lama terbaca,
+    tetapi `validasiTabel` SELALU mengosongkannya (kunci kiriman klien lama dibuang, tak pernah tersimpan); saat TERBIT wajib minimal satu sel isian. Field
+    `table`/`settings.kelompok`/`groupName` OPSIONAL di tipe & normaliser (`tabelDari`, `toQuiz`, `toPercobaan`) supaya data & skrip uji lama tetap sah.
   - **Jawaban** disimpan di `answers[soalId]` sebagai SATU teks JSON `{"<indeks sel>":"<isi>"}` hanya untuk sel yang diisi (`uraiJawabanTabel`/`susunJawabanTabel`;
     tak ada isian = "" = belum dijawab). `bersihkanJawaban` membuang indeks yang bukan sel isian, nilai bukan teks, dan memotong ke `MAX_TEKS_SEL`.
-  - **Nilai**: `skorTabel` = sel isian benar bila jawaban (dinormalkan `normalisasiSel`: NFKC, spasi dirapikan, huruf kecil) = kunci; kunci kosong tak pernah benar.
-    `hitungNilai`: poin soal dibagi rata ke sel isian, KREDIT SEBAGIAN `bulat2(poin x benar / total)`; `otomatis/esai/total` dibulatkan 2 desimal
-    (pecahan seperti 3,33 sah; jangan menampilkan `total` tanpa pembulatan). Tabel tak pernah masuk antrean penilaian manual (`esaiBelumDinilai` hanya esai).
-  - **Kunci tak boleh bocor**: `soalUntukSiswa` mengirim tabel TANPA `key` (hanya `{text, fill}`); `TabelHasil` (server) hanya membaca kunci bila `quiz.closed`
-    (aturan sama dengan pilihan ganda). Uji mencari kunci unik di HTML halaman pengerjaan & hasil. Siswa uji harus mengetik jawaban BERBEDA huruf besar-kecilnya dari
-    kunci, kalau tidak jawaban mereka sendiri terbaca sebagai kebocoran. Soal tabel ikut `strukturSama` (kunci/ukuran terkunci setelah ada yang mengerjakan; poin bebas).
-  - **Kelompok**: `settings.kelompok` (dipilih di `PilihModeQuiz` pada Setelan quiz; bawaan individu). `startQuiz(classId, quizId, namaKelompok?)` MEWAJIBKAN nama
-    (`validasiNamaKelompok`: karakter kontrol dibuang, spasi dirapikan, 2-40 karakter) dan mencatatnya di `groupName` percobaan; diperiksa di SERVER (kolom di browser
-    hanya kemudahan; panggilan langsung tanpa nama ditolak dan tidak membuat percobaan). Quiz individu mengabaikan nama (`groupName: null`). Tiap siswa TETAP punya
-    percobaan, nilai, dan peringkat sendiri - bukan satu kiriman per kelompok. `create()` yang gagal (klik ganda) tidak menimpa nama. Mode (individu/kelompok) TERKUNCI
-    setelah ada percobaan (`saveQuiz`), karena percobaan lama tak punya nama kelompok. Nama kelompok dibandingkan tanpa beda huruf besar-kecil di `ringkasKelompok`.
-  - **UI**: `EditorTabel.tsx` (pengajar: stepper baris/kolom, tombol silang membuang baris/kolom tertentu, tombol di tiap sel mengganti tetap/isian dan membawa isi
-    yang sudah diketik; `+ Tabel` di bawah daftar soal; `PilihJenis` memuat "Tabel"), `TabelPengerja.tsx` (siswa, menggulir mendatar sendiri di ponsel),
-    `TabelHasil.tsx` (server; sel benar/salah + kunci sel yang salah setelah ditutup). `MulaiQuizButton` meminta nama kelompok (tombol nonaktif < 2 karakter, Enter
-    memulai). Pantau: nama kelompok di bawah status tiap siswa + bagian "Per kelompok" (anggota, terkumpul, rata-rata); ekspor spreadsheet menambah kolom
-    "Kelompok" (`JUDUL_EKSPOR_KELOMPOK`) hanya untuk quiz kelompok; `AnalisisSoal` memuat soal tabel (rata-rata sel benar + sel tersulit beserta kuncinya, hanya untuk pengajar).
-- **Rubrik INDIVIDU quiz KELOMPOK** (uji: `npm run verify:quiz-rubrik`, murni + dev server; dibuktikan bisa gagal dengan membuang penjaga uid anggota,
-  mencampur rubrik ke nilai, dan mematikan penilaian manual tabel):
+  - **Nilai**: tabel SELALU manual di SEMUA quiz (`soalManual` = esai ATAU tabel): poin dari pengajar lewat `gradeQuizEssay` (`essayScores`, bulat 0..poin), belum
+    diberi poin = menunggu (`esaiBelumDinilai`). `skorTabel`/`normalisasiSel` tinggal sebagai alat untuk data lama (tak dipakai penilaian). `AnalisisSoal`: tabel
+    memakai cabang yang sama dengan esai (rata-rata poin dari pengajar); petunjuk "sel tersulit/kunci" sudah DIHAPUS. `TabelHasil` hanya menampilkan jawaban.
+  - **Kunci tak boleh bocor**: `soalUntukSiswa` mengirim tabel hanya `{text, fill}`. Soal tabel ikut `strukturSama` (teks sel tetap/jenis sel/ukuran terkunci setelah ada yang
+    mengerjakan; poin bebas).
+  - **Kelompok**: `settings.kelompok` (dipilih di `PilihModeQuiz`; bawaan individu), mode TERKUNCI setelah ada percobaan. Lihat "Kelompok BERSAMA" di bawah untuk model
+    percobaan, anggota, tombol Ikuti Quiz, dan sinkron jawaban.
+  - **UI**: `EditorTabel.tsx` (pengajar: stepper baris/kolom, tombol silang membuang baris/kolom tertentu, tombol di tiap sel mengganti tetap/isian - sel isian hanya kotak
+    "Diisi siswa" tanpa kolom kunci; `+ Tabel` di bawah daftar soal), `TabelPengerja.tsx` (siswa, menggulir mendatar sendiri di ponsel), `TabelHasil.tsx` (server).
+- **Rubrik INDIVIDU quiz KELOMPOK** (uji: `npm run verify:quiz-rubrik`, murni + dev server; dibuktikan bisa gagal dengan mencabut penjaga "ikut dulu" di
+  `sinkronJawaban`, validasi anggota di `gradeQuizRubric`, dan batas maksimal anggota):
   - **Dua nilai yang BERDIRI SENDIRI** (permintaan pemilik; versi awal yang mencampur rubrik ke nilai akhir sudah DIBUANG, jangan dikembalikan):
-    NILAI KELOMPOK = murni poin soal yang diatur pengajar saat membuat soal (`hitungNilai().total`, total poin soal tetap 100); NILAI INDIVIDU = persen rubrik
-    (`rubrikPersen` = jumlah skor / (4 x jumlah poin penilaian) x 100; semua 1 = 25%, bukan 0), diberi pengajar PER SISWA (tiap siswa = satu anggota yang dinilai
-    satu per satu). Tak ada bobot. Keduanya tampil di Pantau (angka besar = kelompok, "Individu n%" di bawahnya), di hasil siswa, dan di ekspor spreadsheet
-    (`JUDUL_EKSPOR_KELOMPOK`: No, Nama, Kelompok, Nilai kelompok, Nilai individu (%), Status).
-  - **Soal manual** (`soalManual`): esai di semua quiz, dan soal TABEL pada quiz kelompok (pada quiz individu tabel tetap otomatis). Poinnya dari pengajar lewat
-    `gradeQuizEssay` (`validasiNilaiEsai` menerima tabel hanya bila kelompok; bulat 0..poin) disimpan di `essayScores`; hitungan otomatis `skorTabel` hanya
-    SARAN (tombol "Pakai saran otomatis" di `NilaiEsaiForm`, `ButirEsai.tampilan/saran`). Belum diberi poin = menunggu persetujuan (`esaiBelumDinilai`).
-  - **Status**: `perlu_dinilai` bila ada esai/tabel manual ATAU poin rubrik yang belum dinilai; menahan peringkat & ekspor (`alasanTakBisaEkspor`: "n jawaban
-    esai/tabel belum dinilai", "n rubrik individu belum dinilai").
-  - **Data**: `Quiz.rubric?: {tables: [3 x {id,title,criteria[{id,text}]}]}` (HANYA kelompok; individu menyimpan null; dokumen lama/rusak terbaca null lewat
-    `rubrikDari`; field `weight` lama diabaikan), `PercobaanQuiz.rubricScores?: {idPoin: 1..4}` dan `members?: [{uid|null,name}]`. Semua opsional di tipe supaya
-    data & skrip uji lama sah. Aturan di `classQuizRules.ts`: `validasiRubrik` (TEPAT 3 tabel, maks 10 poin/tabel; terbit butuh judul & teks terisi, draf boleh
-    kosong), `ringkasRubrik`, `validasiSkorRubrik`, `rubrikStrukturSama`, `gabungAnggota`, `SKALA_RUBRIK` (1 sangat kurang, 2 kurang, 3 baik, 4 sangat baik).
-  - **Builder**: `EditorRubrik.tsx` muncul saat memilih Kelompok (3 tabel, poin penilaian ditambah/dihapus sendiri). Setelah ada yang mengerjakan poin penilaian
-    TERKUNCI (`rubrikStrukturSama` di `saveQuiz`, diperiksa SETELAH aturan "jenis quiz tak bisa berubah"); judul/teks masih boleh.
-  - **Penilaian**: `NilaiRubrikForm` (`gradeQuizRubric`; poin = tombol skor 1-4 sebaris di bawah teks poin, bukan tabel lebar - kolom Pantau sempit; boleh disimpan
-    sebagian). Hanya pemilik/admin, hanya percobaan yang sudah dikumpulkan.
-  - **Anggota** (`MulaiQuizButton` + `startQuiz(classId, quizId, nama, anggota)`): dua cara - mengetik nama sendiri (`{names}`) atau memilih peserta kelas yang sudah
-    bergabung (`{uids}`; server memeriksa uid = anggota kelas ini bukan pengajar dan membaca NAMA dari Auth, bukan dari kiriman). Pembuat otomatis anggota
-    pertama, duplikat dibuang, total 2..10; `startQuiz` kelompok TANPA anggota ditolak. Tiap siswa tetap punya percobaan sendiri; daftar anggota tampil di Pantau & hasil.
+    NILAI KELOMPOK = murni poin soal yang diatur pengajar (`hitungNilai().total`, total poin soal tetap 100); NILAI INDIVIDU = persen rubrik PER ANGGOTA
+    (`nilaiIndividu(quiz, percobaan)` → `[{key, uid, nama, persen, belum, jumlah}]`; persen = jumlah skor / (4 x jumlah poin penilaian) x 100; semua 1 = 25%, bukan 0).
+    `RincianNilai.rubrikBelumDinilai` = poin belum dinilai DIJUMLAH untuk semua anggota (`rubrikPersen` sudah dihapus). Tampil di Pantau ("Individu n/m dinilai" +
+    satu formulir per anggota), di hasil siswa (`QuizHasil` mengambil anggota yang uid-nya = pembaca), dan di ekspor.
+  - **Status**: `perlu_dinilai` bila ada esai/tabel manual ATAU poin rubrik (anggota mana pun) yang belum dinilai; menahan peringkat & ekspor (`alasanTakBisaEkspor`).
+  - **Data**: `Quiz.rubric?: {tables: [{id,title,criteria[{id,text}]}]}` - jumlah tabel BEBAS `MIN_RUBRIK` 1..`MAX_RUBRIK` 10 (builder mulai dengan `RUBRIK_AWAL` 3;
+    HANYA kelompok, individu menyimpan null; dokumen lama/rusak terbaca null). `PercobaanQuiz.rubricScores?: {kunciAnggota: {idPoin: 1..4}}` (BENTUK LAMA datar
+    `{idPoin: skor}` dibaca `skorBertingkat` sebagai milik pemilik percobaan), `members?: [{uid|null, name, key}]`, `joined?: string[]`. `AnggotaKelompok.key` = uid
+    untuk akun, `m<urutan>` untuk nama yang diketik (`kunciAnggota()` untuk data lama tanpa key).
+  - **Builder**: `EditorRubrik.tsx` (tombol "+ Tambah rubrik" dan "Hapus rubrik" per tabel, min 1 maks 10; poin penilaian ditambah/dihapus sendiri). Setelah ada yang
+    mengerjakan, TABEL dan poin penilaian TERKUNCI (`rubrikStrukturSama` membandingkan id tabel + id poin, di `saveQuiz`); judul/teks masih boleh.
+  - **Batas anggota**: `settings.anggotaMin`/`anggotaMaks` (HANYA kelompok; bawaan 2 dan 10 = `ANGGOTA_MIN_BAWAAN`/`ANGGOTA_MAKS_BAWAAN`, batas mutlak 2..`ANGGOTA_BATAS` 20),
+    diatur di builder (`BatasAnggota`), divalidasi `validasiQuiz` (bulat, min <= maks) dan dibaca `batasAnggota()` (nilai rusak/hilang → bawaan). `gabungAnggota(diri, lain, batas)`
+    memeriksanya di `startQuiz`; `MulaiQuizButton` menerimanya lewat prop `batas`.
+- **Kelompok BERSAMA** (permintaan pemilik: anggota yang diajak mendapat tombol "Ikuti Quiz “nama kelompok”" dan menjawab REALTIME bersama):
+  - **SATU percobaan per kelompok**, dokumen `classQuizAttempts/{classId}_{quizId}_{uidPembuat}`; anggota lain TIDAK punya dokumen. Anggota diajak lewat `startQuiz(classId, quizId,
+    nama, {uids, names})` (uid divalidasi anggota kelas non-pengajar, nama dibaca dari Auth). `startQuiz` menolak bila pembuat atau anggota pilihannya SUDAH tergabung di kelompok
+    lain (`percobaanUntuk`: satu orang satu kelompok per quiz); halaman memfilter peserta yang sudah tergabung dari daftar pilihan. `getPercobaanSiswa(classId, quizId, uid)` =
+    percobaan miliknya ATAU kelompok yang mencantumkan uid-nya; semua jalur siswa (halaman, quiz-alert, `QuizTab`) memakainya.
+  - **Ikuti Quiz** (`ikutiQuiz`): hanya uid yang tercatat di `members` yang bisa; menulis `joined` (arrayUnion), idempoten, ditolak setelah dikumpulkan. `sudahIkut(p, uid)` =
+    pembuat ATAU ada di `joined`. Selama belum ikut, halaman menampilkan `IkutiQuizButton`, dan `sinkronJawaban`/`submitQuiz` menolak ("Tekan Ikuti Quiz dulu").
+  - **Realtime = polling** (klien tak boleh membaca Firestore): `QuizPengerja` (prop `bersama`) memanggil `sinkronJawaban(classId, quizId, ubah)` tiap 2 dtk selagi tab terlihat.
+    `ubah` hanya soal yang diubah pembaca ini; server menulis PER SOAL (`answers.<id>`) jadi ketikan teman di soal lain tak tertimpa (soal yang SAMA: terakhir menang, dan
+    tabel satu soal = satu teks JSON). Klien tidak menimpa soal yang masih kotor (`kotorRef`). Respons: `{answers, joined, selesai}`; `selesai` → `router.refresh()`.
+    `saveQuizAnswers` hanya untuk quiz individu (kelompok ditolak). `submitQuiz` kelompok: anggota mana pun yang sudah ikut boleh mengumpulkan untuk seluruh kelompok;
+    jawaban kiriman hanya mengisi soal yang KOSONG di server (tak menimpa ketikan teman); klien mengirim `sinkron()` dulu sebelum `submitQuiz`.
+  - **Penilaian & tampilan**: `gradeQuizRubric(classId, quizId, siapaSaja, kunciAnggota, skor)` menilai SATU anggota (kunci dicocokkan dengan daftar tersimpan); Pantau = satu baris per
+    KELOMPOK (nama = nama kelompok) + anggota kelas yang belum tercatat; ekspor spreadsheet = satu baris PER ANGGOTA (nilai kelompok sama, nilai individu masing-masing). `warnQuizStudents`
+    menganggap anggota yang sudah diajak sebagai "sudah". `resetQuizAttempt`/`gradeQuizEssay` menerima uid anggota mana pun di kelompok itu.
+  - **Jebakan**: `"use server"` hanya boleh mengekspor fungsi async (tipe `HasilSinkron` aman karena terhapus saat kompilasi; helper `peta` tidak diekspor). Uji menyimpulkan isi jawaban
+    sinkron dari teks respons action: `"selesai":true`, `"m1":"a"`.
 - **Tes**: `npm run verify:class-quiz` (aturan murni + alur penuh; dev server).
 
 ## Arsip postingan kelas

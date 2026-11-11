@@ -8,6 +8,9 @@ import { firebaseAuth } from "@/lib/firebase/client";
 import { compressBanner, uploadClassImage } from "@/lib/profile";
 import { inputWibKeIso, isoKeInputWib } from "@/lib/classAssignmentRules";
 import {
+  ANGGOTA_BATAS,
+  ANGGOTA_MAKS_BAWAAN,
+  ANGGOTA_MIN_BAWAAN,
   rubrikBaru,
   type RubrikQuiz,
   MAX_DESKRIPSI_QUIZ,
@@ -88,7 +91,7 @@ export default function QuizBuilder({
   const [setelan, setSetelan] = useState<SetelanQuiz>(
     awal?.settings ?? { shuffleQuestions: false, shuffleOptions: false, durationMin: null, kelompok: false },
   );
-  // Rubrik penilaian (3 tabel): hanya dikirim bila quiz kelompok.
+  // Rubrik penilaian (jumlah tabel bebas, awal 3): hanya dikirim bila quiz kelompok.
   const [rubrik, setRubrik] = useState<RubrikQuiz>(awal?.rubric ?? rubrikBaru());
   const [batasWaktu, setBatasWaktu] = useState(awal?.settings.durationMin !== null && awal !== undefined);
   const [menitText, setMenitText] = useState(String(awal?.settings.durationMin ?? 30));
@@ -232,7 +235,7 @@ export default function QuizBuilder({
   const sibuk = pending;
 
   return (
-    <div className="mx-auto max-w-[760px] pb-28">
+    <div className="mx-auto max-w-[760px]">
       {terkunci && (
         <p className="mb-4 bg-white/[0.06] px-5 py-4 text-sm leading-[1.7] text-ink-body shadow-[inset_3px_0_0_var(--color-blue-500)]">
           Quiz ini sudah dikerjakan siswa, jadi soal dan pilihannya dikunci. Anda masih bisa mengubah <strong>poin tiap
@@ -318,6 +321,14 @@ export default function QuizBuilder({
             disabled={sibuk || terkunci}
             terkunci={terkunci}
           />
+          {setelan.kelompok === true && (
+            <BatasAnggota
+              min={setelan.anggotaMin ?? ANGGOTA_MIN_BAWAAN}
+              maks={setelan.anggotaMaks ?? ANGGOTA_MAKS_BAWAAN}
+              ubah={(mn, mk) => setSetelan((st) => ({ ...st, anggotaMin: mn, anggotaMaks: mk }))}
+              disabled={sibuk}
+            />
+          )}
           {setelan.kelompok === true && <EditorRubrik rubrik={rubrik} ubah={setRubrik} disabled={sibuk} terkunci={terkunci} />}
           <div>
             <Sakelar
@@ -538,7 +549,7 @@ export default function QuizBuilder({
       )}
 
       {/* Bilah aksi melekat di bawah */}
-      <div className="fixed inset-x-0 bottom-0 z-40 bg-header/95 backdrop-blur-md">
+      <div className="sticky bottom-0 z-30 mt-8 bg-header/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[760px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
           <p className="text-sm" aria-live="polite">
             <span className="text-ink-muted">Total poin </span>
@@ -783,7 +794,7 @@ function PilihModeQuiz({
 }) {
   const opsi = [
     { k: false, label: "Individu", ket: "Tiap siswa mengerjakan sendiri." },
-    { k: true, label: "Kelompok", ket: "Siswa mengisi nama kelompok + anggotanya sebelum mulai. Anda mengisi 3 tabel rubrik untuk menilai tiap siswa." },
+    { k: true, label: "Kelompok", ket: "Siswa mengisi nama kelompok + anggotanya sebelum mulai. Anda mengisi tabel rubrik untuk menilai tiap anggota." },
   ];
   return (
     <div>
@@ -815,6 +826,42 @@ function PilihModeQuiz({
           ? "Jenis quiz tidak bisa diubah karena sudah ada yang mengerjakan."
           : "Pada quiz kelompok, nilai tetap dihitung per siswa; nama kelompok tampil di Pantau dan ekspor spreadsheet."}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Jumlah anggota satu kelompok (termasuk pembuat kelompok): minimal & maksimal ditentukan pembuat quiz.
+ * Isian dibiarkan teks bebas selagi diketik; nilainya dijepit ke 2-20 dan maks >= min saat ditinggalkan.
+ */
+function BatasAnggota({ min, maks, ubah, disabled }: { min: number; maks: number; ubah: (min: number, maks: number) => void; disabled?: boolean }) {
+  const [mn, setMn] = useState(String(min));
+  const [mk, setMk] = useState(String(maks));
+
+  function rapikan() {
+    const a = Math.min(ANGGOTA_BATAS, Math.max(2, Math.floor(Number(mn)) || ANGGOTA_MIN_BAWAAN));
+    const b = Math.min(ANGGOTA_BATAS, Math.max(a, Math.floor(Number(mk)) || ANGGOTA_MAKS_BAWAAN));
+    setMn(String(a));
+    setMk(String(b));
+    ubah(a, b);
+  }
+
+  const KOLOM =
+    "w-20 bg-white/[0.06] px-3 py-2.5 text-center text-sm font-semibold text-ink outline-none shadow-[inset_0_-2px_0_transparent] focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] disabled:opacity-60";
+  return (
+    <div>
+      <p className="text-sm font-semibold text-ink">Jumlah anggota kelompok</p>
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm text-ink-muted">
+          Minimal
+          <input type="number" inputMode="numeric" min={2} max={ANGGOTA_BATAS} value={mn} disabled={disabled} onChange={(e) => setMn(e.target.value)} onBlur={rapikan} className={KOLOM} />
+        </label>
+        <label className="flex items-center gap-2 text-sm text-ink-muted">
+          Maksimal
+          <input type="number" inputMode="numeric" min={2} max={ANGGOTA_BATAS} value={mk} disabled={disabled} onChange={(e) => setMk(e.target.value)} onBlur={rapikan} className={KOLOM} />
+        </label>
+        <span className="text-[13px] text-ink-muted">orang per kelompok (termasuk pembuat kelompok), 2 sampai {ANGGOTA_BATAS}.</span>
+      </div>
     </div>
   );
 }

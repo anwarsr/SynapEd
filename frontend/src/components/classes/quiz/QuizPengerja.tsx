@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import TabelPengerja from "@/components/classes/quiz/TabelPengerja";
-import { saveQuizAnswers, submitQuiz } from "@/lib/classQuizActions";
+import { saveQuizAnswers, sinkronJawaban, submitQuiz } from "@/lib/classQuizActions";
 import { MAX_JAWABAN_ESAI, formatDurasi } from "@/lib/classQuizRules";
 import type { SoalSiswa } from "@/lib/classQuizzes";
 import { cn } from "@/lib/cn";
@@ -27,6 +27,7 @@ export default function QuizPengerja({
   jawabanAwal,
   sisaAwal,
   kelompok = null,
+  bersama = null,
 }: {
   classId: string;
   quizId: string;
@@ -37,6 +38,11 @@ export default function QuizPengerja({
   sisaAwal: number | null;
   /** Nama kelompok (quiz kelompok), tampil di bilah atas. */
   kelompok?: string | null;
+  /**
+   * Quiz kelompok dikerjakan BERSAMA: satu kumpulan jawaban dipakai seluruh anggota yang sudah ikut. Jawaban disinkronkan
+   * berkala lewat server (klien tak membaca Firestore), jadi ketikan teman muncul beberapa detik kemudian.
+   */
+  bersama?: { anggota: { uid: string | null; nama: string }[]; ikutAwal: string[]; saya: string } | null;
 }) {
   const router = useRouter();
   const [jawaban, setJawaban] = useState<Record<string, string>>(jawabanAwal);
@@ -46,6 +52,9 @@ export default function QuizPengerja({
   const [error, setError] = useState<string | null>(null);
   const [simpanan, setSimpanan] = useState<"tersimpan" | "menyimpan" | "gagal">("tersimpan");
 
+  const [ikut, setIkut] = useState<string[]>(bersama?.ikutAwal ?? []);
+  // Soal yang diubah pembaca ini dan belum terkirim; selama terisi, jawaban dari server untuk soal itu TIDAK menimpa ketikannya.
+  const kotorRef = useRef<Set<string>>(new Set());
   const jawabanRef = useRef(jawaban);
   const selesaiRef = useRef(false);
   const kirimRef = useRef<() => void>(() => undefined);
@@ -65,7 +74,58 @@ export default function QuizPengerja({
     return () => clearInterval(id);
   }, [sisaAwal]);
 
-  // Simpan otomatis 1,5 dtk setelah perubahan terakhir.
+  /** Mengubah jawaban satu soal (dan menandainya belum terkirim pada quiz bersama). */
+  function ubahJawaban(id: string, nilai: string) {
+    if (bersama) kotorRef.current.add(id);
+    setJawaban((j) => ({ ...j, [id]: nilai }));
+  }
+
+  /** Quiz bersama: kirim yang kotor, ambil keadaan terkini dari server. Mengembalikan true bila kelompok sudah selesai. */
+  async function sinkron(): Promise<boolean> {
+    const kirim: Record<string, string> = {};
+    for (const id of kotorRef.current) kirim[id] = jawabanRef.current[id] ?? "";
+    const dikirim = Object.keys(kirim);
+    for (const id of dikirim) kotorRef.current.delete(id);
+    const res = await sinkronJawaban(classId, quizId, kirim).catch(() => null);
+    if (!res || !res.ok) {
+      for (const id of dikirim) kotorRef.current.add(id);
+      setSimpanan("gagal");
+      return false;
+    }
+    setSimpanan("tersimpan");
+    if (res.selesai) return true;
+    setIkut(res.joined);
+    setJawaban((j) => {
+      const baru = { ...j };
+      for (const s of soal) {
+        if (kotorRef.current.has(s.id)) continue;
+        const dariServer = res.answers[s.id];
+        if (dariServer !== undefined) baru[s.id] = dariServer;
+      }
+      return baru;
+    });
+    return false;
+  }
+
+  // Quiz bersama: sinkron tiap 2 dtk selagi tab terlihat ("realtime" lewat polling).
+  useEffect(() => {
+    if (!bersama) return;
+    let jalan = false;
+    const id = setInterval(async () => {
+      if (selesaiRef.current || jalan || document.visibilityState !== "visible") return;
+      jalan = true;
+      const selesai = await sinkron();
+      jalan = false;
+      if (selesai) {
+        selesaiRef.current = true;
+        router.refresh();
+      }
+    }, 2000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bersama, classId, quizId]);
+
+  // Simpan otomatis 1,5 dtk setelah perubahan terakhir (quiz individu).
   const pertama = useRef(true);
   useEffect(() => {
     jawabanRef.current = jawaban;
@@ -73,6 +133,7 @@ export default function QuizPengerja({
       pertama.current = false;
       return;
     }
+    if (bersama) return;
     const id = setTimeout(async () => {
       if (selesaiRef.current) return;
       setSimpanan("menyimpan");
@@ -80,7 +141,7 @@ export default function QuizPengerja({
       setSimpanan(res?.ok ? "tersimpan" : "gagal");
     }, 1500);
     return () => clearTimeout(id);
-  }, [jawaban, classId, quizId]);
+  }, [jawaban, classId, quizId, bersama]);
 
   function kumpulkan() {
     if (selesaiRef.current) return;
@@ -88,6 +149,8 @@ export default function QuizPengerja({
     setError(null);
     setKonfirmasi(false);
     startTransition(async () => {
+      // Quiz bersama: kirim dulu ketikan yang belum terkirim supaya tak kalah oleh isi lama di server.
+      if (bersama) await sinkron();
       const res = await submitQuiz(classId, quizId, jawabanRef.current);
       // Galat "waktu habis" tetap berarti quiz sudah terkumpul - halaman hasil yang menjelaskannya.
       if (!res.ok && !res.error.startsWith("Waktu habis") && !res.error.includes("sudah dikumpulkan")) {
@@ -118,6 +181,11 @@ export default function QuizPengerja({
         <p className="text-sm text-ink-muted">
           {terjawab}/{soal.length} terjawab
         </p>
+        {bersama && (
+          <p className="text-[11px] text-ink-muted" aria-live="polite">
+            Dikerjakan bersama · {ikut.length} ikut
+          </p>
+        )}
         {sisa !== null && (
           <p
             role="timer"
@@ -131,6 +199,22 @@ export default function QuizPengerja({
           {simpanan === "menyimpan" ? "Menyimpan…" : simpanan === "gagal" ? "Gagal menyimpan, periksa koneksi" : "Tersimpan otomatis"}
         </span>
       </div>
+
+      {bersama && (
+        <ul className="mb-5 flex flex-wrap gap-2" aria-label="Anggota kelompok">
+          {bersama.anggota.map((a, i) => {
+            const aktif = a.uid === null ? false : ikut.includes(a.uid);
+            return (
+              <li key={`${a.uid ?? "n"}-${i}`} className={cn("flex items-center gap-2 px-3 py-1.5 text-xs", aktif ? "bg-blue-600/25 text-ink" : "bg-white/[0.05] text-ink-muted")}>
+                <span aria-hidden="true" className={cn("h-1.5 w-1.5 rounded-full", aktif ? "bg-blue-300" : "bg-white/25")} />
+                {a.nama}
+                {a.uid === bersama.saya && <span className="text-ink-muted">(Anda)</span>}
+                {a.uid !== null && !aktif && <span className="text-ink-muted">belum ikut</span>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       <ol className="space-y-4">
         {soal.map((s, i) => (
@@ -152,7 +236,7 @@ export default function QuizPengerja({
                       role="radio"
                       aria-checked={dipilih}
                       disabled={pending}
-                      onClick={() => setJawaban((j) => ({ ...j, [s.id]: o.id }))}
+                      onClick={() => ubahJawaban(s.id, o.id)}
                       className={cn(
                         "flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] transition-colors duration-150",
                         dipilih ? "bg-blue-600 text-[#fff]" : "bg-white/[0.06] text-ink hover:bg-white/10",
@@ -174,7 +258,7 @@ export default function QuizPengerja({
                 idDasar={`tb-${s.id}`}
                 tabel={s.table}
                 nilai={jawaban[s.id] ?? ""}
-                ubah={(v) => setJawaban((j) => ({ ...j, [s.id]: v }))}
+                ubah={(v) => ubahJawaban(s.id, v)}
                 disabled={pending}
               />
             ) : (
@@ -185,7 +269,7 @@ export default function QuizPengerja({
                 <textarea
                   id={`es-${s.id}`}
                   value={jawaban[s.id] ?? ""}
-                  onChange={(e) => setJawaban((j) => ({ ...j, [s.id]: e.target.value }))}
+                  onChange={(e) => ubahJawaban(s.id, e.target.value)}
                   maxLength={MAX_JAWABAN_ESAI}
                   rows={5}
                   disabled={pending}

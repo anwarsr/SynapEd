@@ -81,11 +81,18 @@ export interface TabelSoal {
 
 // ── Rubrik penilaian quiz kelompok ──────────────────────────────────────
 
-export const JUMLAH_RUBRIK = 3;
+/** Jumlah tabel rubrik: pengajar bebas menambah/menghapus (minimal 1); builder memulai dengan 3. */
+export const MIN_RUBRIK = 1;
+export const MAX_RUBRIK = 10;
+export const RUBRIK_AWAL = 3;
 export const MAX_KRITERIA_RUBRIK = 10;
 export const MAX_JUDUL_RUBRIK = 60;
 export const MAX_TEKS_KRITERIA = 120;
-export const MAX_ANGGOTA_KELOMPOK = 10;
+/** Batas jumlah anggota kelompok (termasuk pembuat): bawaan 2-10, dan pembuat quiz mengatur sendiri dalam 2-20. */
+export const ANGGOTA_MIN_BAWAAN = 2;
+export const ANGGOTA_MAKS_BAWAAN = 10;
+export const ANGGOTA_BATAS = 20;
+export const MAX_ANGGOTA_KELOMPOK = ANGGOTA_BATAS;
 export const SKOR_RUBRIK_MAKS = 4;
 /** Skala tetap tiap poin penilaian rubrik. */
 export const SKALA_RUBRIK = [
@@ -120,6 +127,8 @@ export interface RubrikQuiz {
 export interface AnggotaKelompok {
   uid: string | null;
   name: string;
+  /** Kunci tetap anggota di kelompok ini: uid bila akun, selain itu `m<urutan>`. Skor rubrik disimpan per kunci. */
+  key?: string;
 }
 
 export interface SetelanQuiz {
@@ -132,6 +141,16 @@ export interface SetelanQuiz {
    * Tiap siswa tetap punya percobaan & nilainya sendiri. Hilang = individu.
    */
   kelompok?: boolean;
+  /** Jumlah anggota kelompok (termasuk pembuat) yang diizinkan; bawaan 2 dan 10. Hanya bermakna bila `kelompok`. */
+  anggotaMin?: number;
+  anggotaMaks?: number;
+}
+
+/** Batas anggota kelompok yang berlaku (bawaan bila tak diatur / rusak). */
+export function batasAnggota(s: Pick<SetelanQuiz, "anggotaMin" | "anggotaMaks"> | undefined): { min: number; maks: number } {
+  const min = Number.isInteger(s?.anggotaMin) && (s?.anggotaMin as number) >= 2 ? Math.min(s?.anggotaMin as number, ANGGOTA_BATAS) : ANGGOTA_MIN_BAWAAN;
+  const maksRaw = Number.isInteger(s?.anggotaMaks) ? (s?.anggotaMaks as number) : ANGGOTA_MAKS_BAWAAN;
+  return { min, maks: Math.min(ANGGOTA_BATAS, Math.max(min, maksRaw)) };
 }
 
 /**
@@ -193,8 +212,10 @@ export interface PercobaanQuiz {
   groupName?: string | null;
   /** Anggota kelompok (quiz kelompok): dipilih dari anggota kelas atau diketik sendiri. */
   members?: AnggotaKelompok[];
-  /** Skor rubrik dari pengajar: id poin penilaian → 1..4. */
-  rubricScores?: Record<string, number>;
+  /** Skor rubrik dari pengajar PER ANGGOTA: kunci anggota → (id poin penilaian → 1..4). */
+  rubricScores?: Record<string, Record<string, number>>;
+  /** uid anggota yang sudah menekan "Ikuti Quiz" (pembuat selalu ikut). Hanya yang ikut yang boleh menjawab bersama. */
+  joined?: string[];
 }
 
 // ── Util umum ───────────────────────────────────────────────────────────
@@ -305,12 +326,12 @@ export function susunJawabanTabel(peta: Record<number, string>): string {
 }
 
 /**
- * Soal yang poinnya diberikan MANUAL oleh pengajar/admin (nilai menunggu persetujuan): esai di semua quiz, dan
- * soal TABEL pada quiz kelompok (pada quiz individu tabel tetap dinilai otomatis). Untuk tabel, hitungan
- * otomatis (`skorTabel`) hanya menjadi SARAN di formulir penilaian.
+ * Soal yang poinnya diberikan MANUAL oleh pengajar/admin (nilai menunggu persetujuan): esai DAN tabel di semua quiz.
+ * Sel isian tabel tidak punya kunci jawaban (jawabannya dicek sendiri oleh pengajar); `skorTabel` hanya tersisa untuk
+ * data lama yang masih membawa kunci.
  */
-export function soalManual(quiz: { settings?: Pick<SetelanQuiz, "kelompok"> }, s: Pick<SoalQuiz, "type">): boolean {
-  return s.type === "essay" || (s.type === "table" && quiz.settings?.kelompok === true);
+export function soalManual(_quiz: { settings?: Pick<SetelanQuiz, "kelompok"> }, s: Pick<SoalQuiz, "type">): boolean {
+  return s.type === "essay" || s.type === "table";
 }
 
 export interface SkorTabel {
@@ -353,26 +374,19 @@ function validasiTabel(raw: unknown, no: number, terbitkan: boolean): Hasil<Tabe
     const c = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
     const fill = c.fill === true;
     // Sel isian tak membawa teks (siswa melihatnya kosong); sel tetap tak punya kunci.
-    return { text: fill ? "" : teks(c.text, MAX_TEKS_SEL), fill, key: fill ? teks(c.key, MAX_TEKS_SEL) : "" };
+    return { text: fill ? "" : teks(c.text, MAX_TEKS_SEL), fill, key: "" };
   });
 
   if (terbitkan) {
-    const isian = cells.flatMap((c, i) => (c.fill ? [i] : []));
-    if (isian.length === 0) return { ok: false, error: `Soal ${no}: tabel perlu minimal satu sel isian untuk siswa.` };
-    const tanpaKunci = isian.find((i) => !cells[i].key);
-    if (tanpaKunci !== undefined) {
-      return {
-        ok: false,
-        error: `Soal ${no}: sel isian di baris ${Math.floor(tanpaKunci / cols) + 1}, kolom ${(tanpaKunci % cols) + 1} belum ada kunci jawabannya.`,
-      };
-    }
+    // Sel isian TIDAK punya kunci: jawaban siswa dinilai sendiri oleh pengajar.
+    if (!cells.some((c) => c.fill)) return { ok: false, error: `Soal ${no}: tabel perlu minimal satu sel isian untuk siswa.` };
   }
   return { ok: true, value: { rows, cols, cells } };
 }
 
 function tabelSama(a: TabelSoal | null | undefined, b: TabelSoal | null | undefined): boolean {
   if (!a || !b) return !a && !b;
-  return a.rows === b.rows && a.cols === b.cols && a.cells.every((c, i) => c.fill === b.cells[i].fill && c.text === b.cells[i].text && c.key === b.cells[i].key);
+  return a.rows === b.rows && a.cols === b.cols && a.cells.every((c, i) => c.fill === b.cells[i].fill && c.text === b.cells[i].text);
 }
 
 // ── Quiz kelompok ───────────────────────────────────────────────────────
@@ -425,7 +439,7 @@ export function ringkasKelompok(quiz: Pick<Quiz, "questions">, daftar: readonly 
 /** Rubrik awal di builder: 3 tabel, masing-masing satu poin penilaian kosong. */
 export function rubrikBaru(): RubrikQuiz {
   return {
-    tables: Array.from({ length: JUMLAH_RUBRIK }, (_, i) => ({
+    tables: Array.from({ length: RUBRIK_AWAL }, (_, i) => ({
       id: `r${i + 1}`,
       title: `Rubrik ${i + 1}`,
       criteria: [{ id: `r${i + 1}k1`, text: "" }],
@@ -450,7 +464,8 @@ export function rubrikAktif(rubric: RubrikQuiz | null | undefined): rubric is Ru
 export function validasiRubrik(raw: unknown, terbitkan: boolean): Hasil<RubrikQuiz> {
   const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const mentah = Array.isArray(r.tables) ? r.tables : [];
-  if (mentah.length !== JUMLAH_RUBRIK) return { ok: false, error: `Quiz kelompok wajib punya ${JUMLAH_RUBRIK} tabel rubrik penilaian.` };
+  if (mentah.length < MIN_RUBRIK) return { ok: false, error: `Quiz kelompok wajib punya minimal ${MIN_RUBRIK} tabel rubrik penilaian.` };
+  if (mentah.length > MAX_RUBRIK) return { ok: false, error: `Rubrik maksimal ${MAX_RUBRIK} tabel.` };
 
   const idTabel = new Set<string>();
   const idKriteria = new Set<string>();
@@ -531,6 +546,33 @@ export function ringkasRubrik(rubric: RubrikQuiz | null | undefined, skor: Recor
   };
 }
 
+export interface NilaiIndividu {
+  key: string;
+  uid: string | null;
+  nama: string;
+  /** Persen rubrik 0-100 (NILAI INDIVIDU); null selama masih ada poin penilaian yang belum diberi skor. */
+  persen: number | null;
+  belum: number;
+  jumlah: number;
+}
+
+/**
+ * Nilai INDIVIDU tiap anggota kelompok dari skor rubriknya (`rubricScores[kunci]`). Percobaan tanpa daftar anggota
+ * (data lama / quiz individu) dianggap beranggota satu orang: pemiliknya.
+ */
+export function nilaiIndividu(
+  quiz: { rubric?: RubrikQuiz | null },
+  p: { uid?: string; members?: AnggotaKelompok[]; rubricScores?: Record<string, Record<string, number>> },
+): NilaiIndividu[] {
+  if (!rubrikAktif(quiz.rubric)) return [];
+  const anggota: AnggotaKelompok[] = p.members && p.members.length > 0 ? p.members : [{ uid: p.uid ?? null, name: "Peserta" }];
+  return anggota.map((a, i) => {
+    const key = kunciAnggota(a, i);
+    const r = ringkasRubrik(quiz.rubric, p.rubricScores?.[key]);
+    return { key, uid: a.uid, nama: a.name, persen: r.persen, belum: r.belum, jumlah: r.jumlah };
+  });
+}
+
 /** Skor rubrik kiriman pengajar → peta yang sah (id poin yang ada, bilangan bulat 1-4). Null = ada yang tak sah. */
 export function validasiSkorRubrik(rubric: RubrikQuiz | null | undefined, raw: unknown): Record<string, number> | null {
   const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
@@ -552,9 +594,14 @@ export function bersihkanNamaAnggota(raw: unknown): string | null {
 
 /**
  * Menggabungkan anggota: duplikat (uid sama, atau nama sama tanpa beda huruf besar-kecil) dibuang, `diri`
- * selalu di urutan pertama. Hasil harus 2..MAX_ANGGOTA_KELOMPOK orang.
+ * selalu di urutan pertama, tiap anggota diberi `key` tetap (uid, atau `m<urutan>` untuk nama yang diketik).
+ * Jumlah total (termasuk `diri`) harus dalam `batas` quiz (bawaan 2-10).
  */
-export function gabungAnggota(diri: AnggotaKelompok, lain: readonly AnggotaKelompok[]): Hasil<AnggotaKelompok[]> {
+export function gabungAnggota(
+  diri: AnggotaKelompok,
+  lain: readonly AnggotaKelompok[],
+  batas: { min: number; maks: number } = { min: ANGGOTA_MIN_BAWAAN, maks: ANGGOTA_MAKS_BAWAAN },
+): Hasil<AnggotaKelompok[]> {
   const hasil: AnggotaKelompok[] = [];
   const uids = new Set<string>();
   const namas = new Set<string>();
@@ -566,11 +613,31 @@ export function gabungAnggota(diri: AnggotaKelompok, lain: readonly AnggotaKelom
       uids.add(a.uid);
     }
     namas.add(kunci);
-    hasil.push({ uid: a.uid, name: a.name.trim() });
+    hasil.push({ uid: a.uid, name: a.name.trim(), key: a.uid ?? `m${hasil.length}` });
   }
-  if (hasil.length < 2) return { ok: false, error: "Tambahkan minimal satu anggota kelompok selain Anda." };
-  if (hasil.length > MAX_ANGGOTA_KELOMPOK) return { ok: false, error: `Anggota kelompok maksimal ${MAX_ANGGOTA_KELOMPOK} orang.` };
+  if (hasil.length < batas.min) {
+    return { ok: false, error: batas.min <= 2 ? "Tambahkan minimal satu anggota kelompok selain Anda." : `Kelompok minimal ${batas.min} orang (termasuk Anda). Sekarang ${hasil.length}.` };
+  }
+  if (hasil.length > batas.maks) return { ok: false, error: `Kelompok maksimal ${batas.maks} orang (termasuk Anda). Sekarang ${hasil.length}.` };
   return { ok: true, value: hasil };
+}
+
+/** Kunci anggota (untuk data lama tanpa `key`: uid, atau `m<urutan>`). */
+export function kunciAnggota(a: AnggotaKelompok, indeks: number): string {
+  return a.key ?? a.uid ?? `m${indeks}`;
+}
+
+/**
+ * Percobaan milik seorang siswa pada quiz kelompok: miliknya sendiri, atau percobaan kelompok yang mencantumkannya sebagai
+ * anggota (uid). Quiz individu: hanya miliknya sendiri.
+ */
+export function percobaanUntuk(daftar: readonly PercobaanQuiz[], uid: string): PercobaanQuiz | null {
+  return daftar.find((p) => p.uid === uid) ?? daftar.find((p) => (p.members ?? []).some((m) => m.uid === uid)) ?? null;
+}
+
+/** Anggota yang sudah ikut mengerjakan (pembuat selalu ikut). */
+export function sudahIkut(p: Pick<PercobaanQuiz, "uid" | "joined">, uid: string): boolean {
+  return p.uid === uid || (p.joined ?? []).includes(uid);
 }
 
 // ── Validasi masukan builder ────────────────────────────────────────────
@@ -691,6 +758,20 @@ export function validasiQuiz(raw: unknown, terbitkan: boolean): Hasil<IsiQuiz> {
     rubric = rb.value;
   }
 
+  // Batas anggota kelompok (termasuk pembuat) ditentukan pembuat quiz.
+  let anggotaMin = ANGGOTA_MIN_BAWAAN;
+  let anggotaMaks = ANGGOTA_MAKS_BAWAAN;
+  if (s.kelompok === true) {
+    const mn = s.anggotaMin === undefined || s.anggotaMin === null || s.anggotaMin === "" ? ANGGOTA_MIN_BAWAAN : Number(s.anggotaMin);
+    const mk = s.anggotaMaks === undefined || s.anggotaMaks === null || s.anggotaMaks === "" ? ANGGOTA_MAKS_BAWAAN : Number(s.anggotaMaks);
+    if (!Number.isInteger(mn) || !Number.isInteger(mk) || mn < 2 || mk > ANGGOTA_BATAS) {
+      return { ok: false, error: `Jumlah anggota kelompok harus bilangan bulat 2-${ANGGOTA_BATAS}.` };
+    }
+    if (mn > mk) return { ok: false, error: "Anggota minimal tidak boleh lebih besar dari maksimal." };
+    anggotaMin = mn;
+    anggotaMaks = mk;
+  }
+
   return {
     ok: true,
     value: {
@@ -704,6 +785,7 @@ export function validasiQuiz(raw: unknown, terbitkan: boolean): Hasil<IsiQuiz> {
         shuffleOptions: s.shuffleOptions === true,
         durationMin,
         kelompok: s.kelompok === true,
+        ...(s.kelompok === true ? { anggotaMin, anggotaMaks } : {}),
       },
     },
   };
@@ -859,9 +941,7 @@ export interface RincianNilai {
   esaiBelumDinilai: number;
   /** Poin per soal. */
   perSoal: Record<string, number>;
-  /** NILAI INDIVIDU = persen rubrik 0-100; null bila tanpa rubrik ATAU masih ada poin penilaian yang belum diberi skor. */
-  rubrikPersen: number | null;
-  /** Poin penilaian rubrik yang belum diberi skor (0 bila tanpa rubrik). */
+  /** Poin penilaian rubrik yang belum diberi skor, DIJUMLAH untuk semua anggota (0 bila tanpa rubrik). */
   rubrikBelumDinilai: number;
 }
 
@@ -872,7 +952,7 @@ export interface RincianNilai {
  */
 export function hitungNilai(
   quiz: Pick<Quiz, "questions"> & { rubric?: RubrikQuiz | null; settings?: Pick<SetelanQuiz, "kelompok"> },
-  p: Pick<PercobaanQuiz, "answers" | "essayScores"> & { rubricScores?: Record<string, number> },
+  p: Pick<PercobaanQuiz, "answers" | "essayScores"> & { rubricScores?: Record<string, Record<string, number>>; members?: AnggotaKelompok[]; uid?: string },
 ): RincianNilai {
   let otomatis = 0;
   let esai = 0;
@@ -883,12 +963,6 @@ export function hitungNilai(
     if (s.type === "mcq") {
       const benar = s.correct !== null && p.answers[s.id] === s.correct;
       const n = benar ? s.points : 0;
-      perSoal[s.id] = n;
-      otomatis += n;
-    } else if (s.type === "table" && !soalManual(quiz, s)) {
-      // Kredit sebagian: poin soal dibagi rata ke sel isian, tiap sel yang benar dapat bagiannya.
-      const sk = skorTabel(s.table, p.answers[s.id]);
-      const n = sk.total > 0 ? bulat2((s.points * sk.benar) / sk.total) : 0;
       perSoal[s.id] = n;
       otomatis += n;
     } else {
@@ -907,7 +981,7 @@ export function hitungNilai(
   // NILAI KELOMPOK (`total`) = murni poin soal, sesuai poin yang diatur pengajar saat membuat soal. Rubrik TIDAK
   // dicampur ke dalamnya: persen rubrik adalah nilai individu yang terpisah (`rubrikPersen`).
   const rub = rubrikAktif(quiz.rubric) ? quiz.rubric : null;
-  const rr = ringkasRubrik(rub, p.rubricScores);
+  const belumRubrik = rub ? nilaiIndividu(quiz, p).reduce((n, a) => n + a.belum, 0) : 0;
 
   return {
     otomatis: bulat2(otomatis),
@@ -915,8 +989,7 @@ export function hitungNilai(
     total: bulat2(otomatis + esai),
     esaiBelumDinilai: belum,
     perSoal,
-    rubrikPersen: rr.persen,
-    rubrikBelumDinilai: rub ? rr.belum : 0,
+    rubrikBelumDinilai: belumRubrik,
   };
 }
 
@@ -1036,14 +1109,20 @@ export const JUDUL_EKSPOR_KELOMPOK = ["No", "Nama", "Kelompok", "Nilai kelompok"
  */
 export function barisEkspor(
   quiz: Pick<Quiz, "questions"> & { settings?: Pick<SetelanQuiz, "kelompok">; rubric?: RubrikQuiz | null },
-  peserta: readonly { nama: string; p: PercobaanQuiz | null }[],
+  peserta: readonly { nama: string; p: PercobaanQuiz | null; kunci?: string }[],
 ): (string | number | null)[][] {
   const kelompok = quiz.settings?.kelompok === true;
   const urut = peserta
     .map((x) => {
       const status = statusQuizSiswa(quiz, x.p);
       const n = x.p?.submittedAt ? hitungNilai(quiz, x.p) : null;
-      return { nama: x.nama, poin: n ? n.total : null, individu: n ? n.rubrikPersen : null, status, grup: x.p?.groupName ?? "" };
+      let individu: number | null = null;
+      if (x.p && n) {
+        const ni = nilaiIndividu(quiz, x.p);
+        const cocok = ni.find((a) => a.key === x.kunci) ?? ni[0];
+        individu = cocok?.persen ?? null;
+      }
+      return { nama: x.nama, poin: n ? n.total : null, individu, status, grup: x.p?.groupName ?? "" };
     })
     .sort((a, b) => (b.poin ?? -1) - (a.poin ?? -1) || a.nama.localeCompare(b.nama, "id"));
   if (kelompok) return [[...JUDUL_EKSPOR_KELOMPOK], ...urut.map((r, i) => [i + 1, r.nama, r.grup, r.poin, r.individu, LABEL_STATUS_QUIZ[r.status]])];
@@ -1082,8 +1161,6 @@ export interface AnalisisButir {
   rataSkorPersen: number | null;
   /** Esai: jumlah jawaban yang sudah diberi poin. */
   dinilai: number;
-  /** Tabel: sel isian yang paling sering salah/kosong (baris & kolom mulai dari 1); null bila belum ada peserta. */
-  selTersulit?: { baris: number; kolom: number; persenSalah: number; kunci: string } | null;
 }
 
 const persenDari = (n: number, dari: number) => (dari > 0 ? Math.round((n / dari) * 100) : 0);
@@ -1099,40 +1176,15 @@ export function analisisSoal(quiz: Pick<Quiz, "questions">, daftar: readonly Per
 
   return quiz.questions
     .map((s, i): AnalisisButir => {
-      if (s.type === "essay") {
+      // Esai dan tabel sama-sama dinilai manual (tabel tanpa kunci): analisisnya = rata-rata poin yang diberikan pengajar.
+      if (s.type === "essay" || s.type === "table") {
         const skor = terkumpul.map((p) => p.essayScores[s.id]).filter((v): v is number => typeof v === "number");
         const rata = skor.length > 0 && s.points > 0 ? Math.round((skor.reduce((a, v) => a + Math.min(Math.max(v, 0), s.points), 0) / skor.length / s.points) * 100) : null;
         const kosong = terkumpul.filter((p) => !(p.answers[s.id] ?? "").trim()).length;
         return {
-          nomor: i + 1, id: s.id, jenis: "essay", teks: s.text, poin: s.points, peserta: n,
+          nomor: i + 1, id: s.id, jenis: s.type, teks: s.text, poin: s.points, peserta: n,
           benar: 0, salah: 0, kosong, persenSalah: rata === null ? 0 : 100 - rata,
           opsi: [], terbanyakId: null, rataSkorPersen: rata, dinilai: skor.length,
-        };
-      }
-      if (s.type === "table") {
-        const isian = s.table ? indeksIsian(s.table) : [];
-        const benarPerSel = new Map<number, number>(isian.map((i) => [i, 0]));
-        let benarSel = 0;
-        let kosong = 0;
-        for (const p of terkumpul) {
-          const sk = skorTabel(s.table, p.answers[s.id]);
-          benarSel += sk.benar;
-          if (!p.answers[s.id]) kosong++;
-          for (const i of isian) if (sk.perSel[i]) benarPerSel.set(i, (benarPerSel.get(i) ?? 0) + 1);
-        }
-        const rata = n > 0 && isian.length > 0 ? Math.round((benarSel / (n * isian.length)) * 100) : null;
-        let tersulit: AnalisisButir["selTersulit"] = null;
-        if (n > 0 && s.table) {
-          const cols = s.table.cols;
-          const i = isian.reduce((a, b) => ((benarPerSel.get(b) ?? 0) < (benarPerSel.get(a) ?? 0) ? b : a), isian[0]);
-          if (i !== undefined) {
-            tersulit = { baris: Math.floor(i / cols) + 1, kolom: (i % cols) + 1, persenSalah: 100 - persenDari(benarPerSel.get(i) ?? 0, n), kunci: s.table.cells[i].key };
-          }
-        }
-        return {
-          nomor: i + 1, id: s.id, jenis: "table", teks: s.text, poin: s.points, peserta: n,
-          benar: 0, salah: 0, kosong, persenSalah: rata === null ? 0 : 100 - rata,
-          opsi: [], terbanyakId: null, rataSkorPersen: rata, dinilai: n, selTersulit: tersulit,
         };
       }
       const hitung = new Map<string, number>(s.options.map((o) => [o.id, 0]));
@@ -1211,6 +1263,8 @@ function soalDari(raw: unknown): SoalQuiz[] {
 }
 
 export function toQuiz(id: string, d: Record<string, unknown>): Quiz {
+  const ss = (d.settings && typeof d.settings === "object" ? d.settings : {}) as Record<string, unknown>;
+  const bt = batasAnggota({ anggotaMin: typeof ss.anggotaMin === "number" ? ss.anggotaMin : undefined, anggotaMaks: typeof ss.anggotaMaks === "number" ? ss.anggotaMaks : undefined });
   const s = d.settings && typeof d.settings === "object" ? (d.settings as Record<string, unknown>) : {};
   const dur = typeof s.durationMin === "number" && Number.isInteger(s.durationMin) && s.durationMin >= 1 ? s.durationMin : null;
   return {
@@ -1220,7 +1274,7 @@ export function toQuiz(id: string, d: Record<string, unknown>): Quiz {
     title: str(d.title),
     description: str(d.description),
     questions: soalDari(d.questions),
-    settings: { shuffleQuestions: s.shuffleQuestions === true, shuffleOptions: s.shuffleOptions === true, durationMin: dur, kelompok: s.kelompok === true },
+    settings: { shuffleQuestions: s.shuffleQuestions === true, shuffleOptions: s.shuffleOptions === true, durationMin: dur, kelompok: s.kelompok === true, ...(s.kelompok === true ? { anggotaMin: bt.min, anggotaMaks: bt.maks } : {}) },
     published: d.published === true,
     bannerURL: typeof d.bannerURL === "string" && d.bannerURL ? d.bannerURL : null,
     opensAt: typeof d.opensAt === "string" && Number.isFinite(Date.parse(d.opensAt)) ? d.opensAt : null,
@@ -1239,6 +1293,19 @@ function peta<T>(raw: unknown, cek: (v: unknown) => T | null): Record<string, T>
       const n = cek(v);
       if (n !== null) out[k] = n;
     }
+  }
+  return out;
+}
+
+function skorBertingkat(raw: unknown, uidPemilik: string): Record<string, Record<string, number>> {
+  const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const nilai = Object.values(r);
+  if (nilai.length > 0 && nilai.every((v) => skorSah(v))) {
+    return { [uidPemilik]: peta(r, (v) => (skorSah(v) ? v : null)) };
+  }
+  const out: Record<string, Record<string, number>> = {};
+  for (const [k, v] of Object.entries(r)) {
+    if (v && typeof v === "object") out[k] = peta(v, (x) => (skorSah(x) ? x : null));
   }
   return out;
 }
@@ -1267,11 +1334,15 @@ export function toPercobaan(id: string, d: Record<string, unknown>): PercobaanQu
           .map((m): AnggotaKelompok | null => {
             const o = m && typeof m === "object" ? (m as Record<string, unknown>) : null;
             const name = o && typeof o.name === "string" ? o.name : "";
-            return name ? { uid: typeof o?.uid === "string" && o.uid ? o.uid : null, name } : null;
+            const uid = typeof o?.uid === "string" && o.uid ? o.uid : null;
+            const key = o && typeof o.key === "string" && o.key ? o.key : undefined;
+            return name ? { uid, name, ...(key ? { key } : {}) } : null;
           })
           .filter((m): m is AnggotaKelompok => m !== null)
       : [],
-    rubricScores: peta(d.rubricScores, (v) => (skorSah(v) ? v : null)),
+    // Bentuk baru: kunci anggota → (poin → skor). Bentuk lama (poin → skor, satu nilai per percobaan) dibaca sebagai milik pemilik.
+    rubricScores: skorBertingkat(d.rubricScores, str(d.uid)),
+    joined: Array.isArray(d.joined) ? d.joined.filter((x): x is string => typeof x === "string") : [],
   };
 }
 

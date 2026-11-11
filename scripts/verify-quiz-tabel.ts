@@ -1,8 +1,9 @@
 /**
  * Menguji soal TABEL dan quiz KELOMPOK: aturan murni lebih dulu, lalu alur penuh lewat dev server
- * (npm run dev) - membuat quiz, mulai dengan/ tanpa nama kelompok, mengisi tabel, menilai, serta
- * yang paling penting: KUNCI SEL TIDAK BOCOR ke siswa sebelum quiz ditutup, dan mode kelompok
- * tidak bisa dilewati lewat panggilan langsung ke Server Action.
+ * (npm run dev) - membuat quiz, mulai dengan/ tanpa nama kelompok, mengisi tabel, menilai. Sel isian tabel
+ * TIDAK punya kunci jawaban: pengajar memeriksa isiannya dan memberi poin sendiri (di quiz individu maupun
+ * kelompok), jadi yang dijaga: kunci kiriman lama tak pernah tersimpan/tampil, tabel selalu menunggu penilaian
+ * pengajar, dan mode kelompok tidak bisa dilewati lewat panggilan langsung ke Server Action.
  *
  *   npx tsx scripts/verify-quiz-tabel.ts [baseUrl]
  */
@@ -42,7 +43,7 @@ const db = getFirestore(app);
 
 // ── Bahan uji ───────────────────────────────────────────────────────────
 
-/** Tabel 3x3: baris & kolom pertama judul; 4 sel isian dengan kunci. */
+/** Tabel 3x3: baris & kolom pertama judul; 4 sel isian (tanpa kunci jawaban). */
 function tabel3(): TabelSoal {
   const t = tabelBaru(3, 3);
   t.cells[0].text = "";
@@ -50,10 +51,6 @@ function tabel3(): TabelSoal {
   t.cells[2].text = "Mata uang";
   t.cells[3].text = "Jepang";
   t.cells[6].text = "Thailand";
-  t.cells[4].key = "Tokyo";
-  t.cells[5].key = "Yen";
-  t.cells[7].key = "Bangkok";
-  t.cells[8].key = "Baht";
   return t;
 }
 
@@ -83,25 +80,24 @@ function aturanMurni() {
   check("empat sel isian", indeksIsian(t).join() === "4,5,7,8", indeksIsian(t).join());
 
   const besar = ubahUkuranTabel(tabel3(), 4, 4);
-  check("memperbesar mempertahankan sel lama", besar.cells[1 * 4 + 2].key === "Yen" && besar.cells[0 * 4 + 1].text === "Ibu kota" && besar.cells[1 * 4 + 1].key === "Tokyo", "isi tetap di baris/kolomnya");
+  check("memperbesar mempertahankan sel lama", besar.cells[0 * 4 + 2].text === "Mata uang" && besar.cells[0 * 4 + 1].text === "Ibu kota" && besar.cells[1 * 4 + 0].text === "Jepang" && besar.cells[1 * 4 + 1].fill, "isi tetap di baris/kolomnya");
   check("sel baru: judul di tepi, isian di dalam", besar.cells[3].fill === false && besar.cells[15].fill === true, "pola sel baru");
   const kecil = ubahUkuranTabel(tabel3(), 2, 2);
-  check("memperkecil membuang ujung", kecil.rows === 2 && kecil.cols === 2 && kecil.cells.length === 4 && kecil.cells[3].key === "Tokyo", JSON.stringify(kecil.cells.map((c) => c.key)));
+  check("memperkecil membuang ujung", kecil.rows === 2 && kecil.cols === 2 && kecil.cells.length === 4 && kecil.cells[1].text === "Ibu kota" && kecil.cells[3].fill, JSON.stringify(kecil.cells.map((c) => c.text)));
   const jepit = ubahUkuranTabel(tabel3(), 999, 0);
   check("ukuran dijepit ke batas", jepit.rows === MAX_BARIS_TABEL && jepit.cols === 1, `${jepit.rows}x${jepit.cols}`);
-  check("hapus baris membuang barisnya", hapusBarisTabel(tabel3(), 1).cells.every((c) => c.key !== "Tokyo" && c.key !== "Yen") && hapusBarisTabel(tabel3(), 1).rows === 2, "baris 2");
-  check("hapus kolom membuang kolomnya", hapusKolomTabel(tabel3(), 2).cells.every((c) => c.key !== "Yen" && c.key !== "Baht") && hapusKolomTabel(tabel3(), 2).cols === 2, "kolom 3");
+  check("hapus baris membuang barisnya", hapusBarisTabel(tabel3(), 1).cells.every((c) => c.text !== "Jepang") && hapusBarisTabel(tabel3(), 1).rows === 2, "baris 2");
+  check("hapus kolom membuang kolomnya", hapusKolomTabel(tabel3(), 2).cells.every((c) => c.text !== "Mata uang") && hapusKolomTabel(tabel3(), 2).cols === 2, "kolom 3");
   check("tidak bisa membuang baris/kolom terakhir", hapusBarisTabel(tabelBaru(1, 2), 0).rows === 1 && hapusKolomTabel(tabelBaru(2, 1), 0).cols === 1, "minimal 1");
 
   console.log("\nTabel: validasi saat membuat");
   const dasar = (q: Record<string, unknown>) => ({ title: "Quiz tabel", questions: [{ id: "t1", type: "table", text: "Lengkapi", points: 100, ...q }], settings: {} });
   const utuh = validasiQuiz(dasar({ table: tabel3() }), true);
   check("tabel lengkap diterbitkan", utuh.ok, utuh.ok ? "ok" : utuh.error);
-  const tanpaKunci = tabel3();
-  tanpaKunci.cells[7].key = "";
-  const e1 = validasiQuiz(dasar({ table: tanpaKunci }), true);
-  check("sel isian tanpa kunci ditolak saat terbit, menyebut posisinya", !e1.ok && e1.error.includes("baris 3, kolom 2"), e1.ok ? "lolos" : e1.error);
-  check("...tetapi boleh sebagai draf", validasiQuiz(dasar({ table: tanpaKunci }), false).ok, "draf");
+  const kunciKiriman = tabel3();
+  kunciKiriman.cells[4].key = "Tokyo";
+  const e1 = validasiQuiz(dasar({ table: kunciKiriman }), true);
+  check("terbit TANPA kunci jawaban lolos; kunci kiriman lama dibuang", e1.ok && e1.value.questions[0].table?.cells.every((c) => c.key === "") === true, e1.ok ? "ok" : e1.error);
   const semuaTetap = tabelBaru(2, 2);
   semuaTetap.cells.forEach((c) => (c.fill = false));
   check("tanpa sel isian ditolak saat terbit", !validasiQuiz(dasar({ table: semuaTetap }), true).ok, "perlu isian");
@@ -111,29 +107,23 @@ function aturanMurni() {
   const campur = validasiQuiz(dasar({ table: { rows: 1, cols: 2, cells: [{ text: "ISI", fill: true, key: " Kunci " }, { text: " Judul ", fill: false, key: "RAHASIA" }] } }), false);
   check(
     "sel isian membuang teksnya, sel tetap membuang kuncinya, spasi dirapikan",
-    campur.ok && campur.value.questions[0].table?.cells[0].text === "" && campur.value.questions[0].table?.cells[0].key === "Kunci" && campur.value.questions[0].table?.cells[1].key === "" && campur.value.questions[0].table?.cells[1].text === "Judul",
+    campur.ok && campur.value.questions[0].table?.cells[0].text === "" && campur.value.questions[0].table?.cells[0].key === "" && campur.value.questions[0].table?.cells[1].key === "" && campur.value.questions[0].table?.cells[1].text === "Judul",
     JSON.stringify(campur.ok ? campur.value.questions[0].table?.cells : null),
   );
   const mode = validasiQuiz({ title: "Quiz", questions: [], settings: { kelompok: true }, rubric: rubrikBaru() }, false);
   check("pengaturan kelompok terbaca; bawaan individu", mode.ok && mode.value.settings.kelompok === true && (() => { const r = validasiQuiz({ title: "Quiz", questions: [], settings: {} }, false); return r.ok && r.value.settings.kelompok === false; })(), "kelompok");
 
-  console.log("\nTabel: penilaian per sel");
-  check("normalisasi: besar-kecil, spasi, bentuk huruf", normalisasiSel("  TOKYO  ") === "tokyo" && normalisasiSel("Kuala   Lumpur") === "kuala lumpur" && normalisasiSel("ＴＯＫＹＯ") === "tokyo", "NFKC");
+  console.log("\nTabel: penilaian MANUAL oleh pengajar (tanpa kunci)");
+  check("normalisasi teks: besar-kecil, spasi, bentuk huruf (untuk data lama)", normalisasiSel("  TOKYO  ") === "tokyo" && normalisasiSel("Kuala   Lumpur") === "kuala lumpur" && normalisasiSel("ＴＯＫＹＯ") === "tokyo", "NFKC");
   const q = soalTabel("t1", 40);
-  const sk = skorTabel(q.table, masuk({ 4: "tokyo", 5: "yen ", 7: "Salah", 8: "" }));
-  check("dua dari empat sel benar", sk.benar === 2 && sk.total === 4, `${sk.benar}/${sk.total}`);
   const quiz = quizUji([q, soalMcq("m1", 60)]);
   const n = hitungNilai(quiz, { answers: { t1: masuk({ 4: "Tokyo", 5: "Yen" }), m1: "a" }, essayScores: {} });
-  check("kredit sebagian: 2/4 sel x 40 poin = 20, ditambah pilihan ganda 60", n.perSoal.t1 === 20 && n.total === 80 && n.esaiBelumDinilai === 0, JSON.stringify(n));
-  const bulat = hitungNilai(quizUji([soalTabel("t1", 10, (() => { const x = tabelBaru(2, 4); x.cells.forEach((c) => (c.key = c.fill ? "a" : "")); return x; })())]), { answers: { t1: masuk({ 5: "a" }) }, essayScores: {} });
-  check("pecahan dibulatkan 2 desimal (10 x 1/3 = 3,33)", bulat.perSoal.t1 === 3.33 && bulat.total === 3.33, String(bulat.total));
-  const tigaSoal = hitungNilai(quizUji([soalTabel("a", 33), soalTabel("b", 33), soalTabel("c", 34)]), {
-    answers: { a: masuk({ 4: "Tokyo" }), b: masuk({ 4: "Tokyo", 5: "Yen", 7: "Bangkok" }), c: masuk({ 4: "Tokyo", 5: "Yen", 7: "Bangkok", 8: "Baht" }) },
-    essayScores: {},
-  });
-  check("total tanpa derau pecahan (8,25 + 24,75 + 34)", tigaSoal.total === 67, String(tigaSoal.total));
-  check("kunci kosong (draf) tak pernah benar", skorTabel({ rows: 1, cols: 1, cells: [{ text: "", fill: true, key: "" }] }, masuk({ 0: "" })).benar === 0, "kosong ≠ benar");
-  check("tidak dijawab = 0 poin", hitungNilai(quiz, { answers: {}, essayScores: {} }).perSoal.t1 === 0, "0");
+  check("tabel menunggu pengajar: 0 poin, 1 belum dinilai, total = pilihan ganda 60", n.perSoal.t1 === 0 && n.esaiBelumDinilai === 1 && n.total === 60, JSON.stringify(n));
+  const dinilai = hitungNilai(quiz, { answers: { t1: masuk({ 4: "Tokyo" }), m1: "a" }, essayScores: { t1: 25 } });
+  check("poin dari pengajar dipakai apa adanya: 25 + 60 = 85", dinilai.perSoal.t1 === 25 && dinilai.esaiBelumDinilai === 0 && dinilai.total === 85, JSON.stringify(dinilai));
+  check("isian tak diperiksa otomatis: jawaban kosong pun tetap menunggu penilaian", hitungNilai(quiz, { answers: {}, essayScores: {} }).esaiBelumDinilai === 1, "menunggu");
+  check("poin pengajar dijepit ke poin soal (99 → 40)", hitungNilai(quiz, { answers: {}, essayScores: { t1: 99 } }).perSoal.t1 === 40, "dijepit");
+  check("pecahan tetap dibulatkan bila ada (bagi rata manual tak berpecahan)", hitungNilai(quizUji([soalTabel("a", 33), soalTabel("b", 33), soalTabel("c", 34)]), { answers: {}, essayScores: { a: 11, b: 22, c: 34 } }).total === 67, "11+22+34");
 
   console.log("\nTabel: membersihkan jawaban dari browser");
   const bersih = bersihkanJawaban(quiz, { t1: JSON.stringify({ 4: "Tokyo", 0: "menimpa judul", 99: "di luar tabel", x: "bukan angka", 5: 123 }), m1: "a" });
@@ -145,9 +135,12 @@ function aturanMurni() {
   console.log("\nTabel: kunci soal terkunci setelah dikerjakan");
   const lama = [soalTabel("t1", 40)];
   check("sama persis = sah", strukturSama(lama, [soalTabel("t1", 40)]), "sama");
-  const ubahKunci = tabel3();
-  ubahKunci.cells[4].key = "Osaka";
-  check("mengubah kunci sel = berubah", !strukturSama(lama, [soalTabel("t1", 40, ubahKunci)]), "kunci");
+  const ubahTeks = tabel3();
+  ubahTeks.cells[1].text = "Ibu kota negara";
+  check("mengubah teks sel tetap = berubah", !strukturSama(lama, [soalTabel("t1", 40, ubahTeks)]), "teks sel");
+  const ubahJenis = tabel3();
+  ubahJenis.cells[4].fill = false;
+  check("mengubah sel isian jadi tetap = berubah", !strukturSama(lama, [soalTabel("t1", 40, ubahJenis)]), "jenis sel");
   check("mengubah ukuran tabel = berubah", !strukturSama(lama, [soalTabel("t1", 40, ubahUkuranTabel(tabel3(), 4, 3))]), "ukuran");
   check("mengubah poin tetap sah", strukturSama(lama, [soalTabel("t1", 77)]), "poin bebas");
 
@@ -178,17 +171,17 @@ function aturanMurni() {
   check("nama kelompok ikut baris; yang belum mulai kosong", baris[1][2] === "Alfa" && baris[1][3] === 100 && baris[2][2] === "", JSON.stringify(baris));
   check("quiz individu: kolom lama tak berubah", barisEkspor(quizUji([soalMcq("m1", 100)]), [{ nama: "Budi", p: coba("b", { m1: "a" }) }])[0].join("|") === "No|Nama|Poin|Status", "tanpa kolom Kelompok");
 
-  console.log("\nTabel: analisis soal");
+  console.log("\nTabel: analisis soal (rata-rata poin dari pengajar)");
   const an = analisisSoal(quizUji([soalTabel("t1", 100)]), [
-    coba("a", { t1: masuk({ 4: "Tokyo", 5: "Yen", 7: "Bangkok", 8: "Baht" }) }),
-    coba("b", { t1: masuk({ 4: "Tokyo", 5: "Yen", 7: "Bangkok", 8: "Salah" }) }),
+    coba("a", { t1: masuk({ 4: "Tokyo", 5: "Yen", 7: "Bangkok", 8: "Baht" }) }, { essayScores: { t1: 80 } }),
+    coba("b", { t1: masuk({ 4: "Tokyo", 5: "Yen", 7: "Bangkok", 8: "Salah" }) }, { essayScores: { t1: 40 } }),
     coba("c", {}),
     coba("d", { t1: masuk({ 4: "Tokyo" }) }, { submittedAt: null, finalizedBy: null }),
   ])[0];
   check("jenis tabel; peserta hanya yang terkumpul", an.jenis === "table" && an.peserta === 3, `${an.jenis}/${an.peserta}`);
-  check("rata-rata sel benar = 7 dari 12 = 58%, persen tidak benar 42", an.rataSkorPersen === 58 && an.persenSalah === 42, `${an.rataSkorPersen}/${an.persenSalah}`);
-  check("sel tersulit = baris 3 kolom 3 (Baht), 67% kurang tepat", an.selTersulit?.baris === 3 && an.selTersulit?.kolom === 3 && an.selTersulit?.kunci === "Baht" && an.selTersulit?.persenSalah === 67, JSON.stringify(an.selTersulit));
+  check("rata-rata poin 60%, persen kurang 40, 2 jawaban dinilai", an.rataSkorPersen === 60 && an.persenSalah === 40 && an.dinilai === 2, `${an.rataSkorPersen}/${an.persenSalah}/${an.dinilai}`);
   check("yang tak mengisi dihitung", an.kosong === 1, String(an.kosong));
+  check("tak ada lagi petunjuk sel tersulit/kunci pada analisis", !("selTersulit" in an), "tanpa kunci");
 
   console.log("\nKompatibilitas data lama");
   const lamaDoc = toQuiz("x", { title: "Lama", questions: [{ id: "s1", type: "mcq", text: "t", points: 100, options: [{ id: "a", text: "A" }], correct: "a" }], settings: { shuffleQuestions: true } });
@@ -221,11 +214,11 @@ async function alur() {
     const simpanId = await actionId("educator/classes/[id]/quiz/new", "saveQuiz");
     const tutupId = await actionId("educator/classes/[id]", "setQuizClosed");
     const mulaiId = await actionId("kelas/[id]/quiz/[quizId]", "startQuiz");
-    const jawabId = await actionId("kelas/[id]/quiz/[quizId]", "saveQuizAnswers");
+    const jawabId = await actionId("kelas/[id]/quiz/[quizId]", "sinkronJawaban");
     const kirimId = await actionId("kelas/[id]/quiz/[quizId]", "submitQuiz");
     const nilaiManualId = await actionId("educator/classes/[id]", "gradeQuizEssay");
 
-    // Tabel dengan kunci yang mudah dicari di HTML (kalau bocor, ketahuan).
+    // Kunci kiriman (klien lama / panggilan langsung) harus DIBUANG server; bila tersimpan lalu bocor, ketahuan di HTML.
     const t = tabel3();
     t.cells[4].key = RAHASIA[0];
     t.cells[5].key = RAHASIA[1];
@@ -235,20 +228,21 @@ async function alur() {
       { id: "t1", type: "table", text: "Lengkapi tabel negara", points: 60, options: [], correct: null, table: t },
       { id: "m1", type: "mcq", text: "Pilihan ganda", points: 40, options: [{ id: "a", text: "A" }, { id: "b", text: "B" }], correct: "a", table: null },
     ];
-    const rubrik = { tables: [1, 2, 3].map((n) => ({ id: `r${n}`, title: `Rubrik ${n}`, criteria: [{ id: `r${n}k1`, text: `Poin ${n}` }] })), weight: 30 };
+    const rubrik = { tables: [1, 2, 3].map((n) => ({ id: `r${n}`, title: `Rubrik ${n}`, criteria: [{ id: `r${n}k1`, text: `Poin ${n}` }] })) };
     const isi = (over: Record<string, unknown> = {}) => ({ title: "Quiz Tabel", description: "", questions: soal, rubric: rubrik, settings: { shuffleQuestions: false, shuffleOptions: false, durationMin: null, kelompok: true }, ...over });
     const simpan = (cookie: string, qid: string | null, i: unknown, terbit = true) => callAction(`${jalur}/quiz/new`, simpanId, [classId, qid, i, terbit], cookie);
 
     console.log("\nMembuat quiz kelompok bertabel");
     check("siswa tak bisa membuat quiz", (await simpan(s1.cookie, null, isi())).includes("tidak berhak"), "penjaga pemilik");
-    const kunciKurang = tabel3();
-    kunciKurang.cells[8].key = "";
-    check("server menolak sel isian tanpa kunci saat terbit", (await simpan(owner.cookie, null, isi({ questions: [{ ...soal[0], points: 100, table: kunciKurang }] }))).includes("belum ada kunci"), "validasi server");
+    const semuaTetap = tabelBaru(2, 2);
+    semuaTetap.cells.forEach((c) => (c.fill = false));
+    check("server tetap menolak tabel tanpa sel isian saat terbit", (await simpan(owner.cookie, null, isi({ questions: [{ ...soal[0], points: 100, table: semuaTetap }] }))).includes("sel isian"), "validasi server");
     check("pemilik menerbitkan quiz kelompok bertabel", (await simpan(owner.cookie, null, isi())).includes("Quiz diterbitkan"), "terbit");
     const docs = (await db.collection("classes").doc(classId).collection("quizzes").get()).docs;
     const quizId = docs[0]?.id ?? "";
     const tersimpan = docs[0]?.data();
     check("pengaturan kelompok & tabel tersimpan", tersimpan?.settings?.kelompok === true && tersimpan?.questions?.[0]?.table?.rows === 3, JSON.stringify(tersimpan?.settings));
+    check("kunci kiriman TIDAK tersimpan di dokumen (semua key kosong)", (tersimpan?.questions?.[0]?.table?.cells ?? []).every((c: { key: string }) => c.key === ""), "kunci dibuang");
     check("admin juga boleh membuat quiz di kelas orang lain", (await simpan(admin.cookie, null, isi({ title: "Quiz Admin", settings: { kelompok: false } }), false)).includes("Draf quiz disimpan"), "admin lolos requireOwnedClass");
 
     const J = (cookie: string, fn: string, args: unknown[]) => callAction(`/kelas/${classId}/quiz/${quizId}`, fn, args, cookie);
@@ -270,13 +264,13 @@ async function alur() {
     console.log("\nKunci tabel tidak bocor");
     const halaman = await probeText(`/kelas/${classId}/quiz/${quizId}`, s1.cookie);
     check("halaman pengerjaan memuat tabel (teks sel tetap)", halaman.status === 200 && halaman.html.includes("Ibu kota") && halaman.html.includes("Thailand"), String(halaman.status));
-    check("halaman pengerjaan TIDAK memuat kunci sel", RAHASIA.every((k) => !halaman.html.includes(k)), "tanpa kunci");
+    check("halaman pengerjaan TIDAK memuat kunci kiriman", RAHASIA.every((k) => !halaman.html.includes(k)), "tanpa kunci");
     check("nama kelompok tampil di bilah pengerjaan", halaman.html.includes("Kelompok Satu"), "bilah");
 
     console.log("\nMengisi & menilai tabel");
     const kirim = JSON.stringify({ 4: RAHASIA[0].toLowerCase(), 5: RAHASIA[1].toLowerCase(), 7: "Salah", 99: "di luar", 0: "menimpa judul" });
     const simpanSementara = await J(s1.cookie, jawabId, [classId, quizId, { t1: kirim, m1: "a" }]);
-    check("simpan sementara diterima", simpanSementara.includes("Tersimpan"), "autosave");
+    check("simpan sementara (sinkron kelompok) diterima", simpanSementara.includes('"ok":true'), "autosave");
     const tersimpanJawab = (await db.collection("classQuizAttempts").doc(`${classId}_${quizId}_${s1.uid}`).get()).data()?.answers ?? {};
     check("hanya sel isian yang sah tersimpan", Object.keys(uraiJawabanTabel(tersimpanJawab.t1)).sort().join() === "4,5,7", String(tersimpanJawab.t1));
     check("kumpulkan quiz", (await J(s1.cookie, kirimId, [classId, quizId, { t1: kirim, m1: "a" }])).includes("Quiz dikumpulkan"), "ok");
@@ -285,7 +279,7 @@ async function alur() {
     check("tabel pada quiz kelompok MENUNGGU penilaian: nilai sementara 40 + keterangan menunggu", sementara.html.includes(">40<") && sementara.html.includes("menunggu"), "manual");
     check("siswa tak bisa memberi poin tabel", (await callAction(jalur, nilaiManualId, [classId, quizId, s1.uid, { t1: 60 }], s1.cookie)).includes("tidak berhak"), "penjaga pemilik");
     check("poin tabel di atas batas ditolak", (await callAction(jalur, nilaiManualId, [classId, quizId, s1.uid, { t1: 61 }], owner.cookie)).includes("tidak sah"), "maks 60");
-    check("pengajar memberi poin tabel 30 (2/4 sel x 60)", (await callAction(jalur, nilaiManualId, [classId, quizId, s1.uid, { t1: 30 }], owner.cookie)).includes("Nilai esai disimpan"), "manual");
+    check("pengajar memeriksa isian dan memberi poin tabel 30 (dari 60)", (await callAction(jalur, nilaiManualId, [classId, quizId, s1.uid, { t1: 30 }], owner.cookie)).includes("Nilai esai disimpan"), "manual");
     const hasil = await probeText(`/kelas/${classId}/quiz/${quizId}`, s1.cookie);
     check("nilai = 70 (tabel 30 dari pengajar + pilihan ganda 40)", hasil.html.includes(">70<"), "setelah dinilai");
     check("sebelum quiz ditutup: kunci tabel TIDAK tampil di halaman hasil", RAHASIA.every((k) => !hasil.html.includes(k)) && hasil.html.includes("Kunci jawaban dibuka setelah"), "tertutup");
@@ -299,16 +293,15 @@ async function alur() {
     check("siswa tak bisa membuka Pantau", !(await probeText(`/kelas/${classId}?tab=pantau&quiz=${quizId}`, s1.cookie)).html.includes("Per kelompok"), "pengelola saja");
 
     check("jenis quiz tak bisa diubah setelah ada yang mengerjakan", (await simpan(owner.cookie, quizId, isi({ settings: { kelompok: false } }))).includes("tidak bisa diubah"), "mode terkunci");
-    const kunciBaru = tabel3();
-    kunciBaru.cells[4].key = "Lain";
-    check("kunci tabel tak bisa diubah setelah dikerjakan", (await simpan(owner.cookie, quizId, isi({ questions: [{ ...soal[0], table: kunciBaru }, soal[1]] }))).includes("tidak bisa diubah"), "soal terkunci");
+    const teksBaru = tabel3();
+    teksBaru.cells[1].text = "Ibu kota lain";
+    check("struktur tabel tak bisa diubah setelah dikerjakan", (await simpan(owner.cookie, quizId, isi({ questions: [{ ...soal[0], table: teksBaru }, soal[1]] }))).includes("tidak bisa diubah"), "soal terkunci");
     check("poin masih bisa diubah", (await simpan(owner.cookie, quizId, isi({ questions: [{ ...soal[0], points: 50 }, { ...soal[1], points: 50 }] }))).includes("Quiz diterbitkan"), "poin boleh");
 
     console.log("\nSetelah quiz ditutup");
     check("pemilik menutup quiz", (await callAction(jalur, tutupId, [classId, quizId, true], owner.cookie)).includes("Quiz ditutup"), "tutup");
     const terbuka = await probeText(`/kelas/${classId}/quiz/${quizId}`, s1.cookie);
-    check("kunci tabel tampil setelah ditutup", RAHASIA.every((k) => terbuka.html.includes(k)) || (terbuka.html.includes(RAHASIA[2]) && terbuka.html.includes(RAHASIA[3])), "kunci terbuka");
-    check("sel yang benar ditandai", terbuka.html.includes("Benar"), "penanda");
+    check("setelah ditutup pun tabel TIDAK menampilkan kunci apa pun (tidak ada)", RAHASIA.every((k) => !terbuka.html.includes(k)) && !terbuka.html.includes("Kunci: "), "tanpa kunci");
 
     console.log("\nQuiz individu mengabaikan nama kelompok");
     check("quiz individu diterbitkan", (await simpan(owner.cookie, null, isi({ title: "Quiz Individu", settings: { kelompok: false } }))).includes("Quiz diterbitkan"), "terbit");

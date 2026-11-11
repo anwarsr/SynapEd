@@ -16,8 +16,8 @@ const TOMBOL_KECIL =
 
 /**
  * Editor soal tabel (sisi pengajar): ukuran baris & kolom diatur bebas, tiap sel dipilih jadi
- * TEKS TETAP (tampil ke siswa, mis. judul baris/kolom) atau ISIAN SISWA (yang diketik pengajar di
- * sana adalah KUNCI jawabannya). Mengecilkan ukuran membuang baris/kolom di ujung; tombol silang
+ * TEKS TETAP (tampil ke siswa, mis. judul baris/kolom) atau ISIAN SISWA (kosong untuk diisi siswa; tanpa kunci jawaban,
+ * jawabannya diperiksa pengajar sendiri). Mengecilkan ukuran membuang baris/kolom di ujung; tombol silang
  * di tepi membuang baris/kolom tertentu.
  *
  * `disabled` (quiz sudah dikerjakan): seluruh struktur terkunci, sama seperti soal lain.
@@ -37,10 +37,10 @@ export default function EditorTabel({
     ubah({ ...tabel, cells: tabel.cells.map((c, j) => (j === i ? { ...c, ...patch } : c)) });
   }
 
-  /** Tetap ↔ isian: isi yang sudah diketik dibawa ke bidang lawannya supaya tak hilang. */
+  /** Tetap ↔ isian. Sel isian tidak menyimpan teks maupun kunci. */
   function gantiMode(i: number) {
     const c = tabel.cells[i];
-    ubahSel(i, c.fill ? { fill: false, text: c.key, key: "" } : { fill: true, key: c.text, text: "" });
+    ubahSel(i, c.fill ? { fill: false, text: "", key: "" } : { fill: true, text: "", key: "" });
   }
 
   const isian = tabel.cells.filter((c) => c.fill).length;
@@ -112,12 +112,13 @@ export default function EditorTabel({
                     <td key={c} className="relative min-w-[132px] p-0 align-top">
                       <input
                         id={`${idDasar}-sel-${i}`}
-                        aria-label={sel.fill ? `Kunci jawaban baris ${r + 1} kolom ${c + 1}` : `Teks baris ${r + 1} kolom ${c + 1}`}
-                        value={sel.fill ? sel.key : sel.text}
-                        onChange={(e) => ubahSel(i, sel.fill ? { key: e.target.value } : { text: e.target.value })}
+                        aria-label={sel.fill ? `Isian siswa baris ${r + 1} kolom ${c + 1}` : `Teks baris ${r + 1} kolom ${c + 1}`}
+                        value={sel.fill ? "" : sel.text}
+                        onChange={(e) => ubahSel(i, { text: e.target.value })}
                         maxLength={MAX_TEKS_SEL}
+                        readOnly={sel.fill}
                         disabled={disabled}
-                        placeholder={sel.fill ? "Kunci jawaban" : "Teks tetap"}
+                        placeholder={sel.fill ? "Diisi siswa" : "Teks tetap"}
                         className={cn(
                           "block w-full py-2.5 pl-3 pr-9 text-sm text-ink outline-none placeholder:text-ink-muted disabled:opacity-60",
                           sel.fill
@@ -150,8 +151,8 @@ export default function EditorTabel({
 
       <p className="text-xs leading-[1.7] text-ink-muted">
         Tombol di ujung kanan tiap sel mengganti jenisnya: <strong className="font-semibold text-ink-body">teks tetap</strong> (tampil ke siswa, mis. judul)
-        atau <strong className="font-semibold text-blue-300">isian siswa</strong> (yang Anda ketik adalah kunci jawabannya). Dinilai otomatis per sel,
-        huruf besar-kecil dan spasi berlebih diabaikan.
+        atau <strong className="font-semibold text-blue-300">isian siswa</strong> (dikosongkan untuk diisi siswa). Soal tabel
+        tidak punya kunci jawaban: Anda memeriksa isiannya dan memberi poin sendiri di Pantau.
       </p>
     </div>
   );

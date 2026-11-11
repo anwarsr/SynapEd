@@ -1,4 +1,4 @@
-import { formatDurasi, durasiDetik, hitungNilai, soalManual, TOTAL_POIN, type PercobaanQuiz, type Quiz } from "@/lib/classQuizRules";
+import { formatDurasi, durasiDetik, hitungNilai, nilaiIndividu, soalManual, TOTAL_POIN, type PercobaanQuiz, type Quiz } from "@/lib/classQuizRules";
 import TabelHasil from "@/components/classes/quiz/TabelHasil";
 import { soalUntukSiswa } from "@/lib/classQuizzes";
 import { cn } from "@/lib/cn";
@@ -17,8 +17,11 @@ const ALASAN = {
  * kuncinya ke teman yang masih mengerjakan. Kunci hanya dibaca dari `quiz`
  * di komponen server ini; tak pernah dikirim ke komponen klien.
  */
-export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: PercobaanQuiz }) {
+export default function QuizHasil({ quiz, percobaan, uid }: { quiz: Quiz; percobaan: PercobaanQuiz; uid: string }) {
   const n = hitungNilai(quiz, percobaan);
+  // Quiz kelompok: nilai individu = rubrik MILIK pembaca ini (bukan anggota lain).
+  const ni = nilaiIndividu(quiz, percobaan);
+  const saya = ni.find((a) => a.uid === uid) ?? ni[0] ?? null;
   const soal = soalUntukSiswa(quiz, percobaan);
   const kunciTerbuka = quiz.closed;
   const lama = durasiDetik(percobaan);
@@ -44,7 +47,7 @@ export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: 
           <p className="mt-4 bg-white/[0.05] px-4 py-3 text-sm leading-[1.7] text-ink-body">
             <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-ink-muted">Nilai individu Anda</span>
             <span className="mt-1 block text-[28px] font-semibold leading-none text-ink">
-              {n.rubrikPersen !== null ? `${n.rubrikPersen}%` : <span className="text-base font-medium text-ink-muted">menunggu penilaian rubrik pengajar</span>}
+              {saya && saya.persen !== null ? `${saya.persen}%` : <span className="text-base font-medium text-ink-muted">menunggu penilaian rubrik pengajar</span>}
             </span>
           </p>
         )}
@@ -110,7 +113,7 @@ export default function QuizHasil({ quiz, percobaan }: { quiz: Quiz; percobaan: 
                   )}
                 </ul>
               ) : s.type === "table" && q?.table ? (
-                <TabelHasil tabel={q.table} jawab={jawab} tampilkanKunci={kunciTerbuka} />
+                <TabelHasil tabel={q.table} jawab={jawab} />
               ) : (
                 <p className="mt-3 whitespace-pre-line break-words bg-white/[0.05] px-3.5 py-3 text-sm leading-[1.7] text-ink-body">
                   {jawab || <span className="text-ink-muted">(tidak dijawab)</span>}

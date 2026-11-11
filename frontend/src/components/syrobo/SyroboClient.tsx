@@ -332,7 +332,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
   return (
     // `keep-white`: adegan ini punya warnanya sendiri, `text-white` tak boleh terbalik di tema terang.
-    <div className={cn("keep-white relative h-dvh w-full overflow-hidden bg-[#538589]", gosok && "cursor-none")}>
+    <div className={cn("keep-white relative h-dvh w-full overflow-hidden overscroll-none bg-[#538589]", gosok && "cursor-none")}>
       <SyroboKamar gelap={gelap} ubahGelap={setGelap} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
 
       {/* ── HUD ─────────────────────────────────────────────────── */}
@@ -418,7 +418,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           key={lembar}
           aria-label={lembar}
           className={cn(
-            "syrobo-lembar absolute inset-x-3 bottom-[176px] z-40 max-h-[min(26dvh,220px)] overflow-y-auto rounded-xl p-4 sm:inset-x-auto sm:bottom-[100px] sm:left-1/2 sm:w-[min(580px,92%)] sm:max-h-[min(30dvh,260px)] sm:-translate-x-1/2 sm:p-5",
+            "syrobo-lembar absolute inset-x-3 bottom-[176px] z-[35] max-h-[min(26dvh,220px)] overflow-y-auto rounded-xl p-4 sm:inset-x-auto sm:bottom-[100px] sm:left-1/2 sm:w-[min(580px,92%)] sm:max-h-[min(30dvh,260px)] sm:-translate-x-1/2 sm:p-5",
             KERTAS,
             STIKER,
             "shadow-[5px_5px_0_#2B2233]",
@@ -430,9 +430,9 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
             type="button"
             onClick={() => setLembar(null)}
             aria-label="Tutup"
-            className={cn(TOMBOL_KECIL, "absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center p-0 leading-none")}
+            className={cn(TOMBOL_KECIL, "absolute right-2.5 top-2.5 flex h-11 w-11 items-center justify-center p-0 leading-none")}
           >
-            <svg viewBox="0 0 16 16" className="block h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" aria-hidden="true">
+            <svg viewBox="0 0 16 16" className="block h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
             </svg>
           </button>
@@ -648,7 +648,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
       )}
 
       {/* ── Dok ─────────────────────────────────────────────────── */}
-      <nav aria-label="Menu SyRobo" className="absolute inset-x-0 bottom-[92px] z-50 flex justify-center gap-2 px-3 sm:bottom-4 sm:gap-3">
+      <nav aria-label="Menu SyRobo" className="absolute inset-x-0 bottom-[92px] z-[40] flex justify-center gap-2 px-3 sm:bottom-4 sm:gap-3">
         {dok.map((d, i) => {
           const aktifTombol = lembar === d.id;
           return (

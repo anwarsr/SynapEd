@@ -70,19 +70,6 @@ export default function AnalisisSoal({ butir, peserta }: { butir: readonly Anali
                     Benar {b.benar} · Salah {b.salah} · Tidak menjawab {b.kosong}
                   </p>
                 </>
-              ) : b.jenis === "table" ? (
-                <div className="mt-3 text-xs leading-[1.7] text-ink-muted">
-                  <p>
-                    Rata-rata sel yang benar <strong className="font-semibold text-ink">{b.rataSkorPersen ?? 0}%</strong> dari semua sel isian peserta.
-                    {b.kosong > 0 && ` ${b.kosong} peserta tidak mengisi.`}
-                  </p>
-                  {b.selTersulit && (
-                    <p className="mt-1">
-                      Sel tersulit: baris {b.selTersulit.baris}, kolom {b.selTersulit.kolom} (kunci <strong className="font-semibold text-ink">{b.selTersulit.kunci}</strong>),{" "}
-                      {b.selTersulit.persenSalah}% kurang tepat.
-                    </p>
-                  )}
-                </div>
               ) : (
                 <p className="mt-3 text-xs leading-[1.7] text-ink-muted">
                   {b.rataSkorPersen === null

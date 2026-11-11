@@ -118,8 +118,9 @@ export const PENGETAHUAN_SITUS = `## Akun
   Pengajar juga bisa mengarsipkan pengumuman atau tugas (hilang dari tampilan siswa,
   tersimpan di tab Arsip (di kanan tab Tugas) yang hanya terlihat pengajar, bisa dipulihkan).
   Tab Quiz (di kanan Tugas): pengajar membuat quiz pilihan ganda, esai, dan tabel seperti
-  Google Form (soal tabel: pengajar mengatur jumlah baris dan kolom, sel isian dinilai otomatis per sel;
-  quiz bisa individu atau kelompok, pada quiz kelompok siswa mengisi nama kelompoknya sebelum mulai) dengan poin tiap nomor (total 100), setelan jadwal mulai (hari, tanggal, jam; atau langsung dibuka), acak urutan soal per siswa,
+  Google Form (soal tabel: pengajar mengatur jumlah baris dan kolom, sel isian dikosongkan untuk siswa dan
+  diperiksa pengajar sendiri tanpa kunci jawaban;
+  quiz bisa individu atau kelompok, pada quiz kelompok satu siswa membuat kelompok dan anggotanya mengerjakan bersama) dengan poin tiap nomor (total 100), setelan jadwal mulai (hari, tanggal, jam; atau langsung dibuka), acak urutan soal per siswa,
   batas waktu (habis waktu otomatis dikumpulkan) dan tambahan waktu. Siswa mengerjakan satu
   kali, tiap quiz punya papan peringkat 1-3 (nilai tertinggi, seri dipilih yang tercepat),
   dan kunci jawaban baru terbuka setelah pengajar menutup quiz. Pengajar memantau siswa lewat tombol Pantau
@@ -177,15 +178,21 @@ export const PENGETAHUAN_SITUS = `## Akun
 
 ## Quiz kelompok & rubrik
 - Quiz kelas bisa dibuat individu atau kelompok. Quiz kelompok: pengajar mengisi
-  3 tabel rubrik penilaian (poin penilaian bisa ditambah, skor 1 sampai 4:
-  sangat kurang, kurang, baik, sangat baik). Sebelum mulai siswa memasukkan nama
-  kelompok dan anggotanya (mengetik sendiri atau memilih anggota kelas yang
-  sudah bergabung).
+  tabel rubrik penilaian (jumlah tabelnya bebas, bisa ditambah atau dihapus; poin
+  penilaian bisa ditambah, skor 1 sampai 4: sangat kurang, kurang, baik, sangat
+  baik) dan menentukan jumlah minimal dan maksimal anggota tiap kelompok.
+- Sebelum mulai, satu siswa membuat kelompok: memasukkan nama kelompok dan
+  anggotanya (mengetik sendiri atau memilih anggota kelas yang sudah bergabung).
+  Anggota yang dipilih dari kelas mendapat tombol "Ikuti Quiz" dengan nama
+  kelompok, lalu langsung bisa ikut menjawab. Jawaban satu kelompok dipakai
+  bersama: yang ditulis anggota lain tampil di layar semua anggota (diperbarui
+  tiap beberapa detik), dan siapa pun yang sudah ikut boleh mengumpulkan. Satu
+  orang hanya bisa di satu kelompok untuk satu quiz.
 - Ada dua nilai yang berdiri sendiri: nilai kelompok (poin soal yang diatur
-  pengajar; soal esai dan tabel pada quiz kelompok dinilai manual oleh pengajar
-  atau admin, jadi nilainya menunggu penilaian) dan nilai individu (persen
-  rubrik, diberi pengajar untuk tiap anggota satu per satu). Ekspor
-  spreadsheet memuat keduanya.
+  pengajar; soal esai dan tabel dinilai manual oleh pengajar atau admin, jadi
+  nilainya menunggu penilaian) dan nilai individu (persen rubrik, diberi pengajar
+  untuk tiap anggota satu per satu). Ekspor spreadsheet berisi satu baris per
+  anggota dengan keduanya.
 
 ## SyRobo
 - /syrobo adalah robot peliharaan di akun masing-masing (perlu masuk). Robot

@@ -33,7 +33,9 @@ export default function SyroboKamar({
   gelap,
   ubahGelap,
   bisik,
+  login = true,
 }: {
+  login?: boolean;
   gelap: boolean;
   ubahGelap: (g: boolean) => void;
   bisik: (teks: string) => void;
@@ -41,6 +43,10 @@ export default function SyroboKamar({
   const [meteor, setMeteor] = useState(0);
   const [goyang, setGoyang] = useState(0);
   const [daun, setDaun] = useState(0);
+  // Benda kamar hanya bisa disentuh bila SUDAH masuk DAN lampu menyala; lampunya sendiri tetap bisa ditekan (selama sudah masuk)
+  // supaya kamar bisa dinyalakan lagi. Tamu tak bisa menyentuh apa pun (penunjuk menembus ke dinding).
+  const benda = login && !gelap;
+  const mati = "disabled:pointer-events-none";
 
   return (
     <div aria-hidden={false} className="absolute inset-0 overflow-hidden">
@@ -62,12 +68,13 @@ export default function SyroboKamar({
       {/* jendela + tirai */}
       <button
         type="button"
+        disabled={!benda}
         onClick={() => {
           setMeteor((n) => n + 1);
           bisik("Bintang jatuh! Buat permintaan.");
         }}
         aria-label="Jendela: lihat bintang jatuh"
-        className="group absolute left-[7%] top-[23%] z-[2] w-[clamp(128px,17vw,220px)] cursor-pointer transition-transform duration-300 hover:-rotate-1 active:scale-[0.98]"
+        className={cn("group absolute left-[7%] top-[23%] z-[2] w-[clamp(128px,17vw,220px)] cursor-pointer transition-transform duration-300 hover:-rotate-1 active:scale-[0.98]", mati)}
       >
         <svg viewBox="0 0 160 200" className="block w-full overflow-visible" {...G}>
           <rect x="22" y="14" width="116" height="156" rx="5" fill="#26335B" />
@@ -110,13 +117,14 @@ export default function SyroboKamar({
       {/* lampu gantung (tombol lampu) */}
       <button
         type="button"
+        disabled={!login}
         onClick={() => {
           ubahGelap(!gelap);
           bisik(gelap ? "Lampu menyala." : "Lampu padam.");
         }}
         aria-pressed={gelap}
         aria-label={gelap ? "Nyalakan lampu" : "Padamkan lampu"}
-        className="syrobo-lampu absolute right-[21%] top-0 z-[26] flex cursor-pointer flex-col items-center"
+        className={cn("syrobo-lampu absolute right-[21%] top-0 z-[26] flex cursor-pointer flex-col items-center", mati)}
       >
         <span className="block h-[13vh] min-h-[64px] w-[3px] bg-[#2B2233]" />
         <svg viewBox="0 0 90 60" className="block w-[clamp(64px,8vw,96px)] overflow-visible" {...G}>
@@ -131,12 +139,13 @@ export default function SyroboKamar({
           <button
             type="button"
             aria-label="Tanaman"
+            disabled={!benda}
             onClick={() => {
               setGoyang((n) => n + 1);
               setDaun((n) => n + 1);
               bisik("Tanamannya segar!");
             }}
-            className="relative -mb-[2px] cursor-pointer"
+            className={cn("relative -mb-[2px] cursor-pointer", mati)}
           >
             <svg viewBox="0 0 60 78" className="block h-auto w-[clamp(44px,5.6vw,72px)]" fill="none" stroke={TINTA} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <g key={goyang} className={goyang > 0 ? "syrobo-goyangan" : undefined}>
@@ -156,7 +165,7 @@ export default function SyroboKamar({
             </svg>
             {daun > 0 && <span key={daun} aria-hidden="true" className="syrobo-daun absolute left-1/2 top-[30%] block h-3 w-2 rounded-[60%_0_60%_0] border-2 border-[#2B2233] bg-[#7FB069]" />}
           </button>
-          <button type="button" aria-label="Buku: tips belajar" onClick={() => bisik(TIPS[Math.floor(Math.random() * TIPS.length)])} className="-mb-[2px] cursor-pointer transition-transform duration-200 hover:-translate-y-1 active:scale-95">
+          <button type="button" aria-label="Buku: tips belajar" disabled={!benda} onClick={() => bisik(TIPS[Math.floor(Math.random() * TIPS.length)])} className={cn("-mb-[2px] cursor-pointer transition-transform duration-200 hover:-translate-y-1 active:scale-95", mati)}>
             <svg viewBox="0 0 80 62" className="block h-auto w-[clamp(56px,7vw,92px)]" {...G}>
               <rect x="5" y="14" width="14" height="46" rx="2" fill="#E56B5D" />
               <rect x="19" y="8" width="13" height="52" rx="2" fill="#6BA7D8" />
@@ -165,7 +174,7 @@ export default function SyroboKamar({
               <path d="M8 24h8M22 18h7M35 28h6" strokeWidth="2" opacity=".5" />
             </svg>
           </button>
-          <button type="button" aria-label="Jam" onClick={() => bisik(`Sekarang pukul ${jamWib()} WIB.`)} className="-mb-[2px] cursor-pointer transition-transform duration-200 hover:-translate-y-1 active:scale-95">
+          <button type="button" aria-label="Jam" disabled={!benda} onClick={() => bisik(`Sekarang pukul ${jamWib()} WIB.`)} className={cn("-mb-[2px] cursor-pointer transition-transform duration-200 hover:-translate-y-1 active:scale-95", mati)}>
             <svg viewBox="0 0 64 68" className="block h-auto w-[clamp(44px,5.4vw,70px)]" fill="none" stroke={TINTA} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
               {/* lonceng kecil di atas, kaki di bawah: semuanya di dalam kotak gambar */}
               <circle cx="16" cy="12" r="6" fill="#F2C14E" />

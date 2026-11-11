@@ -6,7 +6,7 @@ import { HapusQuizButton, TutupBukaQuizButton } from "@/components/classes/quiz/
 import { jamServer } from "@/lib/classAssignments";
 import { listPercobaan, listQuizzes, muatPapanPeringkat, selesaikanSemua } from "@/lib/classQuizzes";
 import { formatWib } from "@/lib/classAssignmentRules";
-import { LABEL_STATUS_QUIZ, TOTAL_POIN, hitungNilai, statusQuizSiswa, sudahDibuka, type Quiz } from "@/lib/classQuizRules";
+import { LABEL_STATUS_QUIZ, TOTAL_POIN, hitungNilai, percobaanUntuk, statusQuizSiswa, sudahDibuka, type Quiz } from "@/lib/classQuizRules";
 import { cn } from "@/lib/cn";
 
 /**
@@ -68,7 +68,8 @@ export default async function QuizTab({
       ) : (
         <ul className="space-y-3">
           {data.map(({ quiz, percobaan, papan }) => {
-            const saya = percobaan.find((p) => p.uid === currentUid) ?? null;
+            // Quiz kelompok: percobaan kelompok yang mencantumkan pembaca sebagai anggota juga miliknya.
+            const saya = percobaanUntuk(percobaan, currentUid);
             const status = statusQuizSiswa(quiz, saya);
             const kumpul = percobaan.filter((p) => p.submittedAt).length;
             return (
@@ -154,7 +155,7 @@ export default async function QuizTab({
                 </div>
 
                 {/* Papan peringkat: kotak berwarna sama dengan kartu, tingginya menentukan tinggi kartu. */}
-                <QuizPodium baris={papan} className="lg:w-[236px]" rayakan={papan[0]?.uid === currentUid && saya?.submittedAt != null} />
+                <QuizPodium baris={papan} className="lg:w-[236px]" rayakan={(papan[0]?.uid === currentUid || (saya !== null && papan[0]?.uid === saya.uid)) && saya?.submittedAt != null} />
               </li>
             );
           })}

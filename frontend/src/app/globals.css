@@ -2186,10 +2186,16 @@ html[data-lindungi="true"] img { -webkit-user-drag: none; }
 @keyframes syrobo-kruyuk { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 .syrobo-lalat { animation: syrobo-lalat 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes syrobo-lalat { 0% { transform: translate(0, 0); } 25% { transform: translate(10px, -6px); } 50% { transform: translate(-4px, 8px); } 75% { transform: translate(-12px, -3px); } 100% { transform: translate(0, 0); } }
+.syrobo-sayap { animation: syrobo-sayap 90ms linear infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes syrobo-sayap { from { transform: scaleY(1); } to { transform: scaleY(0.55); } }
+.syrobo-bau { animation: syrobo-bau 3.2s ease-in-out infinite; transform-box: fill-box; }
+@keyframes syrobo-bau { 0%, 100% { transform: translateY(2px); opacity: 0.55; } 50% { transform: translateY(-3px); opacity: 1; } }
+.syrobo-liur { animation: syrobo-liur 2.6s ease-in infinite; transform-box: fill-box; transform-origin: 50% 0; }
+@keyframes syrobo-liur { 0%, 55% { transform: scaleY(0.82); } 100% { transform: scaleY(1.12) translateY(1px); } }
 .syrobo-mata { animation: syrobo-kedipmata 4.4s infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes syrobo-kedipmata { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
 @media (prefers-reduced-motion: reduce) {
-    .syrobo-napas, .syrobo-hop, .syrobo-goyang, .syrobo-kaki, .syrobo-kedip, .syrobo-kruyuk, .syrobo-lalat, .syrobo-mata, .syrobo-hati { animation: none; }
+    .syrobo-napas, .syrobo-hop, .syrobo-goyang, .syrobo-kaki, .syrobo-kedip, .syrobo-kruyuk, .syrobo-lalat, .syrobo-sayap, .syrobo-bau, .syrobo-liur, .syrobo-mata, .syrobo-hati { animation: none; }
 }
 
 /* SyRobo: tambahan animasi (mode permainan) */

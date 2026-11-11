@@ -1,4 +1,5 @@
 "use client";
+import { AirLiur, BauBusuk, GemuruhPerut, Lalat, NodaLumpur } from "@/components/syrobo/OrnamenKondisi";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/useAuth";
@@ -585,20 +586,18 @@ function RobotFace({ suasana }: { suasana: Suasana | null }) {
       />
       {kotor && (
         <g>
-          <ellipse cx="14" cy="52" rx="4" ry="2.2" fill="#7A5B3A" opacity=".65" />
-          <ellipse cx="50" cy="19" rx="3.2" ry="1.9" fill="#7A5B3A" opacity=".6" />
-          <g className="syrobo-lalat">
-            <circle cx="10" cy="12" r="1.5" fill="#fff" />
-            <circle cx="56" cy="9" r="1.3" fill="#fff" />
-          </g>
+          <NodaLumpur x={13} y={51} s={0.38} r={-15} />
+          <NodaLumpur x={50} y={19} s={0.3} r={20} />
+          <BauBusuk x={6} y={30} s={0.4} />
+          <Lalat x={10} y={11} s={0.62} r={-20} jejak={false} />
+          <Lalat x={56} y={8} s={0.5} r={15} jejak={false} />
         </g>
       )}
       {lapar && (
         <g>
-          <circle cx="54" cy="14" r="7" fill="#E0833B" />
-          <text x="54" y="18" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff">
-            !
-          </text>
+          <AirLiur x={39} y={45} s={0.5} />
+          <GemuruhPerut x={3} y={52} s={0.6} arah={-1} />
+          <GemuruhPerut x={61} y={52} s={0.6} arah={1} />
         </g>
       )}
     </svg>

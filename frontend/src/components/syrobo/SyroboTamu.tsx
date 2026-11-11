@@ -16,6 +16,7 @@ export default function SyroboTamu() {
   return (
     <div className="keep-white relative h-dvh w-full overflow-hidden bg-[#538589]">
       <SyroboKamar
+        login={false}
         gelap={gelap}
         ubahGelap={setGelap}
         bisik={(teks) => setUcapan({ teks, n: Date.now() })}

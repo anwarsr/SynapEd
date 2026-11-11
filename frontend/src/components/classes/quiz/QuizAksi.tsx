@@ -7,6 +7,7 @@ import {
   deleteQuiz,
   gradeQuizEssay,
   gradeQuizRubric,
+  ikutiQuiz,
   resetQuizAttempt,
   setQuizClosed,
   startQuiz,
@@ -14,7 +15,8 @@ import {
 } from "@/lib/classQuizActions";
 import QuizIkon from "@/components/classes/quiz/QuizIkon";
 import {
-  MAX_ANGGOTA_KELOMPOK,
+  ANGGOTA_MAKS_BAWAAN,
+  ANGGOTA_MIN_BAWAAN,
   MAX_NAMA_KELOMPOK,
   MAX_TAMBAH_MENIT,
   MIN_NAMA_KELOMPOK,
@@ -139,12 +141,15 @@ export function MulaiQuizButton({
   quizId,
   kelompok = false,
   anggotaKelas = [],
+  batas = { min: ANGGOTA_MIN_BAWAAN, maks: ANGGOTA_MAKS_BAWAAN },
 }: {
   classId: string;
   quizId: string;
   kelompok?: boolean;
   /** Peserta kelas yang sudah bergabung (tanpa diri sendiri & pengajar). */
   anggotaKelas?: { uid: string; nama: string }[];
+  /** Batas jumlah anggota kelompok (termasuk pembuat) dari pengaturan quiz. */
+  batas?: { min: number; maks: number };
 }) {
   const { pending, error, jalankan } = useAksi();
   const [nama, setNama] = useState("");
@@ -155,13 +160,13 @@ export function MulaiQuizButton({
   const [galatLokal, setGalatLokal] = useState<string | null>(null);
 
   const jumlahLain = mode === "ketik" ? daftarKetik.length : dipilih.length;
-  const kurang = kelompok && (nama.trim().length < MIN_NAMA_KELOMPOK || jumlahLain < 1);
+  const kurang = kelompok && (nama.trim().length < MIN_NAMA_KELOMPOK || jumlahLain + 1 < batas.min || jumlahLain + 1 > batas.maks);
 
   function tambahNama() {
     const n = bersihkanNamaAnggota(ketik);
     if (!n) return setGalatLokal("Nama anggota harus 2-40 karakter.");
     if (daftarKetik.some((x) => x.toLowerCase() === n.toLowerCase())) return setGalatLokal("Nama itu sudah ada di daftar.");
-    if (daftarKetik.length + 1 >= MAX_ANGGOTA_KELOMPOK) return setGalatLokal(`Anggota kelompok maksimal ${MAX_ANGGOTA_KELOMPOK} orang (termasuk Anda).`);
+    if (daftarKetik.length + 1 >= batas.maks) return setGalatLokal(`Anggota kelompok maksimal ${batas.maks} orang (termasuk Anda).`);
     setGalatLokal(null);
     setDaftarKetik((d) => [...d, n]);
     setKetik("");
@@ -171,8 +176,8 @@ export function MulaiQuizButton({
     setGalatLokal(null);
     setDipilih((d) => {
       if (d.includes(uid)) return d.filter((x) => x !== uid);
-      if (d.length + 1 >= MAX_ANGGOTA_KELOMPOK) {
-        setGalatLokal(`Anggota kelompok maksimal ${MAX_ANGGOTA_KELOMPOK} orang (termasuk Anda).`);
+      if (d.length + 1 >= batas.maks) {
+        setGalatLokal(`Anggota kelompok maksimal ${batas.maks} orang (termasuk Anda).`);
         return d;
       }
       return [...d, uid];
@@ -206,7 +211,7 @@ export function MulaiQuizButton({
               className={cn(KOLOM, "mt-2")}
             />
             <p className="mt-2 text-[13px] leading-[1.7] text-ink-muted">
-              Isi sebelum mulai (minimal {MIN_NAMA_KELOMPOK} karakter). Nama dan anggota tidak bisa diubah setelah quiz dimulai, jadi samakan dengan teman satu kelompok.
+              Isi sebelum mulai (minimal {MIN_NAMA_KELOMPOK} karakter). Nama dan anggota tidak bisa diubah setelah quiz dimulai. Teman yang Anda pilih dari anggota kelas akan mendapat tombol &quot;Ikuti Quiz&quot; dan menjawab bersama Anda secara langsung.
             </p>
           </div>
 
@@ -302,7 +307,7 @@ export function MulaiQuizButton({
               </div>
             )}
             <p className="mt-2 text-[13px] text-ink-muted">
-              {jumlahLain} anggota lain dipilih (total {jumlahLain + 1} dengan Anda). Minimal 1 anggota lain.
+              {jumlahLain} anggota lain dipilih (total {jumlahLain + 1} dengan Anda). Kelompok harus {batas.min === batas.maks ? `${batas.min} orang` : `${batas.min}-${batas.maks} orang`}.
             </p>
             {galatLokal && (
               <p role="alert" className="mt-1 text-xs text-rust-700">
@@ -319,6 +324,30 @@ export function MulaiQuizButton({
         className="group inline-flex items-center gap-3 bg-blue-600 px-9 py-4 text-[14px] font-semibold tracking-[0.04em] text-[#fff] transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
         {pending ? "Memulai…" : "Mulai mengerjakan"}
+        <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-6-6l6 6-6 6" />
+        </svg>
+      </button>
+      <Pesan error={error} />
+    </div>
+  );
+}
+
+/**
+ * Anggota yang diajak ke sebuah kelompok melihat tombol ini: sekali tekan langsung bergabung dan mengerjakan
+ * bersama (jawaban tampil langsung di antara anggota yang sudah ikut).
+ */
+export function IkutiQuizButton({ classId, quizId, namaKelompok }: { classId: string; quizId: string; namaKelompok: string }) {
+  const { pending, error, jalankan } = useAksi();
+  return (
+    <div>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => jalankan(() => ikutiQuiz(classId, quizId))}
+        className="group inline-flex items-center gap-3 bg-blue-600 px-9 py-4 text-[14px] font-semibold tracking-[0.04em] text-[#fff] transition-colors hover:bg-blue-700 disabled:opacity-60"
+      >
+        {pending ? "Bergabung…" : `Ikuti Quiz “${namaKelompok}”`}
         <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-6-6l6 6-6 6" />
         </svg>
@@ -407,9 +436,8 @@ export interface ButirEsai {
   jawaban: string;
   poin: number;
   nilai: number | null;
-  /** Soal TABEL (quiz kelompok): tampilan jawaban + saran poin dari hitungan otomatis; pengajar tetap memutuskan. */
+  /** Soal TABEL: tampilan jawaban (tanpa kunci; pengajar yang memeriksa dan memberi poin). */
   tampilan?: ReactNode;
-  saran?: number | null;
 }
 
 /** Jawaban esai satu siswa + isian poin per soal. */
@@ -452,16 +480,6 @@ export function NilaiEsaiForm({ classId, quizId, uid, butir }: { classId: string
               className="w-20 bg-white/[0.08] px-2 py-1.5 text-center text-sm font-semibold text-ink outline-none"
             />
             <span className="text-xs text-ink-muted">/ {b.poin}</span>
-            {typeof b.saran === "number" && (
-              <button
-                type="button"
-                onClick={() => setNilai((n) => ({ ...n, [b.id]: String(b.saran) }))}
-                className="ml-2 bg-white/[0.08] px-3 py-1.5 text-xs font-semibold text-ink hover:bg-white/[0.16]"
-                title="Hitungan otomatis dari kunci tabel; Anda tetap yang memutuskan"
-              >
-                Pakai saran otomatis ({b.saran})
-              </button>
-            )}
           </div>
         </div>
       ))}
@@ -474,7 +492,7 @@ export function NilaiEsaiForm({ classId, quizId, uid, butir }: { classId: string
 }
 
 /**
- * Pengajar menilai rubrik seorang siswa: tiap poin penilaian dari ketiga tabel diberi skor 1-4. Menyimpan boleh
+ * Pengajar menilai rubrik seorang ANGGOTA kelompok: tiap poin penilaian dari semua tabel diberi skor 1-4. Menyimpan boleh
  * sebagian (yang terisi saja); nilai akhir baru final setelah SEMUA poin diberi skor. Pratinjau memakai rumus yang
  * sama dengan server (`ringkasRubrik` + bobot), tetapi yang berlaku tetap hitungan server.
  */
@@ -482,12 +500,16 @@ export function NilaiRubrikForm({
   classId,
   quizId,
   uid,
+  kunci,
   rubrik,
   skorAwal,
 }: {
   classId: string;
   quizId: string;
+  /** Siapa saja di kelompok itu (untuk menemukan percobaannya). */
   uid: string;
+  /** Kunci anggota yang dinilai. */
+  kunci: string;
   rubrik: RubrikQuiz;
   skorAwal: Record<string, number>;
 }) {
@@ -500,7 +522,7 @@ export function NilaiRubrikForm({
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
-        jalankan(() => gradeQuizRubric(classId, quizId, uid, skor));
+        jalankan(() => gradeQuizRubric(classId, quizId, uid, kunci, skor));
       }}
     >
       {rubrik.tables.map((tb, i) => (
@@ -523,7 +545,7 @@ export function NilaiRubrikForm({
                     >
                       <input
                         type="radio"
-                        name={`rb-${uid}-${k.id}`}
+                        name={`rb-${kunci}-${k.id}`}
                         checked={skor[k.id] === s.n}
                         onChange={() => setSkor((x) => ({ ...x, [k.id]: s.n }))}
                         aria-label={`${k.text}: ${s.n} ${s.label}`}

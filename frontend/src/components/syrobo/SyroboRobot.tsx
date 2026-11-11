@@ -1,4 +1,5 @@
 "use client";
+import { AirLiur, BauBusuk, GemuruhPerut, Lalat, NodaLumpur } from "@/components/syrobo/OrnamenKondisi";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { TINTA } from "./IkonSyrobo";
@@ -387,6 +388,7 @@ export default function SyroboRobot({
       }
       clearTimeout(timerAksi.current);
       p.tr = 0;
+      document.documentElement.style.overscrollBehavior = "none";
       setAksiRef("angkat");
       bicara(acak(UCAP.angkat));
     }, 350);
@@ -464,6 +466,7 @@ export default function SyroboRobot({
     if (!s || s.id !== e.pointerId) return;
     clearTimeout(s.lama);
     sentuh.current = null;
+    document.documentElement.style.overscrollBehavior = "";
     if (s.angkat) {
       const p = pegas.current;
       // Dilepas: jatuh lurus ke bawah dan MENETAP di tempat dilepas (bukan ke tengah). Bila dilepas di atas lantai
@@ -502,10 +505,12 @@ export default function SyroboRobot({
       onPointerMove={gerak}
       onPointerUp={selesai}
       onPointerCancel={selesai}
+      // Tekan-tahan di ponsel memunculkan menu konteks/callout yang MEMBATALKAN sentuhan (robot terlepas); jangan biarkan.
+      onContextMenu={(e) => e.preventDefault()}
       onPointerLeave={(e) => {
         if (!sentuh.current?.angkat) selesai(e);
       }}
-      className={cn("pointer-events-auto relative mx-auto w-[min(40vw,22dvh)] touch-none select-none will-change-transform sm:w-[min(46vw,26dvh,260px)]", mati ? "cursor-pointer" : "cursor-grab active:cursor-grabbing", className)}
+      className={cn("pointer-events-auto relative mx-auto w-[min(40vw,22dvh)] touch-none select-none [-webkit-touch-callout:none] will-change-transform sm:w-[min(46vw,26dvh,260px)]", mati ? "cursor-pointer" : "cursor-grab active:cursor-grabbing", className)}
     >
       {ucap && (
         <div
@@ -601,10 +606,10 @@ export default function SyroboRobot({
             fill={mati ? "#8A8FA3" : lapar ? "#E0833B" : "#E56B5D"}
             className={mati ? undefined : "syrobo-kedip"}
           />
-          {lapar && (
-            <g strokeWidth={3} stroke="#E0833B" className="syrobo-kruyuk">
-              <path d="M74 198q6 4 12 0" />
-              <path d="M114 198q6 4 12 0" />
+          {lapar && !mati && (
+            <g strokeWidth={0}>
+              <GemuruhPerut x={64} y={186} s={1.6} arah={-1} />
+              <GemuruhPerut x={137} y={190} s={1.4} arah={1} />
             </g>
           )}
 
@@ -672,19 +677,19 @@ export default function SyroboRobot({
           ) : (
             <path d="M86 100q14 14 28 0" stroke={MATA} strokeWidth={4} />
           )}
-          {lapar && !makan && <path d="M126 100q3 8 0 12" stroke={MATA} strokeWidth={3} opacity=".7" />}
+          {lapar && !makan && !mati && <AirLiur x={115} y={108} s={1.25} garis="#2B2233" />}
 
-          {/* kotor: noda & lalat (hilang saat mandi) */}
+          {/* kotor: noda lumpur, bau, dan lalat (hilang saat mandi) */}
           {kotor && aksi !== "mandi" && (
             <g strokeWidth={0}>
-              <ellipse cx="58" cy="126" rx="9" ry="5" fill="#7A5B3A" opacity=".65" />
-              <ellipse cx="138" cy="50" rx="7" ry="4" fill="#7A5B3A" opacity=".6" />
-              <ellipse cx="86" cy="190" rx="10" ry="5" fill="#7A5B3A" opacity=".6" />
-              <ellipse cx="124" cy="152" rx="6" ry="4" fill="#7A5B3A" opacity=".55" />
-              <g className="syrobo-lalat">
-                <circle cx="46" cy="40" r="2.6" fill="#333" />
-                <circle cx="160" cy="34" r="2.2" fill="#333" />
-              </g>
+              <NodaLumpur x={58} y={126} s={1.1} r={-15} garis="#2B2233" />
+              <NodaLumpur x={138} y={52} s={0.75} r={20} />
+              <NodaLumpur x={88} y={190} s={1.2} r={10} garis="#2B2233" />
+              <NodaLumpur x={124} y={152} s={0.8} r={-30} />
+              <BauBusuk x={22} y={124} s={1.3} />
+              <BauBusuk x={178} y={118} s={1.1} />
+              <Lalat x={44} y={36} s={1.7} r={-20} garis="#2B2233" />
+              <Lalat x={160} y={28} s={1.3} r={15} garis="#2B2233" jejak={false} />
             </g>
           )}
 
