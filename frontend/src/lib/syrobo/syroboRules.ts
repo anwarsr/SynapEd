@@ -16,6 +16,15 @@ export const JAM_KOTOR_HABIS = 20;
 /** Di bawah ambang ini robot dianggap lapar / kotor (ekspresi & indikator berubah). */
 export const AMBANG_LAPAR = 35;
 export const AMBANG_KOTOR = 35;
+/**
+ * Energi (kelelahan): turun 100 → 0 dalam ±`JAM_LELAH_HABIS` jam saat robot terjaga, dan pulih penuh dalam ±`JAM_TIDUR_PENUH` jam saat TIDUR
+ * (tidur = lampu di Main Room dipadamkan). Di bawah `AMBANG_LELAH` robot "kelelahan"; di bawah `AMBANG_TIDUR` hatinya di dada sangat tipis dan
+ * berkedip = perlu tidur. Seperti kenyang/bersih, energi tidak ditulis terus-menerus: potret + waktu (`energiAt`), dan `tidurSejak` menandai tidur.
+ */
+export const JAM_LELAH_HABIS = 10;
+export const JAM_TIDUR_PENUH = 1;
+export const AMBANG_LELAH = 35;
+export const AMBANG_TIDUR = 15;
 /** Makan membuat robot sedikit kotor. */
 export const KOTOR_SAAT_MAKAN = 8;
 
@@ -203,6 +212,10 @@ export interface DataSyrobo {
   koinSetorHari: number;
   /** Bar kenyang dibekukan (tak turun) sampai waktu ini - efek makanan dewa. null = tidak beku. */
   bekuLaparSampai: string | null;
+  /** Potret energi (0..100) pada `energiAt`; `tidurSejak` terisi selama robot tidur (lampu Main Room padam). */
+  energi: number;
+  energiAt: string;
+  tidurSejak: string | null;
 }
 
 export function tanggalWib(now: Date): string {
@@ -258,6 +271,9 @@ export function dataBaru(now: Date): DataSyrobo {
     koinGame: 0,
     koinSetorHari: 0,
     bekuLaparSampai: null,
+    energi: 100,
+    energiAt: now.toISOString(),
+    tidurSejak: null,
   };
 }
 
@@ -305,6 +321,9 @@ export function normalisasi(raw: unknown, now: Date): DataSyrobo {
     koinGame: Math.max(0, Math.floor(angka(r.koinGame, 0))),
     koinSetorHari: Math.max(0, Math.floor(angka(r.koinSetorHari, 0))),
     bekuLaparSampai: typeof r.bekuLaparSampai === "string" && !Number.isNaN(Date.parse(r.bekuLaparSampai)) ? r.bekuLaparSampai : null,
+    energi: jepit(angka(r.energi, d.energi)),
+    energiAt: typeof r.energiAt === "string" && !Number.isNaN(Date.parse(r.energiAt)) ? r.energiAt : d.energiAt,
+    tidurSejak: typeof r.tidurSejak === "string" && !Number.isNaN(Date.parse(r.tidurSejak)) ? r.tidurSejak : null,
   };
 }
 
@@ -327,6 +346,17 @@ export function kondisiSaatIni(d: DataSyrobo, now: Date): { kenyang: number; ber
     kenyang: jepit(d.kenyang - (jamLapar * 100) / JAM_LAPAR_HABIS),
     bersih: jepit(d.bersih - (jam * 100) / JAM_KOTOR_HABIS),
   };
+}
+
+/** Energi SAAT INI: pulih selagi tidur, turun selagi terjaga (dari potret `energiAt`). */
+export function energiSaatIni(d: Pick<DataSyrobo, "energi" | "energiAt" | "tidurSejak">, now: Date): number {
+  const jam = Math.max(0, (now.getTime() - Date.parse(d.energiAt)) / 3600_000);
+  return d.tidurSejak ? jepit(d.energi + (jam * 100) / JAM_TIDUR_PENUH) : jepit(d.energi - (jam * 100) / JAM_LELAH_HABIS);
+}
+
+/** Potret energi baru pada `now` (dipanggil sebelum tidur/bangun mengubah laju). */
+export function potretEnergi(d: DataSyrobo, now: Date): DataSyrobo {
+  return { ...d, energi: energiSaatIni(d, now), energiAt: now.toISOString() };
 }
 
 /** Sisa masa beku kenyang (ms) pada `now`; 0 bila tidak beku. */

@@ -77,6 +77,18 @@ export async function unggahModel3D(uid: string, classId: string, file: File): P
 }
 
 /**
+ * Objek 3D (.glb) pelajaran KURSUS: `class-files/{uid}/course-3d/…` (folder pengajar yang rules-nya sudah ter-deploy;
+ * MIME ZIP sama seperti `unggahModel3D`). Diunggah seketika saat dipilih, seperti lampiran materi kursus.
+ */
+export async function unggahModelKursus(uid: string, file: File): Promise<BerkasTerunggah> {
+  if (!adalahNamaGlb(file.name)) throw new Error(`"${file.name}" bukan berkas .glb.`);
+  const acak = Math.random().toString(36).slice(2, 7);
+  const path = `${CLASS_FILES}/${uid}/course-3d/${Date.now()}-${acak}-${safeName(file.name)}`;
+  await uploadBytes(ref(firebaseStorage(), path), file, { contentType: MIME_UNGGAH_MODEL3D });
+  return { path, name: file.name };
+}
+
+/**
  * Berkas konteks koreksi AI (soal/kunci jawaban): `class-files/{uid}/{classId}/ai-{postId}/…`.
  * Folder yang sama dengan lampiran (rules-nya sudah ada), tetapi TIDAK pernah
  * tercatat sebagai lampiran postingan — route lampiran tidak bisa menyajikannya.

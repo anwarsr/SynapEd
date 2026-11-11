@@ -128,6 +128,7 @@ export const PENGETAHUAN_SITUS = `## Akun
   kunci, dalam persen), ekspor spreadsheet nama dan poin (setelah semua esai dinilai), dan tombol
   Peringatkan murid (siswa yang belum mengerjakan melihat peringatan layar penuh dengan bunyi alarm 2 detik).
   Alamat web yang ditulis di pengumuman otomatis bisa diklik.
+  Pemilik kursus dan admin juga bisa melampirkan satu objek 3D (.glb) beserta keterangan tiap komponen pada pelajaran Modul/Bacaan dan Video saat membuat atau menyunting kursus; peserta hanya bisa melihatnya di ruang belajar, tidak bisa mengubahnya.
   Objek 3D di pengumuman punya mode layar penuh dengan kontrol gerakan tangan lewat kamera: tangan terbuka bergerak
   memutar objek, telunjuk saja untuk menunjuk komponen dan menampilkan keterangannya (tahan sebentar), dua jari naik-turun untuk zoom, kepalan untuk jeda (kamera hanya diproses di perangkat, tidak direkam).
   Tampilan situs bisa Gelap, Terang, atau Kustom (profil, Pengaturan Laman): pengguna menyusun palet sendiri
@@ -211,11 +212,13 @@ export const PENGETAHUAN_SITUS = `## Akun
   baju militer (cokelat), mahkota raja, jubah raja) dan 10 makanan dewa; satu makanan dewa
   mengenyangkan penuh dan menjaga bar kenyang tidak turun selama 24 jam. Menu
   Games berisi Tanjakan Robo (mobil menanjak bukit, pengendaranya robot, mirip
-  Hill Climb Racing; di desktop panah/A D untuk gas dan rem, spasi untuk loncat, Shift untuk nitro; di ponsel pedal serta tombol LONCAT dan NOS, sedangkan di desktop layar bersih tanpa tombol; ada batu penghalang untuk dilompati dan tabung nitro biru yang mengisi tangki NOS, lalu Shift/tombol NOS ditahan untuk melesat). Koin yang dikumpulkan di game bisa ditukar poin bintang di menu
+  Hill Climb Racing; ada juga Bola Gabung, mirip fruit merge: jatuhkan bola, dua bola sejenis lebur jadi bola yang lebih besar, dari kelereng sampai bola dunia, jangan sampai melewati garis merah, skornya juga jadi koin: 1.000 skor = 1 bintang; Tanjakan Robo di desktop panah/A D untuk gas dan rem, spasi untuk loncat, Shift untuk nitro; di ponsel pedal serta tombol LONCAT dan NOS, sedangkan di desktop layar bersih tanpa tombol; ada batu penghalang untuk dilompati dan tabung nitro biru yang mengisi tangki NOS, lalu Shift/tombol NOS ditahan untuk melesat). Koin yang dikumpulkan di game bisa ditukar poin bintang di menu
   Toko (tab Koin Game, di samping tab Pakaian): 100 koin = 1 bintang, dengan batas setoran harian). Sebelum masuk robotnya mati; ditekan akan
   membawa ke halaman masuk. Benda di
   kamarnya juga bisa diketuk: lampu (kamar gelap), jendela, tanaman, buku
-  (tips belajar), dan jam. Halamannya satu layar penuh tanpa footer.
+  (tips belajar), dan jam. Robot bisa kelelahan: hati di dadanya meredup seiring waktu terjaga, dan bila sangat tipis dan berkedip
+  berarti ia perlu tidur. Tidurkan dengan mematikan lampu di Main Room (kamar utama); selagi lampu padam energinya pulih, lalu
+  nyalakan lampu lagi untuk membangunkannya. Halamannya satu layar penuh tanpa footer.
 - Poin didapat dari "Poin harian": hadiah masuk hari ini (5 bintang), lalu hadiah saat
   waktu aktif di halaman SyRobo mencapai 5 menit (1 bintang), 10 menit (3), 20 menit (5), 30 menit (7), 1 jam (10), dan 2 jam (15).
   Pemilik SynapEd Premium aktif mendapat bonus +50% di tiap hadiah.

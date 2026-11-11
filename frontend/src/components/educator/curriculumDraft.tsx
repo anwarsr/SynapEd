@@ -3,6 +3,9 @@ import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { uploadCourseDoc, validateDoc } from "@/lib/courseUpload";
 import { discardUpload } from "@/lib/uploadCleanupActions";
+import LampiranModel3D, { bebaskanModel, type IsianModel3D } from "@/components/classes/model3d/LampiranModel3D";
+import { unggahModelKursus } from "@/lib/classUpload";
+import { hrefModelKursus } from "@/lib/model3dRules";
 import { toEmbedUrl } from "@/lib/videoEmbed";
 import type { CourseDetail } from "@/lib/courses";
 import type { LessonInput, SectionInput } from "@/lib/curriculum";
@@ -86,6 +89,12 @@ export interface DraftLesson {
   quizDraft?: QuizDraftState;
   /** Instruksi/rubrik — hanya relevan kalau type === "assignment". */
   instructions?: string;
+  /**
+   * Objek 3D (.glb) + keterangan komponen — hanya untuk Modul/Bacaan dan Video. Berkasnya diunggah SEKETIKA saat dipilih
+   * (`lama` terisi setelah selesai; `file`/`url` tetap dipegang untuk pratinjau di editor).
+   */
+  model3d?: IsianModel3D | null;
+  modelUploading?: boolean;
 }
 
 export interface DraftSection {
@@ -130,6 +139,7 @@ export function newLesson(type: LessonType = "reading"): DraftLesson {
     uploadError: null,
     quizDraft: type === "quiz" ? emptyQuizDraft() : undefined,
     instructions: type === "assignment" ? "" : undefined,
+    model3d: null,
   };
 }
 
@@ -165,6 +175,9 @@ export function draftFromCourse(course: CourseDetail): DraftSection[] {
       uploading: false,
       uploadError: null,
       instructions: l.instructions ?? "",
+      model3d: l.model3d
+        ? { file: null, url: null, lama: l.model3d.file, title: l.model3d.title, annotations: l.model3d.annotations }
+        : null,
     })),
   }));
 }
@@ -182,7 +195,10 @@ export function validateDraft(sections: DraftSection[]): string | null {
       if (l.type === "video" && !toEmbedUrl(l.videoUrl)) {
         return `Tautan video pelajaran "${l.title}" tidak dikenali.`;
       }
-      if (l.uploading) return `Tunggu unggahan pelajaran "${l.title}" selesai dulu.`;
+      if (l.uploading || l.modelUploading) return `Tunggu unggahan pelajaran "${l.title}" selesai dulu.`;
+      if (l.model3d && !l.model3d.lama && (l.type === "reading" || l.type === "video")) {
+        return `Objek 3D pelajaran "${l.title}" belum selesai diunggah. Pilih ulang berkasnya.`;
+      }
 
       // Soal kuis tetap OPSIONAL saat membuat kursus — sama seperti sekarang,
       // pelajaran kuis boleh diterbitkan tanpa soal dan diisi belakangan dari
@@ -224,6 +240,10 @@ export function toSectionInput(sections: DraftSection[]): SectionInput[] {
         videoUrl: l.type === "video" ? l.videoUrl : undefined,
         attachments: l.attachment ? [l.attachment] : undefined,
         instructions: l.type === "assignment" ? l.instructions : undefined,
+        model3d:
+          (l.type === "reading" || l.type === "video") && l.model3d?.lama
+            ? { file: l.model3d.lama, title: l.model3d.title, annotations: l.model3d.annotations }
+            : undefined,
       }),
     ),
   }));
@@ -297,8 +317,10 @@ export default function SectionList({
     );
   }
 
-  function removeLesson(si: number, li: number, attachment: DraftAttachment | null) {
+  function removeLesson(si: number, li: number, attachment: DraftAttachment | null, model: IsianModel3D | null | undefined) {
     discardIfFresh(attachment?.path);
+    discardIfFresh(model?.lama?.path);
+    bebaskanModel(model ?? null);
     setSections((prev) =>
       prev.map((s, i) => (i === si ? { ...s, lessons: s.lessons.filter((_, j) => j !== li) } : s)),
     );
@@ -347,6 +369,55 @@ export default function SectionList({
       updateLesson(si, li, { attachment: doc, uploading: false });
     } catch {
       updateLesson(si, li, { uploading: false, uploadError: "Gagal mengunggah berkas. Coba lagi." });
+    }
+  }
+
+  /**
+   * Perubahan isian objek 3D sebuah pelajaran. Berkas BARU diunggah seketika (hasilnya mengisi `lama`); mengganti/membuang
+   * berkas yang baru diunggah di halaman ini langsung membuang unggahan lamanya, sedangkan berkas yang sudah tersimpan
+   * di kursus dibuang server saat penyimpanan (pembandingan lama-vs-baru).
+   */
+  async function ubahModel(si: number, li: number, lessonKey: string, next: IsianModel3D | null, current: IsianModel3D | null | undefined) {
+    if (!next) {
+      discardIfFresh(current?.lama?.path);
+      updateLesson(si, li, { model3d: null, modelUploading: false, uploadError: null });
+      return;
+    }
+    const berkasBaru = next.file && !next.lama && next.file !== current?.file;
+    if (!berkasBaru) {
+      updateLesson(si, li, { model3d: next });
+      return;
+    }
+    discardIfFresh(current?.lama?.path);
+    const uid = firebaseAuth().currentUser?.uid;
+    if (!uid) {
+      updateLesson(si, li, { model3d: null, uploadError: "Sesi berakhir. Silakan masuk kembali." });
+      return;
+    }
+    const file = next.file as File;
+    updateLesson(si, li, { model3d: next, modelUploading: true, uploadError: null });
+    try {
+      const hasil = await unggahModelKursus(uid, file);
+      freshUploads.current.add(hasil.path);
+      setSections((prev) =>
+        prev.map((s) => ({
+          ...s,
+          lessons: s.lessons.map((x) =>
+            x.key === lessonKey && x.model3d?.file === file
+              ? { ...x, modelUploading: false, model3d: { ...x.model3d, lama: { name: file.name, path: hasil.path, size: file.size, mime: "model/gltf-binary" } } }
+              : x,
+          ),
+        })),
+      );
+    } catch {
+      setSections((prev) =>
+        prev.map((s) => ({
+          ...s,
+          lessons: s.lessons.map((x) =>
+            x.key === lessonKey && x.model3d?.file === file ? { ...x, modelUploading: false, model3d: null, uploadError: "Gagal mengunggah objek 3D. Coba lagi." } : x,
+          ),
+        })),
+      );
     }
   }
 
@@ -458,7 +529,7 @@ export default function SectionList({
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeLesson(si, li, l.attachment)}
+                      onClick={() => removeLesson(si, li, l.attachment, l.model3d)}
                       disabled={s.lessons.length === 1}
                       className={hapusButton}
                       aria-label="Hapus pelajaran"
@@ -504,6 +575,24 @@ export default function SectionList({
                   />
                 )}
                 {l.uploading && <p className="mt-2 text-sm text-ink-muted">Mengunggah…</p>}
+
+                {(l.type === "reading" || l.type === "video") && (
+                  <div className="mt-4">
+                    <LampiranModel3D
+                      idAwalan={`${l.key}-`}
+                      nilai={l.model3d ?? null}
+                      ubah={(n) => void ubahModel(si, li, l.key, n, l.model3d)}
+                      hrefLama={courseSlug && l.slug ? hrefModelKursus(courseSlug, l.slug) : undefined}
+                      disabled={l.modelUploading}
+                    />
+                    {l.modelUploading && <p className="mt-2 text-sm text-ink-muted">Mengunggah objek 3D…</p>}
+                    {l.type === "video" && l.uploadError && (
+                      <p role="alert" className="mt-2 text-sm text-rust-700">
+                        {l.uploadError}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {l.type === "assignment" && (
                   <div className="mt-3">

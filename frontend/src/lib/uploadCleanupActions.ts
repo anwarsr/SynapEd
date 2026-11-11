@@ -1,6 +1,6 @@
 "use server";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { AVATARS, COURSE_ASSETS, COURSE_THUMBNAILS } from "@/lib/storagePaths";
+import { AVATARS, CLASS_FILES, COURSE_ASSETS, COURSE_THUMBNAILS } from "@/lib/storagePaths";
 import { deleteObjects, pruneAvatarFolder } from "@/lib/storageCleanup";
 
 /**
@@ -21,7 +21,9 @@ import { deleteObjects, pruneAvatarFolder } from "@/lib/storageCleanup";
 function ownedByUser(path: string, uid: string): boolean {
   return (
     path.startsWith(`${COURSE_ASSETS}/${uid}/`) ||
-    path.startsWith(`${COURSE_THUMBNAILS}/${uid}/`)
+    path.startsWith(`${COURSE_THUMBNAILS}/${uid}/`) ||
+    // objek 3D pelajaran (hanya subfolder course-3d, bukan lampiran kelas)
+    path.startsWith(`${CLASS_FILES}/${uid}/course-3d/`)
   );
 }
 

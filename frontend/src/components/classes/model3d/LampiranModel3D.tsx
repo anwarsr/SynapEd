@@ -49,12 +49,15 @@ export default function LampiranModel3D({
   ubah,
   hrefLama,
   disabled,
+  idAwalan = "",
 }: {
   nilai: IsianModel3D | null;
   ubah: (n: IsianModel3D | null) => void;
   /** Alamat penyaji berkas tersimpan (untuk `lama`). */
   hrefLama?: string;
   disabled?: boolean;
+  /** Awalan id elemen, supaya beberapa editor di satu halaman (tiap pelajaran kursus) tak berbagi id. */
+  idAwalan?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [galat, setGalat] = useState<string | null>(null);
@@ -186,11 +189,11 @@ export default function LampiranModel3D({
       </div>
 
       <div className="mb-4">
-        <label htmlFor="judul-model3d" className="mb-1 block text-sm font-medium text-ink">
+        <label htmlFor={`${idAwalan}judul-model3d`} className="mb-1 block text-sm font-medium text-ink">
           Judul objek 3D
         </label>
         <input
-          id="judul-model3d"
+          id={`${idAwalan}judul-model3d`}
           value={nilai.title}
           onChange={(e) => ubah({ ...nilai, title: e.target.value })}
           maxLength={MAX_JUDUL_MODEL}
@@ -300,11 +303,11 @@ export default function LampiranModel3D({
                       Hapus
                     </button>
                   </div>
-                  <label className="sr-only" htmlFor={`an-j-${a.id}`}>
+                  <label className="sr-only" htmlFor={`${idAwalan}an-j-${a.id}`}>
                     Judul keterangan {i + 1}
                   </label>
                   <input
-                    id={`an-j-${a.id}`}
+                    id={`${idAwalan}an-j-${a.id}`}
                     value={a.title}
                     onChange={(e) => ubahAnotasi(a.id, { title: e.target.value })}
                     maxLength={MAX_JUDUL_ANOTASI}
@@ -312,11 +315,11 @@ export default function LampiranModel3D({
                     placeholder="Judul (mis. Katup masuk)"
                     className={cn(KOLOM, "font-medium")}
                   />
-                  <label className="sr-only" htmlFor={`an-t-${a.id}`}>
+                  <label className="sr-only" htmlFor={`${idAwalan}an-t-${a.id}`}>
                     Penjelasan keterangan {i + 1}
                   </label>
                   <textarea
-                    id={`an-t-${a.id}`}
+                    id={`${idAwalan}an-t-${a.id}`}
                     value={a.text}
                     onChange={(e) => ubahAnotasi(a.id, { text: e.target.value })}
                     maxLength={MAX_TEKS_ANOTASI}

@@ -2314,17 +2314,14 @@ html[data-lindungi="true"] img { -webkit-user-drag: none; }
     .syrobo-zzz, .syrobo-meteor, .syrobo-goyangan, .syrobo-daun { animation: none; }
 }
 
-/* SyRobo: berjalan keliling kamar */
-.syrobo-langkah { animation: syrobo-langkah 420ms ease-in-out infinite; transform-origin: 50% 100%; }
-@keyframes syrobo-langkah { 0%, 100% { transform: translateY(0) scale(1.02, 0.97); } 50% { transform: translateY(-6px) scale(0.99, 1.02); } }
-.syrobo-kaki-kiri, .syrobo-kaki-kanan { animation: syrobo-kaki-jalan 840ms ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0; }
-.syrobo-kaki-kanan { animation-delay: -420ms; }
-@keyframes syrobo-kaki-jalan { 0%, 100% { transform: rotate(-17deg); } 50% { transform: rotate(17deg); } }
-.syrobo-lengan-jalan-kiri, .syrobo-lengan-jalan-kanan { animation: syrobo-lengan-jalan 840ms ease-in-out infinite; transform-box: view-box; }
-.syrobo-lengan-jalan-kanan { animation-delay: -420ms; }
-@keyframes syrobo-lengan-jalan { 0%, 100% { rotate: -10deg; } 50% { rotate: 10deg; } }
+/* SyRobo: gaya jalan, ayunan lengan, dan napas ditulis tiap bingkai oleh SyroboRobot (dari kecepatan nyata), bukan keyframe berulang. */
+
+/* Hati di dada = energi: kecerahannya mantap (inline). Hanya saat mengantuk (perlu tidur) ia berkedip. */
+/* Perlu tidur: hati sangat tipis dan berkedip. */
+.syrobo-hati-tipis { animation: syrobo-hati-tipis 1.15s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 60%; }
+@keyframes syrobo-hati-tipis { 0%, 100% { opacity: 0.06; } 45% { opacity: 0.38; } }
 @media (prefers-reduced-motion: reduce) {
-    .syrobo-langkah, .syrobo-kaki-kiri, .syrobo-kaki-kanan, .syrobo-lengan-jalan-kiri, .syrobo-lengan-jalan-kanan { animation: none; }
+    .syrobo-hati-tipis { animation: none; }
 }
 
 /* SyRobo tidur: huruf Z muncul satu per satu, naik pelan, lalu memudar; diulang */

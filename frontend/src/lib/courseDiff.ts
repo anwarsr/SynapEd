@@ -179,6 +179,17 @@ function diffCurriculum(before: Section[], after: Section[]): Change[] {
       });
     }
 
+    const oldModel = old.model3d ? `${old.model3d.title} (${old.model3d.annotations.length} keterangan)` : "";
+    const newModel = l.model3d ? `${l.model3d.title} (${l.model3d.annotations.length} keterangan)` : "";
+    if (JSON.stringify(old.model3d ?? null) !== JSON.stringify(l.model3d ?? null)) {
+      out.push({
+        kind: "changed",
+        field: `Objek 3D "${l.title}"`,
+        before: text(oldModel),
+        after: text(newModel),
+      });
+    }
+
     if (old.sectionTitle !== l.sectionTitle) {
       out.push({
         kind: "moved",

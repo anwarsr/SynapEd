@@ -278,7 +278,8 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                 <h2 className="t-h3 mb-6">Kurikulum</h2>
                 <CurriculumList
                   slug={slug}
-                  sections={course.sections}
+                  // Objek 3D (judul/keterangan komponen) hanya untuk peserta di ruang belajar, bukan halaman publik.
+                  sections={course.sections.map((s) => ({ ...s, lessons: s.lessons.map((l) => ({ ...l, model3d: undefined })) }))}
                   bisaBuka={enrolled}
                   completed={enrollment?.completedLessons ?? []}
                   resumeSlug={resumeSlug}

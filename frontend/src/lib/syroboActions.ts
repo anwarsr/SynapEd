@@ -2,7 +2,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { getPremium } from "@/lib/premium";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, detak, gantiNama, gosok, klaim, pasangPakaian, ukuranPakaian, bacaSyrobo, type HasilSyrobo } from "@/lib/syrobo/syroboCore";
+import { bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, detak, gantiNama, gosok, klaim, pasangPakaian, ukuranPakaian, bacaSyrobo, type HasilSyrobo } from "@/lib/syrobo/syroboCore";
 import type { Suasana } from "@/lib/syrobo/syroboRules";
 
 /**
@@ -65,6 +65,18 @@ export async function simpanKoinGameSyrobo(n: unknown): Promise<HasilSyrobo> {
 export async function tukarKoinGameSyrobo(): Promise<HasilSyrobo> {
   const uid = await uidSesi();
   return uid ? tukarKoinGame(adminDb(), uid, new Date(), await premiumDari(uid)) : BELUM_MASUK;
+}
+
+/** Lampu Main Room padam: robot tidur dan energinya pulih. Uid dari sesi; tanpa argumen. */
+export async function tidurkanSyrobo(): Promise<HasilSyrobo> {
+  const uid = await uidSesi();
+  return uid ? tidurkan(adminDb(), uid, new Date(), await premiumDari(uid)) : BELUM_MASUK;
+}
+
+/** Lampu Main Room menyala: robot bangun. */
+export async function bangunkanSyrobo(): Promise<HasilSyrobo> {
+  const uid = await uidSesi();
+  return uid ? bangunkan(adminDb(), uid, new Date(), await premiumDari(uid)) : BELUM_MASUK;
 }
 
 export async function gosokSyrobo(tambah: unknown): Promise<HasilSyrobo> {

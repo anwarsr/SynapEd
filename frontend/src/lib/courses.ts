@@ -4,6 +4,7 @@ import { getUserCards } from "@/lib/userCards";
 import { getUsernames } from "@/lib/usernames";
 import { listCategories } from "@/lib/categories";
 import { parseStoredContributors, type Contributor } from "@/lib/contributors";
+import type { Model3D } from "@/lib/model3dRules";
 
 /** Sengaja di sini, bukan diimpor dari submissions.ts: modul itu mengimpor
  *  courses.ts, dan saling-impor membuat salah satunya undefined saat dimuat. */
@@ -30,6 +31,11 @@ export interface Lesson {
   attachments?: Attachment[];
   /** Instruksi/rubrik penugasan, teks bebas — hanya relevan untuk type "assignment". */
   instructions?: string;
+  /**
+   * Objek 3D (.glb) + keterangan per komponen untuk pelajaran Modul/Bacaan dan Video. Ditulis HANYA lewat
+   * `normalizeSections` (pemilik kursus / admin); peserta hanya melihatnya.
+   */
+  model3d?: Model3D;
 }
 
 export interface Section {

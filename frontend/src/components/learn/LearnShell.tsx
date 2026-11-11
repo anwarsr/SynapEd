@@ -7,6 +7,8 @@ import type { PublicQuiz } from "@/lib/quiz";
 import { lessonIcons } from "@/lib/courseUi";
 import { formatBytes, lessonAssetUrl, previewKind, toEmbedUrl } from "@/lib/videoEmbed";
 import { mimeTampil } from "@/lib/classAssignmentRules";
+import { hrefModelKursus } from "@/lib/model3dRules";
+import GerbangModel3D from "@/components/classes/model3d/GerbangModel3D";
 import { cn } from "@/lib/cn";
 import { useChatLessonContext } from "@/components/ui/ChatContext";
 import LessonCompleteButton from "./LessonCompleteButton";
@@ -411,7 +413,7 @@ export default function LearnShell({
                   <div className="mb-8">
                     <MaterialViewer key={readable.path} courseSlug={course.slug} file={readable} />
                   </div>
-                ) : (
+                ) : current.model3d ? null : (
                   /* Keadaan kosong yang jujur: struktur pelajaran sudah ada,
                      tapi tidak ada video maupun berkas yang bisa dibaca. */
                   <div
@@ -435,6 +437,19 @@ export default function LearnShell({
                         : "Struktur pelajaran sudah ada, tetapi tautan video dan berkasnya belum diunggah."}
                     </p>
                   </div>
+                )}
+
+                {current.model3d && (
+                  <section className="mb-8">
+                    {/* Hanya LIHAT: peserta tak punya jalan menyunting objek maupun keterangannya (itu hak pemilik kursus/admin di editor kursus). */}
+                    <GerbangModel3D
+                      key={current.slug}
+                      judul={current.model3d.title}
+                      url={hrefModelKursus(course.slug, current.slug, current.model3d.file.path)}
+                      nama={current.model3d.file.name}
+                      annotations={current.model3d.annotations}
+                    />
+                  </section>
                 )}
 
                 {attachments.length > 0 && (

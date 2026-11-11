@@ -5,6 +5,7 @@ import SyroboRobot, { type ReaksiRobot } from "./SyroboRobot";
 import SyroboKamar from "./SyroboKamar";
 import SyroboRuangan, { type JenisRuangan } from "./SyroboRuangan";
 import GameTanjakan from "./GameTanjakan";
+import GameBola from "./GameBola";
 import { Ikon, type IkonDok } from "./IkonSyrobo";
 import { cn } from "@/lib/cn";
 import {
@@ -12,6 +13,8 @@ import {
   beliPakaianSyrobo,
   beriMakanSyrobo,
   beriMakanDewaSyrobo,
+  bangunkanSyrobo,
+  tidurkanSyrobo,
   detakSyrobo,
   gantiNamaSyrobo,
   gosokSyrobo,
@@ -25,6 +28,9 @@ import type { HasilSyrobo, TampilanSyrobo } from "@/lib/syrobo/syroboCore";
 import {
   AMBANG_KOTOR,
   AMBANG_LAPAR,
+  AMBANG_LELAH,
+  AMBANG_TIDUR,
+  energiSaatIni,
   DETAK_KLIEN_MS,
   GOSOK_PX_PER_POIN,
   HADIAH,
@@ -102,10 +108,11 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   const [makanTab, setMakanTab] = useState<"biasa" | "dewa">("biasa");
   /** Ruangan yang sedang dimasuki: tiap menu (Makan/Mandi/Baju/Toko) punya ruangannya sendiri; "Main Room" = kamar utama. */
   const [ruang, setRuang] = useState<"kamar" | JenisRuangan>("kamar");
-  const [main, setMain] = useState(false);
+  const [main, setMain] = useState<null | "tanjakan" | "bola">(null);
   const [reaksi, setReaksi] = useState<ReaksiRobot | null>(null);
   const [suap, setSuap] = useState<{ n: number; id: MakananId | MakananDewaId } | null>(null);
-  const [gelap, setGelap] = useState(false);
+  // Lampu padam = robot tidur. Dimulai dari keadaan tersimpan: lampu yang dipadamkan sebelum pergi tetap padam saat kembali.
+  const [gelap, setGelap] = useState(awal.tidur);
   const [ucapan, setUcapan] = useState<{ teks: string; n: number } | null>(null);
   /** Mode menggosok: spons mengikuti penunjuk; menggosok robot menambah bar Bersih. */
   const [gosok, setGosok] = useState(false);
@@ -178,6 +185,10 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   // Bar Bersih memasukkan gosokan yang belum kembali dari server, jadi naik mulus selagi digosok.
   const kondisi = { kenyang: kondisiAsli.kenyang, bersih: Math.min(100, kondisiAsli.bersih + tambahLokal) };
   const suasana = hitungSuasana(kondisi);
+  const energi = energiSaatIni(robot, sekarang);
+  const tidur = gelap && ruang === "kamar";
+  const lelah = energi < AMBANG_LELAH;
+  const butuhTidur = energi < AMBANG_TIDUR;
   // Waktu aktif tampil = nilai server + waktu sejak data tiba (maks satu selang detak, supaya tak melampaui server).
   const aktif = robot.aktifDetik + Math.min(DETAK_KLIEN_MS / 1000, Math.floor((jam.now - jam.tiba) / 1000));
   const adaKlaim = HADIAH.some((h) => !robot.diklaim.includes(h.menit) && aktif >= h.menit * 60);
@@ -196,6 +207,14 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     } finally {
       setSibuk(false);
     }
+  }
+
+  /** Lampu Main Room: padam = tidur (energi pulih), menyala = bangun. Server yang menghitung energinya. */
+  function ubahLampu(g: boolean) {
+    setGelap(g);
+    void (g ? tidurkanSyrobo() : bangunkanSyrobo()).then((h) => {
+      if (h.ok) terima(h);
+    }).catch(() => undefined);
   }
 
   function picu(jenis: ReaksiRobot["jenis"]) {
@@ -391,7 +410,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     // `keep-white`: adegan ini punya warnanya sendiri, `text-white` tak boleh terbalik di tema terang.
     <div data-adegan-syrobo="" className={cn("keep-white relative h-dvh w-full overflow-hidden overscroll-none bg-[#538589]", gosok && "cursor-none")}>
       {ruang === "kamar" ? (
-        <SyroboKamar gelap={gelap} ubahGelap={setGelap} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
+        <SyroboKamar gelap={gelap} ubahGelap={ubahLampu} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
       ) : (
         <SyroboRuangan key={`ruang-${ruang}`} jenis={ruang} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
       )}
@@ -406,6 +425,16 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
             </p>
           )}
           <Status ikon="mandi" nama="Bersih" nilai={kondisi.bersih} rendahDi={AMBANG_KOTOR} />
+          {(lelah || tidur) && (
+            <p role="status" className={cn("text-[11px] font-extrabold sm:text-xs", tidur ? "text-[#3B4E8F]" : butuhTidur ? "text-[#B23A26]" : "text-[#8A5F00]")}>
+              {tidur
+                ? `${robot.nama} tidur... energi ${Math.round(energi)}%`
+                : butuhTidur
+                  ? `${robot.nama} kelelahan, butuh tidur`
+                  : `${robot.nama} kelelahan`}
+            </p>
+          )}
+          {lelah && !tidur && <p className="max-w-[11.5rem] text-[10px] font-semibold leading-snug text-[#2B2233]/70 sm:max-w-[15rem] sm:text-[11px]">Matikan lampu di Main Room supaya {robot.nama} bisa tidur.</p>}
         </div>
 
         <div className="pointer-events-auto flex min-w-0 justify-center sm:w-auto">
@@ -471,7 +500,8 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           ukuranBadan={ukuranEdit.badan ?? robot.ukuran.badan}
           suasana={suasana}
           reaksi={reaksi}
-          gelap={gelap && ruang === "kamar"}
+          gelap={tidur}
+          energi={energi}
           jeda={lembar !== null || gosok}
           lantaiMin={ruang === "kamar" ? 0.66 : 0.72}
           ucapan={ucapan}
@@ -754,12 +784,27 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                     <span className="block text-sm font-extrabold">Tanjakan Robo</span>
                     <span className="block text-xs font-semibold text-[#2B2233]/70">Kendarai mobil menanjak bukit tanpa ujung. Kumpulkan koin & bensin. Ponsel: dua pedal; desktop: panah / A D.</span>
                   </span>
-                  <button type="button" onClick={() => setMain(true)} className={TOMBOL_UTAMA}>
+                  <button type="button" onClick={() => setMain("tanjakan")} className={TOMBOL_UTAMA}>
+                    Main
+                  </button>
+                </li>
+                <li className={cn("flex items-center gap-3 rounded-lg bg-[#F6E3C0] px-3 py-2.5", STIKER)}>
+                  <svg viewBox="0 0 48 48" className="h-12 w-12 shrink-0" aria-hidden="true">
+                    <circle cx="17" cy="30" r="12" fill="#F0903A" stroke="#2B2233" strokeWidth="2.6" />
+                    <circle cx="33" cy="30" r="12" fill="#F0903A" stroke="#2B2233" strokeWidth="2.6" />
+                    <circle cx="24" cy="14" r="9" fill="#E0584D" stroke="#2B2233" strokeWidth="2.6" />
+                    <ellipse cx="13" cy="25" rx="3.600" ry="2" transform="rotate(-40 13 25)" fill="#fff" opacity=".6" />
+                  </svg>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-extrabold">Bola Gabung</span>
+                    <span className="block text-xs font-semibold text-[#2B2233]/70">Jatuhkan bola; dua bola sama besar lebur jadi lebih besar. Ponsel: geser lalu lepas; desktop: mouse + klik / spasi.</span>
+                  </span>
+                  <button type="button" onClick={() => setMain("bola")} className={TOMBOL_UTAMA}>
                     Main
                   </button>
                 </li>
               </ul>
-              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Koin yang kamu kumpulkan di game masuk ke akun dan bisa ditukar poin bintang di menu Toko, tab Koin Game (100 koin = 1 bintang, maksimal 1.500 koin per hari).</p>
+              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Koin yang kamu kumpulkan di game masuk ke akun dan bisa ditukar poin bintang di menu Toko, tab Koin Game (100 koin = 1 bintang, maksimal 1.500 koin per hari). Di Bola Gabung, tiap 10 skor = 1 koin (1.000 skor = 1 bintang).</p>
             </>
           )}
 
@@ -838,7 +883,8 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
         })}
       </nav>
 
-      {main && <GameTanjakan onKeluar={() => setMain(false)} onSetor={(n) => void setorKoin(n)} />}
+      {main === "tanjakan" && <GameTanjakan onKeluar={() => setMain(null)} onSetor={(n) => void setorKoin(n)} />}
+      {main === "bola" && <GameBola onKeluar={() => setMain(null)} onSetor={(n) => void setorKoin(n)} />}
 
       {/* Spons yang mengikuti penunjuk selama menggosok */}
       <div

@@ -31,6 +31,8 @@ import {
   ukuranSah,
   bisaDiklaim,
   cariMakanan,
+  energiSaatIni,
+  potretEnergi,
   gulirHari,
   kondisiSaatIni,
   makananSah,
@@ -54,6 +56,9 @@ export interface TampilanSyrobo extends DataSyrobo {
   kenyangSekarang: number;
   bersihSekarang: number;
   suasana: Suasana;
+  /** Energi saat ini (0..100); `tidur` = lampu Main Room padam (robot sedang tidur). */
+  energiSekarang: number;
+  tidur: boolean;
   /** Menit hadiah yang sudah boleh diklaim saat ini. */
   siapKlaim: number[];
   sekarang: string;
@@ -76,6 +81,8 @@ export function tampilkan(d: DataSyrobo, now: Date, premium = false): TampilanSy
     kenyangSekarang: Math.round(k.kenyang),
     bersihSekarang: Math.round(k.bersih),
     suasana: suasana(k),
+    energiSekarang: Math.round(energiSaatIni(d, now)),
+    tidur: d.tidurSejak !== null,
     siapKlaim: HADIAH.filter((h) => bisaDiklaim(d, h.menit)).map((h) => h.menit),
     sekarang: now.toISOString(),
   };
@@ -184,6 +191,25 @@ export function tukarKoinGame(db: Firestore, uid: string, now = new Date(), prem
     const poin = Math.floor(d.koinGame / KOIN_PER_POIN);
     if (poin < 1) return `Koinmu belum cukup: minimal ${KOIN_PER_POIN} koin untuk 1 poin.`;
     return { ...d, poin: d.poin + poin, koinGame: d.koinGame - poin * KOIN_PER_POIN };
+  });
+}
+
+/**
+ * Tidur = lampu Main Room dipadamkan: energi dipotret lalu mulai PULIH. Idempoten (sudah tidur = tak berubah). Tidak memberi poin atau barang,
+ * jadi tak ada yang perlu dipercaya dari klien selain "tidur/bangun".
+ */
+export function tidurkan(db: Firestore, uid: string, now = new Date(), premium = false): Promise<HasilSyrobo> {
+  return ubahSyrobo(db, uid, now, premium, (d0) => {
+    if (d0.tidurSejak) return d0;
+    return { ...potretEnergi(d0, now), tidurSejak: now.toISOString() };
+  });
+}
+
+/** Bangun = lampu dinyalakan: energi hasil tidur dipotret, lalu kembali turun pelan-pelan. Idempoten. */
+export function bangunkan(db: Firestore, uid: string, now = new Date(), premium = false): Promise<HasilSyrobo> {
+  return ubahSyrobo(db, uid, now, premium, (d0) => {
+    if (!d0.tidurSejak) return d0;
+    return { ...potretEnergi(d0, now), tidurSejak: null };
   });
 }
 

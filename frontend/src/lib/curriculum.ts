@@ -3,6 +3,8 @@ import { COURSE_ASSETS, toSlug } from "@/lib/educatorCourses";
 import { canonicalDuration } from "@/lib/duration";
 import { toEmbedUrl } from "@/lib/videoEmbed";
 import type { Attachment, Lesson, Section } from "@/lib/courses";
+import { CLASS_FILES } from "@/lib/storagePaths";
+import { MIME_MODEL3D, adaMeshGanda, adalahNamaGlb, validasiAnotasi, validasiJudulModel } from "@/lib/model3dRules";
 
 /**
  * Validator kurikulum — dipakai lewat curriculumActions.ts DAN courseActions.ts.
@@ -36,6 +38,16 @@ export interface AttachmentInput {
   mime?: string;
 }
 
+/** Objek 3D pada satu pelajaran. Berkasnya sudah diunggah browser ke `class-files/{uid}/course-3d/`. */
+export interface Model3DInput {
+  file: { name: string; path: string; size?: number; mime?: string };
+  title?: string;
+  annotations?: unknown;
+}
+
+/** Folder objek 3D kursus di Storage (folder pengajar yang storage.rules-nya sudah ter-deploy). */
+export const FOLDER_MODEL_KURSUS = "course-3d";
+
 export interface LessonInput {
   /** Ada kalau pelajaran ini sudah pernah disimpan — dipertahankan supaya
    *  progres peserta (completedLessons) dan dokumen kuis tidak jadi yatim. */
@@ -47,6 +59,8 @@ export interface LessonInput {
   attachments?: AttachmentInput[];
   /** Instruksi/rubrik — hanya dibaca kalau type === "assignment". */
   instructions?: string;
+  /** Hanya dibaca untuk type "reading" dan "video". */
+  model3d?: Model3DInput;
 }
 
 export interface SectionInput {
@@ -143,6 +157,29 @@ export function normalizeSections(
           attachments.push({ name: a.name, path: a.path, size: a.size, mime: a.mime });
         }
         lesson.attachments = attachments;
+      }
+
+      if (l.model3d && (lesson.type === "reading" || lesson.type === "video")) {
+        const f = l.model3d.file;
+        const path = typeof f?.path === "string" ? f.path : "";
+        const sah =
+          path.toLowerCase().endsWith(".glb") &&
+          !path.includes("..") &&
+          !path.includes("//") &&
+          ownerUids.some((uid) => path.startsWith(`${CLASS_FILES}/${uid}/${FOLDER_MODEL_KURSUS}/`));
+        if (!sah) return { ok: false, error: `Objek 3D pada pelajaran "${lessonTitle}" tidak sah.` };
+        const nama = typeof f.name === "string" && f.name.trim() ? f.name.trim().slice(0, 200) : "model.glb";
+        if (!adalahNamaGlb(nama)) return { ok: false, error: `Berkas objek 3D pada pelajaran "${lessonTitle}" harus .glb.` };
+        const ann = validasiAnotasi(l.model3d.annotations);
+        if (!ann.ok) return { ok: false, error: `${ann.error} (pelajaran "${lessonTitle}")` };
+        if (adaMeshGanda(ann.value)) {
+          return { ok: false, error: `Satu komponen hanya boleh punya satu keterangan (pelajaran "${lessonTitle}").` };
+        }
+        lesson.model3d = {
+          file: { name: nama, path, size: typeof f.size === "number" && f.size > 0 ? f.size : 0, mime: MIME_MODEL3D },
+          title: validasiJudulModel(l.model3d.title, nama),
+          annotations: ann.value,
+        };
       }
 
       lessons.push(lesson);

@@ -17,8 +17,13 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { check, finish } from "./checks";
 import { initAdmin } from "./project";
-import { beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
+import { bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
 import {
+  AMBANG_LELAH,
+  AMBANG_TIDUR,
+  JAM_LELAH_HABIS,
+  JAM_TIDUR_PENUH,
+  energiSaatIni,
   AMBANG_LAPAR,
   DETAK_MAKS_DETIK,
   HADIAH,
@@ -231,6 +236,38 @@ async function main() {
     check("jatah habis: setoran berikutnya ditolak", !lewat.ok && lewat.error.includes("hari ini"), lewat.ok ? "lolos" : lewat.error);
     const hariLain = await simpanKoinGame(db, uid, 10, new Date(tk.getTime() + 24 * 3600_000));
     check("ganti hari (WIB) jatah harian pulih, saldo koin lama tetap", hariLain.ok && hariLain.robot.koinSetorHari === 10 && hariLain.robot.koinGame >= 10, hariLain.ok ? `${hariLain.robot.koinSetorHari}/${hariLain.robot.koinGame}` : hariLain.error);
+
+    // 10. Energi (kelelahan) & tidur
+    console.log("\nEnergi & tidur");
+    const te = new Date("2026-05-01T03:00:00Z");
+    const segar = dataBaru(te);
+    check("robot baru segar (energi 100, tidak tidur)", energiSaatIni(segar, te) === 100 && segar.tidurSejak === null, "100");
+    const lelahJam = (JAM_LELAH_HABIS * (100 - AMBANG_LELAH + 5)) / 100;
+    check("terjaga: energi turun menurut waktu dan melewati ambang lelah", energiSaatIni(segar, new Date(te.getTime() + lelahJam * 3600_000)) < AMBANG_LELAH, energiSaatIni(segar, new Date(te.getTime() + lelahJam * 3600_000)).toFixed(1));
+    check("energi tak pernah di bawah 0", energiSaatIni(segar, new Date(te.getTime() + 99 * 3600_000)) === 0, "0");
+    const tidurData = { ...segar, energi: 10, energiAt: te.toISOString(), tidurSejak: te.toISOString() };
+    const pulih = energiSaatIni(tidurData, new Date(te.getTime() + (JAM_TIDUR_PENUH * 3600_000) / 2));
+    check("tidur: energi pulih (±setengah jam = +50)", Math.abs(pulih - 60) < 0.01, pulih.toFixed(1));
+    check("tidur: energi tak pernah di atas 100", energiSaatIni(tidurData, new Date(te.getTime() + 9 * 3600_000)) === 100, "100");
+    check("ambang: perlu tidur lebih rendah dari lelah", AMBANG_TIDUR < AMBANG_LELAH, `${AMBANG_TIDUR}<${AMBANG_LELAH}`);
+
+    // tidur & bangun lewat transaksi (idempoten; energi yang terkumpul tidak hilang)
+    await ref.update({ energi: 20, energiAt: te.toISOString(), tidurSejak: null });
+    const tdr = await tidurkan(db, uid, te);
+    check("padamkan lampu: robot tidur, energi dipotret", tdr.ok && tdr.robot.tidur && Math.round(tdr.robot.energiSekarang) === 20, tdr.ok ? `${tdr.robot.energiSekarang}` : tdr.error);
+    const tdr2 = await tidurkan(db, uid, new Date(te.getTime() + 10 * MENIT));
+    check("padamkan lampu lagi: tak mengulang potret (tetap sejak semula)", tdr2.ok && tdr2.robot.tidurSejak === te.toISOString(), tdr2.ok ? String(tdr2.robot.tidurSejak) : tdr2.error);
+    const tBangun = new Date(te.getTime() + 30 * MENIT);
+    const bgn = await bangunkan(db, uid, tBangun);
+    check("nyalakan lampu setelah 30 menit tidur: energi 20 → 70, tidak tidur lagi", bgn.ok && !bgn.robot.tidur && bgn.robot.tidurSejak === null && Math.round(bgn.robot.energi) === 70, bgn.ok ? `${bgn.robot.energi}` : bgn.error);
+    const bgn2 = await bangunkan(db, uid, new Date(tBangun.getTime() + 5 * MENIT));
+    check("nyalakan lampu lagi: tak mengubah potret energi", bgn2.ok && bgn.ok && bgn2.robot.energiAt === bgn.robot.energiAt && Math.round(bgn2.robot.energi) === 70, bgn2.ok ? bgn2.robot.energiAt : bgn2.error);
+    const sesudah = await bacaSyrobo(db, uid, new Date(tBangun.getTime() + (JAM_LELAH_HABIS * 3600_000) / 10));
+    check("setelah bangun energi mulai turun lagi (1/10 masa lelah = -10)", Math.abs(sesudah.energiSekarang - 60) <= 1, `${sesudah.energiSekarang}`);
+    const dataLamaE = normalisasi({ nama: "Lama" }, te);
+    check("data lama tanpa field energi terbaca segar (energi 100, tidak tidur)", dataLamaE.energi === 100 && dataLamaE.tidurSejak === null, `${dataLamaE.energi}`);
+    const dataRusakE = normalisasi({ energi: "x", energiAt: "bukan-tanggal", tidurSejak: 5 }, te);
+    check("energi/tanggal rusak jatuh ke bawaan", dataRusakE.energi === 100 && dataRusakE.tidurSejak === null && !Number.isNaN(Date.parse(dataRusakE.energiAt)), "ok");
   } finally {
     await ref.delete().catch(() => undefined);
   }

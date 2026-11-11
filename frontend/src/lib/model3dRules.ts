@@ -165,6 +165,11 @@ export function hrefModel3D(classId: string, postId: string, versi = ""): string
   return `/api/classes/model?class=${encodeURIComponent(classId)}&post=${encodeURIComponent(postId)}&v=${encodeURIComponent(versi)}`;
 }
 
+/** Tautan penyaji berkas model sebuah pelajaran kursus (hanya peserta yang berhak, lihat route-nya). */
+export function hrefModelKursus(courseSlug: string, lessonSlug: string, versi = ""): string {
+  return `/api/courses/${encodeURIComponent(courseSlug)}/model?lesson=${encodeURIComponent(lessonSlug)}&v=${encodeURIComponent(versi)}`;
+}
+
 /** Mesh (≥0) yang punya lebih dari satu keterangan - ditolak saat MENULIS, tak dihitung saat membaca data lama. */
 export function adaMeshGanda(daftar: readonly Anotasi3D[]): boolean {
   const lihat = new Set<number>();

@@ -73,6 +73,9 @@ export function attachmentPaths(sections: Section[] | undefined): string[] {
       for (const attachment of lesson.attachments ?? []) {
         if (typeof attachment?.path === "string") out.push(attachment.path);
       }
+      // Objek 3D pelajaran (class-files/{uid}/course-3d/...) ikut dihitung: dibuang saat diganti/dilepas/kursus dihapus.
+      const model = lesson.model3d?.file?.path;
+      if (typeof model === "string") out.push(model);
     }
   }
   return out;
@@ -92,8 +95,8 @@ export function courseFilePaths(data: {
   // lampiran tidak pernah sah berada di folder gambar latar, apalagi di folder
   // foto profil. Pemeriksaan yang longgar akan membiarkan nilai aneh di data
   // lama mengarahkan penghapusan ke folder yang sama sekali lain.
-  const paths = attachmentPaths(data.sections).filter((p) =>
-    p.startsWith(`${COURSE_ASSETS}/`),
+  const paths = attachmentPaths(data.sections).filter(
+    (p) => p.startsWith(`${COURSE_ASSETS}/`) || (p.startsWith(`${CLASS_FILES}/`) && p.includes("/course-3d/")),
   );
 
   const thumbnail = data.thumbnail;
