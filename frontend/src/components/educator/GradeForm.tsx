@@ -35,6 +35,8 @@ export default function GradeForm({
   // saling menimpa pesan pending/galat masing-masing.
   const [aiPending, startAiTransition] = useTransition();
   const [aiError, setAiError] = useState<string | null>(null);
+  // Bagian berkas yang tidak terbaca AI - nilainya tidak menghitung bagian itu.
+  const [peringatan, setPeringatan] = useState<string[]>([]);
 
   const angka = Number(nilai);
   const lulus = nilai !== "" && Number.isFinite(angka) && angka >= passingGrade;
@@ -54,9 +56,11 @@ export default function GradeForm({
 
   function askAi() {
     setAiError(null);
+    setPeringatan([]);
     startAiTransition(async () => {
       const res = await suggestGrade(id);
       if (!res.ok) return setAiError(res.error);
+      setPeringatan(res.peringatan);
       // Hanya mengisi kolom — TIDAK memanggil gradeSubmission. Educator tetap
       // harus meninjau lalu menekan tombol Simpan/Perbarui Nilai sendiri.
       setNilai(String(res.grade));
@@ -79,6 +83,16 @@ export default function GradeForm({
           Saran AI mengisi kolom di bawah - tinjau dan sunting sebelum menyimpan.
         </p>
         {aiError && <p className="mt-2 text-sm text-rust-700">{aiError}</p>}
+        {peringatan.length > 0 && (
+          <div role="status" className="mt-2 bg-amber-500/15 px-3 py-2 text-xs text-warn-text">
+            <p className="font-semibold">AI tidak bisa membaca semua isi berkas - periksa bagian ini sendiri:</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4">
+              {peringatan.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end gap-3">

@@ -118,11 +118,14 @@ export default function ClassGradeForm({
           </p>
         )}
         {peringatan.length > 0 && (
-          <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs text-amber-700">
-            {peringatan.map((w) => (
-              <li key={w}>{w}</li>
-            ))}
-          </ul>
+          <div role="status" className="mt-2 bg-amber-500/15 px-3 py-2 text-xs text-warn-text">
+            <p className="font-semibold">AI tidak bisa membaca semua isi berkas - periksa bagian ini sendiri:</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4">
+              {peringatan.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </div>
         )}
         {catatanAi && (
           <div className="mt-3 bg-paper-alt px-3 py-2">

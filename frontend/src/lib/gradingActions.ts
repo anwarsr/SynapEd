@@ -4,7 +4,7 @@ import { requireOwnedCourse } from "@/lib/educatorCourses";
 import { flattenLessons } from "@/lib/courses";
 import { getSubmission, MAX_FEEDBACK } from "@/lib/submissions";
 import { adminStorage } from "@/lib/firebase/admin";
-import { extractPdfText } from "@/lib/pdfText";
+import { bacaIsiBerkas } from "@/lib/berkasAiCore";
 import { buildGradingPrompt, buildGradingSystemPrompt, buildImageGradingUserText, parseGradingResponse } from "@/lib/gradingPrompt";
 import {
   OpenRouterError,
@@ -12,12 +12,14 @@ import {
   openRouterTerkonfigurasi,
   PESAN_AI_BELUM_DIKONFIGURASI,
   VISION_MODELS,
+  type OpenRouterContentPart,
   type OpenRouterMessage,
 } from "@/lib/openrouter";
 import { checkChatRateLimit } from "@/lib/chatRateLimit";
 import { SUBMISSION_FILES } from "@/lib/storagePaths";
 
-export type SuggestGradeResult = { ok: true; grade: number; feedback: string } | { ok: false; error: string };
+/** `peringatan` = bagian berkas yang tidak terbaca AI; educator wajib memeriksanya sendiri. */
+export type SuggestGradeResult = { ok: true; grade: number; feedback: string; peringatan: string[] } | { ok: false; error: string };
 
 /** Ekstensi -> mime — hanya jenis yang diverifikasi berfungsi dengan VISION_MODELS. */
 const IMAGE_MIME: Record<string, string> = {
@@ -40,6 +42,13 @@ function imageMimeOf(fileName: string): string | null {
  * konservatif; sesuaikan kalau ternyata terlalu ketat/longgar di pemakaian nyata.
  */
 const MAX_VISION_IMAGE_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Gambar dari dalam PDF yang dikirim sekali koreksi - sama dengan jatah gambar
+ * jawaban tugas kelas (jumlah yang sudah dipakai; lebih banyak belum
+ * diverifikasi terhadap VISION_MODELS). Sisanya dilaporkan sebagai peringatan.
+ */
+const MAX_GAMBAR_PDF = 3;
 
 /**
  * Draf nilai + feedback dari AI untuk satu pengumpulan tugas — TIDAK PERNAH
@@ -86,6 +95,7 @@ export async function suggestGrade(submissionId: string): Promise<SuggestGradeRe
 
   let messages: OpenRouterMessage[];
   let modelOpts: { models?: readonly string[]; maxTokens?: number } = {};
+  let peringatan: string[] = [];
 
   if (imageMime) {
     // Jalur GAMBAR — belum ada di ronde sebelumnya (fase itu hanya PDF).
@@ -118,25 +128,46 @@ export async function suggestGrade(submissionId: string): Promise<SuggestGradeRe
     // walau reasoning eksplisit dimatikan.
     modelOpts = { models: VISION_MODELS, maxTokens: 2000 };
   } else {
-    // Jalur TEKS (PDF) — sama seperti sebelumnya.
-    const extraction = await extractPdfText(buffer, { maxPages: 30, maxChars: 12000, minChars: 100 });
-    if (!extraction.ok) {
-      return {
-        ok: false,
-        error: "Format berkas ini belum bisa dianalisis AI (bukan PDF atau gambar yang didukung). Silakan nilai secara manual.",
-      };
+    // Jalur PDF: teks DAN gambar di dalamnya (termasuk PDF hasil pindai) lewat
+    // pembaca yang sama dengan koreksi tugas kelas; yang tak terbaca dilaporkan.
+    if (!submission.fileName.toLowerCase().endsWith(".pdf")) {
+      return { ok: false, error: "Format berkas ini belum bisa dianalisis AI (bukan PDF atau gambar yang didukung). Silakan nilai secara manual." };
     }
+    const isi = await bacaIsiBerkas(
+      [{ nama: submission.fileName, mime: "application/pdf", ambil: async () => buffer }],
+      { maxChars: 12000, maxGambar: MAX_GAMBAR_PDF },
+    );
+    if (!isi.teks.trim() && isi.gambar.length === 0) {
+      const sebab = isi.tidakTerbaca.length > 0 ? ` (${isi.tidakTerbaca.join("; ")})` : "";
+      return { ok: false, error: `AI tidak bisa membaca berkas ini${sebab}. Silakan nilai secara manual.` };
+    }
+    peringatan = isi.tidakTerbaca;
 
     const prompt = buildGradingPrompt({
       lessonTitle: lesson.title,
       instructions: lesson.instructions ?? null,
       passingGrade: course.passingGrade,
-      submissionText: extraction.text,
+      submissionText: isi.teks,
+      jumlahGambar: isi.gambar.length,
+      tidakTerbaca: isi.tidakTerbaca,
     });
     messages = [
       { role: "system", content: prompt.system },
-      { role: "user", content: prompt.user },
+      {
+        role: "user",
+        content:
+          isi.gambar.length > 0
+            ? [
+                { type: "text", text: prompt.user },
+                ...isi.gambar.flatMap((g): OpenRouterContentPart[] => [
+                  { type: "text", text: `Gambar: ${g.label}` },
+                  { type: "image_url", image_url: { url: g.url } },
+                ]),
+              ]
+            : prompt.user,
+      },
     ];
+    if (isi.gambar.length > 0) modelOpts = { models: VISION_MODELS, maxTokens: 2000 };
   }
 
   let full = "";
@@ -157,5 +188,5 @@ export async function suggestGrade(submissionId: string): Promise<SuggestGradeRe
     return { ok: false, error: "AI tidak memberi jawaban yang bisa dibaca. Coba lagi." };
   }
 
-  return { ok: true, grade: parsed.grade, feedback: parsed.feedback };
+  return { ok: true, grade: parsed.grade, feedback: parsed.feedback, peringatan };
 }

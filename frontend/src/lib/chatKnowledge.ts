@@ -156,8 +156,14 @@ export const PENGETAHUAN_SITUS = `## Akun
   AI" secara bebas (soal, kunci jawaban, rubrik, rentang nilai, panjang atau
   gaya komentar) dan/atau mengunggah berkas konteks; AI memahami isinya
   sendiri, dan konteks ini tidak pernah terlihat siswa. AI bisa ikut membaca
-  instruksi & lampiran tugas, atau hanya konteks dari pengajar. Jawaban ZIP dan
-  PDF hasil pindai belum bisa dibaca AI.
+  instruksi & lampiran tugas, atau hanya konteks dari pengajar.
+- AI membaca seluruh isi berkas: teks, gambar JPG/PNG, PDF (termasuk hasil
+  pindai/foto dan gambar di dalamnya), dan Word/PowerPoint/Excel beserta
+  gambar, kotak teks, catatan kaki, rumus, dan angka grafik di dalamnya.
+  Yang tidak terbaca (isi ZIP, gambar format EMF/WMF, garis/panah/coretan di
+  Word, diagram garis di PDF, halaman setelah 30 halaman, atau gambar di atas
+  batas 5 gambar sekali koreksi) selalu ditampilkan sebagai peringatan agar
+  pengajar memeriksanya sendiri.
 
 ## Menjadi educator
 - Ajukan diri lewat tombol "Jadi Educator" di navbar atau halaman /educator.
@@ -175,7 +181,9 @@ export const PENGETAHUAN_SITUS = `## Akun
   platform, dan perubahan pembagian hanya berlaku untuk penjualan berikutnya.
 - Educator menilai penugasan kursus di halaman peserta kursusnya. Tombol
   "Minta Saran AI" mengisi draf nilai + catatan, tetapi educator tetap harus
-  meninjau dan menyimpannya sendiri.
+  meninjau dan menyimpannya sendiri. AI membaca PDF (termasuk hasil pindai dan
+  gambar di dalamnya) dan gambar; bagian yang tidak terbaca muncul sebagai
+  peringatan.
 
 ## Quiz kelompok & rubrik
 - Quiz kelas bisa dibuat individu atau kelompok. Quiz kelompok: pengajar mengisi

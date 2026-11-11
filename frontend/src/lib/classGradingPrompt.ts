@@ -54,7 +54,7 @@ export interface BagianSoal {
   catatan: string;
   /** Isi berkas konteks dari pengajar yang sudah dibaca. */
   teksBerkasKonteks: string;
-  /** Nama berkas yang tidak bisa dibaca, supaya model tahu ada yang hilang. */
+  /** Bagian berkas yang tidak terbaca (berkas utuh, gambar, halaman), supaya model tahu ada yang hilang. */
   tidakTerbaca: string[];
   /** Jumlah gambar soal/konteks yang menyusul setelah teks ini. */
   jumlahGambar: number;
@@ -71,8 +71,10 @@ export function teksBagianSoal(s: BagianSoal): string {
     konteks
       ? `## Konteks dari pengajar (siswa TIDAK melihat bagian ini; bisa berisi soal, kunci jawaban, rubrik, rentang nilai, aturan komentar, dll.)\n${konteks}`
       : "",
-    s.jumlahGambar > 0 ? `(${s.jumlahGambar} gambar soal/konteks menyusul di bawah.)` : "",
-    s.tidakTerbaca.length > 0 ? `(Berkas yang tidak bisa dibaca: ${s.tidakTerbaca.join(", ")}.)` : "",
+    s.jumlahGambar > 0
+      ? `(${s.jumlahGambar} gambar soal/konteks menyusul di bawah, masing-masing didahului labelnya. Penanda "[Gambar n: lihat gambar …]" di teks menunjukkan letak gambar itu di dokumennya.)`
+      : "",
+    s.tidakTerbaca.length > 0 ? `(Bagian soal/konteks yang tidak bisa dibaca:\n- ${s.tidakTerbaca.join("\n- ")})` : "",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -88,9 +90,11 @@ export function teksBagianJawaban(j: BagianJawaban): string {
   return [
     `## Jawaban siswa`,
     j.teks.trim() || "(Tidak ada jawaban teks.)",
-    j.jumlahGambar > 0 ? `(${j.jumlahGambar} gambar jawaban siswa menyusul di bawah.)` : "",
+    j.jumlahGambar > 0
+      ? `(${j.jumlahGambar} gambar jawaban siswa menyusul di bawah, masing-masing didahului labelnya. Penanda "[Gambar n: lihat gambar …]" di teks menunjukkan letak gambar itu di dokumen jawaban.)`
+      : "",
     j.tidakTerbaca.length > 0
-      ? `(Berkas jawaban yang tidak bisa dibaca: ${j.tidakTerbaca.join(", ")}. Jangan menghukum siswa karena itu; nilai bagian yang terbaca dan sebutkan di FEEDBACK bahwa berkas tersebut perlu diperiksa pengajar.)`
+      ? `(Bagian jawaban yang tidak bisa dibaca:\n- ${j.tidakTerbaca.join("\n- ")}\nJangan menghukum siswa karena itu; nilai bagian yang terbaca dan sebutkan di FEEDBACK bahwa bagian tersebut perlu diperiksa pengajar.)`
       : "",
   ]
     .filter(Boolean)

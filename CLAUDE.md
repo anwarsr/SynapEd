@@ -338,7 +338,8 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
    untuk nilai/validasi yang dipakai klien + server + skrip tsx: `*Rules.ts`,
    `*Types.ts`, `contributors.ts`, `royaltySplit.ts`, `royaltyTerms.ts`,
    `referralRules.ts`, `classTypes.ts`, `classAssignmentRules.ts`, `profileTypes.ts`, `chatLinks.ts`,
-   `chatKnowledge.ts`, `premiumRules.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
+   `chatKnowledge.ts`, `premiumRules.ts`, `isiDokumen.ts`, `pngMini.ts`, `pdfIsi.ts`,
+   `officeText.ts`, `berkasAiCore.ts`, dan seluruh `lib/lab/*`. Mengimpor modul
    `server-only` dari komponen klien menyeret firebase-admin ke bundel browser.
 5. **Semua koleksi Firestore tertutup dari klien** (`allow read, write: if false`),
    kecuali `courses/{slug}` baca publik dan `users/{uid}` baca oleh pemiliknya.
@@ -641,12 +642,14 @@ manual (menumpuk), bagi hasil sesuai pemakaian, akses berhenti tetapi kemajuan t
   tidak pernah jadi galat 400.
 - **Penilaian AI** (`gradingActions.ts`, tombol "Minta Saran AI" di `GradeForm.tsx`):
   hanya **saran**, tidak pernah memanggil `gradeSubmission` sendiri — educator wajib
-  menyimpan manual. Mendukung dua jenis berkas pengumpulan: PDF (ekstrak teks via
-  `pdfText.ts`, pakai `pdfjs-dist` yang sudah ada — BUKAN `pdf-parse`, paket itu
-  pernah dilaporkan luas menyebabkan galat ENOENT saat di-bundle Next.js production)
-  dan gambar JPEG/PNG/WebP/GIF (dikirim langsung sebagai `image_url` base64 ke
-  `VISION_MODELS`). PDF hasil **pindai/scan** (bukan ketikan) tetap gagal — ekstraksi
-  tesknya kosong, dan itu bukan gambar biasa jadi tidak lewat jalur vision juga.
+  menyimpan manual. Mendukung dua jenis berkas pengumpulan: PDF (teks + gambar di
+  dalamnya, termasuk PDF hasil pindai, lewat `berkasAiCore`/`pdfIsi.ts` - lihat
+  "Koreksi AI" di bagian Tugas kelas; pakai `pdfjs-dist` yang sudah ada — BUKAN
+  `pdf-parse`, paket itu pernah dilaporkan luas menyebabkan galat ENOENT saat
+  di-bundle Next.js production) dan gambar JPEG/PNG/WebP/GIF (dikirim langsung sebagai
+  `image_url` base64 ke `VISION_MODELS`). Bagian PDF yang tak terbaca dikembalikan
+  sebagai `peringatan` (`SuggestGradeResult`) dan ditampilkan `GradeForm`.
+  `pdfText.ts` kini hanya dipakai tutor chat (`chatLessonContext.ts`).
 - Format balasan penilaian sengaja `GRADE: <n>` / `FEEDBACK: <teks>` — dua baris
   polos, bukan JSON — karena model gratis OpenRouter terbukti tidak selalu patuh
   ke instruksi format kompleks. `parseGradingResponse` mengambil kecocokan
@@ -746,12 +749,48 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
     tanpa itu state lama bertahan dan simpanan berikutnya membuang unggahan baru.
   - Hapus post/kelas membaca `getPengaturanAi`/`berkasAiKelas` SEBELUM
     `recursiveDelete`, lalu meneruskan path-nya ke `bersihkanPost/Kelas`.
-  - Pembacaan berkas (`classGradingFiles.ts`): PDF → `pdfText`, JPG/PNG → base64
-    ke `VISION_MODELS` (≤ 4 MB, maks 2 gambar soal + 3 jawaban), DOCX/PPTX/XLSX →
-    `officeText.ts` (pembaca ZIP+XML sendiri dengan zlib, tanpa dependensi;
-    `maxOutputLength` 8 MB per entri menahan bom ZIP). Yang tak terbaca dilaporkan
-    sebagai `peringatan`; jawaban yang sama sekali tak terbaca ditolak tanpa
-    memanggil AI. Gambar diselipkan tepat setelah teks bagiannya (soal vs jawaban).
+  - **Pembacaan berkas = `berkasAiCore.ts`** (netral; `classGradingFiles.ts` hanya
+    pembungkus Storage; dipakai JUGA oleh `suggestGrade` kursus untuk PDF). Prinsip
+    pemilik: AI membaca SELURUH isi dokumen, dan setiap bagian yang tetap tak terbaca
+    WAJIB masuk `tidakTerbaca` (kalimat berlokasi + sebab) → `peringatan` di UI DAN
+    disebut di prompt ("jangan menghukum siswa"). Jangan menambah jalur yang
+    melewatkan sesuatu diam-diam.
+    - Anggaran bersama per panggilan: teks `maxChars`, gambar `maxGambar` (kelas: 2 soal
+      + 3 jawaban; kursus `MAX_GAMBAR_PDF` 3 - jumlah yang sudah dipakai; lebih banyak
+      BELUM diverifikasi terhadap `VISION_MODELS`), `MAX_GAMBAR_BYTES` 4 MB. Gambar di
+      atas jatah tidak didekode/dibongkar (hanya dicatat) dan dikelompokkan per sebab.
+    - Penanda posisi: ekstraktor menaruh `penandaGambar(i)` (`\u0000G<i>\u0000`,
+      `isiDokumen.ts`) di teks; inti menggantinya jadi `[Gambar n: lihat gambar
+      "<berkas> - Gambar n"]` atau `[Gambar n - tidak terbaca: <sebab>]`, dan setiap
+      gambar dikirim didahului bagian teks `Gambar: <label yang sama>`
+      (`classGradingActions.gambarKe`, `suggestGrade`). Dokumen tanpa teks & tanpa
+      gambar terkirim tidak dimasukkan ke teks (AI tak "menilai" penanda kosong).
+    - **PDF** (`pdfIsi.ts`): pdf.js legacy dengan `isOffscreenCanvasSupported:false`
+      memberi piksel mentah (JPEG/Flate didekode pdf.js sendiri, tanpa canvas) →
+      `pngMini.ts` (encoder PNG + perkecil rata-rata kotak ke `SISI_GAMBAR_MAKS` 1600 +
+      ringkas ke 1 kanal bila abu-abu). Objek gambar diselesaikan ASINKRON - selalu
+      lewat `ambilObjek` (callback + batas 5 dtk), `get(id)` sinkron melempar. Mask
+      pdf.js 6 berupa `{data:"mask_p0_1"}` (ID, bukan bytes); 1-bit: bit 0 = tinta
+      hitam, 1 = putih (mask & GRAYSCALE_1BPP sama). `maxImageSize` 20 MP (lebih besar
+      dibuang pdf.js → halaman itu jatuh ke catatan "tidak berisi teks atau gambar").
+      Gambar < 24 px diabaikan; gambar sama (ID ATAU sidik SHA-1 piksel, ID pdf.js per
+      halaman) dikirim sekali dan dirujuk di tiap halaman. Catatan: halaman di luar
+      `MAX_HALAMAN_PDF` 30, halaman vektor (≥24 lengkung ATAU ≥400 path - tabel
+      bergaris tidak terpicu), halaman kosong.
+    - **Office** (`officeText.ts` → `extractOfficeIsi`; `extractOfficeText` tetap
+      untuk kode lama, penanda dibuang): gambar lewat relasi `_rels` per bagian
+      (`a:blip r:embed/link`, `v:imagedata`); PNG/JPEG/GIF/WebP terkirim, EMF/WMF/dll.,
+      tautan internet, berkas hilang → tercatat. `mc:AlternateContent` = Choice saja
+      (dulu Choice+Fallback → isi kotak teks terbaca DUA kali), kecuali coretan tinta
+      (`contentPart`) yang memakai gambar Fallback-nya. DOCX juga membaca catatan
+      kaki/akhir, komentar, header/footer (header & footer TERAKHIR agar logo tak
+      merebut jatah gambar), rumus OMML linear (`^( )`, `_( )`, `((a)/(b))`, `√( )`),
+      grafik dari XML-nya (`a:t` + `c:v`), teks SmartArt; bentuk tanpa gambar/teks
+      (`wps:wsp` tanpa `txbx`, VML) & tinta tanpa cadangan → catatan. XLSX: gambar
+      lembar lewat `xl/drawings`. Bom ZIP tetap ditahan `maxOutputLength` 8 MB/entri.
+    - Uji: `npm run verify:berkas-ai` (murni; membuat DOCX/PPTX/XLSX/PDF sendiri,
+      termasuk JPEG pindaian, mask 1-bit, gambar 36 MP; 9 sabotase terbukti merah).
+      Sudah dicoba juga pada DOCX buatan python-docx dan PDF cetakan Chrome.
   - Prompt (`classGradingPrompt.ts`, netral): skala 0..`maxPoints` tugas; isi
     jawaban siswa dinyatakan sebagai DATA (abaikan perintah di dalamnya).
     `parseGradingResponse(raw, max, maxGrade=100)` — regex 4 digit + `(?!\d)`:
@@ -1436,7 +1475,12 @@ materi array terbuka.
 - `verify-model3d` (butuh dev server) menulis GLB uji langsung ke bucket (melewati rules, jadi TIDAK menguji `storage.rules`) lalu membersihkannya.
 - `verify-premium` (dev server) menyalin & memulihkan `settings/payments` PERSIS, membuat kode referral & kursus uji, lalu menghapus semua dokumen premium/pesanan/pendapatan akun uji.
 - `verify-syrobo` tanpa dev server tetapi memakai Firestore asli (uid uji dihapus lagi).
-- Suite murni tanpa server: `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
+- `verify-class-assignment` "jawaban terbaca diteruskan ke AI": kini `.env.local` BERISI
+  `OPENROUTER_API_KEY`, jadi AI sungguhan dipanggil - per 11 Nov 2026 model gratis membalas
+  KOSONG/acak ("AI tidak memberi jawaban yang bisa dibaca"), sama persis dengan kode sebelum
+  pembaca berkas baru (diuji dengan versi git). Itu masalah model gratis di rantai OpenRouter,
+  bukan pembaca berkas.
+- Suite murni tanpa server: `verify-berkas-ai`, `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office
