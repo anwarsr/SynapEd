@@ -12,6 +12,10 @@ export interface GradingPromptInput {
   instructions: string | null;
   passingGrade: number;
   submissionText: string;
+  /** Gambar dari dalam berkas yang menyusul sebagai lampiran (berlabel). */
+  jumlahGambar?: number;
+  /** Bagian berkas yang tidak terbaca - supaya model tidak menilai seolah bagian itu kosong. */
+  tidakTerbaca?: string[];
 }
 
 export interface GradingPrompt {
@@ -51,10 +55,19 @@ ${input.passingGrade}`;
 }
 
 export function buildGradingPrompt(input: GradingPromptInput): GradingPrompt {
+  const tambahan = [
+    input.jumlahGambar
+      ? `(${input.jumlahGambar} gambar dari berkas peserta menyusul di bawah, masing-masing didahului labelnya. Penanda "[Gambar n: lihat gambar …]" di teks menunjukkan letaknya.)`
+      : "",
+    input.tidakTerbaca?.length
+      ? `(Bagian berkas yang tidak bisa dibaca:\n- ${input.tidakTerbaca.join("\n- ")}\nJangan menghukum peserta karena itu; nilai bagian yang terbaca dan sebutkan di FEEDBACK bahwa bagian tersebut perlu diperiksa educator.)`
+      : "",
+  ].filter(Boolean);
+
   const user = `${briefSection(input)}
 
 ## Teks hasil ekstraksi berkas yang dikumpulkan peserta (format asli mungkin tidak terjaga)
-${input.submissionText}`;
+${input.submissionText || "(Tidak ada teks - jawabannya berupa gambar.)"}${tambahan.length ? `\n\n${tambahan.join("\n\n")}` : ""}`;
 
   return { system: buildGradingSystemPrompt(), user };
 }

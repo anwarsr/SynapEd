@@ -116,8 +116,10 @@ Satu pembayaran membuka **semua kursus publik berbayar selama 30 hari**
   sebelum-sesudah dalam kalimat yang mudah dibaca.
 - **Daftar peserta & penilaian** per kursus (`/educator/courses/…/students`),
   dengan tombol **Minta Saran AI** yang mengisi draf nilai + catatan (PDF
-  ketikan maupun gambar JPEG/PNG) — educator tetap wajib meninjau dan
-  menyimpan sendiri, bukan penilaian otomatis.
+  ketikan, PDF hasil pindai, gambar di dalam PDF, maupun gambar JPEG/PNG) —
+  educator tetap wajib meninjau dan menyimpan sendiri, bukan penilaian
+  otomatis. Bagian berkas yang tidak terbaca AI ditampilkan sebagai
+  peringatan di bawah tombolnya.
 
 ### Kontributor & bagi hasil (royalti)
 
@@ -506,9 +508,20 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
     memahami maksudnya sendiri (skala nilai lain dikonversi ke nilai maksimal
     tugas). Konteks **tidak pernah terlihat siswa**. Pengajar juga memilih apakah
     AI ikut membaca **instruksi & lampiran tugas** atau **hanya konteks** itu;
-  - AI bisa membaca jawaban teks, PDF ketikan, gambar JPG/PNG, dan dokumen
-    DOCX/PPTX/XLSX. ZIP dan PDF hasil pindai tidak terbaca — pengajar diberi
-    tahu berkas mana yang dilewati;
+  - AI membaca **seluruh isi** dokumen: jawaban teks, gambar JPG/PNG, PDF
+    (teks **dan** gambar di dalamnya, termasuk PDF hasil pindai/foto), serta
+    DOCX/PPTX/XLSX beserta **gambar di dalamnya**, kotak teks, catatan kaki,
+    header/footer, komentar, rumus (dibaca linear, mis. `x^(2)`), angka
+    grafik, dan teks SmartArt. Posisi tiap gambar ditandai di teks ("[Gambar 2]")
+    sehingga AI tahu gambar mana menjawab soal mana;
+  - yang **tidak** terbaca selalu muncul sebagai **peringatan** di bawah tombol
+    koreksi, lengkap dengan lokasi & sebabnya: isi ZIP, gambar format EMF/WMF,
+    gambar yang hanya tautan internet, bentuk garis/panah/coretan tinta di
+    Word, diagram/grafik garis (vektor) di PDF, halaman PDF di luar 30 halaman
+    pertama, teks yang melebihi batas, dan gambar di atas jatah (2 gambar
+    soal/konteks + 3 gambar jawaban sekali koreksi, maks. 4 MB per gambar).
+    AI juga diberi tahu bagian mana yang hilang supaya tidak menilainya
+    seolah kosong;
   - memakai OpenRouter (model gratis), berbagi kuota harian dengan asisten chat
     dan "Minta Saran AI" kursus, maksimal 8 koreksi per menit per pengajar.
     Jawaban siswa dikirim ke layanan AI pihak ketiga saat dikoreksi.
@@ -658,6 +671,7 @@ npm run verify:sorting            # Lab Sorting: hasil stabil, langkah, baris ko
 npm run verify:searching          # Lab Searching: hasil, Kiri/Tengah/Kanan, baris kode, pseudocode dijalankan, tautan (murni)
 npm run verify:premium-rules      # Premium: perpanjangan, bagi hasil, Σ = dibayar (murni)
 npm run verify:premium            # Premium: akses, pembayaran, cabut, bagi hasil, naik ke paid (dev server)
+npm run verify:berkas-ai          # pembaca berkas koreksi AI: gambar di DOCX/PPTX/XLSX/PDF, PDF pindaian, peringatan (murni)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```
@@ -677,7 +691,9 @@ npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman s
   simbol Persiapan (sekarang ditulis sebagai penugasan + Keputusan).
 - Tugas kelas: mengembalikan tugas ke siswa untuk diperbaiki, nilai untuk siswa yang tidak mengumpulkan,
   rekap nilai per kelas, dan koreksi AI untuk semua siswa sekaligus.
-- Koreksi AI untuk PDF hasil pindai dan isi arsip ZIP.
+- Koreksi AI untuk isi arsip ZIP, gambar garis/diagram vektor di PDF, dan lebih
+  dari 5 gambar sekali koreksi (model gratis yang dipakai baru diverifikasi
+  sampai jumlah itu).
 - Lab Python: paket di luar pustaka standar (numpy, dll.), grafik/turtle, dan
   input interaktif saat program berjalan (masukan diisi di muka). Pyodide
   masih dari CDN — tanpa internet lab Python tidak bisa dibuka.

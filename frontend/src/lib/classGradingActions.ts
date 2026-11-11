@@ -16,7 +16,7 @@ import {
   MIME_AI_KONTEKS,
   type KelasBerkas,
 } from "@/lib/classAssignmentRules";
-import { bacaBerkasAi } from "@/lib/classGradingFiles";
+import { bacaBerkasAi, type GambarAi } from "@/lib/classGradingFiles";
 import { buildClassGradingSystemPrompt, teksBagianJawaban, teksBagianSoal } from "@/lib/classGradingPrompt";
 import { parseGradingResponse } from "@/lib/gradingPrompt";
 import {
@@ -94,7 +94,7 @@ export async function suggestClassGrade(
   ]);
   const lampiran = pakaiTugas
     ? await bacaBerkasAi(post.attachments, { maxChars: 8000, maxGambar: Math.max(0, 2 - konteks.gambar.length) })
-    : { teks: "", gambar: [] as string[], tidakTerbaca: [] as string[] };
+    : { teks: "", gambar: [] as GambarAi[], tidakTerbaca: [] as string[] };
   const soal = {
     gambar: [...konteks.gambar, ...lampiran.gambar],
     tidakTerbaca: [...lampiran.tidakTerbaca, ...konteks.tidakTerbaca],
@@ -124,8 +124,13 @@ export async function suggestClassGrade(
   });
 
   const adaGambar = soal.gambar.length + jawaban.gambar.length > 0;
-  const gambarKe = (urls: string[]): OpenRouterContentPart[] =>
-    urls.map((url) => ({ type: "image_url", image_url: { url } }));
+  // Tiap gambar didahului labelnya - label yang sama dengan rujukan "[Gambar n: lihat gambar …]"
+  // di teks dokumen, supaya AI tahu gambar mana menjawab bagian mana.
+  const gambarKe = (daftar: GambarAi[]): OpenRouterContentPart[] =>
+    daftar.flatMap((g): OpenRouterContentPart[] => [
+      { type: "text", text: `Gambar: ${g.label}` },
+      { type: "image_url", image_url: { url: g.url } },
+    ]);
 
   const messages: OpenRouterMessage[] = [
     { role: "system", content: buildClassGradingSystemPrompt(p.maxPoints, MAX_CLASS_FEEDBACK) },
@@ -171,8 +176,8 @@ export async function suggestClassGrade(
     grade: parsed.grade,
     feedback: parsed.feedback,
     peringatan: [
-      ...soal.tidakTerbaca.map((n) => `Konteks soal tidak terbaca: ${n}`),
-      ...jawaban.tidakTerbaca.map((n) => `Jawaban tidak terbaca: ${n}`),
+      ...soal.tidakTerbaca.map((n) => `Soal/konteks: ${n}`),
+      ...jawaban.tidakTerbaca.map((n) => `Jawaban siswa: ${n}`),
     ],
   };
 }
