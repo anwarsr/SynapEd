@@ -169,7 +169,7 @@ function Dapur({ bisik }: { bisik: (t: string) => void }) {
   return (
     <>
       {/* jendela berdaun dua: langit dengan matahari & awan, bukit, pegangan; ambang berpot tanaman; tirai terikat tali */}
-      <Hias className="left-[36%] w-[clamp(124px,15.500vw,208px)]" style={{ bottom: `${MEJA + 12}%` }}>
+      <Hias className="left-[36%] w-[clamp(124px,15.500vw,208px)] max-sm:left-[34%] max-sm:w-[26vw]" style={{ bottom: `${MEJA + 12}%` }}>
         <Gbr vb="0 0 190 220">
           <defs>
             <clipPath id="rg-klipJendela">
@@ -209,7 +209,7 @@ function Dapur({ bisik }: { bisik: (t: string) => void }) {
       </Hias>
 
       {/* lemari dapur: dari pijakan sampai permukaan meja */}
-      <Hias className="left-[2%] w-[58%]" style={{ bottom: `${PIJAK}%`, height: `${MEJA - PIJAK}%` }}>
+      <Hias className="left-[2%] w-[58%] max-sm:w-[64%]" style={{ bottom: `${PIJAK}%`, height: `${MEJA - PIJAK}%` }}>
         <div className="relative h-full w-full border-[3px] border-[#2B2233] bg-[#9A6B43]">
           {[0, 1, 2, 3].map((i) => (
             <span key={i} className="absolute top-[9%] h-[72%] w-[22%] border-[3px] border-[#2B2233] bg-[#A97B52]" style={{ left: `${i * 25 + 1.5}%` }}>
@@ -220,10 +220,10 @@ function Dapur({ bisik }: { bisik: (t: string) => void }) {
           <span className="absolute inset-x-0 bottom-0 h-[9%] border-t-[3px] border-[#2B2233] bg-[#3A2519]" />
         </div>
       </Hias>
-      <Hias className="left-[1%] w-[60%] border-[3px] border-[#2B2233] bg-[#E4DDCD]" style={{ bottom: `${MEJA - 1.5}%`, height: "2.5%" }} />
-      <Hias className="left-[1.5%] w-[59%] h-[2%] [background:linear-gradient(180deg,rgba(43,34,51,0.28),transparent)]" style={{ bottom: `${MEJA - 3.5}%` }} />
+      <Hias className="left-[1%] w-[60%] max-sm:w-[66%] border-[3px] border-[#2B2233] bg-[#E4DDCD]" style={{ bottom: `${MEJA - 1.5}%`, height: "2.5%" }} />
+      <Hias className="left-[1.5%] w-[59%] max-sm:w-[65%] h-[2%] [background:linear-gradient(180deg,rgba(43,34,51,0.28),transparent)]" style={{ bottom: `${MEJA - 3.5}%` }} />
       <Hias
-        className="left-[1.5%] w-[59%] bg-[#EDE5D3] [background-image:linear-gradient(rgba(43,34,51,0.2)_1.5px,transparent_1.5px),linear-gradient(90deg,rgba(43,34,51,0.2)_1.5px,transparent_1.5px)] [background-size:34px_34px]"
+        className="left-[1.5%] w-[59%] max-sm:w-[65%] bg-[#EDE5D3] [background-image:linear-gradient(rgba(43,34,51,0.2)_1.5px,transparent_1.5px),linear-gradient(90deg,rgba(43,34,51,0.2)_1.5px,transparent_1.5px)] [background-size:34px_34px]"
         style={{ bottom: `${MEJA + 1}%`, height: "11%" }}
       />
 
@@ -236,7 +236,7 @@ function Dapur({ bisik }: { bisik: (t: string) => void }) {
           setTutup((n) => n + 1);
           bisik(api ? "Api dimatikan." : MENU_DAPUR[Math.floor(Math.random() * MENU_DAPUR.length)]);
         }}
-        className="left-[5%] w-[clamp(150px,19vw,250px)]"
+        className="left-[5%] w-[clamp(150px,19vw,250px)] max-sm:left-[3%] max-sm:w-[34vw]"
         style={{ bottom: `${MEJA}%` }}
       >
         <Gbr vb="0 0 170 140">
@@ -275,7 +275,7 @@ function Dapur({ bisik }: { bisik: (t: string) => void }) {
           setRoti((n) => n + 1);
           bisik("Ting! Roti panggangnya matang.");
         }}
-        className="left-[38%] w-[clamp(74px,9vw,118px)]"
+        className="left-[38%] w-[clamp(74px,9vw,118px)] max-sm:left-[40%] max-sm:w-[17vw]"
         style={{ bottom: `${MEJA}%` }}
       >
         <Gbr vb="0 0 100 107">
@@ -301,7 +301,7 @@ function Dapur({ bisik }: { bisik: (t: string) => void }) {
       </Benda>
 
       {/* talenan + pisau di atasnya + gelas */}
-      <Hias className="left-[49%] w-[clamp(64px,7.5vw,100px)]" style={{ bottom: `${MEJA}%` }}>
+      <Hias className="left-[49%] w-[clamp(64px,7.5vw,100px)] max-sm:hidden" style={{ bottom: `${MEJA}%` }}>
         <Gbr vb="0 0 100 26">
           <rect x="4" y="10" width="92" height="14" rx="5" fill="#A67654" />
           <path d="M26 9l44-3 3 4-44 3z" fill="#D3DCE6" strokeWidth={2} />
@@ -314,7 +314,7 @@ function Dapur({ bisik }: { bisik: (t: string) => void }) {
           setGelas((n) => n + 1);
           bisik("Klining! Gelasnya berdenting.");
         }}
-        className="left-[57%] w-[clamp(26px,3vw,40px)]"
+        className="left-[57%] w-[clamp(26px,3vw,40px)] max-sm:left-[59%] max-sm:w-[6vw]"
         style={{ bottom: `${MEJA}%` }}
       >
         <Gbr vb="0 0 36 52">
@@ -333,7 +333,7 @@ function Dapur({ bisik }: { bisik: (t: string) => void }) {
           setKulkas((k) => !k);
           bisik(kulkas ? "Kulkas ditutup." : "Isinya buah, susu, telur, dan sup dingin.");
         }}
-        className="right-[4%] w-[clamp(124px,14.500vw,196px)]"
+        className="right-[4%] w-[clamp(124px,14.500vw,196px)] max-sm:right-[2%] max-sm:w-[28vw]"
         style={{ bottom: `${PIJAK}%` }}
       >
         <Gbr vb="0 0 124 262">
@@ -405,7 +405,7 @@ function KamarMandi({ bisik }: { bisik: (t: string) => void }) {
           setBak((n) => n + 1);
           bisik("Bak mandinya bersih dan siap dipakai.");
         }}
-        className="left-[4%] w-[clamp(280px,36vw,480px)]"
+        className="left-[4%] w-[clamp(280px,36vw,480px)] max-sm:left-[2%] max-sm:w-[58vw]"
         style={{ bottom: `${PIJAK}%` }}
       >
         <Gbr vb="0 0 340 130">
@@ -420,7 +420,7 @@ function KamarMandi({ bisik }: { bisik: (t: string) => void }) {
       </Benda>
 
       {/* ── meja wastafel: lemari berpintu + permukaan marmer berbak cuci + keran tuas; cermin digantung di atasnya ── */}
-      <div className="absolute left-[49%] z-[2] w-[clamp(120px,14vw,188px)] aspect-[150/360]" style={{ bottom: `${PIJAK}%` }}>
+      <div className="absolute left-[49%] z-[2] w-[clamp(120px,14vw,188px)] aspect-[150/360] max-sm:left-[64%] max-sm:w-[32vw]" style={{ bottom: `${PIJAK}%` }}>
         <Gbr vb="0 0 150 360" className="pointer-events-none absolute inset-0 h-full">
           <defs>
             <clipPath id="rg-klipCerminMandi">
@@ -550,7 +550,7 @@ function RuangGanti({ bisik }: { bisik: (t: string) => void }) {
   return (
     <>
       {/* tirai: tongkat dipasang ke dinding, kain menjuntai sampai lantai */}
-      <Hias className="left-0 top-0 w-[clamp(58px,7vw,96px)]" style={{ height: `${100 - LANTAI}%` }}>
+      <Hias className="left-0 top-0 w-[clamp(58px,7vw,96px)] max-sm:w-[6vw]" style={{ height: `${100 - LANTAI}%` }}>
         <svg viewBox="0 0 80 400" preserveAspectRatio="none" className="block h-full w-full" {...G}>
           <rect x="0" y="6" width="74" height="8" rx="4" fill="#8A5F44" />
           <circle cx="74" cy="10" r="6" fill="#C48A2E" />
@@ -566,7 +566,7 @@ function RuangGanti({ bisik }: { bisik: (t: string) => void }) {
           setKilau((n) => n + 1);
           bisik(KATA_GANTI[Math.floor(Math.random() * KATA_GANTI.length)]);
         }}
-        className="left-[9%] w-[clamp(120px,14vw,190px)]"
+        className="left-[9%] w-[clamp(120px,14vw,190px)] max-sm:left-[6%] max-sm:w-[23vw]"
         style={{ bottom: `${PIJAK}%` }}
       >
         <Gbr vb="0 0 120 304">
@@ -601,7 +601,7 @@ function RuangGanti({ bisik }: { bisik: (t: string) => void }) {
           setGantung((n) => n + 1);
           bisik("Bajunya bergoyang-goyang.");
         }}
-        className="left-[26%] w-[clamp(220px,27vw,350px)]"
+        className="left-[26%] w-[clamp(220px,27vw,350px)] max-sm:left-[30%] max-sm:w-[38vw]"
         style={{ bottom: `${PIJAK}%` }}
       >
         <Gbr vb="0 0 290 290">
@@ -637,7 +637,7 @@ function RuangGanti({ bisik }: { bisik: (t: string) => void }) {
           setKotak((n) => n + 1);
           bisik("Plop! Tutup kotak topinya terbuka: ada topi jerami.");
         }}
-        className="left-[56%] w-[clamp(100px,12vw,160px)]"
+        className="left-[56%] w-[clamp(100px,12vw,160px)] max-sm:hidden"
         style={{ bottom: `${PIJAK}%` }}
       >
         <Gbr vb="0 0 140 190">
@@ -666,7 +666,7 @@ function RuangGanti({ bisik }: { bisik: (t: string) => void }) {
           setLemari((k) => !k);
           bisik(lemari ? "Lemari ditutup." : "Wah, rapi sekali isinya.");
         }}
-        className="right-[3%] w-[clamp(140px,17vw,230px)]"
+        className="right-[3%] w-[clamp(140px,17vw,230px)] max-sm:right-[2%] max-sm:w-[28vw]"
         style={{ bottom: `${PIJAK}%` }}
       >
         <Gbr vb="0 0 150 310">
@@ -726,7 +726,7 @@ function Toko({ bisik }: { bisik: (t: string) => void }) {
         { bawah: 82, isi: "atas" as const },
         { bawah: 66, isi: "bawah" as const },
       ].map((r) => (
-        <div key={r.bawah} className="absolute left-[3%] z-[2] flex w-[34%] flex-col" style={{ bottom: `${r.bawah}%` }}>
+        <div key={r.bawah} className="absolute left-[3%] z-[2] flex w-[34%] flex-col max-sm:w-[62%]" style={{ bottom: `${r.bawah}%` }}>
           <div className="flex items-end justify-around px-3">
             {r.isi === "atas" ? (
               <>
@@ -824,14 +824,14 @@ function Toko({ bisik }: { bisik: (t: string) => void }) {
       ))}
 
       {/* meja kasir */}
-      <Hias className="left-[7%] w-[40%] border-[3px] border-[#2B2233] bg-[#A87647]" style={{ bottom: `${PIJAK}%`, height: `${KASIR - PIJAK}%` }}>
+      <Hias className="left-[7%] w-[40%] max-sm:left-[4%] max-sm:w-[50%] border-[3px] border-[#2B2233] bg-[#A87647]" style={{ bottom: `${PIJAK}%`, height: `${KASIR - PIJAK}%` }}>
         <span className="absolute inset-x-0 bottom-0 h-[8%] border-t-[3px] border-[#2B2233] bg-[#3A2519]" />
         {[0, 1, 2, 3].map((i) => (
           <span key={i} className="absolute top-[12%] h-[70%] w-[22%] border-[3px] border-[#2B2233] bg-[#B98255]" style={{ left: `${i * 25 + 1.5}%` }} />
         ))}
       </Hias>
-      <Hias className="left-[6%] w-[42%] border-[3px] border-[#2B2233] bg-[#E4DDCD]" style={{ bottom: `${KASIR - 1.5}%`, height: "2.5%" }} />
-      <Hias className="left-[6.500%] w-[41%] h-[2%] [background:linear-gradient(180deg,rgba(43,34,51,0.28),transparent)]" style={{ bottom: `${KASIR - 3.500}%` }} />
+      <Hias className="left-[6%] w-[42%] max-sm:left-[3%] max-sm:w-[52%] border-[3px] border-[#2B2233] bg-[#E4DDCD]" style={{ bottom: `${KASIR - 1.5}%`, height: "2.5%" }} />
+      <Hias className="left-[6.500%] w-[41%] max-sm:left-[3.500%] max-sm:w-[51%] h-[2%] [background:linear-gradient(180deg,rgba(43,34,51,0.28),transparent)]" style={{ bottom: `${KASIR - 3.500}%` }} />
 
       {/* mesin kasir */}
       <Benda
@@ -840,7 +840,7 @@ function Toko({ bisik }: { bisik: (t: string) => void }) {
           setLaci((n) => n + 1);
           bisik("Ting! Terima kasih sudah berbelanja.");
         }}
-        className="left-[12%] w-[clamp(96px,10vw,132px)]"
+        className="left-[12%] w-[clamp(96px,10vw,132px)] max-sm:left-[9%] max-sm:w-[22vw]"
         style={{ bottom: `${KASIR}%` }}
       >
         <Gbr vb="0 0 140 110">
@@ -875,8 +875,8 @@ function Toko({ bisik }: { bisik: (t: string) => void }) {
           setPeti((n) => n + 1);
           bisik("Apelnya segar, baru dipetik.");
         }}
-        className="w-[clamp(124px,14.500vw,196px)]"
-        style={{ left: "54%", bottom: `${PIJAK}%` }}
+        className="left-[54%] w-[clamp(124px,14.500vw,196px)] max-sm:left-[57%] max-sm:w-[17vw]"
+        style={{ bottom: `${PIJAK}%` }}
       >
         <Gbr vb="0 218 150 124">
           <Alas cx={75} cy={337} rx={62} ry={6} />
@@ -897,7 +897,7 @@ function Toko({ bisik }: { bisik: (t: string) => void }) {
       </Benda>
 
       {/* pintu kaca: bingkai berdiri di lantai; lonceng menggantung dari braket di kusen atas; papan menggantung pada kait di kaca */}
-      <div className="absolute right-[3%] z-[2] w-[clamp(130px,16vw,215px)] aspect-[140/326]" style={{ bottom: `${PIJAK}%` }}>
+      <div className="absolute right-[3%] z-[2] w-[clamp(130px,16vw,215px)] aspect-[140/326] max-sm:right-[2%] max-sm:w-[24vw]" style={{ bottom: `${PIJAK}%` }}>
         <Gbr vb="0 0 140 326" className="pointer-events-none absolute inset-0 h-full">
           <Alas cx={70} cy={323} rx={62} ry={6} />
           <rect x="8" y="14" width="124" height="306" rx="6" fill="#A67654" />

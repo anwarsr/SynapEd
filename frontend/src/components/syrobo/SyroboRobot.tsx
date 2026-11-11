@@ -59,6 +59,7 @@ export default function SyroboRobot({
   reaksi,
   gelap = false,
   jeda = false,
+  lantaiMin = 0.66,
   mati = false,
   onMati,
   ucapan,
@@ -74,6 +75,8 @@ export default function SyroboRobot({
   gelap?: boolean;
   /** Robot berhenti berkeliling (mis. lembar menu terbuka). */
   jeda?: boolean;
+  /** Batas ATAS lantai tempat kaki boleh berpijak (pecahan tinggi adegan dari atas). Di ruangan berperabot nilainya di bawah garis kaki perabot, supaya robot berdiri DI DEPAN benda (bukan melayang di atasnya). */
+  lantaiMin?: number;
   /** Belum masuk: robot 'mati' (layar padam, tak bergerak); ditekan memanggil `onMati`. */
   mati?: boolean;
   onMati?: () => void;
@@ -110,12 +113,14 @@ export default function SyroboRobot({
   const aksiRef = useRef<Aksi>("diam");
   const jedaRef = useRef(jeda || mati);
   const gelapRef = useRef(gelap);
+  const lantaiMinRef = useRef(lantaiMin);
   /** Robot tidak berkeliling sebelum waktu ini (mis. sesaat setelah dijatuhkan, supaya terlihat menetap di tempatnya). */
   const diamSampai = useRef(0);
   // Ditulis di efek (bukan saat render) supaya tak melanggar aturan ref.
   useEffect(() => {
     jedaRef.current = jeda || mati;
     gelapRef.current = gelap;
+    lantaiMinRef.current = lantaiMin;
   });
   /** Batas gerak saat diangkat: seluruh layar. Dihitung ulang tiap angkat dimulai. */
   const batas = useRef({ minX: -200, maxX: 200, minY: -240, maxY: 40, dasarAtas: 0, tinggi: 0 });
@@ -206,10 +211,15 @@ export default function SyroboRobot({
 
   /** Daerah lantai tempat kaki boleh berpijak (koordinat jendela): dari tepi atas lantai sampai di atas dok menu. */
   function lantai() {
-    const H = window.innerHeight;
+    // Tinggi adegan diukur dari elemen adegannya (h-dvh), bukan innerHeight: di peramban ponsel keduanya bisa berbeda.
+    const adegan = document.querySelector("[data-adegan-syrobo]")?.getBoundingClientRect();
+    const H = adegan?.height ?? window.innerHeight;
+    const atas = adegan?.top ?? 0;
     const W = window.innerWidth;
-    const dok = W < 640 ? 176 : 100;
-    return { kakiMin: H * 0.66, kakiMaks: H - dok - 22, pusatMin: W * 0.1, pusatMaks: W * 0.9 };
+    // Dok menu: ponsel menempati 92-154 px dari bawah (kaki boleh sedikit menyelinap di bawahnya), desktop ±100 px.
+    const kakiMaks = atas + (W < 640 ? H - 150 : H - 100 - 22);
+    const kakiMin = Math.min(atas + H * lantaiMinRef.current, kakiMaks - 8);
+    return { kakiMin, kakiMaks, pusatMin: W * 0.1, pusatMaks: W * 0.9 };
   }
 
   // Berkeliling kamar: sesekali memilih titik di lantai, berjalan ke sana dengan kecepatan tetap (pegas menghaluskan),

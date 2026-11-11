@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Layar ponsel: lebar < 640px (tegak) ATAU tinggi <= 500px (mendatar). Dipakai SyRobo & game. */
+@custom-variant kecil {
+  @media (max-width: 639px) {
+    @slot;
+  }
+  @media (max-height: 500px) {
+    @slot;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    SynapEd — "Tinta & Kertas"
    Tinta biru di atas kertas hangat, dengan stabilo kuning.

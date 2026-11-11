@@ -74,10 +74,10 @@ const NAMA_SLOT: Record<SlotPakaian, string> = { kepala: "Kepala", badan: "Badan
 function Status({ ikon, nama, nilai, rendahDi }: { ikon: "makan" | "mandi"; nama: string; nilai: number; rendahDi: number }) {
   const rendah = nilai < rendahDi;
   return (
-    <div className="flex items-center gap-2" title={`${nama} ${Math.round(nilai)}%`}>
-      <Ikon nama={ikon} className={cn("h-7 w-7 shrink-0", rendah && "syrobo-kedip")} />
+    <div className="flex items-center gap-1.5 sm:gap-2" title={`${nama} ${Math.round(nilai)}%`}>
+      <Ikon nama={ikon} className={cn("h-5 w-5 shrink-0 sm:h-7 sm:w-7", rendah && "syrobo-kedip")} />
       <div
-        className="h-4 w-24 overflow-hidden rounded-md border-[2.5px] border-[#2B2233] bg-[#FBF1DA] sm:w-32"
+        className="h-3 w-[72px] overflow-hidden rounded-md border-2 border-[#2B2233] bg-[#FBF1DA] sm:h-4 sm:w-32 sm:border-[2.5px]"
         role="progressbar"
         aria-label={nama}
         aria-valuenow={Math.round(nilai)}
@@ -388,7 +388,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
   return (
     // `keep-white`: adegan ini punya warnanya sendiri, `text-white` tak boleh terbalik di tema terang.
-    <div className={cn("keep-white relative h-dvh w-full overflow-hidden overscroll-none bg-[#538589]", gosok && "cursor-none")}>
+    <div data-adegan-syrobo="" className={cn("keep-white relative h-dvh w-full overflow-hidden overscroll-none bg-[#538589]", gosok && "cursor-none")}>
       {ruang === "kamar" ? (
         <SyroboKamar gelap={gelap} ubahGelap={setGelap} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
       ) : (
@@ -396,8 +396,8 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
       )}
 
       {/* ── HUD ─────────────────────────────────────────────────── */}
-      <div className="pointer-events-none absolute inset-x-0 top-[88px] z-30 flex flex-wrap items-start justify-between gap-3 px-4 sm:px-6">
-        <div className={cn("pointer-events-auto -rotate-1 space-y-1.5 rounded-xl bg-[#FBF1DA] px-3.5 py-2.5", STIKER)}>
+      <div className="pointer-events-none absolute inset-x-0 top-[88px] z-30 flex items-start justify-between gap-2 px-2.5 sm:flex-wrap sm:gap-3 sm:px-6">
+        <div className={cn("pointer-events-auto -rotate-1 space-y-1 rounded-lg bg-[#FBF1DA] px-2 py-1.5 sm:space-y-1.5 sm:rounded-xl sm:px-3.5 sm:py-2.5", STIKER)}>
           <Status ikon="makan" nama="Kenyang" nilai={kondisi.kenyang} rendahDi={AMBANG_LAPAR} />
           {sisaBeku > 0 && (
             <p className="-mt-0.5 flex items-center gap-1.5 text-[11px] font-extrabold text-[#8A5F00]">
@@ -407,7 +407,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           <Status ikon="mandi" nama="Bersih" nilai={kondisi.bersih} rendahDi={AMBANG_KOTOR} />
         </div>
 
-        <div className="pointer-events-auto order-3 flex w-full justify-center sm:order-none sm:w-auto">
+        <div className="pointer-events-auto flex min-w-0 justify-center sm:w-auto">
           {ubahNama ? (
             <form
               className={cn("flex gap-2 rounded-xl bg-[#FBF1DA] p-1.5", STIKER)}
@@ -437,21 +437,21 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
               type="button"
               onClick={() => setUbahNama(true)}
               aria-label={`Ganti nama ${robot.nama}`}
-              className={cn("rotate-1 rounded-xl bg-[#F2C14E] px-5 py-1.5 text-xl font-extrabold text-[#2B2233] transition-transform duration-200 hover:-rotate-1 hover:scale-105 active:scale-95", STIKER)}
+              className={cn("max-w-[34vw] truncate rotate-1 rounded-lg bg-[#F2C14E] px-2.5 py-0.5 text-[13px] font-extrabold sm:max-w-none sm:rounded-xl sm:px-5 sm:py-1.5 sm:text-xl text-[#2B2233] transition-transform duration-200 hover:-rotate-1 hover:scale-105 active:scale-95", STIKER)}
             >
               {robot.nama}
             </button>
           )}
         </div>
 
-        <div className={cn("pointer-events-auto flex rotate-1 items-center gap-2 rounded-xl bg-[#FBF1DA] py-1.5 pl-2 pr-4", STIKER)} aria-label={`Poin ${robot.poin}`}>
-          <Ikon nama="bintang" className="h-9 w-9" />
-          <span className="text-2xl font-extrabold tabular-nums text-[#2B2233]">{robot.poin}</span>
+        <div className={cn("pointer-events-auto flex rotate-1 items-center gap-1 rounded-lg bg-[#FBF1DA] py-0.5 pl-1.5 pr-2 sm:gap-2 sm:rounded-xl sm:py-1.5 sm:pl-2 sm:pr-4", STIKER)} aria-label={`Poin ${robot.poin}`}>
+          <Ikon nama="bintang" className="h-5 w-5 sm:h-9 sm:w-9" />
+          <span className="text-base font-extrabold tabular-nums text-[#2B2233] sm:text-2xl">{robot.poin}</span>
         </div>
       </div>
 
       {/* Pesan singkat (selama menggosok: petunjuk singkat) */}
-      <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-0 top-[168px] z-30 flex justify-center px-4 sm:top-[160px]">
+      <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-0 top-[134px] z-30 flex justify-center px-4 sm:top-[160px]">
         {gosok ? (
           <span className={cn("rounded-[14px_16px_14px_6px] bg-[#FFF8E6] px-4 py-1.5 text-sm font-bold text-[#2B2233]", STIKER)}>Gosokkan spons ke {robot.nama} sampai bar Bersih penuh</span>
         ) : (
@@ -462,7 +462,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
       </div>
 
       {/* ── Robot: posisi dasarnya TETAP; lembar menu hanya menutupinya (tidak mengangkatnya) supaya ia bebas berkeliling ───── */}
-      <div className="pointer-events-none absolute left-0 z-10 flex w-full justify-center bottom-[calc(176px+2dvh)] sm:bottom-[24dvh]">
+      <div className="pointer-events-none absolute left-0 z-10 flex w-full justify-center bottom-[calc(158px+1dvh)] sm:bottom-[24dvh]">
         <SyroboRobot
           pakaianKepala={robot.kepala}
           pakaianBadan={robot.badan}
@@ -472,6 +472,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           reaksi={reaksi}
           gelap={gelap && ruang === "kamar"}
           jeda={lembar !== null || gosok}
+          lantaiMin={ruang === "kamar" ? 0.66 : 0.72}
           ucapan={ucapan}
         />
         {suap && <Ikon key={suap.n} nama={suap.id} className="syrobo-suap absolute bottom-[4%] left-1/2 z-20 -ml-6 h-12 w-12" />}
@@ -483,7 +484,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           key={lembar}
           aria-label={lembar}
           className={cn(
-            "syrobo-lembar absolute inset-x-3 bottom-[176px] z-[35] max-h-[min(26dvh,220px)] overflow-y-auto rounded-xl p-4 sm:inset-x-auto sm:bottom-[100px] sm:left-1/2 sm:w-[min(580px,92%)] sm:max-h-[min(30dvh,260px)] sm:-translate-x-1/2 sm:p-5",
+            "syrobo-lembar absolute inset-x-3 bottom-[170px] z-[35] max-h-[min(24dvh,200px)] overflow-y-auto rounded-xl p-4 max-sm:inset-x-2 max-sm:bottom-[164px] max-sm:max-h-[22dvh] max-sm:p-2.5 max-sm:text-[12px] max-sm:shadow-[3px_3px_0_#2B2233] max-sm:[&_h2]:text-sm max-sm:[&_p]:text-[11px] max-sm:[&_ul]:mt-1.5 max-sm:[&_ul]:gap-1 max-sm:[&_li_svg]:h-7 max-sm:[&_li_svg]:w-7 max-sm:[&_li_span]:text-[10px] sm:inset-x-auto sm:bottom-[100px] sm:left-1/2 sm:w-[min(580px,92%)] sm:max-h-[min(30dvh,260px)] sm:-translate-x-1/2 sm:p-5",
             KERTAS,
             STIKER,
             "shadow-[5px_5px_0_#2B2233]",
@@ -495,9 +496,9 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
             type="button"
             onClick={() => setLembar(null)}
             aria-label="Tutup"
-            className={cn(TOMBOL_KECIL, "absolute right-2.5 top-2.5 flex h-11 w-11 items-center justify-center p-0 leading-none")}
+            className={cn(TOMBOL_KECIL, "absolute right-2.5 top-2.5 flex h-11 w-11 items-center justify-center p-0 leading-none max-sm:right-1.5 max-sm:top-1.5 max-sm:h-8 max-sm:w-8")}
           >
-            <svg viewBox="0 0 16 16" className="block h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
+            <svg viewBox="0 0 16 16" className="block h-6 w-6 max-sm:h-4 max-sm:w-4" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
             </svg>
           </button>

@@ -1080,50 +1080,50 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
       <canvas ref={kanvas} className="absolute inset-0 h-full w-full" aria-label="Game Tanjakan Robo" role="img" />
 
       {/* HUD atas */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3 sm:p-4">
-        <div className={cn("pointer-events-auto -rotate-1 rounded-xl bg-[#FBF1DA] px-3.5 py-2", STIKER)}>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#2B2233]/60">Jarak</p>
-          <p className="text-3xl font-extrabold leading-none tabular-nums">
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-1 p-3 sm:p-4 kecil:p-1.5">
+        <div className={cn("pointer-events-auto -rotate-1 rounded-xl bg-[#FBF1DA] px-3.5 py-2 kecil:rounded-lg kecil:px-2 kecil:py-1", STIKER)}>
+          <p className="text-[10px] kecil:text-[8px] font-extrabold uppercase tracking-[0.2em] text-[#2B2233]/60">Jarak</p>
+          <p className="text-3xl font-extrabold leading-none tabular-nums kecil:text-xl">
             {hud.jarak}
-            <span className="ml-1 text-base">m</span>
+            <span className="ml-1 text-base kecil:text-xs">m</span>
           </p>
-          <p className="mt-1 text-[11px] font-bold text-[#2B2233]/65">Rekor {Math.max(hud.rekor, hud.jarak)} m</p>
+          <p className="mt-1 text-[11px] kecil:mt-0.5 kecil:text-[9px] font-bold text-[#2B2233]/65">Rekor {Math.max(hud.rekor, hud.jarak)} m</p>
         </div>
 
-        <div className="pointer-events-auto flex flex-col items-center gap-2">
-          <div className={cn("flex items-center gap-2 rounded-xl bg-[#FBF1DA] px-3 py-1.5", STIKER)} aria-label={`Koin ${hud.koin}`}>
-            <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+        <div className="pointer-events-auto flex flex-col items-center gap-2 kecil:gap-1">
+          <div className={cn("flex items-center gap-2 rounded-xl bg-[#FBF1DA] px-3 py-1.5 kecil:gap-1 kecil:rounded-lg kecil:px-2 kecil:py-0.5", STIKER)} aria-label={`Koin ${hud.koin}`}>
+            <svg viewBox="0 0 24 24" className="h-6 w-6 kecil:h-4 kecil:w-4" aria-hidden="true">
               <circle cx="12" cy="12" r="9" fill="#F2C14E" stroke={INK} strokeWidth="2.4" />
               <circle cx="11" cy="12" r="4.4" fill="none" stroke="#B8862B" strokeWidth="1.8" />
             </svg>
-            <span className="text-xl font-extrabold tabular-nums">{hud.koin}</span>
+            <span className="text-xl font-extrabold tabular-nums kecil:text-sm">{hud.koin}</span>
           </div>
-          <div className={cn("flex w-44 items-center gap-2 rounded-xl bg-[#FBF1DA] px-2.5 py-1.5 sm:w-56", STIKER)}>
-            <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" aria-hidden="true">
+          <div className={cn("flex w-44 items-center gap-2 rounded-xl bg-[#FBF1DA] px-2.5 py-1.5 sm:w-56 kecil:w-28 kecil:gap-1 kecil:rounded-lg kecil:px-1.5 kecil:py-0.5", STIKER)}>
+            <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 kecil:h-4 kecil:w-4" aria-hidden="true">
               <rect x="4" y="6" width="13" height="15" rx="2.4" fill="#D9564A" stroke={INK} strokeWidth="2.2" />
               <path d="M17 10l3 2v6" fill="none" stroke={INK} strokeWidth="2.2" strokeLinecap="round" />
               <path d="M7 6V3h6v3" fill="none" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" />
             </svg>
-            <div className="h-4 flex-1 overflow-hidden rounded-md border-2 border-[#2B2233] bg-[#FBF1DA]" role="progressbar" aria-label="Bensin" aria-valuenow={Math.round(persenBensin)} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-4 flex-1 overflow-hidden rounded-md kecil:h-2.5 border-2 border-[#2B2233] bg-[#FBF1DA]" role="progressbar" aria-label="Bensin" aria-valuenow={Math.round(persenBensin)} aria-valuemin={0} aria-valuemax={100}>
               <div className={cn("h-full border-r-2 border-[#2B2233] transition-[width] duration-150", persenBensin < 25 ? "bg-[#E0833B]" : "bg-[#6BA7D8]")} style={{ width: `${Math.max(3, persenBensin)}%` }} />
             </div>
           </div>
         </div>
 
-        <div className="pointer-events-auto flex flex-col gap-2">
-          <button type="button" onClick={keluar} aria-label="Keluar dari game" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0")}>
-            <svg viewBox="0 0 16 16" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
+        <div className="pointer-events-auto flex flex-col gap-2 kecil:gap-1">
+          <button type="button" onClick={keluar} aria-label="Keluar dari game" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8")}>
+            <svg viewBox="0 0 16 16" className="h-6 w-6 kecil:h-4 kecil:w-4" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
             </svg>
           </button>
-          <button type="button" onClick={() => jedaRef.current()} aria-label="Jeda" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0")}>
-            <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+          <button type="button" onClick={() => jedaRef.current()} aria-label="Jeda" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8")}>
+            <svg viewBox="0 0 16 16" className="h-5 w-5 kecil:h-3.5 kecil:w-3.5" fill="currentColor" aria-hidden="true">
               <rect x="3" y="2.5" width="3.4" height="11" rx="1" />
               <rect x="9.6" y="2.5" width="3.4" height="11" rx="1" />
             </svg>
           </button>
-          <button type="button" aria-pressed={bunyi} onClick={() => nyalakanSuara(!bunyi)} aria-label={bunyi ? "Matikan suara" : "Nyalakan suara"} className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0", bunyi && "bg-[#6BA7D8]")}>
-            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <button type="button" aria-pressed={bunyi} onClick={() => nyalakanSuara(!bunyi)} aria-label={bunyi ? "Matikan suara" : "Nyalakan suara"} className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8", bunyi && "bg-[#6BA7D8]")}>
+            <svg viewBox="0 0 20 20" className="h-5 w-5 kecil:h-4 kecil:w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 8h3l4-3v10l-4-3H3z" fill="currentColor" />
               {bunyi ? <path d="M13.5 7.5a3.5 3.5 0 010 5M15.5 5.5a6 6 0 010 9" /> : <path d="M13.5 8l4 4M17.5 8l-4 4" />}
             </svg>
@@ -1132,7 +1132,7 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
       </div>
 
       {/* Pedal: kiri = rem/mundur, kanan = gas. Multi-sentuh (dua elemen terpisah). */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 sm:p-6">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 sm:p-6 kecil:p-2">
         <button
           type="button"
           aria-label="Rem dan mundur"
@@ -1141,12 +1141,12 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
           onPointerCancel={() => lepasPedal("rem")}
           onContextMenu={(e) => e.preventDefault()}
           className={cn(
-            "pointer-events-auto flex h-24 w-32 touch-none flex-col items-center justify-center gap-1 rounded-2xl text-lg font-extrabold transition-[transform,box-shadow,background-color] duration-100 sm:h-28 sm:w-40",
+            "pointer-events-auto flex h-24 w-32 touch-none flex-col items-center justify-center gap-1 rounded-2xl text-lg font-extrabold kecil:h-14 kecil:w-20 kecil:gap-0 kecil:rounded-xl kecil:text-xs transition-[transform,box-shadow,background-color] duration-100 sm:h-28 sm:w-40",
             STIKER,
             remOn ? "translate-x-[3px] translate-y-[3px] bg-[#E0833B] shadow-none" : "bg-[#FBF1DA]",
           )}
         >
-          <svg viewBox="0 0 32 24" className="h-8 w-10" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg viewBox="0 0 32 24" className="h-8 w-10 kecil:h-5 kecil:w-7" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="26" height="18" rx="5" fill="#D9564A" />
             <path d="M20 12H10M13.500 8L9.500 12l4 4" />
           </svg>
@@ -1161,12 +1161,12 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
           onPointerCancel={() => lepasPedal("gas")}
           onContextMenu={(e) => e.preventDefault()}
           className={cn(
-            "pointer-events-auto flex h-28 w-36 touch-none flex-col items-center justify-center gap-1 rounded-2xl text-lg font-extrabold transition-[transform,box-shadow,background-color] duration-100 sm:h-32 sm:w-44",
+            "pointer-events-auto flex h-28 w-36 touch-none flex-col items-center justify-center gap-1 rounded-2xl text-lg font-extrabold kecil:h-16 kecil:w-24 kecil:gap-0 kecil:rounded-xl kecil:text-xs transition-[transform,box-shadow,background-color] duration-100 sm:h-32 sm:w-44",
             STIKER,
             gasOn ? "translate-x-[3px] translate-y-[3px] bg-[#6BA7D8] shadow-none" : "bg-[#FBF1DA]",
           )}
         >
-          <svg viewBox="0 0 32 24" className="h-8 w-10" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg viewBox="0 0 32 24" className="h-8 w-10 kecil:h-5 kecil:w-7" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="26" height="18" rx="5" fill="#7FB069" />
             <path d="M10 12h10M17 8l4 4-4 4" />
           </svg>
@@ -1176,35 +1176,35 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
 
       {/* Layar tegak di ponsel: saran memutar */}
       {potret && hud.fase !== "selesai" && (
-        <p className={cn("pointer-events-none absolute inset-x-6 top-[96px] mx-auto max-w-xs rounded-xl bg-[#FFF8E6] px-3 py-2 text-center text-xs font-bold", STIKER)}>Putar ponsel ke samping supaya jalannya lebih luas.</p>
+        <p className={cn("pointer-events-none absolute inset-x-6 top-[96px] mx-auto max-w-xs rounded-xl bg-[#FFF8E6] px-3 py-2 text-center text-xs font-bold kecil:top-[70px] kecil:max-w-[220px] kecil:px-2 kecil:py-1 kecil:text-[10px]", STIKER)}>Putar ponsel ke samping supaya jalannya lebih luas.</p>
       )}
 
       {/* Siap */}
       {hud.fase === "siap" && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
-          <div className={cn("max-w-sm rotate-1 rounded-2xl bg-[#FBF1DA] p-5 text-center", STIKER)}>
-            <h2 className="text-2xl font-extrabold">Tanjakan Robo</h2>
-            <p className="mt-2 text-sm font-semibold leading-relaxed text-[#2B2233]/80">
+          <div className={cn("max-w-sm rotate-1 rounded-2xl bg-[#FBF1DA] p-5 text-center kecil:max-w-[300px] kecil:rounded-xl kecil:p-3", STIKER)}>
+            <h2 className="text-2xl font-extrabold kecil:text-lg">Tanjakan Robo</h2>
+            <p className="mt-2 text-sm kecil:mt-1 kecil:text-[11px] font-semibold leading-relaxed text-[#2B2233]/80">
               Tahan <strong>GAS</strong> untuk menanjak, <strong>REM</strong> untuk menahan atau mundur. Di udara, gas mengangkat hidung dan rem menurunkannya. Ambil koin dan kaleng bensin; jangan sampai kepala robot menyentuh tanah!
             </p>
-            <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.2em] text-[#2B2233]/60">Tekan gas untuk mulai</p>
+            <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.2em] text-[#2B2233]/60 kecil:mt-1.5 kecil:text-[10px]">Tekan gas untuk mulai</p>
           </div>
         </div>
       )}
 
       {/* Jeda */}
       {hud.fase === "jeda" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#2B2233]/35 p-6">
-          <div className={cn("w-full max-w-xs rounded-2xl bg-[#FBF1DA] p-5 text-center", STIKER)}>
-            <h2 className="text-2xl font-extrabold">Jeda</h2>
-            <div className="mt-4 flex flex-col gap-2">
-              <button type="button" onClick={() => setFase("main")} className={cn(TOMBOL, "bg-[#6BA7D8] py-2.5 text-base")}>
+        <div className="absolute inset-0 flex items-center justify-center bg-[#2B2233]/35 p-6 kecil:p-3">
+          <div className={cn("w-full max-w-xs rounded-2xl bg-[#FBF1DA] p-5 text-center kecil:max-w-[240px] kecil:rounded-xl kecil:p-3", STIKER)}>
+            <h2 className="text-2xl font-extrabold kecil:text-lg">Jeda</h2>
+            <div className="mt-4 flex flex-col gap-2 kecil:mt-2 kecil:gap-1.5">
+              <button type="button" onClick={() => setFase("main")} className={cn(TOMBOL, "bg-[#6BA7D8] py-2.5 text-base kecil:py-1.5 kecil:text-sm")}>
                 Lanjut
               </button>
-              <button type="button" onClick={() => ulang()} className={cn(TOMBOL, "py-2.5 text-base")}>
+              <button type="button" onClick={() => ulang()} className={cn(TOMBOL, "py-2.5 text-base kecil:py-1.5 kecil:text-sm")}>
                 Ulang dari awal
               </button>
-              <button type="button" onClick={keluar} className={cn(TOMBOL, "py-2.5 text-base")}>
+              <button type="button" onClick={keluar} className={cn(TOMBOL, "py-2.5 text-base kecil:py-1.5 kecil:text-sm")}>
                 Keluar
               </button>
             </div>
@@ -1214,21 +1214,21 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
 
       {/* Selesai */}
       {hud.fase === "selesai" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#2B2233]/40 p-6">
-          <div className={cn("w-full max-w-xs -rotate-1 rounded-2xl bg-[#FBF1DA] p-5 text-center", STIKER)}>
-            <h2 className="text-2xl font-extrabold">{hud.selesai === "bensin" ? "Bensin habis!" : "Aduh, kepala robot terbentur!"}</h2>
-            <p className="mt-3 text-4xl font-extrabold tabular-nums">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#2B2233]/40 p-6 kecil:p-3">
+          <div className={cn("w-full max-w-xs -rotate-1 rounded-2xl bg-[#FBF1DA] p-5 text-center kecil:max-w-[260px] kecil:rounded-xl kecil:p-3", STIKER)}>
+            <h2 className="text-2xl font-extrabold kecil:text-base">{hud.selesai === "bensin" ? "Bensin habis!" : "Aduh, kepala robot terbentur!"}</h2>
+            <p className="mt-3 text-4xl font-extrabold tabular-nums kecil:mt-1 kecil:text-2xl">
               {hud.jarak}
               <span className="ml-1 text-lg">m</span>
             </p>
             <p className="mt-1 text-sm font-bold text-[#2B2233]/70">{hud.koin} koin terkumpul</p>
             {onSetor && hud.koin > 0 && <p className="mt-2 text-xs font-bold text-[#2B2233]/70">Koin masuk ke akunmu. Tukar 100 koin = 1 bintang di menu Toko.</p>}
             {hud.rekorBaru ? <p className="mt-2 text-sm font-extrabold text-[#2F6F4A]">Rekor baru!</p> : <p className="mt-2 text-xs font-bold text-[#2B2233]/60">Rekor {hud.rekor} m</p>}
-            <div className="mt-4 flex flex-col gap-2">
-              <button type="button" onClick={() => ulang()} className={cn(TOMBOL, "bg-[#6BA7D8] py-2.5 text-base")}>
+            <div className="mt-4 flex flex-col gap-2 kecil:mt-2 kecil:gap-1.5">
+              <button type="button" onClick={() => ulang()} className={cn(TOMBOL, "bg-[#6BA7D8] py-2.5 text-base kecil:py-1.5 kecil:text-sm")}>
                 Main lagi
               </button>
-              <button type="button" onClick={keluar} className={cn(TOMBOL, "py-2.5 text-base")}>
+              <button type="button" onClick={keluar} className={cn(TOMBOL, "py-2.5 text-base kecil:py-1.5 kecil:text-sm")}>
                 Keluar
               </button>
             </div>
