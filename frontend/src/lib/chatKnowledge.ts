@@ -211,13 +211,14 @@ export const PENGETAHUAN_SITUS = `## Akun
   baju militer (cokelat), mahkota raja, jubah raja) dan 10 makanan dewa; satu makanan dewa
   mengenyangkan penuh dan menjaga bar kenyang tidak turun selama 24 jam. Menu
   Games berisi Tanjakan Robo (mobil menanjak bukit, pengendaranya robot, mirip
-  Hill Climb Racing). Koin yang dikumpulkan di game bisa ditukar poin bintang di menu
+  Hill Climb Racing; di desktop panah/A D untuk gas dan rem, spasi untuk loncat, Shift untuk nitro; di ponsel pedal serta tombol LONCAT dan NOS, sedangkan di desktop layar bersih tanpa tombol; ada batu penghalang untuk dilompati dan tabung nitro biru yang mengisi tangki NOS, lalu Shift/tombol NOS ditahan untuk melesat). Koin yang dikumpulkan di game bisa ditukar poin bintang di menu
   Toko (tab Koin Game, di samping tab Pakaian): 100 koin = 1 bintang, dengan batas setoran harian). Sebelum masuk robotnya mati; ditekan akan
   membawa ke halaman masuk. Benda di
   kamarnya juga bisa diketuk: lampu (kamar gelap), jendela, tanaman, buku
   (tips belajar), dan jam. Halamannya satu layar penuh tanpa footer.
-- Poin didapat dari "Poin harian": hadiah masuk hari ini, lalu hadiah saat
-  waktu aktif di halaman SyRobo mencapai 1, 10, 20, 30 menit, 1 jam, dan 2 jam.
+- Poin didapat dari "Poin harian": hadiah masuk hari ini (5 bintang), lalu hadiah saat
+  waktu aktif di halaman SyRobo mencapai 5 menit (1 bintang), 10 menit (3), 20 menit (5), 30 menit (7), 1 jam (10), dan 2 jam (15).
+  Pemilik SynapEd Premium aktif mendapat bonus +50% di tiap hadiah.
   Hadiah diklaim manual dan hitungannya mulai dari nol setiap hari (WIB).
 - Robot asisten di pojok layar ikut menunjukkan kondisi SyRobo pengguna yang
   sudah masuk: tampak lapar atau kotor bila SyRobo-nya butuh dirawat.

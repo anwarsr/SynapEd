@@ -11,6 +11,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import {
   HADIAH,
+  poinHadiah,
   JAM_BEKU_DEWA,
   KOIN_HARIAN_MAKS,
   KOIN_PER_POIN,
@@ -113,7 +114,7 @@ export function klaim(db: Firestore, uid: string, menit: unknown, now = new Date
     if (!h) return "Hadiah tidak dikenal.";
     if (d.diklaim.includes(h.menit)) return "Hadiah ini sudah kamu klaim hari ini.";
     if (!bisaDiklaim(d, h.menit)) return "Waktunya belum cukup untuk hadiah ini.";
-    return { ...d, poin: d.poin + h.poin, diklaim: [...d.diklaim, h.menit] };
+    return { ...d, poin: d.poin + poinHadiah(h.poin, premium), diklaim: [...d.diklaim, h.menit] };
   });
 }
 

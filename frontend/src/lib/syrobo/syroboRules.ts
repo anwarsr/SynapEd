@@ -158,14 +158,20 @@ export const KOIN_HARIAN_MAKS = 1500;
 
 /** Hadiah poin: `menit` = waktu aktif di situs hari ini (0 = cukup masuk hari ini). */
 export const HADIAH: readonly { menit: number; poin: number }[] = [
-  { menit: 0, poin: 20 },
-  { menit: 1, poin: 5 },
-  { menit: 10, poin: 10 },
-  { menit: 20, poin: 15 },
-  { menit: 30, poin: 25 },
-  { menit: 60, poin: 40 },
-  { menit: 120, poin: 70 },
+  { menit: 0, poin: 5 },
+  { menit: 5, poin: 1 },
+  { menit: 10, poin: 3 },
+  { menit: 20, poin: 5 },
+  { menit: 30, poin: 7 },
+  { menit: 60, poin: 10 },
+  { menit: 120, poin: 15 },
 ];
+
+/** Pemilik SynapEd Premium aktif mendapat tambahan 50% poin di setiap hadiah harian (dibulatkan ke atas). */
+export const BONUS_PREMIUM_HADIAH = 0.5;
+export function poinHadiah(poin: number, premium: boolean): number {
+  return premium ? Math.ceil(poin * (1 + BONUS_PREMIUM_HADIAH)) : poin;
+}
 
 /** Detak: server menambah waktu aktif paling banyak segini per detak, dan mengabaikan detak yang terlalu rapat. */
 export const DETAK_MAKS_DETIK = 45;

@@ -28,6 +28,7 @@ import {
   DETAK_KLIEN_MS,
   GOSOK_PX_PER_POIN,
   HADIAH,
+  poinHadiah,
   KOIN_PER_POIN,
   KOIN_SETOR_MAKS,
   MAKANAN,
@@ -784,18 +785,20 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                 {HADIAH.map((h) => {
                   const sudah = robot.diklaim.includes(h.menit);
                   const bisa = !sudah && aktif >= h.menit * 60;
+                  const dapat = poinHadiah(h.poin, robot.premium);
                   return (
                     <li key={h.menit} className={cn("flex items-center gap-3 rounded-lg px-3 py-2", STIKER, bisa ? "bg-[#FFE7A8]" : "bg-[#F6E3C0]")}>
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-extrabold">{label(h.menit)}</span>
                         <span className="flex items-center gap-1 text-xs font-bold text-[#2B2233]/70">
-                          <Ikon nama="bintang" className="h-3.5 w-3.5" /> +{h.poin}
+                          <Ikon nama="bintang" className="h-3.5 w-3.5" /> +{dapat}
+                          {robot.premium && <span className="text-[#8A5A00]">(Premium)</span>}
                         </span>
                       </span>
                       {sudah ? (
                         <span className="text-xs font-extrabold text-[#2F6F4A]">Diklaim</span>
                       ) : (
-                        <button type="button" disabled={sibuk || !bisa} onClick={() => void jalan(() => klaimSyrobo(h.menit), `+${h.poin} poin!`)} className={TOMBOL_UTAMA}>
+                        <button type="button" disabled={sibuk || !bisa} onClick={() => void jalan(() => klaimSyrobo(h.menit), `+${dapat} poin!`)} className={TOMBOL_UTAMA}>
                           Klaim
                         </button>
                       )}
@@ -803,7 +806,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                   );
                 })}
               </ul>
-              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Waktu dihitung selama halaman ini terbuka dan terlihat; mulai dari nol tiap hari (WIB).</p>
+              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Waktu dihitung selama halaman ini terbuka dan terlihat; mulai dari nol tiap hari (WIB). {robot.premium ? "Bonus Premium: poin hadiah +50%." : "Pemilik SynapEd Premium mendapat poin hadiah +50%."}</p>
             </>
           )}
         </section>

@@ -36,6 +36,22 @@ export const TITIK_BADAN: readonly [number, number][] = [
   [22, -24],
 ];
 
+/** Loncat: dorongan ke atas (px/dtk), jeda antar loncatan, dan toleransi setelah roda lepas dari tanah (dtk). */
+export const LONCAT_DORONG = 520;
+export const LONCAT_JEDA = 0.7;
+export const LONCAT_TOLERANSI = 0.12;
+/**
+ * Nitro (NOS): tabung di jalan MENGISI tangki (`NOS_ISI`, maks `NOS_TANGKI_MAKS`); tangki hanya terpakai selagi tombol nitro
+ * ditahan (`NOS_BOROS` per dtk). Selama menyala: tenaga mesin x`NOS_TENAGA` dan kecepatan maksimum `NOS_KECEPATAN_MAKS`
+ * (+45% dari biasa: terasa nyata, tetapi tidak melesat tanpa kendali).
+ */
+export const NOS_TANGKI_MAKS = 100;
+export const NOS_ISI = 60;
+export const NOS_BOROS = 34;
+export const NOS_TENAGA = 1.7;
+export const NOS_KECEPATAN_MAKS = 680;
+export const NOS_TRAKSI = 1.6;
+
 export const BENSIN_AWAL = 100;
 export const BENSIN_PER_DETIK_GAS = 7;
 export const BENSIN_PER_DETIK_DIAM = 1.6;
@@ -46,12 +62,45 @@ export const PX_PER_METER = 40;
 const jepit = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const halus = (t: number) => t * t * (3 - 2 * t);
 
-/** Tinggi tanah (y, ke bawah) di x. Datar di awal, makin bergelombang semakin jauh, tetapi kemiringannya dibatasi. */
-export function tanah(x: number): number {
+/** Tinggi tanah (y, ke bawah) tanpa rintangan. Datar di awal, makin bergelombang semakin jauh, tetapi kemiringannya dibatasi. */
+export function tanahDasar(x: number): number {
   const f = halus(jepit((x - 320) / 800, 0, 1));
   const amp = 1 + Math.min(0.5, Math.max(0, x) / 16000);
   const h = 50 * Math.sin(x / 260) + 25 * Math.sin(x / 120 + 1.3) + 9 * Math.sin(x / 47 + 4.1);
   return 430 - f * amp * h;
+}
+export function landaiDasar(x: number): number {
+  return (tanahDasar(x + 1) - tanahDasar(x - 1)) / 2;
+}
+
+/**
+ * Rintangan (batu) ke-k: gundukan mulus di atas tanah yang harus dilompati. Setengah lebarnya 60 px dan tingginya 20-28 px,
+ * jadi kemiringan maksimumnya ±0,75 (di bawah batas tanjakan biasa), tetapi menabraknya dengan cepat membuat mobil terpental.
+ */
+export const RINTANGAN_MULAI = 1300;
+export const RINTANGAN_JARAK = 820;
+export const RINTANGAN_SETENGAH = 60;
+export function rintanganDi(k: number): { x: number; tinggi: number } {
+  const x = RINTANGAN_MULAI + k * RINTANGAN_JARAK + acak(k + 33) * 320;
+  // Di lereng curam batu ditiadakan (tinggi 0): gundukan di atas tanjakan terjal terlalu terjal untuk dilompati.
+  return { x, tinggi: Math.abs(landaiDasar(x)) > 0.35 ? 0 : 20 + 8 * acak(k + 57) };
+}
+/** Tinggi gundukan rintangan di x (0 bila tak ada). */
+export function tinggiRintangan(x: number): number {
+  if (x < RINTANGAN_MULAI - RINTANGAN_SETENGAH) return 0;
+  const k0 = Math.floor((x - RINTANGAN_MULAI) / RINTANGAN_JARAK);
+  for (let k = Math.max(0, k0 - 1); k <= k0 + 1; k++) {
+    const r = rintanganDi(k);
+    const dx = Math.abs(x - r.x);
+    if (dx < RINTANGAN_SETENGAH) {
+      const c = Math.cos((Math.PI * dx) / (2 * RINTANGAN_SETENGAH));
+      return r.tinggi * c * c;
+    }
+  }
+  return 0;
+}
+export function tanah(x: number): number {
+  return tanahDasar(x) - tinggiRintangan(x);
 }
 export function landai(x: number): number {
   return (tanah(x + 1) - tanah(x - 1)) / 2;
@@ -86,11 +135,22 @@ export interface Dunia {
   /** Indeks koin / kaleng bensin yang sudah diambil. */
   koinAmbil: Set<number>;
   bensinAmbil: Set<number>;
+  /** Isi tangki nitro (0..NOS_TANGKI_MAKS), apakah nitro sedang menyala, dan indeks tabung nitro yang sudah diambil. */
+  nosTangki: number;
+  nosAktif: boolean;
+  nosAmbil: Set<number>;
+  /** Jeda sampai boleh loncat lagi, dan waktu sejak roda terakhir menapak. */
+  jedaLoncat: number;
+  sejakKontak: number;
 }
 
 export interface Masukan {
   gas: boolean;
   rem: boolean;
+  /** Loncat (spasi / tombol). Opsional supaya skrip uji lama tetap sah. */
+  loncat?: boolean;
+  /** Tombol nitro ditahan (Shift / tombol NOS). Hanya berefek bila tangki berisi. */
+  nos?: boolean;
 }
 
 const rodaBaru = (): Roda => ({ rot: 0, omega: 0, komp: 0, kompPrev: 0, kontak: false });
@@ -112,6 +172,11 @@ export function duniaBaru(): Dunia {
     diam: 0,
     koinAmbil: new Set(),
     bensinAmbil: new Set(),
+    nosTangki: 0,
+    nosAktif: false,
+    nosAmbil: new Set(),
+    jedaLoncat: 0,
+    sejakKontak: 0,
   };
 }
 
@@ -133,6 +198,27 @@ export function bensinDi(j: number): { x: number; y: number } {
   return { x, y: tanah(x) - 46 };
 }
 
+/**
+ * Item nitro ke-j: muncul sesekali (±2500 px sekali) dan diletakkan ±160 px SEBELUM tanjakan terdekat (dibaca dari tanah dasar),
+ * supaya kecepatannya terpakai untuk naik. Tanpa tanjakan dalam 700 px, ditaruh di posisi dasarnya.
+ */
+const nosMemo = new Map<number, { x: number; y: number }>();
+export function nosDi(j: number): { x: number; y: number } {
+  const ada = nosMemo.get(j);
+  if (ada) return ada;
+  const dasar = 2400 + j * 2500 + acak(j + 177) * 600;
+  let x = dasar;
+  for (let c = dasar; c < dasar + 700; c += 10) {
+    if (landaiDasar(c) < -0.22) {
+      x = Math.max(dasar - 100, c - 160);
+      break;
+    }
+  }
+  const r = { x, y: tanah(x) - 46 };
+  nosMemo.set(j, r);
+  return r;
+}
+
 /** Jarak bertanda dari titik ke permukaan tanah (positif = di atas), beserta normal naiknya. */
 function jarakTanah(px: number, py: number) {
   const sl = landai(px);
@@ -146,6 +232,12 @@ export function langkah(d: Dunia, m: Masukan, dt: number): void {
   const ada = d.bensin > 0;
   const gas = m.gas && ada;
   const rem = m.rem;
+  const nos = !!m.nos && d.nosTangki > 0;
+  d.nosAktif = nos;
+  // Nitro mendorong walau gas dilepas (selama tidak mengerem) dan tidak memakai bensin tambahan.
+  const dorong = gas || (nos && !rem);
+  const vMaks = nos ? NOS_KECEPATAN_MAKS : KECEPATAN_MAKS;
+  const traksi = nos ? NOS_TRAKSI : TRAKSI;
   const c = Math.cos(d.a);
   const s = Math.sin(d.a);
   const putar = (lx: number, ly: number): [number, number] => [c * lx - s * ly, s * lx + c * ly];
@@ -214,12 +306,12 @@ export function langkah(d: Dunia, m: Masukan, dt: number): void {
     const beban = jepit(F / 620, 0.4, 1.3);
     let ft = 0;
     // Torsi besar di putaran rendah (kuat menanjak dari diam), menurun mulus mendekati kecepatan maksimum; di atasnya mesin menahan.
-    if (gas) ft = vt > KECEPATAN_MAKS ? -(vt - KECEPATAN_MAKS) * 4 : MESIN * beban * Math.pow(1 - Math.max(0, vt) / KECEPATAN_MAKS, 0.75);
+    if (dorong) ft = vt > vMaks ? -(vt - vMaks) * 4 : MESIN * (nos ? NOS_TENAGA : 1) * beban * Math.pow(1 - Math.max(0, vt) / vMaks, 0.75);
     else if (rem) {
       if (vt > 25) ft = -REM * Math.min(1, beban + 0.2);
       else ft = -MESIN * 0.32 * beban * Math.max(0, 1 + Math.min(0, vt) / 320);
     } else ft = -vt * 0.9;
-    ft = jepit(ft, -TRAKSI * F * 1.6, TRAKSI * F);
+    ft = jepit(ft, -traksi * F * 1.6, traksi * F);
     // Rem tak boleh membalik arah dalam satu langkah (menahan getar).
     if (rem && !gas && vt > 0 && -ft * dt > vt) ft = -vt / dt;
     const ftx = ft * g.tx;
@@ -233,6 +325,17 @@ export function langkah(d: Dunia, m: Masukan, dt: number): void {
     r.omega += (sasaran - r.omega) * Math.min(1, 14 * dt);
     r.rot += r.omega * dt;
   }
+
+  // Loncat: hanya saat roda menapak (atau baru lepas), dengan jeda; dorongan searah "atas" sasis.
+  d.sejakKontak = adaKontak ? 0 : d.sejakKontak + dt;
+  d.jedaLoncat = Math.max(0, d.jedaLoncat - dt);
+  if (m.loncat && d.jedaLoncat <= 0 && d.sejakKontak <= LONCAT_TOLERANSI) {
+    d.vx += s * LONCAT_DORONG * 0.5;
+    d.vy = Math.min(d.vy, 0) - c * LONCAT_DORONG;
+    d.jedaLoncat = LONCAT_JEDA;
+    d.sejakKontak = 1;
+  }
+  if (nos) d.nosTangki = Math.max(0, d.nosTangki - NOS_BOROS * dt);
 
   // Kendali di udara: gas = hidung naik, rem = hidung turun.
   if (!adaKontak) {
@@ -298,6 +401,15 @@ export function langkah(d: Dunia, m: Masukan, dt: number): void {
     if (Math.hypot(b.x - d.x, b.y - d.y) < 48) {
       d.bensinAmbil.add(j);
       d.bensin = Math.min(BENSIN_AWAL, d.bensin + BENSIN_KALENG);
+    }
+  }
+
+  for (let j = Math.max(0, Math.floor((d.x - 2400) / 2500) - 1); j < Math.max(0, Math.floor((d.x - 2400) / 2500)) + 3; j++) {
+    if (d.nosAmbil.has(j)) continue;
+    const n = nosDi(j);
+    if (Math.hypot(n.x - d.x, n.y - d.y) < 48) {
+      d.nosAmbil.add(j);
+      d.nosTangki = Math.min(NOS_TANGKI_MAKS, d.nosTangki + NOS_ISI);
     }
   }
 

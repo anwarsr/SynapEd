@@ -22,6 +22,7 @@ import {
   AMBANG_LAPAR,
   DETAK_MAKS_DETIK,
   HADIAH,
+  poinHadiah,
   JAM_BEKU_DEWA,
   KOIN_HARIAN_MAKS,
   KOIN_PER_POIN,
@@ -62,12 +63,12 @@ async function main() {
     check("nama kosong ditolak", namaSah("   ") === null, "kosong");
     check("nama terlalu panjang ditolak", namaSah("x".repeat(21)) === null, "21 huruf");
     check("tag dibuang dari nama", namaSah("<b>Hi</b>") === "bHi/b", "karakter < > dibuang");
-    const rusak = normalisasi({ poin: -5, kenyang: "x", baju: "sihir", kepala: "naga", punya: ["topi", "topi", "x"], ukuran: { kepala: 9999 }, stok: { roti: 9999 }, diklaim: [999, 1] }, t0);
+    const rusak = normalisasi({ poin: -5, kenyang: "x", baju: "sihir", kepala: "naga", punya: ["topi", "topi", "x"], ukuran: { kepala: 9999 }, stok: { roti: 9999 }, diklaim: [999, 5] }, t0);
     check("pakaian rusak dinormalkan (kosong, daftar milik bersih, ukuran dijepit)", rusak.kepala === null && rusak.punya.join() === "topi" && rusak.ukuran.kepala === 140 && rusak.ukuran.badan === 100, JSON.stringify([rusak.kepala, rusak.punya, rusak.ukuran]));
     const lama = normalisasi({ baju: "dasi" }, t0);
     check("data lama (satu baju) dipindah ke slot badan & dianggap dimiliki", lama.badan === "dasi" && lama.kepala === null && lama.punya.includes("dasi"), JSON.stringify([lama.kepala, lama.badan, lama.punya]));
     check("katalog: minimal 10 pakaian, keduanya ada slot kepala & badan", PAKAIAN.length >= 10 && PAKAIAN.some((p) => p.slot === "kepala") && PAKAIAN.some((p) => p.slot === "badan"), String(PAKAIAN.length));
-    check("data rusak dinormalkan", rusak.poin === 0 && rusak.stok.roti === 20 && rusak.diklaim.join() === "1" && rusak.kenyang === 80, JSON.stringify(rusak.diklaim));
+    check("data rusak dinormalkan", rusak.poin === 0 && rusak.stok.roti === 20 && rusak.diklaim.join() === "5" && rusak.kenyang === 80, JSON.stringify(rusak.diklaim));
 
     // 2. detak
     let r = await detak(db, uid, t0);
@@ -81,7 +82,7 @@ async function main() {
 
     // 3. klaim
     const masuk = await klaim(db, uid, 0, t0);
-    check("hadiah masuk hari ini bisa diklaim", masuk.ok && masuk.robot.poin === 20, masuk.ok ? String(masuk.robot.poin) : masuk.error);
+    check("hadiah masuk hari ini bisa diklaim", masuk.ok && masuk.robot.poin === 5, masuk.ok ? String(masuk.robot.poin) : masuk.error);
     const ulang = await klaim(db, uid, 0, t0);
     check("klaim kedua ditolak", !ulang.ok, ulang.ok ? "lolos!" : ulang.error);
     const awal10 = await klaim(db, uid, 10, t0);
@@ -92,13 +93,21 @@ async function main() {
     const [a, b] = await Promise.all([klaim(db, uid, 30, t0), klaim(db, uid, 30, t0)]);
     check("klaim bersamaan hanya sekali", [a, b].filter((x) => x.ok).length === 1, `${[a, b].filter((x) => x.ok).length} sukses`);
     const skrg = await bacaSyrobo(db, uid, t0);
-    check("poin tepat setelah dua klaim", skrg.poin === 20 + (HADIAH.find((h) => h.menit === 30)?.poin ?? 0), String(skrg.poin));
+    check("poin tepat setelah dua klaim", skrg.poin === 5 + (HADIAH.find((h) => h.menit === 30)?.poin ?? 0), String(skrg.poin));
+
+    const sebelumPrem = skrg.poin;
+    const prem = await klaim(db, uid, 20, t0, true);
+    check("hadiah Premium +50% dibulatkan ke atas (5 -> 8)", prem.ok && prem.robot.poin === sebelumPrem + 8 && poinHadiah(1, true) === 2 && poinHadiah(7, true) === 11 && poinHadiah(7, false) === 7, prem.ok ? String(prem.robot.poin - sebelumPrem) : prem.error);
+    check("daftar hadiah sesuai permintaan (0/5/10/20/30/60/120 menit = 5/1/3/5/7/10/15)", HADIAH.map((h) => `${h.menit}:${h.poin}`).join(" ") === "0:5 5:1 10:3 20:5 30:7 60:10 120:15", HADIAH.map((h) => `${h.menit}:${h.poin}`).join(" "));
+
+    // Hadiah kini kecil; poin dipatok 45 supaya pembelian di bawah (roti 10, kacamata 30, dst.) tetap diuji seperti semula.
+    await ref.update({ poin: 45 });
 
     // 4. beli / makan / mandi
     const mahal = await beli(db, uid, "pizza", t0);
     check("beli ditolak bila poin kurang", !mahal.ok, mahal.ok ? "lolos!" : mahal.error);
     const roti = await beli(db, uid, "roti", t0);
-    check("beli roti: poin -10, stok +1", roti.ok && roti.robot.poin === skrg.poin - 10 && roti.robot.stok.roti === 2, roti.ok ? `${roti.robot.poin}/${roti.robot.stok.roti}` : roti.error);
+    check("beli roti: poin -10, stok +1", roti.ok && roti.robot.poin === 45 - 10 && roti.robot.stok.roti === 2, roti.ok ? `${roti.robot.poin}/${roti.robot.stok.roti}` : roti.error);
     const palsu = await beli(db, uid, "../x", t0);
     check("makanan palsu ditolak", !palsu.ok, "ditolak");
 

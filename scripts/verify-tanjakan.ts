@@ -9,12 +9,22 @@ import { check, finish } from "./checks";
 import {
   BENSIN_AWAL,
   KECEPATAN_MAKS,
+  LONCAT_JEDA,
+  NOS_BOROS,
+  NOS_ISI,
+  NOS_KECEPATAN_MAKS,
+  NOS_TANGKI_MAKS,
+  RINTANGAN_SETENGAH,
   bensinDi,
   duniaBaru,
   koinDi,
   landai,
+  landaiDasar,
   langkah,
+  nosDi,
+  rintanganDi,
   tanah,
+  tinggiRintangan,
   type Dunia,
   type Masukan,
 } from "../frontend/src/lib/syrobo/game/tanjakanFisika";
@@ -28,8 +38,13 @@ const sehat = (d: Dunia) => [d.x, d.y, d.a, d.vx, d.vy, d.w].every(Number.isFini
 
 console.log("\nTanah");
 let curam = 0;
-for (let x = 0; x < 300000; x += 3) curam = Math.max(curam, Math.abs(landai(x)));
-check("kemiringan tanah dibatasi (< 0,95 atau 43°) sejauh 300 km", curam < 0.95, curam.toFixed(2));
+let curamAkhir = 0;
+for (let x = 0; x < 300000; x += 3) {
+  curam = Math.max(curam, Math.abs(landaiDasar(x)));
+  curamAkhir = Math.max(curamAkhir, Math.abs(landai(x)));
+}
+check("kemiringan tanah dasar dibatasi (< 0,95 atau 43°) sejauh 300 km", curam < 0.95, curam.toFixed(2));
+check("dengan rintangan pun kemiringan < 1,4", curamAkhir < 1.4, curamAkhir.toFixed(2));
 check("awal lintasan datar (x < 300)", Math.abs(landai(100)) < 1e-9 && Math.abs(tanah(50) - tanah(250)) < 1e-6, "datar");
 check("deterministik (dua kali panggil sama)", tanah(12345.6) === tanah(12345.6), "sama");
 
@@ -112,6 +127,97 @@ kaleng.x = b0.x;
 kaleng.y = b0.y;
 langkah(kaleng, { gas: false, rem: false }, DT);
 check("kaleng bensin menambah 45 (maks 100)", kaleng.bensin > 60 && kaleng.bensin <= 100, kaleng.bensin.toFixed(1));
+
+console.log("\nRintangan, loncat, nitro");
+let kPertama = 0;
+while (rintanganDi(kPertama).tinggi === 0) kPertama++;
+const r0 = rintanganDi(kPertama);
+check("rintangan ada di puncaknya & hilang di luar lebarnya", Math.abs(tinggiRintangan(r0.x) - r0.tinggi) < 1e-6 && tinggiRintangan(r0.x + RINTANGAN_SETENGAH + 1) === 0 && tinggiRintangan(100) === 0, r0.tinggi.toFixed(1));
+let tumpang = 0;
+let ada = 0;
+for (let k = 0; k < 400; k++) {
+  if (rintanganDi(k + 1).x - rintanganDi(k).x < 2 * RINTANGAN_SETENGAH + 80) tumpang++;
+  if (rintanganDi(k).tinggi > 0) ada++;
+}
+check("rintangan tak pernah berimpitan", tumpang === 0, String(tumpang));
+check("sebagian besar slot berisi rintangan (> 60% dari 400)", ada > 240, String(ada));
+
+const puncakLoncat = (tahan: number) => {
+  const d = duniaBaru();
+  jalan(d, 1.2, { gas: false, rem: false });
+  const y0 = d.y;
+  let tinggi = 0;
+  let udara = 0;
+  for (let i = 0; i < Math.round(2 / DT); i++) {
+    langkah(d, { gas: false, rem: false, loncat: i * DT < tahan }, DT);
+    tinggi = Math.max(tinggi, y0 - d.y);
+    if (!d.roda[0].kontak && !d.roda[1].kontak) udara += DT;
+  }
+  return { tinggi, udara, d };
+};
+const lonSekali = puncakLoncat(0.02);
+check("loncat: naik > 50 px dan melayang > 0,5 dtk", lonSekali.tinggi > 50 && lonSekali.udara > 0.5 && sehat(lonSekali.d), `tinggi=${lonSekali.tinggi.toFixed(0)} udara=${lonSekali.udara.toFixed(2)}`);
+const lonTahan = puncakLoncat(0.4);
+check("menahan loncat di udara tak menambah tinggi (tak bisa loncat ganda)", lonTahan.tinggi < lonSekali.tinggi + 4 && LONCAT_JEDA > 0.5, `${lonTahan.tinggi.toFixed(0)} vs ${lonSekali.tinggi.toFixed(0)}`);
+const lonUdara = duniaBaru();
+jalan(lonUdara, 1.2, { gas: false, rem: false });
+lonUdara.y -= 120;
+lonUdara.vy = 0;
+jalan(lonUdara, 0.3, { gas: false, rem: false });
+const vyUdara = lonUdara.vy;
+jalan(lonUdara, 0.05, { gas: false, rem: false, loncat: true });
+check("loncat di udara (roda tak menapak) tidak berefek", lonUdara.vy > vyUdara, lonUdara.vy.toFixed(1));
+
+const puncakKecepatan = (tangki: number, tekan: boolean) => {
+  const d = duniaBaru();
+  d.nosTangki = tangki;
+  let v = 0;
+  for (let i = 0; i < Math.round(3.5 / DT) && !d.selesai; i++) {
+    langkah(d, { gas: true, rem: false, nos: tekan }, DT);
+    v = Math.max(v, Math.hypot(d.vx, d.vy));
+  }
+  return v;
+};
+const vBiasa = puncakKecepatan(0, false);
+const vNos = puncakKecepatan(NOS_TANGKI_MAKS, true);
+check("nitro (tombol ditahan, tangki penuh) menambah kecepatan nyata (> +15%) namun tidak melesat (< maks nitro x 1,1)", vNos > vBiasa * 1.15 && vNos < NOS_KECEPATAN_MAKS * 1.1, `biasa=${vBiasa.toFixed(0)} nitro=${vNos.toFixed(0)}`);
+check("tangki berisi tetapi tombol tidak ditekan = kecepatan biasa", Math.abs(puncakKecepatan(NOS_TANGKI_MAKS, false) - vBiasa) < 1, puncakKecepatan(NOS_TANGKI_MAKS, false).toFixed(0));
+check("menekan nitro dengan tangki kosong tidak berefek", Math.abs(puncakKecepatan(0, true) - vBiasa) < 1, puncakKecepatan(0, true).toFixed(0));
+const kuras = duniaBaru();
+kuras.nosTangki = NOS_TANGKI_MAKS;
+jalan(kuras, 1, { gas: false, rem: false, nos: true });
+check("tangki terpakai ±" + NOS_BOROS + " per dtk selagi ditahan", Math.abs(NOS_TANGKI_MAKS - kuras.nosTangki - NOS_BOROS) < 3, kuras.nosTangki.toFixed(1));
+const tanpaTekan = duniaBaru();
+tanpaTekan.nosTangki = 50;
+jalan(tanpaTekan, 1, { gas: false, rem: false });
+check("tangki tidak berkurang bila tombol tidak ditekan", tanpaTekan.nosTangki === 50, String(tanpaTekan.nosTangki));
+const habis = duniaBaru();
+habis.nosTangki = 5;
+jalan(habis, 1, { gas: false, rem: false, nos: true });
+check("tangki habis berhenti di 0 dan nitro mati", habis.nosTangki === 0 && !habis.nosAktif, String(habis.nosTangki));
+
+let tanpaTanjakan = 0;
+for (let j = 0; j < 40; j++) {
+  const n = nosDi(j);
+  let naik = false;
+  for (let x = n.x; x < n.x + 400; x += 10) if (landaiDasar(x) < -0.2) naik = true;
+  if (!naik) tanpaTanjakan++;
+}
+check("item nitro hampir selalu diletakkan sebelum tanjakan (>= 90% dari 40)", tanpaTanjakan <= 4, `${tanpaTanjakan} tanpa tanjakan`);
+const nosAmbil = duniaBaru();
+const n0 = nosDi(0);
+nosAmbil.x = n0.x;
+nosAmbil.y = n0.y;
+langkah(nosAmbil, { gas: false, rem: false }, DT);
+const sesudahAmbil = nosAmbil.nosTangki;
+langkah(nosAmbil, { gas: false, rem: false }, DT);
+check("tabung nitro mengisi tangki NOS_ISI sekali saja (tidak otomatis menyala)", sesudahAmbil === NOS_ISI && nosAmbil.nosAmbil.size === 1 && nosAmbil.nosTangki === NOS_ISI && !nosAmbil.nosAktif, `${sesudahAmbil} lalu ${nosAmbil.nosTangki}`);
+const penuh = duniaBaru();
+penuh.nosTangki = 90;
+penuh.x = n0.x;
+penuh.y = n0.y;
+langkah(penuh, { gas: false, rem: false }, DT);
+check("tangki tak melebihi " + NOS_TANGKI_MAKS, penuh.nosTangki === NOS_TANGKI_MAKS, String(penuh.nosTangki));
 
 console.log("\nKetahanan");
 let rusak = 0;

@@ -9,11 +9,18 @@ import {
   PEGAS_REHAT,
   RODA_R,
   RODA_Y,
+  NOS_TANGKI_MAKS,
+  RINTANGAN_JARAK,
+  RINTANGAN_MULAI,
+  RINTANGAN_SETENGAH,
   bensinDi,
   duniaBaru,
   koinDi,
   langkah,
+  nosDi,
+  rintanganDi,
   tanah,
+  tanahDasar,
   type Dunia,
 } from "@/lib/syrobo/game/tanjakanFisika";
 
@@ -31,6 +38,8 @@ const KUNCI_REKOR = "synaped_syrobo_tanjakan_rekor";
 const DT = 1 / 120;
 
 const KEY_GAS = new Set(["ArrowRight", "d", "D", "ArrowUp", "w", "W"]);
+const KEY_LONCAT = new Set([" ", "Spacebar"]);
+const KEY_NOS = new Set(["Shift"]);
 const KEY_REM = new Set(["ArrowLeft", "a", "A", "ArrowDown", "s", "S"]);
 
 interface Partikel {
@@ -416,6 +425,106 @@ function gambarKaleng(ctx: CanvasRenderingContext2D, x: number, y: number, t: nu
   ctx.restore();
 }
 
+/**
+ * Batu penghalang: siluetnya HARUS sama dengan gundukan fisika (`tanah`), jadi roda tampak menumpang di atas batu. Dilukis tanpa
+ * garis tinta: dasar abu hangat bergradasi, bidang terang di sisi kiri (cahaya dari kiri-atas), bidang gelap di kanan, celah
+ * lunak, bintik butiran, lumut di atas, dan kerikil lepas di kakinya.
+ */
+function gambarBatu(ctx: CanvasRenderingContext2D, xc: number, tinggi: number) {
+  const W = RINTANGAN_SETENGAH;
+  const x0 = xc - W;
+  const x1 = xc + W;
+  const puncak = tanah(xc);
+  const dasar = tanahDasar(xc);
+  const sd = Math.floor(xc);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x0, tanahDasar(x0) + 6);
+  for (let x = x0; x <= x1; x += 3) ctx.lineTo(x, tanah(x) - 1);
+  ctx.lineTo(x1, tanahDasar(x1) + 6);
+  ctx.closePath();
+  ctx.clip();
+
+  const g = ctx.createLinearGradient(0, puncak, 0, dasar + 6);
+  g.addColorStop(0, "#BDB7AC");
+  g.addColorStop(0.55, "#948E84");
+  g.addColorStop(1, "#6F6A63");
+  ctx.fillStyle = g;
+  ctx.fillRect(x0 - 2, puncak - 6, W * 2 + 4, tinggi + 16);
+
+  const poli = (pts: [number, number][], warna: string) => {
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath();
+    ctx.fillStyle = warna;
+    ctx.fill();
+  };
+  // bidang terang (kiri-atas)
+  poli([[xc - W * 0.95, dasar + 6], [xc - W * 0.6, puncak + tinggi * 0.3], [xc - W * 0.12, puncak - 2], [xc - W * 0.02, puncak + tinggi * 0.45], [xc - W * 0.4, dasar + 6]], "rgba(255,248,235,0.26)");
+  // bidang gelap (kanan)
+  poli([[xc + W * 0.12, puncak + tinggi * 0.22], [xc + W * 0.7, puncak + tinggi * 0.4], [xc + W * 1.05, dasar + 6], [xc + W * 0.1, dasar + 6]], "rgba(38,32,42,0.3)");
+  // celah lunak antara dua bidang
+  poli([[xc + W * 0.02, puncak + tinggi * 0.5], [xc + W * 0.2, puncak + tinggi * 0.85], [xc + W * 0.12, dasar + 6], [xc - W * 0.08, dasar + 6]], "rgba(30,25,35,0.22)");
+  // lumut di sisi atas-kiri
+  ctx.beginPath();
+  ctx.ellipse(xc - W * 0.34, puncak + tinggi * 0.2, W * 0.3, tinggi * 0.2, -0.25, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(112,144,70,0.72)";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(xc - W * 0.1, puncak + tinggi * 0.12, W * 0.14, tinggi * 0.1, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(132,164,84,0.6)";
+  ctx.fill();
+  // butiran batu
+  for (let i = 0; i < 16; i++) {
+    const px = x0 + hash(sd + i * 3) * W * 2;
+    const py = tanah(px) + 4 + hash(sd + i * 3 + 1) * (tinggi + 2);
+    ctx.beginPath();
+    ctx.arc(px, py, 0.8 + hash(sd + i * 3 + 2) * 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = i % 2 ? "rgba(58,52,48,0.35)" : "rgba(232,226,214,0.4)";
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // kerikil lepas di kaki batu
+  for (const [kx, kr] of [[x0 - 7, 5], [x1 + 9, 3.6]] as const) {
+    const ky = tanah(kx) - kr * 0.4;
+    const kg = ctx.createRadialGradient(kx - kr * 0.3, ky - kr * 0.4, 0.5, kx, ky, kr * 1.1);
+    kg.addColorStop(0, "#BEB8AD");
+    kg.addColorStop(1, "#7E786F");
+    ctx.beginPath();
+    ctx.ellipse(kx, ky, kr * 1.15, kr * 0.8, 0, 0, Math.PI * 2);
+    ctx.fillStyle = kg;
+    ctx.fill();
+  }
+}
+
+/** Item nitro: tabung biru bertanda petir. */
+function gambarNos(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+  const g = Math.sin(t * 3.4) * 3;
+  ctx.save();
+  ctx.translate(x, y + g);
+  ctx.rotate(Math.sin(t * 2.2) * 0.06);
+  ctx.beginPath();
+  ctx.roundRect(-12, -18, 24, 36, 8);
+  isiGaris(ctx, "#4A8FE0");
+  ctx.beginPath();
+  ctx.roundRect(-6, -25, 12, 8, 2);
+  isiGaris(ctx, "#9AA3B0", 2.6);
+  ctx.beginPath();
+  ctx.moveTo(3, -12);
+  ctx.lineTo(-6, 2);
+  ctx.lineTo(0, 2);
+  ctx.lineTo(-3, 13);
+  ctx.lineTo(7, -3);
+  ctx.lineTo(1, -3);
+  ctx.closePath();
+  ctx.fillStyle = "#FBE08A";
+  ctx.fill();
+  ctx.restore();
+}
+
 function gambarRoda(ctx: CanvasRenderingContext2D, x: number, y: number, rot: number) {
   ctx.save();
   ctx.translate(x, y);
@@ -623,7 +732,7 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
   const dunia = useRef<Dunia>(duniaBaru());
   const kam = useRef({ x: 180, y: 380 });
   const partikel = useRef<Partikel[]>([]);
-  const kendali = useRef({ gasTombol: false, remTombol: false, gasKey: false, remKey: false });
+  const kendali = useRef({ gasTombol: false, remTombol: false, gasKey: false, remKey: false, loncatTombol: false, loncatKey: false, nosTombol: false, nosKey: false });
   const fase = useRef<Fase>("siap");
   const rekor = useRef(0);
   const suara = useRef<{ ctx: AudioContext; osc: OscillatorNode; gain: GainNode } | null>(null);
@@ -637,6 +746,11 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
   const [hud, setHud] = useState<Hud>({ jarak: 0, koin: 0, bensin: BENSIN_AWAL, fase: "siap", selesai: null, rekor: 0, rekorBaru: false });
   const [gasOn, setGasOn] = useState(false);
   const [remOn, setRemOn] = useState(false);
+  const [loncatOn, setLoncatOn] = useState(false);
+  const [nosOn, setNosOn] = useState(false);
+  const [nitroOn, setNitroOn] = useState(false);
+  const [tangki, setTangki] = useState(0);
+  const suaraToggleRef = useRef<() => void>(() => undefined);
   const [bunyi, setBunyi] = useState(false);
   const [potret, setPotret] = useState(false);
 
@@ -650,6 +764,8 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
     disetor.current = 0;
     kam.current = { x: 180, y: 380 };
     partikel.current = [];
+    setTangki(0);
+    setNitroOn(false);
     setHud({ jarak: 0, koin: 0, bensin: BENSIN_AWAL, fase: "siap", selesai: null, rekor: rekor.current, rekorBaru: false });
     fase.current = "siap";
   }, []);
@@ -711,8 +827,16 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
     };
     const turun = (e: KeyboardEvent) => {
       if (sasaran(e)) return;
-      if (KEY_GAS.has(e.key) || KEY_REM.has(e.key) || e.key === " ") e.preventDefault();
-      if (KEY_GAS.has(e.key)) kendali.current.gasKey = true;
+      if (KEY_GAS.has(e.key) || KEY_REM.has(e.key) || KEY_LONCAT.has(e.key)) e.preventDefault();
+      if (KEY_NOS.has(e.key)) {
+        kendali.current.nosKey = true;
+        setNosOn(true);
+      } else if ((e.key === "m" || e.key === "M") && !e.repeat) suaraToggleRef.current();
+      else if (KEY_LONCAT.has(e.key)) {
+        kendali.current.loncatKey = true;
+        setLoncatOn(true);
+        if (fase.current === "siap") setFase("main");
+      } else if (KEY_GAS.has(e.key)) kendali.current.gasKey = true;
       else if (KEY_REM.has(e.key)) kendali.current.remKey = true;
       else if ((e.key === "r" || e.key === "R") && !e.repeat) ulangRef.current();
       else if ((e.key === "Escape" || e.key === "p" || e.key === "P") && !e.repeat) jedaRef.current();
@@ -721,13 +845,21 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
       setRemOn(kendali.current.remKey || kendali.current.remTombol);
     };
     const naik = (e: KeyboardEvent) => {
-      if (KEY_GAS.has(e.key)) kendali.current.gasKey = false;
+      if (KEY_NOS.has(e.key)) {
+        kendali.current.nosKey = false;
+        setNosOn(kendali.current.nosTombol);
+      } else if (KEY_LONCAT.has(e.key)) {
+        kendali.current.loncatKey = false;
+        setLoncatOn(kendali.current.loncatTombol);
+      } else if (KEY_GAS.has(e.key)) kendali.current.gasKey = false;
       else if (KEY_REM.has(e.key)) kendali.current.remKey = false;
       setGasOn(kendali.current.gasKey || kendali.current.gasTombol);
       setRemOn(kendali.current.remKey || kendali.current.remTombol);
     };
     const lepasSemua = () => {
-      kendali.current = { gasTombol: false, remTombol: false, gasKey: false, remKey: false };
+      kendali.current = { gasTombol: false, remTombol: false, gasKey: false, remKey: false, loncatTombol: false, loncatKey: false, nosTombol: false, nosKey: false };
+      setLoncatOn(false);
+      setNosOn(false);
       setGasOn(false);
       setRemOn(false);
       if (fase.current === "main") setFase("jeda");
@@ -767,6 +899,9 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
       setBunyi(false);
     }
   }, []);
+  useEffect(() => {
+    suaraToggleRef.current = () => nyalakanSuara(!suaraAktif.current);
+  }, [nyalakanSuara]);
   useEffect(
     () => () => {
       try {
@@ -811,12 +946,14 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
       const k = kendali.current;
       const gas = k.gasKey || k.gasTombol;
       const rem = k.remKey || k.remTombol;
+      const loncat = k.loncatKey || k.loncatTombol;
+      const nos = k.nosKey || k.nosTombol;
 
       if (fase.current === "main" && !d.selesai) {
         akum += dt;
         let n = 0;
         while (akum >= DT && n < 8) {
-          langkah(d, { gas, rem }, DT);
+          langkah(d, { gas, rem, loncat, nos }, DT);
           akum -= DT;
           n++;
           if (d.selesai) break;
@@ -828,6 +965,14 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
           const c = Math.cos(d.a);
           const s = Math.sin(d.a);
           partikel.current.push({ x: d.x + c * -68 - s * 8, y: d.y + s * -68 + c * 8, vx: -40 - Math.random() * 40 - d.vx * 0.05, vy: -20 - Math.random() * 25, umur: 0, maks: 0.7, r: 4 + Math.random() * 3, warna: "#CFC7BB" });
+        }
+        // api nitro dari knalpot
+        if (!hemat && d.nosAktif) {
+          const c = Math.cos(d.a);
+          const s = Math.sin(d.a);
+          for (let n = 0; n < 2; n++) {
+            partikel.current.push({ x: d.x + c * -70 - s * 7, y: d.y + s * -70 + c * 7, vx: -160 - Math.random() * 120 - d.vx * 0.1, vy: (Math.random() - 0.5) * 40, umur: 0, maks: 0.28, r: 4 + Math.random() * 4, warna: Math.random() < 0.5 ? "#FFB23E" : "#FF6B3D" });
+          }
         }
         for (let i = 0; i < 2; i++) {
           const r = d.roda[i];
@@ -891,6 +1036,8 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
       hudT += dt;
       if (hudT > 0.1 && fase.current === "main") {
         hudT = 0;
+        setNitroOn(d.nosAktif);
+        setTangki(Math.round(d.nosTangki));
         setHud((h) => (h.jarak === d.jarak && h.koin === d.koin && Math.round(h.bensin) === Math.round(d.bensin) ? h : { ...h, jarak: d.jarak, koin: d.koin, bensin: d.bensin }));
       }
 
@@ -1008,6 +1155,19 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
         ctx.fill();
       }
 
+      // batu penghalang (bentuk tanahnya sudah ada di fisika; di sini hanya diberi rupa batu)
+      for (let k = Math.max(0, Math.floor((xMin - RINTANGAN_MULAI - RINTANGAN_SETENGAH - 340) / RINTANGAN_JARAK)); k <= Math.ceil((xMax - RINTANGAN_MULAI) / RINTANGAN_JARAK); k++) {
+        const r = rintanganDi(k);
+        if (r.tinggi > 0 && r.x > xMin - RINTANGAN_SETENGAH && r.x < xMax + RINTANGAN_SETENGAH) gambarBatu(ctx, r.x, r.tinggi);
+      }
+      // item nitro
+      for (let j = Math.max(0, Math.floor((xMin - 2400 - 700) / 2500)); j <= Math.max(0, Math.ceil((xMax - 2400) / 2500)); j++) {
+        if (d.nosAmbil.has(j)) continue;
+        const n = nosDi(j);
+        if (n.x < xMin || n.x > xMax) continue;
+        gambarNos(ctx, n.x, n.y, now / 1000);
+      }
+
       // koin & kaleng
       const g0 = Math.max(0, Math.floor((xMin - 760 - 300) / 900));
       const g1 = Math.max(0, Math.ceil((xMax - 760) / 900));
@@ -1054,6 +1214,28 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
     if (fase.current === "siap") setFase("main");
     if (jenis === "gas") setGasOn(true);
     else setRemOn(true);
+  }
+  function tekanLoncat(e: React.PointerEvent) {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    kendali.current.loncatTombol = true;
+    if (fase.current === "siap") setFase("main");
+    setLoncatOn(true);
+  }
+  function lepasLoncat() {
+    kendali.current.loncatTombol = false;
+    setLoncatOn(kendali.current.loncatKey);
+  }
+  function tekanNos(e: React.PointerEvent) {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    kendali.current.nosTombol = true;
+    if (fase.current === "siap") setFase("main");
+    setNosOn(true);
+  }
+  function lepasNos() {
+    kendali.current.nosTombol = false;
+    setNosOn(kendali.current.nosKey);
   }
   function lepasPedal(jenis: "gas" | "rem") {
     if (jenis === "gas") kendali.current.gasTombol = false;
@@ -1108,21 +1290,29 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
               <div className={cn("h-full border-r-2 border-[#2B2233] transition-[width] duration-150", persenBensin < 25 ? "bg-[#E0833B]" : "bg-[#6BA7D8]")} style={{ width: `${Math.max(3, persenBensin)}%` }} />
             </div>
           </div>
+          {tangki > 0 && (
+            <div className={cn("flex w-44 items-center gap-2 rounded-xl bg-[#FBF1DA] px-2.5 py-1 sm:w-56 kecil:w-28 kecil:gap-1 kecil:rounded-lg kecil:px-1.5 kecil:py-0.5", STIKER)} aria-label={`Tangki nitro ${tangki}%`}>
+              <span className={cn("text-[11px] font-extrabold tracking-wider kecil:text-[8px]", nitroOn && "animate-pulse text-[#2A6FC4]")}>NOS</span>
+              <div className="h-3 flex-1 overflow-hidden rounded-md border-2 border-[#2B2233] bg-[#FBF1DA] kecil:h-2" role="progressbar" aria-label="Tangki nitro" aria-valuenow={tangki} aria-valuemin={0} aria-valuemax={NOS_TANGKI_MAKS}>
+                <div className="h-full border-r-2 border-[#2B2233] bg-[#4A8FE0] transition-[width] duration-100" style={{ width: `${Math.max(3, (tangki / NOS_TANGKI_MAKS) * 100)}%` }} />
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="pointer-events-auto flex flex-col gap-2 kecil:gap-1">
-          <button type="button" onClick={keluar} aria-label="Keluar dari game" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8")}>
+        <div className="pointer-events-auto flex flex-col gap-2 pointer-fine:invisible kecil:gap-1">
+          <button type="button" onClick={keluar} aria-label="Keluar dari game" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
             <svg viewBox="0 0 16 16" className="h-6 w-6 kecil:h-4 kecil:w-4" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" aria-hidden="true">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
             </svg>
           </button>
-          <button type="button" onClick={() => jedaRef.current()} aria-label="Jeda" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8")}>
+          <button type="button" onClick={() => jedaRef.current()} aria-label="Jeda" className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0")}>
             <svg viewBox="0 0 16 16" className="h-5 w-5 kecil:h-3.5 kecil:w-3.5" fill="currentColor" aria-hidden="true">
               <rect x="3" y="2.5" width="3.4" height="11" rx="1" />
               <rect x="9.6" y="2.5" width="3.4" height="11" rx="1" />
             </svg>
           </button>
-          <button type="button" aria-pressed={bunyi} onClick={() => nyalakanSuara(!bunyi)} aria-label={bunyi ? "Matikan suara" : "Nyalakan suara"} className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8", bunyi && "bg-[#6BA7D8]")}>
+          <button type="button" aria-pressed={bunyi} onClick={() => nyalakanSuara(!bunyi)} aria-label={bunyi ? "Matikan suara" : "Nyalakan suara"} className={cn(TOMBOL, "flex h-11 w-11 items-center justify-center p-0 kecil:h-8 kecil:w-8 kecil:px-0 kecil:py-0", bunyi && "bg-[#6BA7D8]")}>
             <svg viewBox="0 0 20 20" className="h-5 w-5 kecil:h-4 kecil:w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 8h3l4-3v10l-4-3H3z" fill="currentColor" />
               {bunyi ? <path d="M13.5 7.5a3.5 3.5 0 010 5M15.5 5.5a6 6 0 010 9" /> : <path d="M13.5 8l4 4M17.5 8l-4 4" />}
@@ -1133,6 +1323,26 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
 
       {/* Pedal: kiri = rem/mundur, kanan = gas. Multi-sentuh (dua elemen terpisah). */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 sm:p-6 kecil:p-2">
+        <div className="pointer-events-none flex flex-col items-start gap-2 pointer-fine:invisible kecil:gap-1.5">
+          <button
+            type="button"
+            aria-label="Loncat"
+            onPointerDown={tekanLoncat}
+            onPointerUp={lepasLoncat}
+            onPointerCancel={lepasLoncat}
+            onContextMenu={(e) => e.preventDefault()}
+            className={cn(
+              "pointer-events-auto flex h-16 w-32 touch-none items-center justify-center gap-2 rounded-2xl text-base font-extrabold transition-[transform,box-shadow,background-color] duration-100 sm:h-20 sm:w-40 kecil:h-11 kecil:w-24 kecil:gap-1 kecil:rounded-xl kecil:text-xs",
+              STIKER,
+              loncatOn ? "translate-x-[3px] translate-y-[3px] bg-[#F2C14E] shadow-none" : "bg-[#FBF1DA]",
+            )}
+          >
+            <svg viewBox="0 0 32 24" className="h-6 w-8 kecil:h-4 kecil:w-5" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="26" height="18" rx="5" fill="#F2C14E" />
+              <path d="M16 17V8M11.500 12L16 7.500l4.500 4.500" />
+            </svg>
+            LONCAT
+          </button>
         <button
           type="button"
           aria-label="Rem dan mundur"
@@ -1152,7 +1362,29 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
           </svg>
           REM
         </button>
-        <p className="mb-2 hidden rounded-lg bg-[#FBF1DA]/90 px-3 py-1 text-xs font-bold md:block">← / A rem · → / D gas · R ulang · Esc jeda</p>
+        </div>
+        <p className="mb-2 hidden rounded-lg bg-[#FBF1DA]/90 px-3 py-1 text-xs font-bold pointer-fine:block">← / A rem · → / D gas · Spasi loncat · Shift nitro · M suara · R ulang · Esc jeda</p>
+        <div className="pointer-events-none flex flex-col items-end gap-2 pointer-fine:invisible kecil:gap-1.5">
+          <button
+            type="button"
+            aria-label="Nitro"
+            onPointerDown={tekanNos}
+            onPointerUp={lepasNos}
+            onPointerCancel={lepasNos}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ backgroundImage: `linear-gradient(to top, #4A8FE0 ${Math.round((tangki / NOS_TANGKI_MAKS) * 100)}%, #FBF1DA ${Math.round((tangki / NOS_TANGKI_MAKS) * 100)}%)` }}
+            className={cn(
+              "pointer-events-auto flex h-16 w-36 touch-none items-center justify-center gap-2 rounded-2xl text-base font-extrabold transition-[transform,box-shadow] duration-100 sm:h-20 sm:w-44 kecil:h-11 kecil:w-24 kecil:gap-1 kecil:rounded-xl kecil:text-xs",
+              STIKER,
+              nosOn && tangki > 0 && "translate-x-[3px] translate-y-[3px] shadow-none",
+              tangki === 0 && "opacity-70",
+            )}
+          >
+            <svg viewBox="0 0 24 24" className="h-6 w-6 kecil:h-4 kecil:w-4" fill="#FBE08A" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true">
+              <path d="M13 2L5 13h6l-1 9 9-12h-6z" />
+            </svg>
+            NOS
+          </button>
         <button
           type="button"
           aria-label="Gas"
@@ -1172,6 +1404,7 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
           </svg>
           GAS
         </button>
+        </div>
       </div>
 
       {/* Layar tegak di ponsel: saran memutar */}
@@ -1185,7 +1418,7 @@ export default function GameTanjakan({ onKeluar, onSetor }: { onKeluar: () => vo
           <div className={cn("max-w-sm rotate-1 rounded-2xl bg-[#FBF1DA] p-5 text-center kecil:max-w-[300px] kecil:rounded-xl kecil:p-3", STIKER)}>
             <h2 className="text-2xl font-extrabold kecil:text-lg">Tanjakan Robo</h2>
             <p className="mt-2 text-sm kecil:mt-1 kecil:text-[11px] font-semibold leading-relaxed text-[#2B2233]/80">
-              Tahan <strong>GAS</strong> untuk menanjak, <strong>REM</strong> untuk menahan atau mundur. Di udara, gas mengangkat hidung dan rem menurunkannya. Ambil koin dan kaleng bensin; jangan sampai kepala robot menyentuh tanah!
+              Tahan <strong>GAS</strong> untuk menanjak, <strong>REM</strong> untuk menahan atau mundur. Di udara, gas mengangkat hidung dan rem menurunkannya. Tekan <strong>LONCAT</strong> (spasi di desktop) untuk melompati batu. Ambil koin, kaleng bensin, dan tabung <strong>nitro</strong> (biru) untuk mengisi tangki NOS, lalu tahan <strong>NOS</strong> (Shift di desktop) untuk melesat; jangan sampai kepala robot menyentuh tanah!
             </p>
             <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.2em] text-[#2B2233]/60 kecil:mt-1.5 kecil:text-[10px]">Tekan gas untuk mulai</p>
           </div>
