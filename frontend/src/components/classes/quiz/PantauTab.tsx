@@ -24,7 +24,7 @@ import {
   hitungNilai,
   ringkasKelompok,
   soalManual,
-  skorTabel,
+  nilaiIndividu,
   sisaDetik,
   statusQuizSiswa,
   sudahDibuka,
@@ -117,25 +117,30 @@ export default async function PantauTab({
   }
   const sekarang = jamServer();
   const percobaan = await selesaikanSemua(quiz, await listPercobaan(classId, quiz.id), sekarang);
-  const peta = new Map<string, PercobaanQuiz>(percobaan.map((p) => [p.uid, p]));
-
-  // Anggota saat ini + siswa yang sudah keluar tetapi pernah mengerjakan.
+  const kel = quiz.settings.kelompok === true;
   const uidAnggota = new Set(members.map((m) => m.uid));
-  const uids = [...members.map((m) => m.uid), ...percobaan.filter((p) => !uidAnggota.has(p.uid)).map((p) => p.uid)];
-
-  const baris = uids
-    .map((uid) => {
-      const p = peta.get(uid) ?? null;
-      return {
-        uid,
-        p,
-        nama: cards.get(uid)?.name ?? "Peserta",
-        foto: cards.get(uid)?.photoURL ?? null,
-        status: statusQuizSiswa(quiz, p),
-        keluar: !uidAnggota.has(uid),
-      };
-    })
-    .sort((a, b) => URUTAN[a.status] - URUTAN[b.status] || a.nama.localeCompare(b.nama, "id"));
+  // Quiz kelompok: SATU baris per kelompok (percobaan bersama); anggota kelas yang belum tercatat di kelompok mana pun
+  // tampil sebagai "belum mulai". Quiz individu: satu baris per siswa.
+  const sudahTercatat = new Set(percobaan.flatMap((p) => [p.uid, ...(kel ? (p.members ?? []).map((m) => m.uid ?? "") : [])]));
+  const sisaAnggota = members.map((m) => m.uid).filter((uid) => !sudahTercatat.has(uid));
+  const baris = [
+    ...percobaan.map((p) => ({
+      uid: p.uid,
+      p: p as PercobaanQuiz | null,
+      nama: kel && p.groupName ? p.groupName : (cards.get(p.uid)?.name ?? "Peserta"),
+      foto: cards.get(p.uid)?.photoURL ?? null,
+      status: statusQuizSiswa(quiz, p),
+      keluar: !uidAnggota.has(p.uid),
+    })),
+    ...sisaAnggota.map((uid) => ({
+      uid,
+      p: null as PercobaanQuiz | null,
+      nama: cards.get(uid)?.name ?? "Peserta",
+      foto: cards.get(uid)?.photoURL ?? null,
+      status: statusQuizSiswa(quiz, null),
+      keluar: false,
+    })),
+  ].sort((a, b) => URUTAN[a.status] - URUTAN[b.status] || a.nama.localeCompare(b.nama, "id"));
 
   const hitung = (s: StatusQuizSiswa) => baris.filter((b) => b.status === s).length;
   const selesai = baris.filter((b) => b.p?.submittedAt);
@@ -311,14 +316,19 @@ export default async function PantauTab({
                           {b.status === "berlangsung" && <span className="pantau-titik h-1.5 w-1.5 rounded-full bg-blue-300" aria-hidden="true" />}
                           {LABEL_STATUS_QUIZ[b.status]}
                         </p>
-                        {p?.groupName && (
-                          <p className="truncate text-[11px] text-ink-muted" title={`Kelompok ${p.groupName}`}>
-                            Kelompok {p.groupName}
-                          </p>
-                        )}
                         {p?.members && p.members.length > 1 && (
-                          <p className="truncate text-[11px] text-ink-muted" title={p.members.map((m) => m.name).join(", ")}>
-                            Anggota: {p.members.map((m) => m.name).join(", ")}
+                          <p
+                            className="text-[11px] leading-[1.5] text-ink-muted"
+                            title={p.members.map((m) => `${m.name}${m.uid && m.uid !== p.uid && !(p.joined ?? []).includes(m.uid) ? " (belum ikut)" : ""}`).join(", ")}
+                          >
+                            Anggota:{" "}
+                            {p.members.map((m, i) => (
+                              <span key={m.key ?? i} className={m.uid && m.uid !== p.uid && !(p.joined ?? []).includes(m.uid) ? "opacity-60" : undefined}>
+                                {i > 0 && ", "}
+                                {m.name}
+                                {m.uid && m.uid !== p.uid && !(p.joined ?? []).includes(m.uid) && " (belum ikut)"}
+                              </span>
+                            ))}
                           </p>
                         )}
                       </div>
@@ -354,7 +364,7 @@ export default async function PantauTab({
                           <span className="block text-[30px] font-semibold leading-none text-ink">{nilai.total}</span>
                           {quiz.rubric && quiz.settings.kelompok && (
                             <span className="mt-1 block text-[10px] uppercase tracking-[0.12em] text-ink-muted">
-                              Individu {nilai.rubrikPersen !== null ? `${nilai.rubrikPersen}%` : "menunggu"}
+                              Individu {nilaiIndividu(quiz, p!).filter((a) => a.persen !== null).length}/{nilaiIndividu(quiz, p!).length} dinilai
                             </span>
                           )}
                           {(nilai.esaiBelumDinilai > 0 || nilai.rubrikBelumDinilai > 0) && <span className="text-[10px] uppercase tracking-[0.16em] text-blue-300">sementara</span>}
@@ -376,15 +386,22 @@ export default async function PantauTab({
                     <details className="group mt-3 sm:ml-[220px]">
                       <summary className="inline-flex cursor-pointer list-none items-center gap-3 bg-white/[0.07] px-4 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-ink transition-colors duration-300 hover:bg-white/[0.14] group-open:bg-white/[0.12] group-open:shadow-[inset_0_-2px_0_var(--color-blue-500)] [&::-webkit-details-marker]:hidden">
                         <span className="group-open:hidden">
-                          Nilai rubrik{nilai.rubrikBelumDinilai > 0 ? ` · ${nilai.rubrikBelumDinilai} poin belum dinilai` : ` · ${nilai.rubrikPersen}%`}
+                          Nilai rubrik per anggota{nilai.rubrikBelumDinilai > 0 ? ` · ${nilai.rubrikBelumDinilai} poin belum dinilai` : " · semua dinilai"}
                         </span>
                         <span className="hidden group-open:inline">Tutup rubrik</span>
                         <svg className="h-3 w-3 text-ink-muted transition-transform duration-300 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                       </summary>
-                      <div className="mt-3">
-                        <NilaiRubrikForm classId={classId} quizId={quiz.id} uid={b.uid} rubrik={quiz.rubric} skorAwal={p.rubricScores ?? {}} />
+                      <div className="mt-3 space-y-6">
+                        {nilaiIndividu(quiz, p).map((a) => (
+                          <div key={a.key}>
+                            <p className="mb-2 text-sm font-semibold text-ink">
+                              {a.nama} <span className="ml-1 text-xs font-medium text-ink-muted">· Nilai individu {a.persen !== null ? `${a.persen}%` : "menunggu"}</span>
+                            </p>
+                            <NilaiRubrikForm classId={classId} quizId={quiz.id} uid={b.uid} kunci={a.key} rubrik={quiz.rubric!} skorAwal={p.rubricScores?.[a.key] ?? {}} />
+                          </div>
+                        ))}
                       </div>
                     </details>
                   )}
@@ -413,15 +430,7 @@ export default async function PantauTab({
                             jawaban: p.answers[q.id] ?? "",
                             poin: q.points,
                             nilai: typeof p.essayScores[q.id] === "number" ? p.essayScores[q.id] : null,
-                            ...(q.type === "table" && q.table
-                              ? {
-                                  tampilan: <TabelHasil tabel={q.table} jawab={p.answers[q.id]} tampilkanKunci />,
-                                  saran: (() => {
-                                    const sk = skorTabel(q.table, p.answers[q.id]);
-                                    return sk.total > 0 ? Math.round((q.points * sk.benar) / sk.total) : 0;
-                                  })(),
-                                }
-                              : {}),
+                            ...(q.type === "table" && q.table ? { tampilan: <TabelHasil tabel={q.table} jawab={p.answers[q.id]} /> } : {}),
                           }))}
                         />
                       </div>

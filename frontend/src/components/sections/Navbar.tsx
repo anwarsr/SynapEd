@@ -101,7 +101,7 @@ export default function Navbar() {
         </Link>
 
         {/* Tautan + penanda section aktif: garis kecil di bawah kata, bukan keping berlatar */}
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((link) => {
             const rute = link.href;
             const href = rute ?? (isHome ? `#${link.id}` : `/#${link.id}`);
@@ -141,7 +141,7 @@ export default function Navbar() {
 
         {/* Slot lebar tetap: status auth baru diketahui setelah Firebase
             menjawab, dan tanpa ini kapsul akan bergeser saat datanya masuk. */}
-        <div className="hidden min-w-[13rem] shrink-0 items-center justify-end gap-2 md:flex">
+        <div className="hidden min-w-[13rem] shrink-0 items-center justify-end gap-2 lg:flex">
           {status === "loading" ? (
             <span aria-hidden="true" className="h-9 w-36 rounded-full bg-white/10" />
           ) : status === "authenticated" ? (
@@ -231,7 +231,7 @@ export default function Navbar() {
         </div>
 
         <button
-          className="rounded-full p-1.5 text-white transition-colors hover:bg-white/10 md:hidden"
+          className="rounded-full p-1.5 text-white transition-colors hover:bg-white/10 lg:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
           aria-expanded={mobileOpen}
@@ -248,7 +248,7 @@ export default function Navbar() {
 
       {/* Menu mobile — kartu kaca terpisah di bawah kapsul */}
       {mobileOpen && (
-        <div className="mx-auto mt-2 max-w-7xl overflow-hidden rounded-3xl bg-card-hover/85 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl md:hidden">
+        <div className="mx-auto mt-2 max-w-7xl overflow-hidden rounded-3xl bg-card-hover/85 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl lg:hidden">
           <div className="space-y-0.5 px-5 py-4">
             {NAV_LINKS.map((link, i) => {
               const Tag = link.href ? Link : "a";

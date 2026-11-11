@@ -31,21 +31,37 @@ export async function GET(request: Request) {
   if (alasan) return NextResponse.json({ message: alasan }, { status: 409 });
 
   const anggota = await listClassMembers(classId);
-  const peta = new Map(percobaan.map((p) => [p.uid, p]));
+  const kel = quiz.settings.kelompok === true;
+  // Quiz kelompok: SATU baris per anggota kelompok (nilai kelompok sama, nilai individu masing-masing); anggota kelas
+  // yang belum tercatat di kelompok mana pun tetap muncul tanpa nilai.
+  const tercatat = new Set(percobaan.flatMap((p) => [p.uid, ...(kel ? (p.members ?? []).map((m) => m.uid ?? "") : [])]));
   const uids = [...new Set([...anggota.map((m) => m.uid), ...percobaan.map((p) => p.uid)])];
   const kartu = await getUserCards(uids);
-  const baris = barisEkspor(
-    quiz,
-    uids.map((uid) => ({ nama: kartu.get(uid)?.name ?? "Peserta", p: peta.get(uid) ?? null })),
-  );
+  const nama = (uid: string) => kartu.get(uid)?.name ?? "Peserta";
+  const peserta = kel
+    ? [
+        ...percobaan.flatMap((p) =>
+          (p.members && p.members.length > 0 ? p.members : [{ uid: p.uid, name: nama(p.uid), key: p.uid }]).map((m, i) => ({
+            nama: m.name,
+            p: p as typeof p | null,
+            kunci: m.key ?? m.uid ?? `m${i}`,
+          })),
+        ),
+        ...anggota.filter((m) => !tercatat.has(m.uid)).map((m) => ({ nama: nama(m.uid), p: null, kunci: m.uid })),
+      ]
+    : (() => {
+        const peta = new Map(percobaan.map((p) => [p.uid, p]));
+        return uids.map((uid) => ({ nama: nama(uid), p: peta.get(uid) ?? null, kunci: uid }));
+      })();
+  const baris = barisEkspor(quiz, peserta);
 
   const berkas = buatXlsx({ nama: "Nilai", baris, lebar: quiz.settings.kelompok ? [6, 34, 24, 15, 18, 28] : [6, 34, 10, 26] });
-  const nama = `nilai-${quiz.title}`.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "nilai-quiz";
+  const namaBerkas = `nilai-${quiz.title}`.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "nilai-quiz";
   return new NextResponse(new Uint8Array(berkas), {
     status: 200,
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${nama}.xlsx"`,
+      "Content-Disposition": `attachment; filename="${namaBerkas}.xlsx"`,
       "Content-Length": String(berkas.length),
       "X-Content-Type-Options": "nosniff",
       "Cache-Control": "private, no-store",

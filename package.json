@@ -58,6 +58,7 @@
     "verify:premium-rules": "tsx scripts/verify-premium-rules.ts",
     "verify:premium": "tsx scripts/verify-premium.ts",
     "verify:syrobo": "tsx scripts/verify-syrobo.ts",
+    "verify:tanjakan": "tsx scripts/verify-tanjakan.ts",
     "verify:quiz-rubrik": "tsx scripts/verify-quiz-rubrik.ts",
     "verify:wheel": "tsx scripts/verify-wheel.ts",
     "verify:chat-knowledge": "tsx scripts/verify-chat-knowledge.ts",

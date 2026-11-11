@@ -4,17 +4,18 @@ import Footer from "@/components/sections/Footer";
 import BackLink from "@/components/ui/BackLink";
 import QuizPengerja from "@/components/classes/quiz/QuizPengerja";
 import QuizHasil from "@/components/classes/quiz/QuizHasil";
-import { MulaiQuizButton } from "@/components/classes/quiz/QuizAksi";
+import { IkutiQuizButton, MulaiQuizButton } from "@/components/classes/quiz/QuizAksi";
 import { requireClassAccess } from "@/lib/classGuards";
 import { jamServer } from "@/lib/classAssignments";
 import {
-  getPercobaan,
+  getPercobaanSiswa,
   getQuiz,
+  listPercobaan,
   selesaikanBilaPerlu,
   soalUntukSiswa,
 } from "@/lib/classQuizzes";
 import { formatWib } from "@/lib/classAssignmentRules";
-import { TOTAL_POIN, sisaDetik, sudahDibuka } from "@/lib/classQuizRules";
+import { TOTAL_POIN, batasAnggota, percobaanUntuk, sisaDetik, sudahDibuka, sudahIkut } from "@/lib/classQuizRules";
 import { requireUser } from "@/lib/firebase/session";
 import { listClassMembers } from "@/lib/classes";
 import { getUserCards } from "@/lib/userCards";
@@ -49,15 +50,19 @@ export default async function QuizSiswaPage({ params }: Props) {
   if (!quiz || !quiz.published) notFound();
 
   const sekarang = jamServer();
-  const awal = await getPercobaan(id, quizId, user.uid);
+  const awal = await getPercobaanSiswa(id, quizId, user.uid);
   const p = awal ? await selesaikanBilaPerlu(quiz, awal, sekarang) : null;
 
-  const mengerjakan = p !== null && !p.submittedAt;
+  // Diajak ke kelompok tetapi belum menekan "Ikuti Quiz": ia belum boleh menjawab.
+  const perluIkut = p !== null && !p.submittedAt && !sudahIkut(p, user.uid);
+  const mengerjakan = p !== null && !p.submittedAt && !perluIkut;
 
   // Quiz kelompok: peserta lain yang sudah bergabung, untuk dipilih sebagai anggota kelompok (tanpa diri sendiri & pengajar).
   let anggotaKelas: { uid: string; nama: string }[] = [];
   if (quiz.settings.kelompok === true && !p) {
-    const lain = (await listClassMembers(id)).filter((m) => m.role === "member" && m.uid !== user.uid).map((m) => m.uid);
+    // Yang sudah tergabung ke kelompok lain tidak ditawarkan lagi (satu orang, satu kelompok).
+    const terpakai = await listPercobaan(id, quizId);
+    const lain = (await listClassMembers(id)).filter((m) => m.role === "member" && m.uid !== user.uid && !percobaanUntuk(terpakai, m.uid)).map((m) => m.uid);
     const kartu = await getUserCards(lain);
     anggotaKelas = lain.map((uid) => ({ uid, nama: kartu.get(uid)?.name ?? "Peserta" })).sort((a, b) => a.nama.localeCompare(b.nama, "id"));
   }
@@ -140,7 +145,7 @@ export default async function QuizSiswaPage({ params }: Props) {
                           : "Tidak ada batas waktu. Kerjakan dengan tenang.",
                         "Jawaban tersimpan otomatis. Quiz hanya bisa dikerjakan satu kali.",
                         ...(quiz.settings.kelompok
-                          ? ["Quiz ini dikerjakan per KELOMPOK: isi nama kelompok dan anggotanya di bawah sebelum mulai (ketik sendiri atau pilih dari anggota kelas). Tiap anggota tetap mengerjakan dan dinilai sendiri; selain soal, pengajar menilai kalian dengan rubrik, jadi nilai akhir menunggu penilaian itu."]
+                          ? ["Quiz ini dikerjakan per KELOMPOK (${batasAnggota(quiz.settings).min === batasAnggota(quiz.settings).maks ? `${batasAnggota(quiz.settings).min} orang` : `${batasAnggota(quiz.settings).min}-${batasAnggota(quiz.settings).maks} orang`}): isi nama kelompok dan anggotanya di bawah sebelum mulai. Anggota yang Anda pilih dari kelas mendapat tombol Ikuti Quiz dan menjawab bersama Anda secara langsung. Jawaban dinilai sebagai satu kelompok, sedangkan pengajar juga menilai tiap anggota dengan rubrik."]
                           : []),
                         ...(quiz.settings.shuffleQuestions ? ["Urutan soal diacak untuk tiap siswa."] : []),
                       ].map((t, i) => (
@@ -151,13 +156,24 @@ export default async function QuizSiswaPage({ params }: Props) {
                       ))}
                     </ol>
                     <div className="mt-10">
-                      <MulaiQuizButton classId={id} quizId={quizId} kelompok={quiz.settings.kelompok === true} anggotaKelas={anggotaKelas} />
+                      <MulaiQuizButton classId={id} quizId={quizId} kelompok={quiz.settings.kelompok === true} anggotaKelas={anggotaKelas} batas={batasAnggota(quiz.settings)} />
                     </div>
                   </>
                 )}
               </section>
             )}
           </div>
+
+          {perluIkut && p && (
+            <div className="mx-auto mt-12 max-w-[720px]">
+              <p className="mb-5 text-[15.5px] leading-[1.75] text-ink-body">
+                Anda diajak ke kelompok <strong className="font-semibold text-ink">{p.groupName}</strong>
+                {p.members && p.members.length > 1 && <> bersama {p.members.filter((m) => m.uid !== user.uid).map((m) => m.name).join(", ")}</>}. Tekan tombol di bawah untuk bergabung dan mengerjakan
+                bersama; jawaban teman tampil langsung di layar Anda.
+              </p>
+              <IkutiQuizButton classId={id} quizId={quizId} namaKelompok={p.groupName ?? "kelompok"} />
+            </div>
+          )}
 
           {mengerjakan && p && (
             <div className="mt-10">
@@ -169,13 +185,22 @@ export default async function QuizSiswaPage({ params }: Props) {
                 jawabanAwal={p.answers}
                 sisaAwal={sisaDetik(quiz, p, sekarang)}
                 kelompok={p.groupName ?? null}
+                bersama={
+                  quiz.settings.kelompok === true
+                    ? {
+                        anggota: (p.members ?? []).map((m) => ({ uid: m.uid, nama: m.name })),
+                        ikutAwal: [p.uid, ...(p.joined ?? [])],
+                        saya: user.uid,
+                      }
+                    : null
+                }
               />
             </div>
           )}
 
           {p?.submittedAt && (
             <div className="mt-10">
-              <QuizHasil quiz={quiz} percobaan={p} />
+              <QuizHasil quiz={quiz} percobaan={p} uid={user.uid} />
             </div>
           )}
         </div>

@@ -2,6 +2,8 @@
 import {
   MAX_JUDUL_RUBRIK,
   MAX_KRITERIA_RUBRIK,
+  MAX_RUBRIK,
+  MIN_RUBRIK,
   MAX_TEKS_KRITERIA,
   SKALA_RUBRIK,
   daftarKriteria,
@@ -15,12 +17,12 @@ const KOLOM =
   "block w-full bg-white/[0.06] px-3.5 py-2.5 text-sm text-ink outline-none placeholder:text-ink-muted shadow-[inset_0_-2px_0_transparent] focus:shadow-[inset_0_-2px_0_var(--color-blue-500)] disabled:opacity-60";
 
 /**
- * Editor rubrik penilaian quiz KELOMPOK: tepat 3 tabel, tiap tabel berisi poin penilaian yang ditambah sendiri
- * oleh pengajar. Skala tetap 1 sampai 4 (sangat kurang, kurang, baik, sangat baik). Pengajar memberi skor per
+ * Editor rubrik penilaian quiz KELOMPOK: jumlah tabel bebas (1 sampai 10; mulai dari 3), tiap tabel berisi poin
+ * penilaian yang ditambah sendiri oleh pengajar. Skala tetap 1 sampai 4 (sangat kurang, kurang, baik, sangat baik). Pengajar memberi skor per
  * siswa di halaman Pantau setelah quiz dikumpulkan.
  *
- * `terkunci` (sudah ada yang mengerjakan): poin penilaian tak bisa ditambah/dihapus karena skor tersimpan per poin;
- * judul, teks, dan bobot masih bisa diubah.
+ * `terkunci` (sudah ada yang mengerjakan): tabel & poin penilaian tak bisa ditambah/dihapus karena skor tersimpan per poin;
+ * judul dan teks masih bisa diubah.
  */
 export default function EditorRubrik({
   rubrik,
@@ -33,7 +35,13 @@ export default function EditorRubrik({
   disabled: boolean;
   terkunci: boolean;
 }) {
-  const semuaId = daftarKriteria(rubrik).map((k) => k.id);
+  const semuaId = [...daftarKriteria(rubrik).map((k) => k.id), ...rubrik.tables.map((t) => t.id)];
+
+  function tambahTabel() {
+    const id = idBaru(semuaId);
+    const kid = idBaru([...semuaId, id]);
+    ubah({ ...rubrik, tables: [...rubrik.tables, { id, title: `Rubrik ${rubrik.tables.length + 1}`, criteria: [{ id: kid, text: "" }] }] });
+  }
 
   function ubahTabel(id: string, fn: (t: TabelRubrik) => TabelRubrik) {
     ubah({ ...rubrik, tables: rubrik.tables.map((t) => (t.id === id ? fn(t) : t)) });
@@ -45,7 +53,7 @@ export default function EditorRubrik({
         Rubrik penilaian kelompok
       </p>
       <p className="mt-2 text-sm leading-[1.7] text-ink-body">
-        Isi 3 tabel rubrik untuk menilai tiap anggota kelompok SATU PER SATU. Setelah siswa mengumpulkan, Anda memberi skor tiap poin penilaian untuk tiap
+        Isi tabel rubrik (tambah atau hapus sesuai kebutuhan) untuk menilai tiap anggota kelompok SATU PER SATU. Setelah siswa mengumpulkan, Anda memberi skor tiap poin penilaian untuk tiap
         siswa: {SKALA_RUBRIK.map((s) => `${s.n} = ${s.label.toLowerCase()}`).join(", ")}. Hasilnya menjadi <strong>nilai individu</strong> (persen rubrik) yang
         berdiri sendiri; <strong>nilai kelompok</strong> tetap dari poin soal yang Anda atur. Soal esai dan tabel pada quiz kelompok juga dinilai manual oleh
         Anda (nilai menunggu persetujuan), sedangkan pilihan ganda otomatis. Keduanya tampil di Pantau dan di ekspor spreadsheet.
@@ -54,9 +62,20 @@ export default function EditorRubrik({
       <div className="mt-5 space-y-5">
         {rubrik.tables.map((tb, i) => (
           <div key={tb.id} className="bg-white/[0.04] p-4">
-            <label htmlFor={`rb-${tb.id}`} className="text-[11px] font-bold uppercase tracking-[0.24em] text-ink-muted">
-              Rubrik {i + 1}
-            </label>
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor={`rb-${tb.id}`} className="text-[11px] font-bold uppercase tracking-[0.24em] text-ink-muted">
+                Rubrik {i + 1}
+              </label>
+              <button
+                type="button"
+                disabled={disabled || terkunci || rubrik.tables.length <= MIN_RUBRIK}
+                onClick={() => ubah({ ...rubrik, tables: rubrik.tables.filter((t) => t.id !== tb.id) })}
+                title={terkunci ? "Tidak bisa dihapus: sudah ada yang mengerjakan" : rubrik.tables.length <= MIN_RUBRIK ? "Minimal satu rubrik" : "Hapus rubrik ini"}
+                className="bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-ink-muted transition-colors hover:bg-white/[0.14] hover:text-ink disabled:opacity-35"
+              >
+                Hapus rubrik
+              </button>
+            </div>
             <input
               id={`rb-${tb.id}`}
               value={tb.title}
@@ -134,6 +153,18 @@ export default function EditorRubrik({
           </div>
         ))}
       </div>
+
+      <button
+        type="button"
+        disabled={disabled || terkunci || rubrik.tables.length >= MAX_RUBRIK}
+        onClick={tambahTabel}
+        className="mt-4 bg-white/[0.08] px-4 py-2.5 text-[13px] font-semibold text-ink transition-colors hover:bg-white/[0.14] disabled:opacity-40"
+      >
+        + Tambah rubrik
+      </button>
+      <p className="mt-2 text-xs text-ink-muted">
+        {rubrik.tables.length} dari maksimal {MAX_RUBRIK} rubrik.
+      </p>
     </section>
   );
 }

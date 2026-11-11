@@ -5,6 +5,7 @@ import { getUserCards } from "@/lib/userCards";
 import {
   harusSelesai,
   idPercobaan,
+  percobaanUntuk,
   peringkatTeratas,
   toPercobaan,
   toQuiz,
@@ -59,6 +60,16 @@ export async function listPercobaan(classId: string, quizId: string): Promise<Pe
 export async function getPercobaan(classId: string, quizId: string, uid: string): Promise<PercobaanQuiz | null> {
   const snap = await percobaanRef(idPercobaan(classId, quizId, uid)).get();
   return snap.exists ? toPercobaan(snap.id, snap.data() ?? {}) : null;
+}
+
+/**
+ * Percobaan yang DIKERJAKAN siswa ini: miliknya sendiri, atau (quiz kelompok) percobaan kelompok yang
+ * mencantumkannya sebagai anggota. Satu kelompok = satu percobaan, disimpan di nama pembuat kelompok.
+ */
+export async function getPercobaanSiswa(classId: string, quizId: string, uid: string): Promise<PercobaanQuiz | null> {
+  const sendiri = await getPercobaan(classId, quizId, uid);
+  if (sendiri) return sendiri;
+  return percobaanUntuk(await listPercobaan(classId, quizId), uid);
 }
 
 /**

@@ -2186,10 +2186,76 @@ html[data-lindungi="true"] img { -webkit-user-drag: none; }
 @keyframes syrobo-kruyuk { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 .syrobo-lalat { animation: syrobo-lalat 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes syrobo-lalat { 0% { transform: translate(0, 0); } 25% { transform: translate(10px, -6px); } 50% { transform: translate(-4px, 8px); } 75% { transform: translate(-12px, -3px); } 100% { transform: translate(0, 0); } }
+.syrobo-sayap { animation: syrobo-sayap 90ms linear infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes syrobo-sayap { from { transform: scaleY(1); } to { transform: scaleY(0.55); } }
+.syrobo-bau { animation: syrobo-bau 3.2s ease-in-out infinite; transform-box: fill-box; }
+@keyframes syrobo-bau { 0%, 100% { transform: translateY(2px); opacity: 0.55; } 50% { transform: translateY(-3px); opacity: 1; } }
+.syrobo-liur { animation: syrobo-liur 2.6s ease-in infinite; transform-box: fill-box; transform-origin: 50% 0; }
+@keyframes syrobo-liur { 0%, 55% { transform: scaleY(0.82); } 100% { transform: scaleY(1.12) translateY(1px); } }
 .syrobo-mata { animation: syrobo-kedipmata 4.4s infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes syrobo-kedipmata { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
 @media (prefers-reduced-motion: reduce) {
-    .syrobo-napas, .syrobo-hop, .syrobo-goyang, .syrobo-kaki, .syrobo-kedip, .syrobo-kruyuk, .syrobo-lalat, .syrobo-mata, .syrobo-hati { animation: none; }
+    .syrobo-napas, .syrobo-hop, .syrobo-goyang, .syrobo-kaki, .syrobo-kedip, .syrobo-kruyuk, .syrobo-lalat, .syrobo-sayap, .syrobo-bau, .syrobo-liur, .syrobo-mata, .syrobo-hati { animation: none; }
+}
+
+/* SyRobo: gerak benda di ruangan (dapur, kamar mandi, ruang ganti, toko). Dipicu kunci React yang berganti. */
+.rg-ayun { animation: rg-ayun 1000ms ease-out; transform-box: fill-box; transform-origin: 50% 0; }
+@keyframes rg-ayun { 0% { transform: rotate(0); } 18% { transform: rotate(-11deg); } 40% { transform: rotate(8deg); } 62% { transform: rotate(-5deg); } 82% { transform: rotate(2.5deg); } 100% { transform: rotate(0); } }
+.rg-goyang { animation: rg-goyang 700ms ease-out; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes rg-goyang { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 45% { transform: rotate(7deg); } 70% { transform: rotate(-3deg); } }
+.rg-pantul { animation: rg-pantul 560ms cubic-bezier(0.3, 0.9, 0.3, 1); transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes rg-pantul { 0% { transform: translateY(0) scale(1.08, 0.9); } 35% { transform: translateY(-16px) scale(0.94, 1.08); } 65% { transform: translateY(0) scale(1.06, 0.92); } 100% { transform: translateY(0) scale(1); } }
+.rg-apung { animation: rg-apung 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes rg-apung { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-3px) rotate(2deg); } }
+.rg-api { animation: rg-api 520ms ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes rg-api { from { transform: scale(1, 0.92) skewX(-3deg); } to { transform: scale(0.94, 1.08) skewX(3deg); } }
+.rg-uap { animation: rg-uap 2.4s ease-out infinite; transform-box: fill-box; }
+@keyframes rg-uap { 0% { transform: translateY(6px); opacity: 0; } 30% { opacity: 0.9; } 100% { transform: translateY(-12px); opacity: 0; } }
+.rg-tutup { animation: rg-tutup 220ms linear infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes rg-tutup { from { transform: translateY(0); } to { transform: translateY(-1.8px) rotate(1deg); } }
+.rg-roti { animation: rg-roti 900ms cubic-bezier(0.3, 0.9, 0.3, 1); transform-box: fill-box; }
+@keyframes rg-roti { 0% { transform: translateY(14px); } 45% { transform: translateY(-26px) rotate(-5deg); } 75% { transform: translateY(-6px); } 100% { transform: translateY(0); } }
+.rg-riak { animation: rg-riak 900ms ease-out; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes rg-riak { 0% { transform: scale(0.5); opacity: 0.9; } 100% { transform: scale(1.6, 1.3); opacity: 0; } }
+.rg-riak-air { animation: rg-riak-air 1.2s linear infinite; }
+@keyframes rg-riak-air { from { transform: translateX(-8px); } to { transform: translateX(8px); } }
+.rg-gelembung { animation: rg-gelembung 1500ms ease-out forwards; transform-box: fill-box; }
+@keyframes rg-gelembung { 0% { transform: translateY(14px) scale(0.4); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-42px) scale(1.2); opacity: 0; } }
+.rg-aliran { animation: rg-aliran 600ms linear infinite; stroke-dasharray: 10 8; }
+@keyframes rg-aliran { to { stroke-dashoffset: -36; } }
+.rg-kilau { animation: rg-kilau 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes rg-kilau { 0%, 100% { transform: scale(0.6) rotate(0); opacity: 0.4; } 50% { transform: scale(1.2) rotate(40deg); opacity: 1; } }
+.rg-hujan { animation: rg-hujan 520ms linear 4; animation-fill-mode: forwards; }
+@keyframes rg-hujan { 0% { transform: translateY(-10px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(26px); opacity: 0.4; } }
+.rg-sapu { animation: rg-sapu 1100ms ease-in-out forwards; }
+@keyframes rg-sapu { 0% { transform: translateX(-30px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateX(120px); opacity: 0; } }
+.rg-putar { animation: rg-putar 800ms ease-in-out; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes rg-putar { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+.rg-balon { animation: rg-balon 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes rg-balon { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
+.rg-pecah { animation: rg-pecah 3000ms ease-out; transform-box: fill-box; transform-origin: 50% 40%; }
+@keyframes rg-pecah { 0% { transform: scale(1); opacity: 1; } 5% { transform: scale(1.3); } 9%, 78% { transform: scale(0.1); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.rg-laci { animation: rg-laci 900ms cubic-bezier(0.3, 0.9, 0.3, 1); }
+@keyframes rg-laci { 0% { transform: translateX(0); } 25% { transform: translateX(18px); } 70% { transform: translateX(18px); } 100% { transform: translateX(0); } }
+.rg-koin { animation: rg-koin 900ms ease-out forwards; transform-box: fill-box; }
+@keyframes rg-koin { 0% { transform: translateY(8px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-26px); opacity: 0; } }
+.rg-roti-utuh { animation: rg-roti-utuh 1700ms cubic-bezier(0.3, 0.9, 0.3, 1); }
+@keyframes rg-roti-utuh { 0% { transform: translateY(0); } 14% { transform: translateY(-50px); } 22% { transform: translateY(-46px); } 55% { transform: translateY(-46px); } 100% { transform: translateY(0); } }
+.rg-usap { animation: rg-usap 1000ms ease-out forwards; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes rg-usap { from { transform: scale(0.04); } to { transform: scale(1); } }
+.rg-kabut { animation: rg-kabut 1100ms ease-in; }
+@keyframes rg-kabut { from { opacity: 0; } to { opacity: 1; } }
+.rg-tetes { animation: rg-tetes 5.5s ease-in infinite; transform-box: fill-box; }
+@keyframes rg-tetes { 0%, 35% { transform: translateY(0); opacity: 1; } 88% { transform: translateY(30px); opacity: 0.7; } 100% { transform: translateY(30px); opacity: 0; } }
+.rg-tali { animation: rg-tali 3000ms ease-out; }
+@keyframes rg-tali { 0%, 6% { stroke-dashoffset: 0; } 24%, 80% { stroke-dashoffset: 1; } 100% { stroke-dashoffset: 0; } }
+.rg-serpih { animation: rg-serpih 650ms ease-out forwards; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes rg-serpih { 0% { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) rotate(160deg) scale(0.5); opacity: 0; } }
+.rg-lompat { animation: rg-lompat 1900ms cubic-bezier(0.3, 0.9, 0.3, 1); transform-box: fill-box; transform-origin: 0% 100%; }
+@keyframes rg-lompat { 0% { transform: translateY(0) rotate(0); } 20% { transform: translateY(-30px) rotate(-12deg); } 72% { transform: translateY(-26px) rotate(-10deg); } 100% { transform: translateY(0) rotate(0); } }
+.rg-uap-mandi { animation: rg-uap 2.8s ease-out infinite; transform-box: fill-box; }
+@media (prefers-reduced-motion: reduce) {
+  .rg-roti-utuh, .rg-usap, .rg-kabut, .rg-tetes, .rg-tali, .rg-serpih, .rg-lompat, .rg-uap-mandi, .rg-ayun, .rg-goyang, .rg-pantul, .rg-apung, .rg-api, .rg-uap, .rg-tutup, .rg-roti, .rg-riak, .rg-riak-air, .rg-gelembung, .rg-aliran, .rg-kilau, .rg-hujan, .rg-sapu, .rg-putar, .rg-balon, .rg-pecah, .rg-laci, .rg-koin { animation: none; }
 }
 
 /* SyRobo: tambahan animasi (mode permainan) */

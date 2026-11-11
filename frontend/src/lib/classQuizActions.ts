@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { requireClassAccess, requireOwnedClass } from "@/lib/classGuards";
@@ -7,6 +8,7 @@ import { deleteObjects } from "@/lib/storageCleanup";
 import { pathGambar, urlGambarSah } from "@/lib/gambarKelas";
 import {
   getPercobaan,
+  getPercobaanSiswa,
   getQuiz,
   hapusPercobaanQuiz,
   listPercobaan,
@@ -40,6 +42,10 @@ import {
   rubrikAktif,
   bersihkanNamaAnggota,
   gabungAnggota,
+  batasAnggota,
+  nilaiIndividu,
+  percobaanUntuk,
+  sudahIkut,
   type AnggotaKelompok,
   type PercobaanQuiz,
   type Quiz,
@@ -246,7 +252,7 @@ export async function gradeQuizEssay(classId: string, quizId: string, studentUid
   const quiz = await getQuiz(classId, quizId);
   if (!quiz) return { ok: false, error: "Quiz tidak ditemukan." };
 
-  const awal = await getPercobaan(classId, quizId, studentUid);
+  const awal = await getPercobaanSiswa(classId, quizId, studentUid);
   if (!awal) return { ok: false, error: "Siswa itu belum mengerjakan quiz." };
   const p = await selesaikanBilaPerlu(quiz, awal, Date.now());
   if (!p.submittedAt) return { ok: false, error: "Siswa itu masih mengerjakan. Nilai setelah dikumpulkan." };
@@ -260,10 +266,11 @@ export async function gradeQuizEssay(classId: string, quizId: string, studentUid
 }
 
 /**
- * Skor rubrik seorang siswa (quiz kelompok): id poin penilaian → 1..4. Hanya pemilik kelas/admin, hanya untuk
- * percobaan yang sudah dikumpulkan. Nilai akhir (kuis + rubrik) dihitung ulang dari skor ini (`hitungNilai`).
+ * Skor rubrik SATU anggota kelompok: id poin penilaian → 1..4. `studentUid` = siapa saja di kelompok itu (pemilik percobaan
+ * atau anggota), `memberKey` = kunci anggota yang dinilai. Hanya pemilik kelas/admin, hanya percobaan yang sudah
+ * dikumpulkan. Tiap anggota dinilai sendiri-sendiri (NILAI INDIVIDU), terpisah dari nilai kelompok.
  */
-export async function gradeQuizRubric(classId: string, quizId: string, studentUid: string, scores: unknown): Promise<QuizResult> {
+export async function gradeQuizRubric(classId: string, quizId: string, studentUid: string, memberKey: string, scores: unknown): Promise<QuizResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
   if (!(await requireOwnedClass(user, classId))) return { ok: false, error: "Anda tidak berhak menilai quiz ini." };
@@ -272,15 +279,19 @@ export async function gradeQuizRubric(classId: string, quizId: string, studentUi
   if (!quiz) return { ok: false, error: "Quiz tidak ditemukan." };
   if (!rubrikAktif(quiz.rubric)) return { ok: false, error: "Quiz ini tidak memakai rubrik penilaian." };
 
-  const awal = await getPercobaan(classId, quizId, studentUid);
+  const awal = await getPercobaanSiswa(classId, quizId, studentUid);
   if (!awal) return { ok: false, error: "Siswa itu belum mengerjakan quiz." };
   const p = await selesaikanBilaPerlu(quiz, awal, Date.now());
   if (!p.submittedAt) return { ok: false, error: "Siswa itu masih mengerjakan. Nilai setelah dikumpulkan." };
 
+  // Anggota yang dinilai WAJIB anggota kelompok itu (kunci dicocokkan dengan daftar tersimpan, bukan kiriman browser).
+  const sah = nilaiIndividu(quiz, p).some((a) => a.key === memberKey);
+  if (!sah) return { ok: false, error: "Anggota itu bukan bagian dari kelompok ini." };
+
   const skor = validasiSkorRubrik(quiz.rubric, scores);
   if (!skor) return { ok: false, error: "Skor rubrik tidak sah (bilangan bulat 1 sampai 4 untuk poin penilaian yang ada)." };
 
-  await percobaanRef(p.id).update({ rubricScores: { ...(p.rubricScores ?? {}), ...skor } });
+  await percobaanRef(p.id).update({ rubricScores: { ...(p.rubricScores ?? {}), [memberKey]: { ...(p.rubricScores?.[memberKey] ?? {}), ...skor } } });
   segarkan(classId, quizId);
   return { ok: true, message: "Skor rubrik disimpan." };
 }
@@ -291,7 +302,7 @@ export async function resetQuizAttempt(classId: string, quizId: string, studentU
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
   if (!(await requireOwnedClass(user, classId))) return { ok: false, error: "Anda tidak berhak mengubah quiz ini." };
 
-  const p = await getPercobaan(classId, quizId, studentUid);
+  const p = await getPercobaanSiswa(classId, quizId, studentUid);
   if (!p) return { ok: false, error: "Siswa itu belum mengerjakan quiz." };
   await percobaanRef(p.id).delete();
   segarkan(classId, quizId);
@@ -359,9 +370,16 @@ export async function startQuiz(classId: string, quizId: string, namaKelompok?: 
       lain.push({ uid: null, name: n });
     }
 
-    const gabung = gabungAnggota({ uid: user.uid, name: user.name }, lain);
+    const gabung = gabungAnggota({ uid: user.uid, name: user.name }, lain, batasAnggota(quiz.settings));
     if (!gabung.ok) return { ok: false, error: gabung.error };
     members = gabung.value;
+
+    // Satu orang hanya boleh di SATU kelompok per quiz: pembuat tak boleh sudah tergabung, anggota pilihannya pun tidak.
+    const ada = await listPercobaan(classId, quizId);
+    if (percobaanUntuk(ada, user.uid)) return { ok: false, error: "Anda sudah tergabung di sebuah kelompok untuk quiz ini." };
+    for (const m of members) {
+      if (m.uid && m.uid !== user.uid && percobaanUntuk(ada, m.uid)) return { ok: false, error: `${m.name} sudah tergabung di kelompok lain.` };
+    }
   }
 
   const id = idPercobaan(classId, quizId, user.uid);
@@ -379,7 +397,7 @@ export async function startQuiz(classId: string, quizId: string, namaKelompok?: 
       extraSec: 0,
       essayScores: {},
       groupName,
-      ...(quiz.settings.kelompok === true ? { members, rubricScores: {} } : {}),
+      ...(quiz.settings.kelompok === true ? { members, rubricScores: {}, joined: [] } : {}),
     });
   } catch (e) {
     if ((e as { code?: number }).code !== 6) throw e;
@@ -390,13 +408,71 @@ export async function startQuiz(classId: string, quizId: string, namaKelompok?: 
 }
 
 /**
- * Menyimpan jawaban sementara (dipanggil berkala oleh pengerja). Setelah waktu
- * habis kiriman diabaikan - jawaban terakhir yang TERSIMPAN yang dinilai.
+ * Anggota kelompok yang BARU diundang menekan "Ikuti Quiz": masuk ke percobaan kelompoknya (satu dokumen bersama).
+ * Hanya yang namanya tercatat sebagai anggota (uid) yang bisa ikut, dan hanya selagi belum dikumpulkan.
+ */
+export async function ikutiQuiz(classId: string, quizId: string): Promise<QuizResult> {
+  const s = await siapkanSiswa(classId, quizId);
+  if (s.galat !== null) return { ok: false, error: s.galat };
+  const { user, quiz } = s;
+  if (quiz.settings.kelompok !== true) return { ok: false, error: "Quiz ini dikerjakan sendiri-sendiri." };
+
+  const awal = await getPercobaanSiswa(classId, quizId, user.uid);
+  if (!awal || !(awal.members ?? []).some((m) => m.uid === user.uid)) return { ok: false, error: "Anda belum diajak ke kelompok mana pun untuk quiz ini." };
+  const p = await selesaikanBilaPerlu(quiz, awal, Date.now());
+  if (p.submittedAt) return { ok: false, error: "Kelompok Anda sudah mengumpulkan quiz ini." };
+  if (sudahIkut(p, user.uid)) return { ok: true, message: "Anda sudah ikut." };
+
+  await percobaanRef(p.id).update({ joined: FieldValue.arrayUnion(user.uid) });
+  segarkan(classId, quizId);
+  return { ok: true, message: `Anda bergabung ke kelompok ${p.groupName ?? ""}.`.trim() };
+}
+
+export interface HasilSinkron {
+  ok: true;
+  answers: Record<string, string>;
+  joined: string[];
+  /** Kelompok/siswa sudah mengumpulkan (atau waktu habis): pengerja harus memuat ulang. */
+  selesai: boolean;
+}
+
+/**
+ * Menyimpan jawaban sementara dan mengembalikan keadaan TERKINI (dipakai berkala oleh pengerja; quiz kelompok memakainya
+ * sebagai "realtime" lewat polling karena klien tak boleh membaca Firestore). `ubah` = HANYA soal yang diubah pembaca ini:
+ * ditulis per soal (`answers.<id>`) supaya ketikan anggota lain di soal berbeda tidak tertimpa. Mengirim `ubah` kosong =
+ * hanya membaca. Setelah waktu habis kiriman diabaikan - jawaban terakhir yang TERSIMPAN yang dinilai.
+ */
+export async function sinkronJawaban(classId: string, quizId: string, ubah: unknown): Promise<HasilSinkron | { ok: false; error: string }> {
+  const s = await siapkanSiswa(classId, quizId);
+  if (s.galat !== null) return { ok: false, error: s.galat };
+  const { user, quiz } = s;
+
+  const awal = await getPercobaanSiswa(classId, quizId, user.uid);
+  if (!awal) return { ok: false, error: "Mulai quiz dulu." };
+  if (!sudahIkut(awal, user.uid)) return { ok: false, error: "Tekan \"Ikuti Quiz\" dulu untuk bergabung ke kelompok." };
+  const p = await selesaikanBilaPerlu(quiz, awal, Date.now() - TOLERANSI_DETIK * 1000);
+  if (p.submittedAt) return { ok: true, answers: p.answers, joined: [p.uid, ...(p.joined ?? [])], selesai: true };
+
+  const bersih = bersihkanJawaban(quiz, ubah);
+  const kunci = Object.keys(bersih);
+  if (kunci.length > 0) {
+    const bidang: Record<string, string> = {};
+    for (const k of kunci) bidang[`answers.${k}`] = bersih[k];
+    await percobaanRef(p.id).update(bidang);
+  }
+  const segar = kunci.length > 0 ? await getPercobaanSiswa(classId, quizId, user.uid) : p;
+  return { ok: true, answers: segar?.answers ?? p.answers, joined: [p.uid, ...(segar?.joined ?? p.joined ?? [])], selesai: false };
+}
+
+/**
+ * Menyimpan jawaban sementara (quiz individu). Setelah waktu habis kiriman diabaikan - jawaban terakhir
+ * yang TERSIMPAN yang dinilai. Quiz kelompok memakai `sinkronJawaban`.
  */
 export async function saveQuizAnswers(classId: string, quizId: string, answers: unknown): Promise<QuizResult> {
   const s = await siapkanSiswa(classId, quizId);
   if (s.galat !== null) return { ok: false, error: s.galat };
   const { user, quiz } = s;
+  if (quiz.settings.kelompok === true) return { ok: false, error: "Quiz kelompok disimpan lewat sinkronisasi." };
 
   const awal = await getPercobaan(classId, quizId, user.uid);
   if (!awal) return { ok: false, error: "Mulai quiz dulu." };
@@ -410,15 +486,19 @@ export async function saveQuizAnswers(classId: string, quizId: string, answers: 
 /**
  * Mengumpulkan quiz. Kiriman yang tiba dalam toleransi singkat setelah batas
  * waktu masih dihitung (waktu pengumpulan dijepit ke batasnya); lebih lambat
- * dari itu, yang dinilai hanya jawaban yang sudah tersimpan.
+ * dari itu, yang dinilai hanya jawaban yang sudah tersimpan. Quiz kelompok: anggota mana pun yang sudah ikut
+ * boleh mengumpulkan untuk seluruh kelompok; jawaban kiriman hanya mengisi soal yang masih kosong di server
+ * (tidak menimpa ketikan teman).
  */
 export async function submitQuiz(classId: string, quizId: string, answers: unknown): Promise<QuizResult> {
   const s = await siapkanSiswa(classId, quizId);
   if (s.galat !== null) return { ok: false, error: s.galat };
   const { user, quiz } = s;
+  const kelompok = quiz.settings.kelompok === true;
 
-  const awal = await getPercobaan(classId, quizId, user.uid);
+  const awal = await getPercobaanSiswa(classId, quizId, user.uid);
   if (!awal) return { ok: false, error: "Mulai quiz dulu." };
+  if (!sudahIkut(awal, user.uid)) return { ok: false, error: "Tekan \"Ikuti Quiz\" dulu untuk bergabung ke kelompok." };
 
   const sekarang = Date.now();
   const bersih = bersihkanJawaban(quiz, answers);
@@ -438,7 +518,13 @@ export async function submitQuiz(classId: string, quizId: string, answers: unkno
     }
 
     const pada = batas !== null ? Math.min(sekarang, batas) : sekarang;
-    tx.update(ref, { answers: bersih, submittedAt: new Date(pada).toISOString(), finalizedBy: "siswa" });
+    let akhir = bersih;
+    if (kelompok) {
+      const tersimpan = peta(data.answers);
+      akhir = { ...bersih };
+      for (const [k, v] of Object.entries(tersimpan)) if (v.trim() !== "") akhir[k] = v;
+    }
+    tx.update(ref, { answers: akhir, submittedAt: new Date(pada).toISOString(), finalizedBy: "siswa" });
     return "ok" as const;
   });
 
@@ -447,6 +533,13 @@ export async function submitQuiz(classId: string, quizId: string, answers: unkno
   if (hasil === "sudah") return { ok: false, error: "Quiz ini sudah dikumpulkan." };
   if (hasil === "habis") return { ok: false, error: "Waktu habis. Jawaban terakhir yang tersimpan sudah dikumpulkan otomatis." };
   return { ok: false, error: "Mulai quiz dulu." };
+}
+
+function peta(raw: unknown): Record<string, string> {
+  const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(r)) if (typeof v === "string") out[k] = v;
+  return out;
 }
 
 /**
@@ -471,7 +564,7 @@ export async function warnQuizStudents(classId: string, quizId: string): Promise
   const sisa = sisaJedaPeringatan(lama.exists ? toPeringatan(quizId, lama.data() ?? {}) : null, sekarang);
   if (sisa > 0) return { ok: false, error: `Tunggu ${sisa} detik sebelum memperingatkan lagi.` };
 
-  const sudah = new Set((await listPercobaan(classId, quizId)).map((p) => p.uid));
+  const sudah = new Set((await listPercobaan(classId, quizId)).flatMap((p) => [p.uid, ...(p.members ?? []).map((m) => m.uid ?? "")]));
   const sasaran = (await listClassMembers(classId)).map((m) => m.uid).filter((uid) => !sudah.has(uid));
   if (sasaran.length === 0) return { ok: false, error: "Semua siswa sudah memulai quiz ini." };
 

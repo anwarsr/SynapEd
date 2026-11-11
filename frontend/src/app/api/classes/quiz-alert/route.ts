@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { requireClassAccess } from "@/lib/classGuards";
-import { getPercobaan, getQuiz, peringatanRef } from "@/lib/classQuizzes";
-import { peringatanBerlaku, toPeringatan } from "@/lib/classQuizRules";
+import { getPercobaanSiswa, getQuiz, peringatanRef } from "@/lib/classQuizzes";
+import { peringatanBerlaku, sudahIkut, toPeringatan } from "@/lib/classQuizRules";
 
 /**
  * Peringatan quiz untuk siswa yang sedang membuka kelas: `?class=…`.
@@ -28,7 +28,9 @@ export async function GET(request: Request) {
 
   for (const p of kandidat.sort((a, b) => b.at.localeCompare(a.at))) {
     const quiz = await getQuiz(classId, p.quizId);
-    const sudahMulai = (await getPercobaan(classId, p.quizId, user.uid)) !== null;
+    // Kelompok: anggota yang diajak tetapi belum menekan "Ikuti Quiz" masih dianggap belum mulai.
+    const percobaan = await getPercobaanSiswa(classId, p.quizId, user.uid);
+    const sudahMulai = percobaan !== null && sudahIkut(percobaan, user.uid);
     if (peringatanBerlaku(p, quiz, user.uid, sudahMulai, sekarang)) {
       return NextResponse.json(
         { alert: { quizId: p.quizId, at: p.at, title: quiz?.title ?? "Quiz" } },
