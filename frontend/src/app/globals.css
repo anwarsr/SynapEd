@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 /* Layar ponsel: lebar < 640px (tegak) ATAU tinggi <= 500px (mendatar). Dipakai SyRobo & game. */
+/* Robot asisten (ChatRobot) lenyap selama menu burger navbar terbuka; burger hanya ada di bawah lg. */
+@media (max-width: 1023px) {
+  html[data-menu-mobile="buka"] .robot-ai {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
 @custom-variant kecil {
   @media (max-width: 639px) {
     @slot;

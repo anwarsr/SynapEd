@@ -420,7 +420,7 @@ export default function ChatRobot({
   return (
     <div
       ref={wrapRef}
-      className={cn("fixed left-0 top-0 z-[60] h-16 w-16 will-change-transform", !siap && "invisible")}
+      className={cn("robot-ai fixed left-0 top-0 z-[60] h-16 w-16 will-change-transform", !siap && "invisible")}
     >
       <button
         type="button"
@@ -557,7 +557,7 @@ function RobotFace({ suasana }: { suasana: Suasana | null }) {
   return (
     <svg
       ref={svgRef}
-      className="h-16 w-16 drop-shadow-[0_6px_12px_rgba(0,0,0,0.5)]"
+      className="h-16 w-16 drop-shadow-[0_6px_12px_rgba(0,0,0,0.5)] max-sm:h-11 max-sm:w-11"
       viewBox="0 0 64 64"
       fill="none"
       aria-hidden="true"

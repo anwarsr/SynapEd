@@ -48,6 +48,16 @@ const PIL = "nav-aksi px-3 py-2 text-sm font-medium whitespace-nowrap text-white
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Robot asisten disembunyikan (CSS `.robot-ai`, globals.css) selama menu burger terbuka.
+  useEffect(() => {
+    const el = document.documentElement;
+    if (mobileOpen) el.dataset.menuMobile = "buka";
+    else delete el.dataset.menuMobile;
+    return () => {
+      delete el.dataset.menuMobile;
+    };
+  }, [mobileOpen]);
   const pathname = usePathname();
   const { status, user } = useAuth();
 
