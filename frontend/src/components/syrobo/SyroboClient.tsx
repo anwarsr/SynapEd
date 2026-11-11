@@ -23,6 +23,8 @@ import {
   gosokSyrobo,
   klaimSyrobo,
   simpanKoinGameSyrobo,
+  simpanSkorGameSyrobo,
+  tukarSkorGameSyrobo,
   tukarKoinGameSyrobo,
   pasangPakaianSyrobo,
   ukuranPakaianSyrobo,
@@ -43,6 +45,9 @@ import {
   poinHadiah,
   KOIN_PER_POIN,
   KOIN_SETOR_MAKS,
+  SKOR_PER_BINTANG,
+  SKOR_SETOR_MAKS,
+  type GameSkor,
   MAKANAN,
   MAKANAN_DEWA,
   NAMA_MAKS,
@@ -295,6 +300,20 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
       const h = await simpanKoinGameSyrobo(k).catch(() => null);
       if (!h) return tampilPesan("Koin game belum tersimpan: server tak terjangkau.", true);
       terima(h, `${n} koin game disimpan. Tukar di menu Toko (tab Koin Game).`);
+      if (!h.ok) return;
+    }
+  }
+
+  /** Skor Lari Robo / Bola Gabung masuk ke SALDO game (belum jadi bintang; ditukar di Toko > Koin Game). Dipecah per SKOR_SETOR_MAKS. */
+  async function setorSkor(game: GameSkor, n: number) {
+    let sisa = n;
+    const nama = game === "lari" ? "Lari Robo" : "Bola Gabung";
+    while (sisa > 0) {
+      const k = Math.min(sisa, SKOR_SETOR_MAKS[game]);
+      sisa -= k;
+      const h = await simpanSkorGameSyrobo(game, k).catch(() => null);
+      if (!h) return tampilPesan("Skor belum tersimpan: server tak terjangkau.", true);
+      terima(h, `${n} skor ${nama} masuk saldo. Tukar jadi bintang di Toko, tab Koin Game.`);
       if (!h.ok) return;
     }
   }
@@ -831,22 +850,31 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                   })}
                 </ul>
               ) : (
-                <div className={cn("mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-[#FFE7A8] px-3 py-2.5", STIKER)}>
-                  <Ikon nama="game" className="h-10 w-10 shrink-0" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-extrabold">Tukar koin game jadi bintang</span>
-                    <span className="block text-xs font-semibold text-[#2B2233]/70">
-                      Saldo {robot.koinGame} koin · {KOIN_PER_POIN} koin = 1 <Ikon nama="bintang" className="inline h-3.5 w-3.5 align-[-2px]" /> · maksimal 1.500 koin disetor per hari
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    disabled={sibuk || robot.koinGame < KOIN_PER_POIN}
-                    onClick={() => void jalan(() => tukarKoinGameSyrobo(), `Koin ditukar jadi ${Math.floor(robot.koinGame / KOIN_PER_POIN)} poin!`)}
-                    className={TOMBOL_UTAMA}
-                  >
-                    Tukar {Math.floor(robot.koinGame / KOIN_PER_POIN)}
-                  </button>
+                <div className="mt-3 grid gap-2">
+                  {(
+                    [
+                      { kunci: "tanjakan", nama: "Tanjakan Robo", saldo: robot.koinGame, satuan: "koin", per: KOIN_PER_POIN, aksi: () => tukarKoinGameSyrobo() },
+                      { kunci: "lari", nama: "Lari Robo", saldo: robot.skorLari, satuan: "skor", per: SKOR_PER_BINTANG.lari, aksi: () => tukarSkorGameSyrobo("lari") },
+                      { kunci: "bola", nama: "Bola Gabung", saldo: robot.skorBola, satuan: "skor", per: SKOR_PER_BINTANG.bola, aksi: () => tukarSkorGameSyrobo("bola") },
+                    ] as const
+                  ).map((g) => {
+                    const bintang = Math.floor(g.saldo / g.per);
+                    return (
+                      <div key={g.kunci} className={cn("flex flex-wrap items-center gap-3 rounded-lg bg-[#FFE7A8] px-3 py-2", STIKER)}>
+                        <IkonGame jenis={g.kunci} className="h-11 w-11 shrink-0 rounded-[9px] border-2 border-[#2B2233]" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-extrabold">{g.nama}</span>
+                          <span className="block text-xs font-semibold text-[#2B2233]/70">
+                            Saldo {g.saldo.toLocaleString("id-ID")} {g.satuan} · {g.per.toLocaleString("id-ID")} {g.satuan} = 1 <Ikon nama="bintang" className="inline h-3.5 w-3.5 align-[-2px]" />
+                          </span>
+                        </span>
+                        <button type="button" disabled={sibuk || bintang < 1} onClick={() => void jalan(g.aksi, `${bintang} poin bintang dari ${g.nama}!`)} className={TOMBOL_UTAMA}>
+                          Tukar {bintang}
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <p className="text-xs font-semibold text-[#2B2233]/65">Skor harus ditukar dulu sebelum jadi poin bintang. Jatah setoran gabungan ketiga game: setara 15 bintang per hari (WIB).</p>
                 </div>
               )}
             </>
@@ -887,7 +915,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                   </button>
                 </li>
               </ul>
-              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Koin yang kamu kumpulkan di game masuk ke akun dan bisa ditukar poin bintang di menu Toko, tab Koin Game (100 koin = 1 bintang, maksimal 1.500 koin per hari). Di Bola Gabung, tiap 10 skor = 1 koin (1.000 skor = 1 bintang); di Lari Robo, tiap 100 skor = 1 bintang.</p>
+              <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Koin yang kamu kumpulkan di game masuk ke akun dan bisa ditukar poin bintang di menu Toko, tab Koin Game (100 koin = 1 bintang, maksimal 1.500 koin per hari). Skor Lari Robo (100 skor = 1 bintang) dan Bola Gabung (1.000 skor = 1 bintang) masuk ke saldo masing-masing dan harus DITUKAR dulu di tab Koin Game sebelum jadi poin bintang.</p>
             </>
           )}
 
@@ -967,8 +995,8 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
       </nav>
 
       {main === "tanjakan" && <GameTanjakan onKeluar={() => setMain(null)} onSetor={(n) => void setorKoin(n)} />}
-      {main === "bola" && <GameBola onKeluar={() => setMain(null)} onSetor={(n) => void setorKoin(n)} />}
-      {main === "lari" && <GameLari onKeluar={() => setMain(null)} onSetor={(n) => void setorKoin(n)} />}
+      {main === "bola" && <GameBola onKeluar={() => setMain(null)} onSetor={(n) => void setorSkor("bola", n)} />}
+      {main === "lari" && <GameLari onKeluar={() => setMain(null)} onSetor={(n) => void setorSkor("lari", n)} />}
 
       {/* Spons yang mengikuti penunjuk selama menggosok */}
       <div

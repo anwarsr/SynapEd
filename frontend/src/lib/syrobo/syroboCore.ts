@@ -20,6 +20,10 @@ import {
   HADIAH,
   poinHadiah,
   JAM_BEKU_DEWA,
+  BOBOT_JATAH,
+  SKOR_PER_BINTANG,
+  SKOR_SETOR_MAKS,
+  gameSkorSah,
   KOIN_HARIAN_MAKS,
   KOIN_PER_POIN,
   KOIN_SETOR_MAKS,
@@ -199,10 +203,43 @@ export function beriMakanDewa(db: Firestore, uid: string, id: unknown, now = new
 export function simpanKoinGame(db: Firestore, uid: string, n: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
   return ubahSyrobo(db, uid, now, premium, (d) => {
     if (typeof n !== "number" || !Number.isInteger(n) || n < 1 || n > KOIN_SETOR_MAKS) return `Jumlah koin harus bilangan bulat 1-${KOIN_SETOR_MAKS}.`;
-    const sisa = KOIN_HARIAN_MAKS - d.koinSetorHari;
+    // jatah bersama dengan skor Lari/Bola bisa berpecahan 0,1: koin Tanjakan selalu bulat
+    const sisa = Math.floor(KOIN_HARIAN_MAKS - d.koinSetorHari + 1e-9);
     if (sisa <= 0) return "Batas koin game hari ini sudah tercapai. Coba lagi besok (WIB).";
     const tambah = Math.min(n, sisa);
-    return { ...d, koinGame: d.koinGame + tambah, koinSetorHari: d.koinSetorHari + tambah };
+    return { ...d, koinGame: d.koinGame + tambah, koinSetorHari: Math.round((d.koinSetorHari + tambah) * 10) / 10 };
+  });
+}
+
+/**
+ * Menyetor SKOR Lari Robo / Bola Gabung ke saldo per game (BELUM jadi bintang: harus ditukar dulu). Angka dari browser: bilangan bulat
+ * 1..SKOR_SETOR_MAKS[game], dipotong ke sisa jatah harian bersama (KOIN_HARIAN_MAKS koin-setara).
+ */
+export function simpanSkorGame(db: Firestore, uid: string, game: unknown, n: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
+  return ubahSyrobo(db, uid, now, premium, (d) => {
+    if (!gameSkorSah(game)) return "Game tidak dikenal.";
+    const maks = SKOR_SETOR_MAKS[game];
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 1 || n > maks) return `Skor harus bilangan bulat 1-${maks}.`;
+    // jatah dalam sepersepuluh koin-setara supaya hitungan bulat
+    const sisaSepuluh = Math.round((KOIN_HARIAN_MAKS - d.koinSetorHari) * 10);
+    if (sisaSepuluh <= 0) return "Batas setoran game hari ini sudah tercapai. Coba lagi besok (WIB).";
+    const bobotSepuluh = Math.round(BOBOT_JATAH[game] * 10);
+    const tambah = Math.min(n, Math.floor(sisaSepuluh / bobotSepuluh));
+    if (tambah < 1) return "Batas setoran game hari ini sudah tercapai. Coba lagi besok (WIB).";
+    const jatah = Math.round((d.koinSetorHari * 10 + tambah * bobotSepuluh)) / 10;
+    return game === "lari" ? { ...d, skorLari: d.skorLari + tambah, koinSetorHari: jatah } : { ...d, skorBola: d.skorBola + tambah, koinSetorHari: jatah };
+  });
+}
+
+/** Menukar saldo skor satu game jadi poin bintang: tiap SKOR_PER_BINTANG[game] skor = 1 poin (semua kelipatan penuh sekaligus). */
+export function tukarSkorGame(db: Firestore, uid: string, game: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
+  return ubahSyrobo(db, uid, now, premium, (d) => {
+    if (!gameSkorSah(game)) return "Game tidak dikenal.";
+    const per = SKOR_PER_BINTANG[game];
+    const saldo = game === "lari" ? d.skorLari : d.skorBola;
+    const poin = Math.floor(saldo / per);
+    if (poin < 1) return `Skormu belum cukup: minimal ${per} skor untuk 1 poin bintang.`;
+    return game === "lari" ? { ...d, poin: d.poin + poin, skorLari: saldo - poin * per } : { ...d, poin: d.poin + poin, skorBola: saldo - poin * per };
   });
 }
 

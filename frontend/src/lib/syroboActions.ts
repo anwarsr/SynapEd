@@ -2,7 +2,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { getPremium } from "@/lib/premium";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { aktifkanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, detak, gantiNama, gosok, klaim, pasangPakaian, ukuranPakaian, bacaSyrobo, type HasilSyrobo } from "@/lib/syrobo/syroboCore";
+import { simpanSkorGame, tukarSkorGame, aktifkanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, detak, gantiNama, gosok, klaim, pasangPakaian, ukuranPakaian, bacaSyrobo, type HasilSyrobo } from "@/lib/syrobo/syroboCore";
 import type { Suasana } from "@/lib/syrobo/syroboRules";
 
 /**
@@ -60,6 +60,18 @@ export async function beriMakanDewaSyrobo(id: unknown): Promise<HasilSyrobo> {
 export async function simpanKoinGameSyrobo(n: unknown): Promise<HasilSyrobo> {
   const uid = await uidSesi();
   return uid ? simpanKoinGame(adminDb(), uid, n, new Date(), await premiumDari(uid)) : BELUM_MASUK;
+}
+
+/** Setor skor Lari Robo / Bola Gabung ke saldo (belum jadi bintang; harus ditukar di Toko). Uid dari sesi. */
+export async function simpanSkorGameSyrobo(game: unknown, n: unknown): Promise<HasilSyrobo> {
+  const uid = await uidSesi();
+  return uid ? simpanSkorGame(adminDb(), uid, game, n, new Date(), await premiumDari(uid)) : BELUM_MASUK;
+}
+
+/** Tukar saldo skor satu game jadi poin bintang. */
+export async function tukarSkorGameSyrobo(game: unknown): Promise<HasilSyrobo> {
+  const uid = await uidSesi();
+  return uid ? tukarSkorGame(adminDb(), uid, game, new Date(), await premiumDari(uid)) : BELUM_MASUK;
 }
 
 export async function tukarKoinGameSyrobo(): Promise<HasilSyrobo> {

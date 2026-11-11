@@ -17,8 +17,10 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { check, finish } from "./checks";
 import { initAdmin } from "./project";
-import { aktifkanCheat, mandikan as mandikanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
+import { simpanSkorGame, tukarSkorGame, aktifkanCheat, mandikan as mandikanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
 import {
+  SKOR_PER_BINTANG,
+  SKOR_SETOR_MAKS,
   CHEAT_MENIT,
   CHEAT_POIN,
   KODE_CHEAT,
@@ -338,6 +340,36 @@ async function main() {
     const sesudahBeku = await bacaSyrobo(db, uid, new Date(td.getTime() + (JAM_BEKU_DEWA + 1) * 3600_000), true);
     check("aura hilang setelah masa beku 24 jam berakhir", sesudahBeku.dewaId === null, String(sesudahBeku.dewaId));
     check("dewaId tak sah terbaca null", normalisasi({ dewaId: "bukan-makanan" }, td).dewaId === null, "ok");
+
+    // 12. Skor Lari Robo & Bola Gabung: disetor ke saldo per game, baru jadi bintang setelah DITUKAR
+    console.log("\nSkor game: saldo & penukaran");
+    const ts = new Date("2026-09-01T03:00:00Z");
+    await ref.update({ skorLari: 0, skorBola: 0, koinSetorHari: 0, hari: tanggalWib(ts) });
+    const poinS = (await bacaSyrobo(db, uid, ts)).poin;
+    const tolak = await Promise.all([["lari", 0], ["lari", -3], ["lari", 2.5], ["lari", "9"], ["lari", SKOR_SETOR_MAKS.lari + 1], ["bola", SKOR_SETOR_MAKS.bola + 1], ["tanjakan", 10], [null, 10]].map(([g, n]) => simpanSkorGame(db, uid, g, n, ts)));
+    check("setoran skor tak sah ditolak (nol, negatif, pecahan, teks, melebihi batas, game tak dikenal)", tolak.every((h) => !h.ok), "semua ditolak");
+    const sl = await simpanSkorGame(db, uid, "lari", 250, ts);
+    check("setor 250 skor Lari Robo: saldo 250, poin bintang TIDAK bertambah (harus ditukar dulu)", sl.ok && sl.robot.skorLari === 250 && sl.robot.poin === poinS, sl.ok ? `${sl.robot.skorLari}/${sl.robot.poin}` : sl.error);
+    const sb = await simpanSkorGame(db, uid, "bola", 2500, ts);
+    check("setor 2500 skor Bola Gabung: saldo terpisah, poin tetap", sb.ok && sb.robot.skorBola === 2500 && sb.robot.skorLari === 250 && sb.robot.poin === poinS, sb.ok ? `${sb.robot.skorBola}/${sb.robot.poin}` : sb.error);
+    const jatah = (await bacaSyrobo(db, uid, ts)).koinSetorHari;
+    check("jatah harian terpakai = 250 (Lari) + 250 (Bola: 2500 x 0,1) = 500 koin-setara", Math.abs(jatah - 500) < 1e-9, String(jatah));
+    const tlBelum = await tukarSkorGame(db, uid, "bola", ts);
+    check("Bola 2500 skor ditukar: 2 bintang (1.000 skor = 1), sisa 500", tlBelum.ok && tlBelum.robot.poin === poinS + 2 && tlBelum.robot.skorBola === 500 && tlBelum.robot.skorLari === 250, tlBelum.ok ? `${tlBelum.robot.poin}/${tlBelum.robot.skorBola}` : tlBelum.error);
+    const tlKurang = await tukarSkorGame(db, uid, "bola", ts);
+    check("Bola sisa 500 (< 1.000) tak bisa ditukar", !tlKurang.ok && tlKurang.error.includes(String(SKOR_PER_BINTANG.bola)), tlKurang.ok ? "lolos" : tlKurang.error);
+    const tlari = await tukarSkorGame(db, uid, "lari", ts);
+    check("Lari 250 skor ditukar: 2 bintang (100 skor = 1), sisa 50", tlari.ok && tlari.robot.poin === poinS + 4 && tlari.robot.skorLari === 50 && tlari.robot.skorBola === 500, tlari.ok ? `${tlari.robot.poin}/${tlari.robot.skorLari}` : tlari.error);
+    check("game tak dikenal ditolak saat menukar", !(await tukarSkorGame(db, uid, "tanjakan", ts)).ok, "ditolak");
+    // jatah bersama: isi sampai habis dengan Lari, lalu Bola & Lari ditolak/dipotong
+    await ref.update({ koinSetorHari: 1499.5 });
+    const potongBola = await simpanSkorGame(db, uid, "bola", 100, ts);
+    check("jatah tinggal 0,5 koin-setara: Bola hanya menerima 5 skor (dipotong)", potongBola.ok && potongBola.robot.skorBola === 505, potongBola.ok ? String(potongBola.robot.skorBola) : potongBola.error);
+    const habisJatah = await simpanSkorGame(db, uid, "lari", 10, ts);
+    check("jatah harian habis: setoran skor berikutnya ditolak", !habisJatah.ok && habisJatah.error.includes("hari ini"), habisJatah.ok ? "lolos" : habisJatah.error);
+    const hariLainS = await simpanSkorGame(db, uid, "lari", 10, new Date(ts.getTime() + 24 * 3600_000));
+    check("ganti hari (WIB): jatah pulih, saldo skor lama tetap", hariLainS.ok && hariLainS.robot.skorLari === 60 && hariLainS.robot.koinSetorHari === 10, hariLainS.ok ? `${hariLainS.robot.skorLari}/${hariLainS.robot.koinSetorHari}` : hariLainS.error);
+    check("saldo skor rusak terbaca 0 dan jatah dibulatkan 1 desimal", normalisasi({ skorLari: -4, skorBola: "x", koinSetorHari: 3.14159 }, ts).skorLari === 0 && normalisasi({ skorBola: 7.9 }, ts).skorBola === 7 && normalisasi({ koinSetorHari: 3.14159 }, ts).koinSetorHari === 3.1, "ok");
   } finally {
     await ref.delete().catch(() => undefined);
   }

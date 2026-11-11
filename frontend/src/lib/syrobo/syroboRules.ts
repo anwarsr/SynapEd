@@ -178,6 +178,21 @@ export const KOIN_PER_POIN = 100;
 export const KOIN_SETOR_MAKS = 300;
 export const KOIN_HARIAN_MAKS = 1500;
 
+/**
+ * SKOR game Lari Robo & Bola Gabung (permintaan pemilik): skor TIDAK langsung jadi bintang. Skor disetor ke saldo per game
+ * (`skorLari`, `skorBola`) dan baru jadi poin bintang setelah DITUKAR di Toko > Koin Game. Lari Robo: 100 skor = 1 bintang; Bola
+ * Gabung: 1.000 skor = 1 bintang. Jatah harian setoran DIBAGI dengan koin Tanjakan Robo (`KOIN_HARIAN_MAKS`, setara 15 bintang/hari
+ * total): tiap skor dihitung `BOBOT_JATAH` koin-setara (Lari 1, Bola 0,1), jadi nilai 100 koin-setara selalu = 1 bintang.
+ */
+export type GameSkor = "lari" | "bola";
+export const SKOR_PER_BINTANG: Record<GameSkor, number> = { lari: 100, bola: 1000 };
+export const BOBOT_JATAH: Record<GameSkor, number> = { lari: 1, bola: 0.1 };
+/** Skor maksimum per satu setoran (setara 300 koin); klien memecah setoran yang lebih besar. */
+export const SKOR_SETOR_MAKS: Record<GameSkor, number> = { lari: 300, bola: 3000 };
+export function gameSkorSah(x: unknown): x is GameSkor {
+  return x === "lari" || x === "bola";
+}
+
 /** Hadiah poin: `menit` = waktu aktif di situs hari ini (0 = cukup masuk hari ini). */
 export const HADIAH: readonly { menit: number; poin: number }[] = [
   { menit: 0, poin: 5 },
@@ -222,6 +237,10 @@ export interface DataSyrobo {
   diklaim: number[];
   /** Saldo koin game yang belum ditukar, dan koin yang sudah disetor hari ini (reset ganti hari WIB). */
   koinGame: number;
+  /** Saldo skor Lari Robo & Bola Gabung yang belum ditukar jadi bintang. */
+  skorLari: number;
+  skorBola: number;
+  /** Jatah harian terpakai dalam koin-setara (boleh berpecahan 0,1 karena skor Bola = 0,1 koin-setara). */
   koinSetorHari: number;
   /** Bar kenyang dibekukan (tak turun) sampai waktu ini - efek makanan dewa. null = tidak beku. */
   bekuLaparSampai: string | null;
@@ -291,6 +310,8 @@ export function dataBaru(now: Date): DataSyrobo {
     detakAt: null,
     diklaim: [],
     koinGame: 0,
+    skorLari: 0,
+    skorBola: 0,
     koinSetorHari: 0,
     bekuLaparSampai: null,
     dewaId: null,
@@ -346,7 +367,9 @@ export function normalisasi(raw: unknown, now: Date): DataSyrobo {
       ? r.diklaim.filter((x): x is number => typeof x === "number" && HADIAH.some((h) => h.menit === x))
       : [],
     koinGame: Math.max(0, Math.floor(angka(r.koinGame, 0))),
-    koinSetorHari: Math.max(0, Math.floor(angka(r.koinSetorHari, 0))),
+    skorLari: Math.max(0, Math.floor(angka(r.skorLari, 0))),
+    skorBola: Math.max(0, Math.floor(angka(r.skorBola, 0))),
+    koinSetorHari: Math.max(0, Math.round(angka(r.koinSetorHari, 0) * 10) / 10),
     bekuLaparSampai: typeof r.bekuLaparSampai === "string" && !Number.isNaN(Date.parse(r.bekuLaparSampai)) ? r.bekuLaparSampai : null,
     dewaId: makananDewaSah(r.dewaId) ? r.dewaId : null,
     stokDewa: (() => {

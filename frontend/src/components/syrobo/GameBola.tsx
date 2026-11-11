@@ -86,9 +86,7 @@ interface Hud {
   fase: Fase;
 }
 
-/** 1000 skor = 100 koin = 1 poin bintang (saldo koin yang sama dengan Tanjakan Robo; server membatasi jatah harian). */
-export const SKOR_PER_KOIN = 10;
-
+/** Skor disetor ke saldo Bola Gabung (1.000 skor = 1 bintang setelah DITUKAR di Toko; server membatasi jatah harian bersama). */
 export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; onSetor?: (koin: number) => void }) {
   const kanvas = useRef<HTMLCanvasElement>(null);
   const dunia = useRef<DuniaBola>(duniaBolaBaru());
@@ -124,8 +122,7 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
     const d = dunia.current;
     if (disetor.current === d) return;
     disetor.current = d;
-    const koin = Math.floor(d.skor / SKOR_PER_KOIN);
-    if (koin > 0) setorRef.current?.(koin);
+    if (d.skor > 0) setorRef.current?.(d.skor);
   }, []);
 
   const ulang = useCallback(() => {
@@ -562,7 +559,7 @@ export default function GameBola({ onKeluar, onSetor }: { onKeluar: () => void; 
             <h2 className="text-2xl font-extrabold kecil:text-base">Wadah penuh!</h2>
             <p className="mt-3 text-4xl font-extrabold tabular-nums kecil:mt-1 kecil:text-2xl">{hud.skor}</p>
             <p className="mt-1 text-sm font-bold text-[#2B2233]/70 kecil:text-xs">Terbesar: {NAMA[hud.tertinggi]}</p>
-            {onSetor && hud.skor >= SKOR_PER_KOIN && <p className="mt-2 text-xs font-bold text-[#2B2233]/70">+{Math.floor(hud.skor / SKOR_PER_KOIN)} koin masuk ke akunmu. Tukar 1000 skor = 1 bintang di menu Toko.</p>}
+            {onSetor && hud.skor > 0 && <p className="mt-2 text-xs font-bold text-[#2B2233]/70">{hud.skor} skor masuk saldo Bola Gabung. Tukar 1.000 skor = 1 bintang di Toko, tab Koin Game.</p>}
             {hud.rekorBaru ? <p className="mt-2 text-sm font-extrabold text-[#2F6F4A]">Rekor baru!</p> : <p className="mt-2 text-xs font-bold text-[#2B2233]/60">Rekor {hud.rekor}</p>}
             <div className="mt-4 flex flex-col gap-2 kecil:mt-2 kecil:gap-1.5">
               <button type="button" onClick={() => ulang()} className={cn(TOMBOL, "bg-[#F0903A] py-2.5 text-base kecil:py-1.5 kecil:text-sm")}>

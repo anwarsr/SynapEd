@@ -224,13 +224,6 @@ function peti(ctx: Ctx, x: number, y: number, w: number, h: number, warna: strin
 
 export function rintanganLari(ctx: Ctx, o: Rintangan, sx: number, waktu: number): void {
   const x = o.x - sx;
-  // bayangan kontak di jalan (selain drone/tembok)
-  if (o.tipe !== "drone") {
-    ctx.fillStyle = "rgba(0,0,0,0.3)";
-    ctx.beginPath();
-    ctx.ellipse(x + o.w / 2 + 4, TANAH + 3, o.w * 0.62, 4, 0, 0, TAU);
-    ctx.fill();
-  }
   if (o.tipe === "peti") peti(ctx, x, o.y, o.w, o.h, "#C58B48", "#8E5A2C");
   else if (o.tipe === "tinggi") {
     peti(ctx, x, o.y + o.h / 2, o.w, o.h / 2, "#B97E40", "#85532A");

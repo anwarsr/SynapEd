@@ -556,7 +556,7 @@ export default function GameLari({ onKeluar, onSetor }: { onKeluar: () => void; 
             <h2 className="text-2xl font-extrabold kecil:text-base">Tertabrak!</h2>
             <p className="mt-3 text-4xl font-extrabold tabular-nums kecil:mt-1 kecil:text-2xl">{hud.skor}</p>
             <p className="mt-1 text-sm font-bold text-[#2B2233]/70 kecil:text-xs">{Math.floor(hud.skor / SKOR_PER_BINTANG)} bintang dari lari ini</p>
-            {onSetor && hud.skor > 0 && <p className="mt-2 text-xs font-bold text-[#2B2233]/70">+{hud.skor} koin masuk ke akunmu. Tukar 100 koin = 1 bintang di menu Toko.</p>}
+            {onSetor && hud.skor > 0 && <p className="mt-2 text-xs font-bold text-[#2B2233]/70">{hud.skor} skor masuk saldo Lari Robo. Tukar 100 skor = 1 bintang di Toko, tab Koin Game.</p>}
             {hud.rekorBaru ? <p className="mt-2 text-sm font-extrabold text-[#2F6F4A]">Rekor baru!</p> : <p className="mt-2 text-xs font-bold text-[#2B2233]/60">Rekor {hud.rekor}</p>}
             <div className="mt-4 flex flex-col gap-2 kecil:mt-2 kecil:gap-1.5">
               <button type="button" onClick={() => ulang()} className={cn(TOMBOL, "bg-[#F0903A] py-2.5 text-base kecil:py-1.5 kecil:text-sm")}>
