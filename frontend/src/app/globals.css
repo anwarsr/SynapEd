@@ -2503,9 +2503,22 @@ html[data-lindungi="true"] img { -webkit-user-drag: none; }
 @keyframes lt-kilau { 0% { transform: scale(0) rotate(0); opacity: 0; } 45% { transform: scale(1.1) rotate(45deg); opacity: 1; } 100% { transform: scale(0) rotate(90deg); opacity: 0; } }
 .lt-sorot { animation: lt-sorot 2.4s ease-out both; }
 @keyframes lt-sorot { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0.25; } }
+/* Ruang Game (RuangGame.tsx): layar TV (bola pong memantul, dayung mengikuti), kedip tabung, kantong kacang yang memampat. */
+.lt-pong-x { animation: lt-pong-x 2.6s linear infinite alternate; }
+@keyframes lt-pong-x { from { transform: translateX(0); } to { transform: translateX(84px); } }
+.lt-pong-y { animation: lt-pong-y 1.7s linear infinite alternate; }
+@keyframes lt-pong-y { from { transform: translateY(0); } to { transform: translateY(62px); } }
+.lt-pong-p { animation: lt-pong-p 1.7s ease-in-out infinite alternate; }
+@keyframes lt-pong-p { from { transform: translateY(0); } to { transform: translateY(54px); } }
+.lt-kerlip { animation: lt-kerlip 1.6s steps(1, end) infinite; }
+@keyframes lt-kerlip { 0%, 49% { opacity: 1; filter: drop-shadow(0 0 5px var(--glow, #FFE29A)); } 50%, 100% { opacity: 0.38; filter: none; } }
+.lt-layar { animation: lt-layar 3.4s steps(1, end) infinite; }
+@keyframes lt-layar { 0%, 100% { opacity: 1; } 46% { opacity: 0.93; } 48% { opacity: 1; } }
+.lt-empuk { animation: lt-empuk 620ms cubic-bezier(0.3, 1.4, 0.5, 1); }
+@keyframes lt-empuk { 0% { transform: scale(1, 1); } 25% { transform: scale(1.1, 0.82); } 55% { transform: scale(0.96, 1.07); } 100% { transform: scale(1, 1); } }
 @media (prefers-reduced-motion: reduce) {
     .lt-awan, .lt-ombak, .lt-ayun, .lt-pasang, .lt-hentak, .lt-sayap, .lt-kunang, .lt-neon, .lt-kedip, .lt-fa, .lt-fb, .lt-sapu, .lt-salju, .lt-api, .lt-api-cahaya, .lt-sinar, .lt-gelembung,
-    .lt-renang-kanan, .lt-renang-kiri, .lt-goyang, .lt-ekor, .lt-sirip, .lt-rumput, .lt-denyut, .lt-lilin, .lt-langkah, .lt-capit, .lt-putar, .lt-tutup, .lt-pudar, .lt-bara, .lt-helai { animation: none; }
+    .lt-renang-kanan, .lt-renang-kiri, .lt-goyang, .lt-ekor, .lt-sirip, .lt-rumput, .lt-denyut, .lt-lilin, .lt-langkah, .lt-capit, .lt-putar, .lt-tutup, .lt-pudar, .lt-bara, .lt-helai, .lt-pong-x, .lt-pong-y, .lt-pong-p, .lt-layar, .lt-empuk, .lt-kerlip { animation: none; }
     .lt-tutup { transform: translateX(101%); }
     .lt-fb { opacity: 0; }
     .lt-salju, .lt-gelembung { opacity: 0.6; }

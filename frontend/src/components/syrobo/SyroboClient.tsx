@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import SyroboRobot, { type ReaksiRobot } from "./SyroboRobot";
 import SyroboLatar from "./SyroboLatar";
 import SyroboRuangan, { type JenisRuangan } from "./SyroboRuangan";
+import RuangGame from "./RuangGame";
 import GameTanjakan from "./GameTanjakan";
 import GameBola from "./GameBola";
 import GameLari from "./GameLari";
@@ -144,7 +145,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   const [tokoTab, setTokoTab] = useState<"makanan" | "pakaian" | "latar" | "koin">("makanan");
   const [makanTab, setMakanTab] = useState<"biasa" | "dewa">("biasa");
   /** Ruangan yang sedang dimasuki: tiap menu (Makan/Mandi/Baju/Toko) punya ruangannya sendiri; "Main Room" = kamar utama. */
-  const [ruang, setRuang] = useState<"kamar" | JenisRuangan>("kamar");
+  const [ruang, setRuang] = useState<"kamar" | "game" | JenisRuangan>("kamar");
   const [main, setMain] = useState<null | "tanjakan" | "bola" | "lari">(null);
   const [reaksi, setReaksi] = useState<ReaksiRobot | null>(null);
   const [suap, setSuap] = useState<{ n: number; id: MakananId | MakananDewaId } | null>(null);
@@ -572,7 +573,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     { id: "game", nama: "Games" },
     { id: "hadiah", nama: "Hadiah", titik: adaKlaim },
   ];
-  const RUANG_DARI_MENU: Partial<Record<IkonDok, JenisRuangan>> = { makan: "dapur", mandi: "mandi", baju: "ganti", toko: "toko" };
+  const RUANG_DARI_MENU: Partial<Record<IkonDok, JenisRuangan | "game">> = { makan: "dapur", mandi: "mandi", baju: "ganti", toko: "toko", game: "game" };
 
   /** Menu dok: tiap menu ruangan memindahkan robot ke ruangannya; menekan lagi menutup lembarnya (tetap di ruangan). */
   function tekanDok(id: IkonDok) {
@@ -600,6 +601,8 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     <div data-adegan-syrobo="" className={cn("keep-white relative h-dvh w-full overflow-hidden overscroll-none bg-[#538589]", gosok && "cursor-none")}>
       {ruang === "kamar" ? (
         <SyroboLatar id={robot.latarAktif} gelap={gelap} ubahGelap={ubahLampu} bisik={(teks) => setUcapan({ teks, n: Date.now() })} onTakhta={takhtaDisentuh} />
+      ) : ruang === "game" ? (
+        <RuangGame key="ruang-game" bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
       ) : (
         <SyroboRuangan key={`ruang-${ruang}`} jenis={ruang} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
       )}
