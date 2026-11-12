@@ -14,6 +14,15 @@ import {
   CHEAT_POIN,
   KODE_CHEAT,
   KODE_CHEAT_DEWA,
+  KODE_CHEAT_LATAR,
+  CHEAT_LATAR_JAM,
+  CHEAT_LATAR_JEDA_HARI,
+  POIN_KURSUS_SELESAI,
+  latarSah,
+  latarTerbuka,
+  sisaSemuaLatarMs,
+  cariLatar,
+  type LatarId,
   MAKANAN_DEWA,
   sisaEmasMs,
   tanggalWib,
@@ -74,6 +83,10 @@ export interface TampilanSyrobo extends DataSyrobo {
   tidur: boolean;
   /** Menit hadiah yang sudah boleh diklaim saat ini. */
   siapKlaim: number[];
+  /** Latar Main Room yang boleh dipakai sekarang, latar yang tampil (jatuh ke kamar bila yang dipilih tak lagi terbuka), dan sisa waktu cheat. */
+  latarTerbuka: LatarId[];
+  latarAktif: LatarId;
+  semuaLatarSisaMs: number;
   /** Robot sedang EMAS (cheat) dan sisa waktunya (ms). */
   emas: boolean;
   emasSisaMs: number;
@@ -96,6 +109,9 @@ export function tampilkan(d: DataSyrobo, now: Date, premium = false): TampilanSy
     bekuLaparSampai: sisaBekuMs(d, now) > 0 ? d.bekuLaparSampai : null,
     // Aura makanan dewa hanya menyala selama bar kenyang masih beku.
     dewaId: sisaBekuMs(d, now) > 0 ? d.dewaId : null,
+    latarTerbuka: latarTerbuka(d, now, premium),
+    latarAktif: latarTerbuka(d, now, premium).includes(d.latarPakai) ? d.latarPakai : "kamar",
+    semuaLatarSisaMs: sisaSemuaLatarMs(d, now),
     emas: sisaEmasMs(d, now) > 0,
     emasSisaMs: sisaEmasMs(d, now),
     kenyangSekarang: Math.round(k.kenyang),
@@ -243,6 +259,40 @@ export function tukarSkorGame(db: Firestore, uid: string, game: unknown, now = n
   });
 }
 
+/** Membeli latar Main Room (HARGA_LATAR poin). Istana Kerajaan & kamar bawaan tak bisa dibeli. */
+export function beliLatar(db: Firestore, uid: string, id: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
+  return ubahSyrobo(db, uid, now, premium, (d) => {
+    if (!latarSah(id)) return "Latar tidak dikenal.";
+    const l = cariLatar(id);
+    if (id === "kamar") return "Kamar Bawaan sudah kamu miliki.";
+    if (l.premium) return `${l.nama} tidak dijual: terbuka gratis selama SynapEd Premium aktif.`;
+    if (d.latarPunya.includes(id)) return `${l.nama} sudah kamu miliki.`;
+    if (d.poin < l.harga) return "Poinmu belum cukup.";
+    return { ...d, poin: d.poin - l.harga, latarPunya: [...d.latarPunya, id] };
+  });
+}
+
+/** Memakai latar Main Room: harus terbuka (dimiliki, istana bila premium aktif, atau semua selama cheat aktif). */
+export function pilihLatar(db: Firestore, uid: string, id: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
+  return ubahSyrobo(db, uid, now, premium, (d) => {
+    if (!latarSah(id)) return "Latar tidak dikenal.";
+    if (!latarTerbuka(d, now, premium).includes(id)) return cariLatar(id).premium ? "Istana Kerajaan khusus pemilik SynapEd Premium aktif." : "Beli latar itu dulu di Toko.";
+    return { ...d, latarPakai: id };
+  });
+}
+
+/**
+ * Hadiah menyelesaikan satu kursus (sertifikat terbit): +POIN_KURSUS_SELESAI poin bintang SyRobo, SEKALI per kursus per akun (slug dicatat
+ * di `kursusSelesai`). Dipanggil server dari penerbit sertifikat; bukan action publik.
+ */
+export function hadiahKursusSelesai(db: Firestore, uid: string, slug: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
+  return ubahSyrobo(db, uid, now, premium, (d) => {
+    if (typeof slug !== "string" || !slug || slug.length > 200) return "Kursus tidak sah.";
+    if (d.kursusSelesai.includes(slug)) return "Hadiah kursus ini sudah diambil.";
+    return { ...d, poin: d.poin + POIN_KURSUS_SELESAI, kursusSelesai: [...d.kursusSelesai, slug].slice(-2000) };
+  });
+}
+
 /** Menukar koin game: tiap KOIN_PER_POIN koin menjadi 1 poin bintang (semua kelipatan penuh sekaligus). */
 export function tukarKoinGame(db: Firestore, uid: string, now = new Date(), premium = false): Promise<HasilSyrobo> {
   return ubahSyrobo(db, uid, now, premium, (d) => {
@@ -278,6 +328,15 @@ export function bangunkan(db: Firestore, uid: string, now = new Date(), premium 
 export function aktifkanCheat(db: Firestore, uid: string, kode: unknown, now = new Date(), premium = false): Promise<HasilSyrobo> {
   return ubahSyrobo(db, uid, now, premium, (d) => {
     const k = typeof kode === "string" ? kode.trim().toUpperCase() : "";
+    if (k === KODE_CHEAT_LATAR) {
+      const terakhir = d.cheatLatarAt ? Date.parse(d.cheatLatarAt) : NaN;
+      const jedaMs = CHEAT_LATAR_JEDA_HARI * 24 * 3600_000;
+      if (Number.isFinite(terakhir) && now.getTime() - terakhir < jedaMs) {
+        const sisaHari = Math.ceil((jedaMs - (now.getTime() - terakhir)) / (24 * 3600_000));
+        return `Cheat ini baru bisa dipakai lagi ${sisaHari} hari lagi.`;
+      }
+      return { ...d, cheatLatarAt: now.toISOString(), semuaLatarSampai: new Date(now.getTime() + CHEAT_LATAR_JAM * 3600_000).toISOString() };
+    }
     if (k === KODE_CHEAT_DEWA) {
       if (d.cheatDewa) return "Cheat ini hanya bisa dipakai satu kali per akun.";
       const stokDewa = { ...d.stokDewa };

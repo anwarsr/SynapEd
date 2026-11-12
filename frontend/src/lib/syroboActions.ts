@@ -2,7 +2,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { getPremium } from "@/lib/premium";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { simpanSkorGame, tukarSkorGame, aktifkanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, detak, gantiNama, gosok, klaim, pasangPakaian, ukuranPakaian, bacaSyrobo, type HasilSyrobo } from "@/lib/syrobo/syroboCore";
+import { beliLatar, pilihLatar, simpanSkorGame, tukarSkorGame, aktifkanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, detak, gantiNama, gosok, klaim, pasangPakaian, ukuranPakaian, bacaSyrobo, type HasilSyrobo } from "@/lib/syrobo/syroboCore";
 import type { Suasana } from "@/lib/syrobo/syroboRules";
 
 /**
@@ -60,6 +60,18 @@ export async function beriMakanDewaSyrobo(id: unknown): Promise<HasilSyrobo> {
 export async function simpanKoinGameSyrobo(n: unknown): Promise<HasilSyrobo> {
   const uid = await uidSesi();
   return uid ? simpanKoinGame(adminDb(), uid, n, new Date(), await premiumDari(uid)) : BELUM_MASUK;
+}
+
+/** Beli latar Main Room (200 poin bintang). Uid dari sesi. */
+export async function beliLatarSyrobo(id: unknown): Promise<HasilSyrobo> {
+  const uid = await uidSesi();
+  return uid ? beliLatar(adminDb(), uid, id, new Date(), await premiumDari(uid)) : BELUM_MASUK;
+}
+
+/** Pakai latar Main Room yang sudah terbuka. */
+export async function pilihLatarSyrobo(id: unknown): Promise<HasilSyrobo> {
+  const uid = await uidSesi();
+  return uid ? pilihLatar(adminDb(), uid, id, new Date(), await premiumDari(uid)) : BELUM_MASUK;
 }
 
 /** Setor skor Lari Robo / Bola Gabung ke saldo (belum jadi bintang; harus ditukar di Toko). Uid dari sesi. */

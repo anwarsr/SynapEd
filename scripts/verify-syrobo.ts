@@ -17,8 +17,16 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { check, finish } from "./checks";
 import { initAdmin } from "./project";
-import { simpanSkorGame, tukarSkorGame, aktifkanCheat, mandikan as mandikanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
+import { beliLatar, pilihLatar, hadiahKursusSelesai, simpanSkorGame, tukarSkorGame, aktifkanCheat, mandikan as mandikanCheat, bangunkan, tidurkan, beli, beliPakaian, beriMakan, beriMakanDewa, simpanKoinGame, tukarKoinGame, bacaSyrobo, detak, gantiNama, gosok, klaim, mandikan, pasangPakaian, ukuranPakaian, SYROBO } from "../frontend/src/lib/syrobo/syroboCore";
 import {
+  HARGA_LATAR,
+  LATAR,
+  LATAR_ID,
+  POIN_KURSUS_SELESAI,
+  KODE_CHEAT_LATAR,
+  CHEAT_LATAR_JAM,
+  CHEAT_LATAR_JEDA_HARI,
+  latarTerbuka,
   SKOR_PER_BINTANG,
   SKOR_SETOR_MAKS,
   CHEAT_MENIT,
@@ -370,6 +378,56 @@ async function main() {
     const hariLainS = await simpanSkorGame(db, uid, "lari", 10, new Date(ts.getTime() + 24 * 3600_000));
     check("ganti hari (WIB): jatah pulih, saldo skor lama tetap", hariLainS.ok && hariLainS.robot.skorLari === 60 && hariLainS.robot.koinSetorHari === 10, hariLainS.ok ? `${hariLainS.robot.skorLari}/${hariLainS.robot.koinSetorHari}` : hariLainS.error);
     check("saldo skor rusak terbaca 0 dan jatah dibulatkan 1 desimal", normalisasi({ skorLari: -4, skorBola: "x", koinSetorHari: 3.14159 }, ts).skorLari === 0 && normalisasi({ skorBola: 7.9 }, ts).skorBola === 7 && normalisasi({ koinSetorHari: 3.14159 }, ts).koinSetorHari === 3.1, "ok");
+
+    // 13. Latar Main Room, hadiah kursus selesai, cheat AFIFSIGMA
+    console.log("\nLatar Main Room & hadiah kursus");
+    const tl = new Date("2026-10-01T03:00:00Z");
+    await ref.update({ poin: 450, latarPunya: [], latarPakai: "kamar", semuaLatarSampai: null, cheatLatarAt: null, kursusSelesai: [] });
+    check("katalog: 8 latar (kamar + 6 baru + istana), 6 berharga " + HARGA_LATAR + ", istana khusus Premium", LATAR.length === 8 && LATAR.filter((l) => l.harga === HARGA_LATAR).length === 6 && LATAR.find((l) => l.id === "istana")?.premium === true, `${LATAR.length}`);
+    const tolakL = await Promise.all([beliLatar(db, uid, "tak-ada", tl), beliLatar(db, uid, "kamar", tl), beliLatar(db, uid, "istana", tl, true), beliLatar(db, uid, 7, tl)]);
+    check("beli ditolak: latar tak dikenal, kamar bawaan, istana (bahkan premium), bukan teks", tolakL.every((h) => !h.ok), "semua ditolak");
+    const bTaman = await beliLatar(db, uid, "taman", tl);
+    check("beli Taman Bunga: poin 450 → 250, masuk daftar milik", bTaman.ok && bTaman.robot.poin === 250 && bTaman.robot.latarPunya.includes("taman"), bTaman.ok ? String(bTaman.robot.poin) : bTaman.error);
+    const bUlang = await beliLatar(db, uid, "taman", tl);
+    check("beli latar yang sama dua kali ditolak (poin tak berkurang)", !bUlang.ok && (await bacaSyrobo(db, uid, tl)).poin === 250, bUlang.ok ? "lolos" : bUlang.error);
+    await beliLatar(db, uid, "pantai", tl);
+    const kurang = await beliLatar(db, uid, "laut", tl);
+    check("poin 50 < 200: beli ditolak", !kurang.ok && kurang.error.includes("belum cukup"), kurang.ok ? "lolos" : kurang.error);
+    const pakaiBelum = await pilihLatar(db, uid, "salju", tl);
+    check("pakai latar yang belum dibeli ditolak", !pakaiBelum.ok, pakaiBelum.ok ? "lolos" : pakaiBelum.error);
+    const pakaiLatar = await pilihLatar(db, uid, "pantai", tl);
+    check("pakai latar yang dibeli: latarAktif berubah", pakaiLatar.ok && pakaiLatar.robot.latarAktif === "pantai", pakaiLatar.ok ? pakaiLatar.robot.latarAktif : pakaiLatar.error);
+    const istanaNon = await pilihLatar(db, uid, "istana", tl, false);
+    check("Istana Kerajaan ditolak tanpa Premium", !istanaNon.ok && istanaNon.error.includes("Premium"), istanaNon.ok ? "lolos" : istanaNon.error);
+    const istanaPrem = await pilihLatar(db, uid, "istana", tl, true);
+    check("Istana Kerajaan bisa dipakai gratis selama Premium aktif", istanaPrem.ok && istanaPrem.robot.latarAktif === "istana" && istanaPrem.robot.poin === 50, istanaPrem.ok ? istanaPrem.robot.latarAktif : istanaPrem.error);
+    const premBerakhir = await bacaSyrobo(db, uid, tl, false);
+    check("Premium berakhir: latar istana tak lagi tampil (jatuh ke Kamar Bawaan), pilihan tersimpan tak dihapus", premBerakhir.latarAktif === "kamar" && premBerakhir.latarPakai === "istana" && !premBerakhir.latarTerbuka.includes("istana"), premBerakhir.latarAktif);
+    // cheat AFIFSIGMA
+    const sg = await aktifkanCheat(db, uid, KODE_CHEAT_LATAR.toLowerCase(), tl);
+    check("AFIFSIGMA: SEMUA latar terbuka (termasuk istana, tanpa premium) selama " + CHEAT_LATAR_JAM + " jam", sg.ok && LATAR_ID.every((x) => sg.robot.latarTerbuka.includes(x)) && Math.abs(sg.robot.semuaLatarSisaMs - CHEAT_LATAR_JAM * 3600_000) < 1000, sg.ok ? String(sg.robot.latarTerbuka.length) : sg.error);
+    const sgPakai = await pilihLatar(db, uid, "arcade", tl);
+    check("selama cheat: latar yang belum dibeli bisa dipakai, poin tak berkurang", sgPakai.ok && sgPakai.robot.latarAktif === "arcade" && sgPakai.robot.poin === 50 && !sgPakai.robot.latarPunya.includes("arcade"), sgPakai.ok ? sgPakai.robot.latarAktif : sgPakai.error);
+    const sgLagi = await aktifkanCheat(db, uid, KODE_CHEAT_LATAR, new Date(tl.getTime() + 3 * 24 * 3600_000));
+    check("AFIFSIGMA lagi sebelum seminggu ditolak (menyebut sisa hari)", !sgLagi.ok && sgLagi.error.includes("hari lagi"), sgLagi.ok ? "lolos" : sgLagi.error);
+    const sesudahCheat = await bacaSyrobo(db, uid, new Date(tl.getTime() + (CHEAT_LATAR_JAM + 1) * 3600_000), false);
+    check("cheat berakhir setelah 24 jam: latar yang tak dimiliki tertutup lagi, yang dibeli tetap terbuka", sesudahCheat.latarAktif === "kamar" && sesudahCheat.latarTerbuka.includes("taman") && !sesudahCheat.latarTerbuka.includes("arcade") && sesudahCheat.semuaLatarSisaMs === 0, sesudahCheat.latarAktif);
+    const sgPekan = await aktifkanCheat(db, uid, KODE_CHEAT_LATAR, new Date(tl.getTime() + CHEAT_LATAR_JEDA_HARI * 24 * 3600_000 + 60_000));
+    check("setelah " + CHEAT_LATAR_JEDA_HARI + " hari AFIFSIGMA bisa dipakai lagi", sgPekan.ok && sgPekan.robot.semuaLatarSisaMs > 0, sgPekan.ok ? "ok" : sgPekan.error);
+    check("latarTerbuka murni: tanpa cheat & tanpa premium hanya kamar + milik", latarTerbuka({ latarPunya: ["taman"], semuaLatarSampai: null }, tl, false).join() === "kamar,taman", "ok");
+    check("data latar rusak terbaca bawaan (kamar, tanpa milik)", (() => {
+      const x = normalisasi({ latarPunya: ["istana", "kamar", "taman", "taman", "x", 5], latarPakai: "bukan", semuaLatarSampai: "xx" }, tl);
+      return x.latarPakai === "kamar" && x.latarPunya.join() === "taman" && x.semuaLatarSampai === null;
+    })(), "ok");
+    // hadiah kursus selesai
+    const poinK0 = (await bacaSyrobo(db, uid, tl)).poin;
+    const k1 = await hadiahKursusSelesai(db, uid, "kursus-uji-a", tl);
+    check("kursus tuntas: +" + POIN_KURSUS_SELESAI + " poin bintang", k1.ok && k1.robot.poin === poinK0 + POIN_KURSUS_SELESAI, k1.ok ? String(k1.robot.poin) : k1.error);
+    const k2 = await hadiahKursusSelesai(db, uid, "kursus-uji-a", tl);
+    check("kursus yang sama tak memberi hadiah dua kali", !k2.ok && (await bacaSyrobo(db, uid, tl)).poin === poinK0 + POIN_KURSUS_SELESAI, k2.ok ? "lolos" : k2.error);
+    const k3 = await hadiahKursusSelesai(db, uid, "kursus-uji-b", tl);
+    check("kursus lain memberi hadiah sendiri", k3.ok && k3.robot.poin === poinK0 + POIN_KURSUS_SELESAI * 2, k3.ok ? String(k3.robot.poin) : k3.error);
+    check("slug tak sah ditolak", !(await hadiahKursusSelesai(db, uid, "", tl)).ok && !(await hadiahKursusSelesai(db, uid, 5, tl)).ok, "ditolak");
   } finally {
     await ref.delete().catch(() => undefined);
   }

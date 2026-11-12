@@ -328,10 +328,13 @@ function gambar(nama: NamaIkon) {
     case "ambrosia":
       return (
         <>
-          <path d="M9 22h30c0 9-6 14-15 14S9 31 9 22z" fill="#F2C14E" />
-          <path d="M24 36v6M15 43h18" />
-          <path d="M14 20c1-8 5-10 6-14M24 19c0-6 3-8 3-13M33 20c1-6 4-8 4-12" fill="none" stroke="#F6E3C0" strokeWidth={3.4} />
-          <path d="M14 20c1-8 5-10 6-14M24 19c0-6 3-8 3-13M33 20c1-6 4-8 4-12" fill="none" strokeWidth={1.4} opacity=".5" />
+          <path d="M21 34h6v7h-6z" fill="#E0A82E" />
+          <path d="M14 40h20c1.300 0 2.200 1 2.200 2.300S35.300 45 34 45H14c-1.300 0-2.200-1.400-2.200-2.700S12.700 40 14 40z" fill="#F2C14E" />
+          <path d="M9 21h30c0 9-6 14-15 14S9 30 9 21z" fill="#F2C14E" />
+          <ellipse cx="15.500" cy="25" rx="1.800" ry="3.400" fill="#FFF3C4" strokeWidth={0} />
+          <circle cx="24" cy="12" r="4.600" fill="#FFF1B8" />
+          <path d="M11 9l1.300 2.700L15 13l-2.700 1.300L11 17l-1.300-2.700L7 13l2.700-1.300z" fill="#FFE08A" strokeWidth={1.300} />
+          <path d="M37 6l1.100 2.300L40.400 9.400l-2.300 1.100L37 12.800l-1.100-2.300-2.300-1.100 2.300-1.100z" fill="#FFE08A" strokeWidth={1.300} />
         </>
       );
     case "nektar":

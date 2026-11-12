@@ -138,5 +138,5 @@ export async function markLessonComplete(slug: string, lessonSlug: string): Prom
   revalidatePath(`/courses/${slug}/learn/${lessonSlug}`);
   revalidatePath("/profil");
 
-  return { ok: true, slug, message: "Pelajaran ditandai selesai.", certificateId: newCertificateId ?? undefined };
+  return { ok: true, slug, message: newCertificateId ? "Pelajaran ditandai selesai. Kursus tuntas: +10 poin bintang SyRobo!" : "Pelajaran ditandai selesai.", certificateId: newCertificateId ?? undefined };
 }

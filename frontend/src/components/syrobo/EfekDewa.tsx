@@ -99,7 +99,8 @@ function Gambar({ b, w, w2 }: { b: Bentuk; w: string; w2: string }): ReactNode {
 /** Nilai acak deterministik (tanpa Math.random saat render: hasilnya stabil antar render). */
 const acak = (i: number, s: number) => {
   const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453;
-  return v - Math.floor(v);
+  // dibulatkan supaya render server & klien identik (tak ada hydration mismatch)
+  return Math.round((v - Math.floor(v)) * 1000) / 1000;
 };
 
 export default function EfekDewa({ id, kuat = false }: { id: MakananDewaId; kuat?: boolean }) {

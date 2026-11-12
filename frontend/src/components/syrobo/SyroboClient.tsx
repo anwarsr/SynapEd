@@ -2,17 +2,20 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SyroboRobot, { type ReaksiRobot } from "./SyroboRobot";
-import SyroboKamar from "./SyroboKamar";
+import SyroboLatar from "./SyroboLatar";
 import SyroboRuangan, { type JenisRuangan } from "./SyroboRuangan";
 import GameTanjakan from "./GameTanjakan";
 import GameBola from "./GameBola";
 import GameLari from "./GameLari";
 import IkonGame from "./IkonGame";
+import { SuaraGame } from "./suaraGame";
 import { Ikon, type IkonDok } from "./IkonSyrobo";
 import { cn } from "@/lib/cn";
 import {
   beliMakananSyrobo,
   beliPakaianSyrobo,
+  beliLatarSyrobo,
+  pilihLatarSyrobo,
   beriMakanSyrobo,
   beriMakanDewaSyrobo,
   cheatSyrobo,
@@ -35,8 +38,10 @@ import {
   AMBANG_LAPAR,
   AMBANG_LELAH,
   AMBANG_TIDUR,
+  LATAR,
   KODE_CHEAT,
   KODE_CHEAT_DEWA,
+  KODE_CHEAT_LATAR,
   sisaEmasMs,
   energiSaatIni,
   DETAK_KLIEN_MS,
@@ -48,6 +53,7 @@ import {
   SKOR_PER_BINTANG,
   SKOR_SETOR_MAKS,
   type GameSkor,
+  type LatarId,
   MAKANAN,
   MAKANAN_DEWA,
   NAMA_MAKS,
@@ -89,6 +95,23 @@ const TOMBOL_UTAMA = cn(
 const NAMA_SLOT: Record<SlotPakaian, string> = { kepala: "Kepala", badan: "Badan" };
 
 /** Bilah status: ikon + batang bergaris tinta, memerah saat rendah. */
+/** Pratinjau kecil tiap latar di toko: dua pita warna (dinding + lantai) yang mewakili adegannya. */
+const PRATINJAU_LATAR: Record<LatarId, string> = {
+  kamar: "linear-gradient(180deg,#5A8E8C 0 60%,#BE8A5B 60%)",
+  taman: "linear-gradient(180deg,#9CD3EA 0 55%,#7DBB63 55%)",
+  pantai: "linear-gradient(180deg,#C9578A 0 30%,#3F7FB0 30% 55%,#E8C98F 55%)",
+  angkasa: "radial-gradient(circle at 28% 40%,#F2A85E 0 14%,transparent 15%),linear-gradient(180deg,#1C2345 0 60%,#5B6489 60%)",
+  salju: "linear-gradient(180deg,#8A5A3B 0 60%,#6A4630 60%)",
+  arcade: "linear-gradient(180deg,#2E1760 0 60%,#17102F 60%)",
+  laut: "linear-gradient(180deg,#7FD6E8,#2D8FC0 60%,#D9BE8C 60%)",
+  istana: "linear-gradient(180deg,#7E1F35 0 60%,#EDE4D3 60%)",
+};
+
+const KUNCI_MUSIK_LAMAN = "synaped_syrobo_musik_laman";
+
+/** Menu yang tak bisa dibuka selagi robot tidur. */
+const TERKUNCI_SAAT_TIDUR = new Set<IkonDok>(["makan", "mandi", "baju", "toko", "game"]);
+
 /** Jumlah semua makanan dewa yang dimiliki (stok dari cheat). */
 const DAFTAR_STOK_DEWA = (r: { stokDewa: Record<string, number> }) => Object.values(r.stokDewa).reduce((a, b) => a + b, 0);
 
@@ -118,7 +141,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   const [nama, setNama] = useState(awal.nama);
   const [ubahNama, setUbahNama] = useState(false);
   const [lembar, setLembar] = useState<Lembar>(null);
-  const [tokoTab, setTokoTab] = useState<"makanan" | "pakaian" | "koin">("makanan");
+  const [tokoTab, setTokoTab] = useState<"makanan" | "pakaian" | "latar" | "koin">("makanan");
   const [makanTab, setMakanTab] = useState<"biasa" | "dewa">("biasa");
   /** Ruangan yang sedang dimasuki: tiap menu (Makan/Mandi/Baju/Toko) punya ruangannya sendiri; "Main Room" = kamar utama. */
   const [ruang, setRuang] = useState<"kamar" | JenisRuangan>("kamar");
@@ -130,6 +153,11 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   const [ucapan, setUcapan] = useState<{ teks: string; n: number } | null>(null);
   /** Ledakan efek makanan dewa sesaat setelah dimakan (aura tenangnya menyala terus selama kenyang beku). */
   const [ledakDewa, setLedakDewa] = useState<{ id: MakananDewaId; n: number } | null>(null);
+  /** Musik latar halaman SyRobo (pilihan disimpan di perangkat; terpisah dari pengaturan musik game). */
+  const [musikLaman, setMusikLaman] = useState(true);
+  const musikRef = useRef<SuaraGame | null>(null);
+  /** Robot bercahaya di sisi-sisinya sesaat (takhta Istana disentuh): warna robot tidak berubah. */
+  const [cahaya, setCahaya] = useState(false);
   const cheatRef = useRef<(kode: string) => void>(() => undefined);
   /** Selama permintaan lampu belum selesai, kabar dari server (detak) tak boleh membalik keadaan lampu. */
   const lampuBusy = useRef(false);
@@ -168,7 +196,10 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
         setRobot(h.robot);
         setNama(h.robot.nama);
         // Tidur disimpan di server: lampu mengikutinya (muat ulang / pindah halaman / tab lain tak membangunkan robot).
-        if (!lampuBusy.current) setGelap(h.robot.tidur);
+        if (!lampuBusy.current) {
+          setGelap(h.robot.tidur);
+          if (h.robot.tidur) tutupSaatTidur();
+        }
         kabarkan();
       }
       const teks = h.ok ? sukses : h.error;
@@ -177,6 +208,63 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     [tampilPesan],
   );
 
+  // Musik latar halaman: dibuat sekali, berbunyi selagi tak ada game terbuka & robot tak tidur & tab terlihat. Peramban baru mengizinkan
+  // suara setelah sentuhan/tombol pertama (`buka`).
+  useEffect(() => {
+    const m = new SuaraGame("syrobo", { musik: true, efek: false });
+    musikRef.current = m;
+    const buka = () => m.buka();
+    window.addEventListener("pointerdown", buka);
+    window.addEventListener("keydown", buka);
+    const baca = setTimeout(() => {
+      try {
+        if (localStorage.getItem(KUNCI_MUSIK_LAMAN) === "0") setMusikLaman(false);
+      } catch {
+        /* diabaikan */
+      }
+    }, 0);
+    return () => {
+      clearTimeout(baca);
+      window.removeEventListener("pointerdown", buka);
+      window.removeEventListener("keydown", buka);
+      m.tutup();
+      musikRef.current = null;
+    };
+  }, []);
+  const musikBerbunyi = musikLaman && !main && !gelap;
+  useEffect(() => {
+    const m = musikRef.current;
+    if (!m) return;
+    m.setMusik(musikLaman);
+    const terapkan = () => m.atur(musikBerbunyi && document.visibilityState === "visible");
+    terapkan();
+    document.addEventListener("visibilitychange", terapkan);
+    return () => document.removeEventListener("visibilitychange", terapkan);
+  }, [musikLaman, musikBerbunyi]);
+  /** Takhta Istana disentuh: robot bercahaya di sisi-sisinya ±7 dtk + efek suara "godly" (mengikuti saklar suara halaman). Dipanggil dari klik = gestur sah untuk audio. */
+  function takhtaDisentuh() {
+    setCahaya(true);
+    setTimeout(() => setCahaya(false), 7200);
+    if (!musikLaman) return;
+    try {
+      const s = new SuaraGame("syrobo", { musik: false, efek: true });
+      s.buka();
+      s.godly();
+      setTimeout(() => s.tutup(), 5500);
+    } catch {
+      /* suara hanya hiasan */
+    }
+  }
+  function ubahMusikLaman() {
+    const baru = !musikLaman;
+    setMusikLaman(baru);
+    try {
+      localStorage.setItem(KUNCI_MUSIK_LAMAN, baru ? "1" : "0");
+    } catch {
+      /* diabaikan */
+    }
+  }
+
   // EASTER EGG: mengenali ketikan KODE_CHEAT (huruf apa pun, tanpa pengubah) selama tak sedang mengetik di kolom isian atau main game.
   useEffect(() => {
     cheatRef.current = cheat;
@@ -184,13 +272,13 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
   });
   useEffect(() => {
     let buf = "";
-    const panjang = Math.max(KODE_CHEAT.length, KODE_CHEAT_DEWA.length);
+    const panjang = Math.max(KODE_CHEAT.length, KODE_CHEAT_DEWA.length, KODE_CHEAT_LATAR.length);
     const turun = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || mainRef.current) return;
       buf = (buf + e.key.toUpperCase()).slice(-panjang);
-      for (const kode of [KODE_CHEAT, KODE_CHEAT_DEWA]) {
+      for (const kode of [KODE_CHEAT, KODE_CHEAT_DEWA, KODE_CHEAT_LATAR]) {
         if (buf.endsWith(kode)) {
           buf = "";
           cheatRef.current(kode);
@@ -262,9 +350,17 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     }
   }
 
+  /** Robot mulai tidur: kembali ke Main Room dan tutup lembar yang terkunci (Hadiah boleh tetap terbuka). */
+  function tutupSaatTidur() {
+    setRuang("kamar");
+    setLembar((l) => (l && TERKUNCI_SAAT_TIDUR.has(l as IkonDok) ? null : l));
+    setMain(null);
+  }
+
   /** Lampu Main Room: padam = tidur (energi pulih), menyala = bangun. Server yang menghitung energinya. */
   function ubahLampu(g: boolean) {
     setGelap(g);
+    if (g) tutupSaatTidur();
     lampuBusy.current = true;
     void (g ? tidurkanSyrobo() : bangunkanSyrobo())
       .then((h) => {
@@ -335,7 +431,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
   /** EASTER EGG: mengetik KODE_CHEAT di halaman ini. Server memeriksa kode & jatah harian; di sini hanya menampilkan hasilnya. */
   function cheat(kode: string) {
-    const sukses = kode === KODE_CHEAT_DEWA ? "10 makanan dewa masuk ke Dapur, tab Makanan Dewa." : "+50 poin bintang! Robotmu emas selama 10 menit.";
+    const sukses = kode === KODE_CHEAT_DEWA ? "10 makanan dewa masuk ke Dapur, tab Makanan Dewa." : kode === KODE_CHEAT_LATAR ? "Semua latar Main Room terbuka selama 24 jam. Pilih di Toko, tab Main Room." : "+50 poin bintang! Robotmu emas selama 10 menit.";
     void jalan(() => cheatSyrobo(kode), sukses).then((ok) => {
       if (ok) setUcapan({ teks: "Cheat activated", n: Date.now() });
     });
@@ -480,6 +576,11 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
   /** Menu dok: tiap menu ruangan memindahkan robot ke ruangannya; menekan lagi menutup lembarnya (tetap di ruangan). */
   function tekanDok(id: IkonDok) {
+    // Robot tidur: Makan, Mandi, Baju, Toko, dan Games terkunci (Main Room tetap bisa, untuk menyalakan lampu; Hadiah tetap terbuka).
+    if (tidur && TERKUNCI_SAAT_TIDUR.has(id)) {
+      tampilPesan(`${robot.nama} sedang tidur. Nyalakan lampu di Main Room untuk membangunkannya.`, true);
+      return;
+    }
     if (id === "ruang") {
       setRuang("kamar");
       setLembar(null);
@@ -498,7 +599,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
     // `keep-white`: adegan ini punya warnanya sendiri, `text-white` tak boleh terbalik di tema terang.
     <div data-adegan-syrobo="" className={cn("keep-white relative h-dvh w-full overflow-hidden overscroll-none bg-[#538589]", gosok && "cursor-none")}>
       {ruang === "kamar" ? (
-        <SyroboKamar gelap={gelap} ubahGelap={ubahLampu} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
+        <SyroboLatar id={robot.latarAktif} gelap={gelap} ubahGelap={ubahLampu} bisik={(teks) => setUcapan({ teks, n: Date.now() })} onTakhta={takhtaDisentuh} />
       ) : (
         <SyroboRuangan key={`ruang-${ruang}`} jenis={ruang} bisik={(teks) => setUcapan({ teks, n: Date.now() })} />
       )}
@@ -529,7 +630,15 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
         <div className="pointer-events-auto flex min-w-0 justify-center sm:w-auto">
           {ubahNama ? (
             <form
-              className={cn("flex gap-2 rounded-xl bg-[#FBF1DA] p-1.5", STIKER)}
+              // Ponsel: lapisan selebar layar DI ATAS panel status & kotak poin (dulu form selebar 160 px + tombol terjepit dan tertutup keduanya).
+              className={cn("flex gap-2 rounded-xl bg-[#FBF1DA] p-1.5 max-sm:absolute max-sm:inset-x-2.5 max-sm:top-0 max-sm:z-50", STIKER)}
+              onKeyDown={(e) => {
+                // Esc membatalkan penggantian nama (dulu kolom tetap terbuka).
+                if (e.key === "Escape") {
+                  setNama(robot.nama);
+                  setUbahNama(false);
+                }
+              }}
               onSubmit={(e) => {
                 e.preventDefault();
                 setUbahNama(false);
@@ -545,7 +654,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                 value={nama}
                 maxLength={NAMA_MAKS}
                 onChange={(e) => setNama(e.target.value)}
-                className="w-40 rounded-md border-2 border-[#2B2233] bg-white px-3 py-1 text-center text-sm font-extrabold text-[#2B2233] outline-none"
+                className="w-40 min-w-0 rounded-md border-2 border-[#2B2233] bg-white px-3 py-1 text-center text-sm font-extrabold text-[#2B2233] outline-none max-sm:flex-1"
               />
               <button type="submit" className={TOMBOL_KECIL}>
                 Simpan
@@ -563,9 +672,26 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           )}
         </div>
 
+        <div className="flex flex-col items-end gap-1.5">
         <div className={cn("pointer-events-auto flex rotate-1 items-center gap-1 rounded-lg bg-[#FBF1DA] py-0.5 pl-1.5 pr-2 sm:gap-2 sm:rounded-xl sm:py-1.5 sm:pl-2 sm:pr-4", STIKER)} aria-label={`Poin ${robot.poin}`}>
           <Ikon nama="bintang" className="h-5 w-5 sm:h-9 sm:w-9" />
           <span className="text-base font-extrabold tabular-nums text-[#2B2233] sm:text-2xl">{robot.poin}</span>
+        </div>
+        <button
+          type="button"
+          onClick={ubahMusikLaman}
+          aria-pressed={musikLaman}
+          aria-label={musikLaman ? "Matikan musik" : "Nyalakan musik"}
+          title={musikLaman ? "Matikan musik" : "Nyalakan musik"}
+          className={cn("pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg text-[#2B2233] transition-transform duration-150 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none sm:h-11 sm:w-11 sm:rounded-xl", STIKER, musikLaman ? "bg-[#6BA7D8]" : "bg-[#FBF1DA]")}
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 18V6l10-2v12" />
+            <circle cx="6.5" cy="18" r="2.6" fill="currentColor" />
+            <circle cx="16.5" cy="16" r="2.6" fill="currentColor" />
+            {!musikLaman && <path d="M3 3l18 18" strokeWidth={2.6} />}
+          </svg>
+        </button>
         </div>
       </div>
 
@@ -592,6 +718,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
           gelap={tidur}
           energi={energi}
           emas={emas}
+          cahaya={cahaya}
           dewa={robot.dewaId}
           ledakDewa={ledakDewa}
           jeda={lembar !== null || gosok}
@@ -787,9 +914,9 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
 
           {lembar === "toko" && (
             <>
-              <div className="flex items-center gap-2 pr-10">
+              <div className="flex flex-wrap items-center gap-2 pr-10">
                 <h2 className="mr-2 text-lg font-extrabold">Toko</h2>
-                {(["makanan", "pakaian", "koin"] as const).map((t) => (
+                {(["makanan", "pakaian", "latar", "koin"] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -797,7 +924,7 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                     onClick={() => setTokoTab(t)}
                     className={cn(TOMBOL_KECIL, "py-1", tokoTab === t && "bg-[#6BA7D8]")}
                   >
-                    {t === "makanan" ? "Makanan" : t === "pakaian" ? "Pakaian" : "Koin Game"}
+                    {t === "makanan" ? "Makanan" : t === "pakaian" ? "Pakaian" : t === "latar" ? "Main Room" : "Koin Game"}
                   </button>
                 ))}
               </div>
@@ -816,6 +943,45 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
                     </li>
                   ))}
                 </ul>
+              ) : tokoTab === "latar" ? (
+                <>
+                  {robot.semuaLatarSisaMs > 0 && (
+                    <p className={cn("mt-3 rounded-lg bg-[#FFE7A8] px-3 py-1.5 text-xs font-extrabold", STIKER)}>Semua latar terbuka sementara. Sisa {Math.max(1, Math.ceil(robot.semuaLatarSisaMs / 3600_000))} jam.</p>
+                  )}
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {LATAR.map((l) => {
+                      const terbuka = robot.latarTerbuka.includes(l.id);
+                      const dipakai = robot.latarAktif === l.id;
+                      const dibeli = l.id === "kamar" || robot.latarPunya.includes(l.id);
+                      return (
+                        <li key={l.id} className={cn("flex items-center gap-3 rounded-lg bg-[#F6E3C0] px-3 py-2", STIKER)}>
+                          <span aria-hidden="true" className="relative block h-12 w-16 shrink-0 overflow-hidden rounded-md border-2 border-[#2B2233]" style={{ background: PRATINJAU_LATAR[l.id] }} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-extrabold">{l.nama}</span>
+                            <span className="block text-[11px] font-semibold leading-snug text-[#2B2233]/70">{l.fitur}</span>
+                          </span>
+                          {dipakai ? (
+                            <span className="rounded-md border-2 border-[#2B2233] bg-[#6BA7D8] px-2 py-1 text-xs font-extrabold">Dipakai</span>
+                          ) : terbuka ? (
+                            <button type="button" disabled={sibuk} onClick={() => void jalan(() => pilihLatarSyrobo(l.id), `${l.nama} dipakai di Main Room.`)} className={TOMBOL_KECIL}>
+                              Pakai
+                            </button>
+                          ) : l.premium ? (
+                            <Link href="/premium" className={cn(TOMBOL_KECIL, "whitespace-nowrap")}>
+                              Premium
+                            </Link>
+                          ) : (
+                            <button type="button" disabled={sibuk || robot.poin < l.harga} onClick={() => void jalan(() => beliLatarSyrobo(l.id), `${l.nama} dibeli. Tekan Pakai untuk memasangnya.`)} className={cn(TOMBOL_KECIL, "flex items-center gap-1")}>
+                              <Ikon nama="bintang" className="h-4 w-4" /> {l.harga}
+                            </button>
+                          )}
+                          {dibeli && !dipakai && !terbuka && <span className="sr-only">dimiliki</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <p className="mt-3 text-xs font-semibold text-[#2B2233]/65">Latar hanya tampil di Main Room. Tiap latar punya benda unik yang bisa disentuh; Istana Kerajaan terbuka gratis selama SynapEd Premium aktif.</p>
+                </>
               ) : tokoTab === "pakaian" ? (
                 <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                   {PAKAIAN.map((p) => {
@@ -972,23 +1138,32 @@ export default function SyroboClient({ awal }: { awal: TampilanSyrobo }) {
       <nav aria-label="Menu SyRobo" className="absolute inset-x-0 bottom-[92px] z-[40] flex justify-center gap-1.5 px-2 sm:bottom-4 sm:gap-2.5 sm:px-3">
         {dok.map((d, i) => {
           const aktifTombol = d.id === "ruang" ? ruang === "kamar" && lembar === null : lembar === d.id;
+          const terkunci = tidur && TERKUNCI_SAAT_TIDUR.has(d.id);
           return (
             <button
               key={d.id}
               type="button"
               aria-pressed={aktifTombol}
-              aria-label={d.nama}
+              aria-disabled={terkunci}
+              aria-label={terkunci ? `${d.nama} (terkunci: robot sedang tidur)` : d.nama}
               onClick={() => tekanDok(d.id)}
               className={cn(
                 "relative flex h-[62px] w-[48px] flex-col items-center justify-center gap-0.5 rounded-xl text-[#2B2233] transition-[transform,box-shadow,background-color] duration-200 sm:h-[68px] sm:w-[72px]",
                 STIKER,
                 i % 2 ? "rotate-1" : "-rotate-1",
                 aktifTombol ? "-translate-y-2 rotate-0 bg-[#6BA7D8]" : "bg-[#FBF1DA] hover:-translate-y-1 hover:rotate-0 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+                terkunci && "opacity-45 saturate-50 hover:translate-y-0",
               )}
             >
               <Ikon nama={d.id} className="h-7 w-7 sm:h-8 sm:w-8" />
               <span className="text-[8.500px] font-extrabold leading-none sm:text-[11px]">{d.nama}</span>
-              {d.titik && <span aria-hidden="true" className="syrobo-kedip absolute -right-1.5 -top-1.5 h-4 w-4 rounded-full border-2 border-[#2B2233] bg-[#E0833B]" />}
+              {terkunci && (
+                <svg viewBox="0 0 16 16" aria-hidden="true" className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full border-2 border-[#2B2233] bg-[#F6E3C0] p-[3px]" fill="none" stroke="#2B2233" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" fill="#F2C14E" />
+                  <path d="M5.5 7V5a2.5 2.5 0 015 0v2" />
+                </svg>
+              )}
+              {d.titik && !terkunci && <span aria-hidden="true" className="syrobo-kedip absolute -right-1.5 -top-1.5 h-4 w-4 rounded-full border-2 border-[#2B2233] bg-[#E0833B]" />}
             </button>
           );
         })}

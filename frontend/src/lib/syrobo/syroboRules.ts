@@ -35,6 +35,47 @@ export const CHEAT_POIN = 50;
 export const CHEAT_MENIT = 10;
 /** Cheat kedua: sekali SEUMUR AKUN, memberi 1 buah tiap makanan dewa (stok `stokDewa`, bisa dimakan tanpa Premium). */
 export const KODE_CHEAT_DEWA = "DEIDOSTUDIO";
+/**
+ * LATAR MAIN ROOM (permintaan pemilik): kamar bawaan + 6 latar baru, masing-masing dengan satu fitur unik yang bisa disentuh, dibeli di
+ * Toko > Main Room seharga `HARGA_LATAR` (200) poin bintang. Plus ISTANA KERAJAAN: TIDAK dijual; terbuka HANYA selama SynapEd Premium
+ * aktif (hilang lagi bila premium berakhir, seperti pakaian premium). Cheat `KODE_CHEAT_LATAR` membuka SEMUA latar (termasuk istana)
+ * selama `CHEAT_LATAR_JAM` jam, dan hanya bisa dipakai lagi setelah `CHEAT_LATAR_JEDA_HARI` hari sejak pemakaian terakhir.
+ */
+export type LatarId = "kamar" | "taman" | "pantai" | "angkasa" | "salju" | "arcade" | "laut" | "istana";
+export interface LatarInfo {
+  id: LatarId;
+  nama: string;
+  /** Fitur unik latar ini (ditampilkan di toko). */
+  fitur: string;
+  harga: number;
+  /** Khusus Premium aktif: tidak dijual. */
+  premium?: boolean;
+}
+export const HARGA_LATAR = 200;
+export const LATAR: readonly LatarInfo[] = [
+  { id: "kamar", nama: "Kamar Bawaan", fitur: "Lampu gantung, jendela bintang jatuh, tanaman, buku, jam.", harga: 0 },
+  { id: "taman", nama: "Taman Bunga", fitur: "Sentuh bunga: mekar dan kupu-kupu beterbangan.", harga: HARGA_LATAR },
+  { id: "pantai", nama: "Pantai Senja", fitur: "Sentuh pasir: kepiting berjalan menyamping; ombak bergulung.", harga: HARGA_LATAR },
+  { id: "angkasa", nama: "Stasiun Angkasa", fitur: "Gravitasi nol: sentuh benda melayang untuk mendorongnya.", harga: HARGA_LATAR },
+  { id: "salju", nama: "Pondok Salju", fitur: "Salju turun di jendela; lempar kayu ke perapian.", harga: HARGA_LATAR },
+  { id: "arcade", nama: "Arcade Neon", fitur: "Main mesin arcade: kumpulkan skor sampai JACKPOT.", harga: HARGA_LATAR },
+  { id: "laut", nama: "Akuarium Laut", fitur: "Buka peti harta: gelembung dan mutiara; ikan berenang bebas.", harga: HARGA_LATAR },
+  { id: "istana", nama: "Istana Kerajaan", fitur: "Sentuh takhta: mahkota terbang, hujan konfeti dan sorak istana.", harga: 0, premium: true },
+];
+export const LATAR_ID: readonly LatarId[] = LATAR.map((l) => l.id);
+export const KODE_CHEAT_LATAR = "AFIFSIGMA";
+export const CHEAT_LATAR_JAM = 24;
+export const CHEAT_LATAR_JEDA_HARI = 7;
+export function latarSah(x: unknown): x is LatarId {
+  return typeof x === "string" && LATAR.some((l) => l.id === x);
+}
+export function cariLatar(id: LatarId): LatarInfo {
+  return LATAR.find((l) => l.id === id) as LatarInfo;
+}
+
+/** Hadiah menyelesaikan satu kursus di situs: sekali per kursus per akun. */
+export const POIN_KURSUS_SELESAI = 10;
+
 /** Makan membuat robot sedikit kotor. */
 export const KOTOR_SAAT_MAKAN = 8;
 
@@ -250,6 +291,13 @@ export interface DataSyrobo {
   stokDewa: Record<MakananDewaId, number>;
   /** Cheat makanan dewa sudah dipakai (sekali seumur akun). */
   cheatDewa: boolean;
+  /** Latar Main Room: yang dibeli, yang dipakai, dan kapan pembukaan sementara semua latar (cheat) berakhir / terakhir dipakai. */
+  latarPunya: LatarId[];
+  latarPakai: LatarId;
+  semuaLatarSampai: string | null;
+  cheatLatarAt: string | null;
+  /** Slug kursus yang sudah memberi hadiah poin saat selesai (supaya sekali per kursus). */
+  kursusSelesai: string[];
   /** Tanggal WIB cheat terakhir dipakai (jatah sekali sehari) dan waktu emasnya berakhir. */
   cheatHari: string | null;
   emasSampai: string | null;
@@ -317,6 +365,11 @@ export function dataBaru(now: Date): DataSyrobo {
     dewaId: null,
     stokDewa: stokDewaKosong(),
     cheatDewa: false,
+    latarPunya: [],
+    latarPakai: "kamar",
+    semuaLatarSampai: null,
+    cheatLatarAt: null,
+    kursusSelesai: [],
     cheatHari: null,
     emasSampai: null,
     energi: 100,
@@ -379,6 +432,11 @@ export function normalisasi(raw: unknown, now: Date): DataSyrobo {
       return st;
     })(),
     cheatDewa: r.cheatDewa === true,
+    latarPunya: (Array.isArray(r.latarPunya) ? r.latarPunya : []).filter(latarSah).filter((x, i, a) => a.indexOf(x) === i && x !== "kamar" && !cariLatar(x).premium),
+    latarPakai: latarSah(r.latarPakai) ? r.latarPakai : "kamar",
+    semuaLatarSampai: typeof r.semuaLatarSampai === "string" && !Number.isNaN(Date.parse(r.semuaLatarSampai)) ? r.semuaLatarSampai : null,
+    cheatLatarAt: typeof r.cheatLatarAt === "string" && !Number.isNaN(Date.parse(r.cheatLatarAt)) ? r.cheatLatarAt : null,
+    kursusSelesai: (Array.isArray(r.kursusSelesai) ? r.kursusSelesai : []).filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 200).slice(0, 2000),
     cheatHari: typeof r.cheatHari === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.cheatHari) ? r.cheatHari : null,
     emasSampai: typeof r.emasSampai === "string" && !Number.isNaN(Date.parse(r.emasSampai)) ? r.emasSampai : null,
     energi: jepit(angka(r.energi, d.energi)),
@@ -423,6 +481,20 @@ export function potretEnergi(d: DataSyrobo, now: Date): DataSyrobo {
 export function sisaEmasMs(d: Pick<DataSyrobo, "emasSampai">, now: Date): number {
   const e = d.emasSampai ? Date.parse(d.emasSampai) : NaN;
   return Number.isFinite(e) ? Math.max(0, e - now.getTime()) : 0;
+}
+
+/** Sisa waktu pembukaan semua latar oleh cheat (ms); 0 bila tak aktif. */
+export function sisaSemuaLatarMs(d: Pick<DataSyrobo, "semuaLatarSampai">, now: Date): number {
+  const e = d.semuaLatarSampai ? Date.parse(d.semuaLatarSampai) : NaN;
+  return Number.isFinite(e) ? Math.max(0, e - now.getTime()) : 0;
+}
+
+/** Latar yang BOLEH dipakai sekarang: kamar bawaan + yang dibeli + istana (selama premium aktif) + SEMUA (selama cheat aktif). */
+export function latarTerbuka(d: Pick<DataSyrobo, "latarPunya" | "semuaLatarSampai">, now: Date, premium: boolean): LatarId[] {
+  if (sisaSemuaLatarMs(d, now) > 0) return [...LATAR_ID];
+  const ada = new Set<LatarId>(["kamar", ...d.latarPunya]);
+  if (premium) ada.add("istana");
+  return LATAR_ID.filter((x) => ada.has(x));
 }
 
 /** Sisa masa beku kenyang (ms) pada `now`; 0 bila tidak beku. */

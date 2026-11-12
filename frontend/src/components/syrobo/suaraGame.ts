@@ -4,7 +4,7 @@
  * disimpan di perangkat (localStorage) dan berlaku untuk kedua game. Hanya untuk komponen klien.
  *
  * Musik = penjadwal kecil (melihat 0,3 dtk ke depan) yang memainkan progresi akor berulang: Bola Gabung tenang (marimba + pad),
- * Tanjakan Robo bertenaga (bass bergerak, kick, hi-hat, arpeggio), Lari Robo cepat dan ceria (kick empat-per-birama, bass melompat, melodi pentatonik). Musik hanya berbunyi selagi permainan berjalan.
+ * Tanjakan Robo bertenaga (bass bergerak, kick, hi-hat, arpeggio), Lari Robo cepat dan ceria (kick empat-per-birama, bass melompat, melodi pentatonik), dan halaman SyRobo santai-ceria (lo-fi bossa: piano listrik, bass membulat, sapuan kuas, melodi kalimba; aktif selagi tak ada game terbuka dan robot tak tidur). Musik hanya berbunyi selagi permainan berjalan.
  */
 
 const KUNCI = "synaped_syrobo_suara";
@@ -31,7 +31,7 @@ export function simpanPengaturan(p: PengaturanSuara): void {
   }
 }
 
-export type GayaMusik = "bola" | "tanjakan" | "lari";
+export type GayaMusik = "bola" | "tanjakan" | "lari" | "syrobo";
 
 const midi = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -61,9 +61,17 @@ export class SuaraGame {
   private mesinNode: { osc: OscillatorNode; gain: GainNode; filter: BiquadFilterNode } | null = null;
   private nitroNode: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   private dentumT = 0;
+  private ditutup = false;
 
   constructor(private gaya: GayaMusik, peng: PengaturanSuara) {
     this.peng = { ...peng };
+    // Konteks audio SENGAJA belum dibuat di sini: peramban menolak (dan mencatat peringatan "AudioContext was not allowed to start" di
+    // konsol) konteks yang dibuat sebelum ada sentuhan/tombol. Ia dibuat pada `buka()` pertama, yang dipanggil dari gestur pengguna.
+    this.timer = setInterval(() => this.jadwal(), 80);
+  }
+
+  private buatKonteks(): void {
+    if (this.ctx || this.ditutup) return;
     try {
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ctx = new AC();
@@ -71,14 +79,14 @@ export class SuaraGame {
       master.gain.value = 0.8;
       master.connect(ctx.destination);
       this.efekBus = ctx.createGain();
-      this.efekBus.gain.value = peng.efek ? 1 : 0;
+      this.efekBus.gain.value = this.peng.efek ? 1 : 0;
       this.efekBus.connect(master);
       this.musikBus = ctx.createGain();
       this.musikBus.gain.value = 0;
       this.musikBus.connect(master);
       this.ctx = ctx;
       this.nextT = ctx.currentTime + 0.1;
-      this.timer = setInterval(() => this.jadwal(), 80);
+      this.terapkanBus();
     } catch {
       this.ctx = null;
     }
@@ -88,8 +96,9 @@ export class SuaraGame {
     return { ...this.peng };
   }
 
-  /** Peramban menahan suara sampai ada sentuhan/tombol: panggil dari penanganan penunjuk/papan ketik. */
+  /** Membuat (pertama kali) dan menyalakan konteks audio. WAJIB dipanggil dari gestur pengguna (pointerdown/keydown): peramban menolak suara sebelum itu. */
   buka(): void {
+    this.buatKonteks();
     if (this.ctx && this.ctx.state === "suspended") void this.ctx.resume().catch(() => undefined);
   }
 
@@ -119,6 +128,7 @@ export class SuaraGame {
   }
 
   tutup(): void {
+    this.ditutup = true;
     clearInterval(this.timer);
     try {
       this.mesinNode?.osc.stop();
@@ -186,6 +196,25 @@ export class SuaraGame {
     src.connect(f).connect(g).connect(bus);
     src.start(t);
     src.stop(t + dur + 0.02);
+  }
+
+  /**
+   * Efek "godly" (takhta Istana): dengung rendah yang mengembang, paduan nada panjang berkilau (akor C mayor 9 dengan lapisan
+   * sedikit sumbang seperti paduan suara), lalu denting lonceng menanjak dan desir tinggi. Dipanggil dari gestur pengguna.
+   */
+  godly(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const c = ctx.currentTime;
+    this.nada(65.4, 3.4, { vol: 0.18, atk: 0.9 });
+    this.nada(130.8, 3.2, { tipe: "triangle", vol: 0.07, atk: 0.8, filter: 900 });
+    [261.6, 329.6, 392, 493.9, 587.3].forEach((f, i) => this.nada(f, 3, { vol: 0.07, atk: 0.5 + i * 0.08, at: c + 0.05 * i }));
+    [523.3, 659.3, 784].forEach((f) => this.nada(f * 1.004, 2.8, { tipe: "triangle", vol: 0.035, atk: 0.7, at: c + 0.2 }));
+    [1046.5, 1318.5, 1568, 2093, 2637].forEach((f, i) => {
+      this.nada(f, 1.5, { vol: 0.075 - i * 0.008, atk: 0.004, at: c + 0.35 + i * 0.13 });
+      this.nada(f * 2.76, 0.5, { vol: 0.014, atk: 0.003, at: c + 0.35 + i * 0.13 });
+    });
+    this.derau(1.8, 0.03, 6500, { at: c + 0.3, tipeF: "highpass" });
   }
 
   // ── efek Bola Gabung ────────────────────────────────────────────────────
@@ -333,10 +362,11 @@ export class SuaraGame {
       return;
     }
     if (this.nextT < ctx.currentTime - 0.2) this.nextT = ctx.currentTime + 0.05;
-    const dt = this.gaya === "bola" ? 60 / 88 / 2 : this.gaya === "lari" ? 60 / 142 / 2 : 60 / 126 / 2;
+    const dt = this.gaya === "bola" ? 60 / 88 / 2 : this.gaya === "lari" ? 60 / 142 / 2 : this.gaya === "syrobo" ? 60 / 80 / 2 : 60 / 126 / 2;
     while (this.nextT < ctx.currentTime + 0.3) {
       if (this.gaya === "bola") this.langkahBola(this.nextT, this.langkah);
       else if (this.gaya === "lari") this.langkahLariMusik(this.nextT, this.langkah);
+      else if (this.gaya === "syrobo") this.langkahSyroboMusik(this.nextT, this.langkah);
       else this.langkahTanjakan(this.nextT, this.langkah);
       this.langkah++;
       this.nextT += dt;
@@ -360,6 +390,50 @@ export class SuaraGame {
       this.nada(midi(m), 0.5, { bus: "musik", tipe: "sine", vol: 0.075, at: t });
       this.nada(midi(m + 12), 0.18, { bus: "musik", tipe: "triangle", vol: 0.025, at: t });
     }
+  }
+
+  /**
+   * Halaman SyRobo: lo-fi bossa santai yang tetap ceria (80 bpm, delapan-per-birama dengan swing). Progresi jazzy Cmaj7 - Am7 - Dm7 - G7:
+   * piano listrik hangat (akor panjang di ketukan 1 + dua colekan pendek di sela), bass triangle membulat, kick sangat lembut, sapuan
+   * kuas di ketukan 2 & 4, hi-hat tipis, dan melodi kalimba yang berjalan acak di tangga nada pentatonik dengan banyak jeda dan
+   * sesekali not hias, sehingga terdengar dimainkan manusia dan tidak melelahkan.
+   */
+  private idxMelodi = 3;
+  private langkahSyroboMusik(t: number, i: number): void {
+    const bar = Math.floor(i / 8) % 4;
+    const akar = [48, 45, 50, 43][bar];
+    const sifat = [[0, 4, 7, 11], [0, 3, 7, 10], [0, 3, 7, 10], [0, 4, 7, 10]][bar];
+    const s = i % 8;
+    const at = t + (s % 2 ? 0.045 : 0);
+    // bass membulat
+    if (s === 0) this.nada(midi(akar), 0.7, { bus: "musik", tipe: "triangle", vol: 0.17, atk: 0.012, filter: 700, at });
+    if (s === 4) this.nada(midi(akar + 7), 0.45, { bus: "musik", tipe: "triangle", vol: 0.12, atk: 0.012, filter: 700, at });
+    if (s === 7 && bar % 2) this.nada(midi(akar + 12), 0.2, { bus: "musik", tipe: "triangle", vol: 0.07, filter: 700, at });
+    // piano listrik: akor panjang lalu colekan pendek
+    const rhodes = (durasi: number, vol: number, jeda = 0) =>
+      sifat.forEach((x, k) => {
+        const m = akar + 24 + x - (k === 3 ? 12 : 0);
+        this.nada(midi(m), durasi, { bus: "musik", tipe: "sine", vol, atk: 0.018, at: at + jeda + k * 0.014 });
+        this.nada(midi(m + 12), durasi * 0.5, { bus: "musik", tipe: "triangle", vol: vol * 0.28, at: at + jeda + k * 0.014 });
+      });
+    if (s === 0) rhodes(1.5, 0.05);
+    if (s === 3) rhodes(0.4, 0.034);
+    if (s === 6) rhodes(0.35, 0.03);
+    // kick sangat lembut, sapuan kuas, hi-hat tipis
+    if (s === 0 || s === 4) this.nada(100, 0.14, { bus: "musik", vol: 0.1, luncur: 0.35, at: t });
+    if (s === 2 || s === 6) this.derau(0.14, 0.05, 3200, { bus: "musik", tipeF: "bandpass", at });
+    if (s % 2 === 1) this.derau(0.035, 0.022, 8500, { bus: "musik", tipeF: "highpass", at });
+    // melodi kalimba: jalan acak di tangga nada pentatonik, banyak jeda, sesekali not hias
+    const tangga = [0, 2, 4, 7, 9, 12, 14, 16];
+    if ((s === 1 || s === 2 || s === 4 || s === 5 || s === 7) && Math.random() < 0.58) {
+      this.idxMelodi = Math.max(0, Math.min(tangga.length - 1, this.idxMelodi + (Math.random() < 0.5 ? -1 : 1) * (Math.random() < 0.3 ? 2 : 1)));
+      const m = akar + 24 + tangga[this.idxMelodi];
+      this.nada(midi(m), 0.55, { bus: "musik", tipe: "sine", vol: 0.075, atk: 0.004, at });
+      this.nada(midi(m + 19), 0.16, { bus: "musik", tipe: "sine", vol: 0.018, at });
+      if (Math.random() < 0.14) this.nada(midi(m + 2), 0.18, { bus: "musik", tipe: "sine", vol: 0.04, at: at - 0.09 });
+    }
+    // akhir frasa: kilau lembut menaik
+    if (bar === 3 && s === 7 && Math.random() < 0.6) [0, 2, 4].forEach((k, n) => this.nada(midi(akar + 48 + tangga[k]), 0.3, { bus: "musik", tipe: "sine", vol: 0.03, at: at + n * 0.07 }));
   }
 
   /** Lari Robo: kick tiap ketukan, hi-hat di sela, bass melompat, melodi pentatonik yang berubah tiap birama. */

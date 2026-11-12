@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
 import { TINTA } from "./IkonSyrobo";
 import { PakaianBadan, PakaianBelakang, PakaianKepala } from "./PakaianRobot";
 import EfekDewa from "./EfekDewa";
+import WajahRobot, { type Ekspresi } from "./WajahRobot";
 import { AMBANG_LELAH, AMBANG_TIDUR, cariPakaian, UKURAN_BAWAAN, type MakananDewaId, type PakaianId, type Suasana } from "@/lib/syrobo/syroboRules";
 
 /**
@@ -27,7 +28,7 @@ export interface ReaksiRobot {
   n: number;
 }
 
-const UCAP: Record<Suasana | "elus" | "angkat" | "gelap" | "lelah" | "tidur", readonly string[]> = {
+const UCAP: Record<Suasana | "elus" | "angkat" | "gelap" | "lelah" | "tidur" | "marah" | "elusTidur", readonly string[]> = {
   senang: ["Halo! Senangnya ketemu kamu.", "Hehe, geli!", "Ayo belajar bareng!", "Aku siap!"],
   lapar: ["Perutku bunyi... kruyuk.", "Aku lapar, ada makanan?", "Beri aku makan dong..."],
   kotor: ["Aku bau nih, mandiin dong.", "Badanku kotor...", "Ayo mandi!"],
@@ -37,6 +38,9 @@ const UCAP: Record<Suasana | "elus" | "angkat" | "gelap" | "lelah" | "tidur", re
   gelap: ["Zzz... gelap ya.", "Hoaam, ngantuk...", "Nyalakan lampunya dong."],
   lelah: ["Aku kelelahan... matikan lampu ya, aku mau tidur.", "Capek... boleh tidur dulu?", "Hatiku redup, aku perlu istirahat."],
   tidur: ["Zzz... biarkan aku tidur sebentar.", "Mmm... energiku lagi diisi.", "Zzz..."],
+  // Diganggu saat tidur: dielus = tetap lelap dan senang; diangkat = marah.
+  elusTidur: ["Mmm... nyaman... zzz...", "Hehe... zzz... lagi...", "Zzz... enak..."],
+  marah: ["Hoi! Aku lagi tidur!", "Grrr... turunkan aku!", "Jangan ganggu, ngantuk nih!"],
 };
 
 const acak = <T,>(a: readonly T[]) => a[Math.floor(Math.random() * a.length)];
@@ -55,7 +59,6 @@ const PX_PER_FASE = 9.5;
 const KULIT = "#F6F0E2";
 const PLAT = "#8FBCD6";
 const LAYAR = "#2B3350";
-const MATA = "#BFE7F5";
 const GARIS = { stroke: TINTA, strokeWidth: 3.5, strokeLinejoin: "round", strokeLinecap: "round" } as const;
 
 export default function SyroboRobot({
@@ -71,6 +74,7 @@ export default function SyroboRobot({
   mati = false,
   energi = 100,
   emas = false,
+  cahaya = false,
   dewa = null,
   ledakDewa = null,
   onMati,
@@ -95,6 +99,8 @@ export default function SyroboRobot({
   energi?: number;
   /** Cheat: robot berwarna EMAS (logam emas bergradasi + kilau + aura). */
   emas?: boolean;
+  /** Cahaya sesaat di sekeliling robot memakai efek yang sama dengan makanan dewa Ambrosia (aura + cincin + partikel emas), tanpa mengubah warna robot. */
+  cahaya?: boolean;
   /** Aura makanan dewa yang masih menyala (selama kenyang beku) dan ledakan sesaat saat baru dimakan (`n` berganti tiap makan). */
   dewa?: MakananDewaId | null;
   ledakDewa?: { id: MakananDewaId; n: number } | null;
@@ -507,7 +513,7 @@ export default function SyroboRobot({
       p.tr = 0;
       document.documentElement.style.overscrollBehavior = "none";
       setAksiRef("angkat");
-      bicara(acak(UCAP.angkat));
+      bicara(acak(gelap ? UCAP.marah : UCAP.angkat));
     }, 350);
     sentuh.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, px0: 0, py0: 0, t0: performance.now(), lama, angkat: false, gerak: false };
   }
@@ -573,7 +579,7 @@ export default function SyroboRobot({
       j.balik = 0;
       j.hatiT = nowT;
       setAksiSementara("elus", 1100);
-      bicara(acak(UCAP.elus));
+      bicara(acak(gelap ? UCAP.elusTidur : UCAP.elus));
       semburHati();
     }
   }
@@ -609,7 +615,11 @@ export default function SyroboRobot({
   const angkat = aksi === "angkat";
   const senang = aksi === "elus" || aksi === "mandi";
   const makan = aksi === "makan";
-  const ngantuk = gelap && !mati && !angkat && !senang && !makan;
+  // Tidur (lampu padam): tetap terpejam walau dielus (jadi tidur BAHAGIA: senyum, pipi merona, hati melayang), tetapi diangkat = MARAH
+  // (alis menukik, pipi merah, uap di kepala, gemetar).
+  const ngantuk = gelap && !mati && !angkat && !makan;
+  const marahTidur = gelap && !mati && angkat;
+  const senangTidur = gelap && !mati && !angkat && senang;
   const kulit = emas ? `url(#${klip}-e1)` : KULIT;
   const plat = emas ? `url(#${klip}-e2)` : PLAT;
   const lelah = energi < AMBANG_LELAH;
@@ -620,6 +630,32 @@ export default function SyroboRobot({
   // selain itu menyala mantap tanpa berdenyut. Selagi tidur ia mantap dan terang kembali seiring energi pulih.
   const frak = Math.min(1, Math.max(0, (energi - AMBANG_TIDUR) / (100 - AMBANG_TIDUR)));
   const opasitasHati = butuhTidur ? 0.14 + (energi / AMBANG_TIDUR) * 0.12 : 0.3 + 0.7 * Math.pow(frak, 0.75);
+  // Pemilihan ekspresi (urutan = prioritas): mati, tidur (marah/bahagia/lelap), makan, kaget (diangkat), senang (dielus/mandi), lelah, lapar+kotor, lapar, kotor.
+  const ekspresi: Ekspresi = mati
+    ? "mati"
+    : marahTidur
+      ? "tidurMarah"
+      : ngantuk
+        ? senangTidur
+          ? "tidurSenang"
+          : "tidur"
+        : makan
+          ? "makan"
+          : angkat
+            ? "kaget"
+            : senang
+              ? aksi === "mandi"
+                ? "mandi"
+                : "senang"
+              : sayu
+                ? "sayu"
+                : lapar && kotor
+                  ? "laparKotor"
+                  : lapar
+                    ? "lapar"
+                    : kotor
+                      ? "kotor"
+                      : "normal";
 
   return (
     <>
@@ -640,6 +676,7 @@ export default function SyroboRobot({
       className={cn("pointer-events-auto relative mx-auto w-[min(40vw,22dvh)] touch-none select-none [-webkit-touch-callout:none] will-change-transform sm:w-[min(46vw,26dvh,260px)]", mati ? "cursor-pointer" : "cursor-grab active:cursor-grabbing", className)}
     >
       {emas && <span aria-hidden="true" className="emas-aura" />}
+      {cahaya && <EfekDewa key="cahaya-takhta" id="ambrosia" kuat />}
       {dewa && !(ledakDewa && ledakDewa.id === dewa) && <EfekDewa id={dewa} />}
       {ledakDewa && <EfekDewa key={ledakDewa.n} id={ledakDewa.id} kuat />}
 
@@ -702,7 +739,7 @@ export default function SyroboRobot({
         <div ref={gerakEl} style={{ transformOrigin: "50% 100%" }}>
         <svg
           viewBox="0 0 200 240"
-          className={cn("block h-auto w-full overflow-visible", aksi === "ketuk" && "syrobo-hop", aksi === "mandi" && "syrobo-goyang", !mati && aksi === "diam" && !berjalan && "syrobo-napas")}
+          className={cn("block h-auto w-full overflow-visible", aksi === "ketuk" && "syrobo-hop", aksi === "mandi" && "syrobo-goyang", marahTidur && "syrobo-marah", !mati && aksi === "diam" && !berjalan && "syrobo-napas")}
           fill="none"
           role="img"
           aria-label={mati ? "Robot SyRobo (mati). Ketuk untuk masuk" : `Robot SyRobo, suasana ${suasana}`}
@@ -777,63 +814,8 @@ export default function SyroboRobot({
           <path d="M66 38c-18 0-27 8-27 26v46c0 17 9 26 27 26h68c18 0 27-9 27-26V64c0-18-9-26-27-26z" fill={kulit} />
           <path d="M56 58c-1 0-2 1-2 2v52c0 2 2 4 4 4h84c2 0 4-2 4-4V60c0-1-1-2-2-2z" fill={LAYAR} />
 
-          {/* pipi */}
-          <g fill="#F28C8C" strokeWidth={0} opacity={mati ? 0.2 : senang ? 0.85 : 0.5}>
-            <ellipse cx="67" cy="100" rx="8" ry="4.5" />
-            <ellipse cx="133" cy="100" rx="8" ry="4.5" />
-          </g>
-
-          {/* mata */}
-          <g ref={mata} style={{ transition: "transform 180ms cubic-bezier(0.22,1,0.36,1)" }}>
-            {mati ? (
-              <g stroke="#55607A" strokeWidth={4}>
-                <path d="M70 84h18M112 84h18" />
-              </g>
-            ) : senang ? (
-              <g stroke={MATA} strokeWidth={5}>
-                <path d="M68 86q11 -14 22 0" />
-                <path d="M110 86q11 -14 22 0" />
-              </g>
-            ) : ngantuk ? (
-              <g stroke={MATA} strokeWidth={5}>
-                <path d="M68 84q11 7 22 0" />
-                <path d="M110 84q11 7 22 0" />
-              </g>
-            ) : sayu ? (
-              <g strokeWidth={0}>
-                <ellipse cx="79" cy="86" rx="9" ry="5.500" fill={MATA} />
-                <ellipse cx="121" cy="86" rx="9" ry="5.500" fill={MATA} />
-                {/* kelopak berat menutupi separuh atas mata */}
-                <path d="M68 80h22v6c-5-2-17-2-22 0z" fill={LAYAR} />
-                <path d="M110 80h22v6c-5-2-17-2-22 0z" fill={LAYAR} />
-              </g>
-            ) : (
-              <g className={cn(!angkat && !lapar && "syrobo-mata")} strokeWidth={0}>
-                <ellipse cx="79" cy="82" rx="9" ry={angkat ? 14 : lapar ? 5 : 11} fill={MATA} />
-                <ellipse cx="121" cy="82" rx="9" ry={angkat ? 14 : lapar ? 5 : 11} fill={MATA} />
-                {!lapar && (
-                  <>
-                    <circle cx="82" cy={angkat ? 77 : 78} r="3" fill="#fff" />
-                    <circle cx="124" cy={angkat ? 77 : 78} r="3" fill="#fff" />
-                  </>
-                )}
-              </g>
-            )}
-          </g>
-          {/* mulut */}
-          {mati ? null : makan ? (
-            <ellipse cx="100" cy="104" rx="10" ry="8" fill={MATA} strokeWidth={0} className="syrobo-kunyah" />
-          ) : angkat ? (
-            <ellipse cx="100" cy="106" rx="7" ry="8" fill={MATA} strokeWidth={0} />
-          ) : ngantuk ? (
-            <path d="M92 106h16" stroke={MATA} strokeWidth={4} />
-          ) : sayu ? (
-            <path d="M91 107q9 -3 18 0" stroke={MATA} strokeWidth={4} />
-          ) : lapar || kotor ? (
-            <path d="M86 108q14 -12 28 0" stroke={MATA} strokeWidth={4} />
-          ) : (
-            <path d="M86 100q14 14 28 0" stroke={MATA} strokeWidth={4} />
-          )}
+          {/* wajah: tiap perasaan punya mata, alis, mulut, dan pipinya sendiri (WajahRobot.tsx) */}
+          <WajahRobot ekspresi={ekspresi} mataRef={mata} uid={klip} berkedip={!angkat && (ekspresi === "normal" || ekspresi === "kotor")} />
           {lapar && !makan && !mati && <AirLiur x={115} y={108} s={1.25} garis="#2B2233" />}
 
           {/* kotor: noda lumpur, bau, dan lalat (hilang saat mandi) */}
@@ -861,6 +843,14 @@ export default function SyroboRobot({
               ].map(([x, y, t], i) => (
                 <path key={i} className="emas-kilau" style={{ animationDelay: `${t}s` }} d={`M${x} ${y - 8}L${x + 2} ${y - 2}L${x + 8} ${y}L${x + 2} ${y + 2}L${x} ${y + 8}L${x - 2} ${y + 2}L${x - 8} ${y}L${x - 2} ${y - 2}Z`} />
               ))}
+            </g>
+          )}
+
+          {marahTidur && (
+            <g strokeWidth={0} fill="#fff">
+              <circle className="syrobo-uap" cx="46" cy="52" r="7" />
+              <circle className="syrobo-uap" style={{ animationDelay: "0.3s" }} cx="154" cy="52" r="7" />
+              <circle className="syrobo-uap" style={{ animationDelay: "0.6s" }} cx="100" cy="30" r="6" />
             </g>
           )}
 

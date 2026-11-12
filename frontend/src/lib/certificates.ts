@@ -6,6 +6,7 @@ import { enrollmentRef, type Enrollment } from "@/lib/enrollments";
 import { gradingStateOf, listStudentSubmissions } from "@/lib/submissions";
 import type { SessionUser } from "@/lib/firebase/session";
 import { CROCKFORD } from "@/lib/inviteCode";
+import { hadiahKursusSelesai } from "@/lib/syrobo/syroboCore";
 
 export interface Certificate {
   id: string;
@@ -165,5 +166,15 @@ export async function issueCertificateIfComplete(
     });
     tx.update(eRef, { certificateId: id, status: "completed", completedAt: now });
     return id;
+  }).then(async (baru) => {
+    // Kursus tuntas = sertifikat TERBIT baru: hadiah poin bintang SyRobo, sekali per kursus. Gagal tak boleh menggagalkan sertifikat.
+    if (baru) {
+      try {
+        await hadiahKursusSelesai(adminDb(), user.uid, course.slug);
+      } catch (e) {
+        console.error("hadiah kursus selesai SyRobo gagal", e);
+      }
+    }
+    return baru;
   });
 }
