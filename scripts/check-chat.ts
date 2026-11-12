@@ -19,9 +19,9 @@ const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 // Harus sama dengan CHAT_MODELS di frontend/src/lib/openrouter.ts — kalau
 // berbeda, skrip ini menguji jalur yang tidak dipakai aplikasi.
 const CHAT_MODELS = [
-  "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "nvidia/nemotron-3.5-super-vl:free",
+  "dots-studio/dots-3-note-preview:free",
   "google/gemma-4-26b-a4b-it:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
 ];
 const MAX_ATTEMPTS = 2;
 

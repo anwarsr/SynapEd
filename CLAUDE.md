@@ -620,6 +620,18 @@ manual (menumpuk), bagi hasil sesuai pemakaian, akses berhenti tetapi kemajuan t
   (diverifikasi 16 Sept 2026 pada `inclusionai/ling-3.0-flash-vl:free`, dkk).
   Model lain bahkan menolak permintaan sama sekali kalau reasoning dimatikan
   (`openai/gpt-oss-20b:free` → "Reasoning is mandatory").
+- **Rantai model (diverifikasi ulang 12 Nov 2026, detail di komentar `openrouter.ts`)**:
+  `CHAT_MODELS` = nemotron-3.5-super-vl → dots-3-note-preview → gemma-4-26b; `VISION_MODELS` =
+  dots-3-note-preview → gemma-4-26b (super-vl membaca gambar tapi selalu memberi nilai 0). Rantai
+  lama mati: nemotron-3-ultra:free membalas kosong/acak SAMBIL "sukses" (OpenRouter tidak pindah ke
+  cadangan) → setiap koreksi gagal "AI tidak memberi jawaban yang bisa dibaca"; super-120b, nex-n2.5,
+  ling-3.0 tidak gratis lagi. Verifikasi model penilai WAJIB memakai jawaban yang SENGAJA salah
+  (nemotron-3.5-lightning memberi 100 untuk jawaban salah). Daftar di `scripts/check-chat.ts` harus
+  sama dengan `CHAT_MODELS`.
+- **`openRouterJawab(messages, opts, terima)`** (dipakai `suggestGrade` & `suggestClassGrade`):
+  balasan yang ditolak `terima` (tak lolos `parseGradingResponse`) dicoba ulang mulai dari model
+  BERIKUTNYA di rantai; 429 di model selain terakhir juga lanjut ke berikutnya. Chat tetap
+  streaming biasa (`openRouterStream`).
 - Model `:free` dilayani dari **kolam bersama** seluruh pengguna OpenRouter — 429
   `upstream_provider_shared_pool` itu antrean sesaat (retry), BUKAN jatah kita habis
   (jangan retry, tunggu besok). `readRateLimit()` membedakan keduanya.
@@ -1478,11 +1490,13 @@ materi array terbuka.
 - `verify-model3d` (butuh dev server) menulis GLB uji langsung ke bucket (melewati rules, jadi TIDAK menguji `storage.rules`) lalu membersihkannya.
 - `verify-premium` (dev server) menyalin & memulihkan `settings/payments` PERSIS, membuat kode referral & kursus uji, lalu menghapus semua dokumen premium/pesanan/pendapatan akun uji.
 - `verify-syrobo` tanpa dev server tetapi memakai Firestore asli (uid uji dihapus lagi).
-- `verify-class-assignment` "jawaban terbaca diteruskan ke AI": kini `.env.local` BERISI
-  `OPENROUTER_API_KEY`, jadi AI sungguhan dipanggil - per 11 Nov 2026 model gratis membalas
-  KOSONG/acak ("AI tidak memberi jawaban yang bisa dibaca"), sama persis dengan kode sebelum
-  pembaca berkas baru (diuji dengan versi git). Itu masalah model gratis di rantai OpenRouter,
-  bukan pembaca berkas.
+- `verify-class-assignment` "jawaban terbaca diteruskan ke AI": `.env.local` kini BERISI
+  `OPENROUTER_API_KEY`, jadi AI sungguhan dipanggil (merah 11-12 Nov 2026 karena rantai model lama
+  mati, hijau setelah rantai diganti - lihat "Asisten AI"). Jawaban uji siswanya teks acak, jadi
+  nilai 0 + "belum menyertakan jawaban" adalah penilaian yang BENAR.
+- Dev server yang pekerjanya mogok (log `.next/dev/logs/next-development.log`: "Jest worker
+  encountered 2 child process exceptions", "write EPIPE") menggagalkan suite di tengah jalan;
+  setelah dimatikan, `.next/dev` harus dihapus juga (manifest basi → "Server action not found").
 - Suite murni tanpa server: `verify-berkas-ai`, `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).

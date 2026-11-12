@@ -22,23 +22,28 @@ const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
  * harian kita masih utuh. Dengan parameter `models`, OpenRouter otomatis
  * berpindah ke model berikutnya saat yang pertama penuh.
  *
- * Utama: nemotron-3-ultra-550b — model reasoning 550B terbesar di tingkat
- * gratis OpenRouter, kualitas jawaban terbaik tapi lambat (~6-11 detik ke
- * jawaban, teruji langsung). Cadangan: dua model yang lebih kecil & lebih
- * cepat (~2-7 detik), dipertahankan supaya asisten tetap responsif kalau
- * model utama sedang penuh/lambat.
+ * DIVERIFIKASI ULANG 12 Nov 2026 dengan panggilan nyata (soal penilaian
+ * berformat GRADE/FEEDBACK, termasuk jawaban yang SENGAJA salah):
+ * - nemotron-3.5-super-vl: format benar, Bahasa Indonesia, ±1 dtk, menurunkan
+ *   nilai jawaban salah (50).
+ * - dots-3-note-preview: sama baiknya, ±1,3 dtk.
+ * - gemma-4-26b-a4b-it: terverifikasi sebelumnya; sering antre (429) sehingga
+ *   ditaruh terakhir - antrean membuat OpenRouter melompat ke model lain.
  *
- * Ketiganya sudah DIVERIFIKASI: menerima `reasoning: {enabled:false}` dan
- * menjawab Bahasa Indonesia dengan wajar. Jangan menambah model ke sini
- * tanpa mengeceknya — `openai/gpt-oss-20b:free`, misalnya, menolak
- * permintaan dengan "Reasoning is mandatory" dan mematahkan seluruh rantai.
+ * Rantai lama MATI pada tanggal itu: nemotron-3-ultra-550b:free membalas
+ * kosong/acak walau "sukses" (karena sukses, OpenRouter tidak pindah ke
+ * cadangan - inilah penyebab "AI tidak memberi jawaban yang bisa dibaca"),
+ * dan nemotron-3-super-120b:free tidak gratis lagi (404). Ditolak juga:
+ * nemotron-3.5-lightning (memberi 100 untuk jawaban salah), ernie-5.5-flash
+ * ("Reasoning is mandatory"), inkling-2-small (hanya untuk aplikasi agen).
  *
+ * Jangan menambah model ke sini tanpa mengeceknya dengan cara yang sama.
  * Batas keras OpenRouter: maksimal 3 entri.
  */
 export const CHAT_MODELS = [
-  "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "nvidia/nemotron-3.5-super-vl:free",
+  "dots-studio/dots-3-note-preview:free",
   "google/gemma-4-26b-a4b-it:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
 ] as const;
 
 /** Model utama — dipakai di pesan galat & dokumentasi. */
@@ -55,13 +60,16 @@ export const CHAT_MODEL = CHAT_MODELS[0];
  * `max_tokens` untuk "berpikir" dan `content` balasannya kosong
  * (`finish_reason: "length"`), persis masalah GLM 5.2 di CHAT_MODELS.
  *
- * gemma-4-26b-a4b-it dipakai lagi di sini (sudah ada di CHAT_MODELS) karena
- * ia juga menerima input gambar — dua lainnya murni cadangan vision.
+ * DIVERIFIKASI ULANG 12 Nov 2026: dikirimi foto jawaban "x = 7 + 5 = 12" dan
+ * soal "hitung 7 + 5". dots-3-note-preview membaca & menilainya benar (100)
+ * tiga kali berturut-turut. nemotron-3.5-super-vl SENGAJA tidak dipakai di
+ * sini: angkanya terbaca tetapi nilainya selalu 0. nex-n2.5-mini dan
+ * ling-3.0-flash-vl sudah tidak gratis lagi. gemma-4-26b-a4b-it (terverifikasi
+ * sebelumnya) tetap cadangan.
  */
 export const VISION_MODELS = [
+  "dots-studio/dots-3-note-preview:free",
   "google/gemma-4-26b-a4b-it:free",
-  "nex-agi/nex-n2.5-mini:free",
-  "inclusionai/ling-3.0-flash-vl:free",
 ] as const;
 
 /** Tanpa penalaran, 1500 sudah longgar untuk jawaban FAQ terpanjang. */
@@ -290,4 +298,39 @@ export async function openRouterStream(
   }
 
   throw lastError ?? new Error("OpenRouter tidak dapat dihubungi.");
+}
+
+/**
+ * Satu jawaban UTUH yang lolos `terima`, untuk pemakai non-streaming
+ * (penilaian AI).
+ *
+ * Perpindahan otomatis `models` OpenRouter hanya terjadi saat model GAGAL
+ * (antre, mati). Model yang "berhasil" tetapi membalas kosong atau acak tidak
+ * memicunya - itu yang terjadi 11-12 Nov 2026 dan membuat setiap koreksi gagal.
+ * Karena itu jawaban yang ditolak `terima` dicoba ulang mulai dari model
+ * BERIKUTNYA di rantai (paling banyak sepanjang rantai).
+ *
+ * @returns teks yang diterima, atau null bila semua model membalas tak terpakai.
+ *          Galat HTTP (termasuk 429 di model terakhir) tetap dilempar.
+ */
+export async function openRouterJawab(
+  messages: OpenRouterMessage[],
+  opts: OpenRouterStreamOptions,
+  terima: (teks: string) => boolean,
+): Promise<string | null> {
+  const models = opts.models ?? CHAT_MODELS;
+  for (let i = 0; i < models.length; i++) {
+    let teks = "";
+    try {
+      const stream = await openRouterStream(messages, { ...opts, models: models.slice(i) });
+      for await (const potongan of stream) teks += potongan;
+    } catch (e) {
+      // Antrean di model ini: model berikutnya mungkin lowong.
+      if (e instanceof OpenRouterError && e.status === 429 && i < models.length - 1) continue;
+      throw e;
+    }
+    if (terima(teks)) return teks;
+    console.error(`[openrouter] balasan tak terpakai dari rantai mulai ${models[i]}:`, teks.slice(0, 200));
+  }
+  return null;
 }
