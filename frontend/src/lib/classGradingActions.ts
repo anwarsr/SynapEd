@@ -21,7 +21,7 @@ import { buildClassGradingSystemPrompt, teksBagianJawaban, teksBagianSoal } from
 import { parseGradingResponse } from "@/lib/gradingPrompt";
 import {
   OpenRouterError,
-  openRouterStream,
+  openRouterJawab,
   openRouterTerkonfigurasi,
   PESAN_AI_BELUM_DIKONFIGURASI,
   VISION_MODELS,
@@ -153,10 +153,14 @@ export async function suggestClassGrade(
   // dilaporkan dengan alasannya, di server mana pun.
   if (!openRouterTerkonfigurasi()) return { ok: false, error: PESAN_AI_BELUM_DIKONFIGURASI };
 
-  let full = "";
+  // Balasan tak berformat dicoba ulang ke model berikutnya (openRouterJawab).
+  let full: string | null;
   try {
-    const stream = await openRouterStream(messages, adaGambar ? { models: VISION_MODELS, maxTokens: 2000 } : {});
-    for await (const chunk of stream) full += chunk;
+    full = await openRouterJawab(
+      messages,
+      adaGambar ? { models: VISION_MODELS, maxTokens: 2000 } : {},
+      (t) => parseGradingResponse(t, MAX_CLASS_FEEDBACK, p.maxPoints) !== null,
+    );
   } catch (e) {
     if (e instanceof OpenRouterError && e.status === 429) {
       return { ok: false, error: "Kuota harian AI sudah habis. Coba lagi besok, atau nilai secara manual." };
@@ -165,9 +169,9 @@ export async function suggestClassGrade(
     return { ok: false, error: "AI sedang tidak bisa dihubungi. Coba lagi nanti." };
   }
 
-  const parsed = parseGradingResponse(full, MAX_CLASS_FEEDBACK, p.maxPoints);
+  const parsed = full === null ? null : parseGradingResponse(full, MAX_CLASS_FEEDBACK, p.maxPoints);
   if (!parsed) {
-    console.error("[suggestClassGrade] Balasan AI tidak sesuai format:", full.slice(0, 300));
+    console.error("[suggestClassGrade] Semua model membalas tak sesuai format.");
     return { ok: false, error: "AI tidak memberi jawaban yang bisa dibaca. Coba lagi." };
   }
 
