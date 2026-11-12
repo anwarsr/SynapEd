@@ -548,7 +548,6 @@ export function Laut(p: LatarProps) {
             <ellipse cx="65" cy="106" rx="57" ry="4.6" {...BAYANG} />
             {terbuka && (
               <g key={`o-${peti}`}>
-                <polygon points="22,-34 108,-34 116,52 14,52" fill="#F6D060" fillOpacity="0.38" className="lt-sorot" style={{ filter: "blur(8px)" }} />
                 <path d="M22 54L30 8h70l8 46z" fill="url(#lt-l-beludru)" />
                 <path d="M18 56L28 4h74l10 52" fill="none" stroke="url(#lt-l-kayu)" strokeWidth="4.5" strokeLinejoin="round" />
                 <g className="lt-gundukan">

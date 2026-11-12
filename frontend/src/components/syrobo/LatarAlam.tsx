@@ -372,7 +372,7 @@ export function Pantai(p: LatarProps) {
         </div>
       ))}
       {/* pohon kelapa: batang meruncing berbuku, pelepah berbilah menjuntai */}
-      <div className="pointer-events-none absolute z-[1] w-[clamp(130px,16vw,215px)]" style={{ left: "16%", bottom: "34%" }}>
+      <div className="pointer-events-none absolute left-[16%] z-[1] w-[clamp(130px,16vw,215px)] max-sm:left-[30%] max-sm:w-[50vw]" style={{ bottom: "34%" }}>
         <svg viewBox="-10 -70 240 380" className="block w-full overflow-visible">
           <ellipse cx="98" cy="302" rx="44" ry="7" fill="#3A2A18" fillOpacity="0.28" style={{ filter: "blur(4px)" }} />
           <path d="M86 300C88 224 98 150 106 72L120 72C112 150 108 224 112 300Z" fill="url(#lt-p-batang)" stroke="#5A3A22" strokeWidth="1" strokeLinejoin="round" />
@@ -418,7 +418,7 @@ export function Pantai(p: LatarProps) {
         <polygon points="40,10 192,10 218,70 12,70" fill="url(#lt-p-kanopi)" fillOpacity="0.4" />
       </svg>
       {/* payung pantai di barisan depan, DI ATAS robot (robot berjalan di belakangnya); bayangan simetris di pusat tiang */}
-      <div className="pointer-events-none absolute z-[12] w-[clamp(150px,20vw,260px)]" style={{ right: "9%", bottom: "13%" }}>
+      <div className="pointer-events-none absolute z-[12] w-[clamp(150px,20vw,260px)] max-sm:w-[58vw]" style={{ right: "9%", bottom: "13%" }}>
         <svg viewBox="0 0 200 250" className="pointer-events-none block w-full overflow-visible">
           <ellipse cx="100" cy="240" rx="62" ry="9" fill="#5A3A18" fillOpacity="0.3" style={{ filter: "blur(5px)" }} />
           <ellipse cx="100" cy="239" rx="22" ry="4" fill="#5A3A18" fillOpacity="0.4" style={{ filter: "blur(2px)" }} />
