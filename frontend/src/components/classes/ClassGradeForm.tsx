@@ -5,6 +5,7 @@ import { gradeClassSubmission } from "@/lib/classAssignmentActions";
 import { suggestClassGrade } from "@/lib/classGradingActions";
 import { MAX_CLASS_FEEDBACK } from "@/lib/classAssignmentRules";
 import { cn } from "@/lib/cn";
+import { useNilaiBerikutnya } from "@/components/classes/DaftarPengumpulan";
 
 const KOLOM = cn(
   "w-full bg-white/[0.06] px-4 py-2.5 text-sm text-ink transition-colors duration-200",
@@ -42,6 +43,7 @@ export default function ClassGradeForm({
   aiIsiKomentar: boolean;
 }) {
   const router = useRouter();
+  const lanjut = useNilaiBerikutnya();
   const [nilai, setNilai] = useState(grade === null ? "" : String(grade));
   const [catatan, setCatatan] = useState(feedback ?? "");
   const [pending, startTransition] = useTransition();
@@ -191,6 +193,26 @@ export default function ClassGradeForm({
           {pesan.teks}
         </p>
       )}
+
+      {/* Setelah tersimpan: langsung ke siswa berikutnya yang perlu dinilai, tanpa menggulir mencari. */}
+      {pesan?.ok && lanjut && <TombolBerikutnya uid={studentUid} lanjut={lanjut} />}
     </form>
+  );
+}
+
+function TombolBerikutnya({ uid, lanjut }: { uid: string; lanjut: NonNullable<ReturnType<typeof useNilaiBerikutnya>> }) {
+  const nama = lanjut.namaBerikutnya(uid);
+  if (!nama) return <p className="mt-3 text-sm text-ink-muted">Semua pengumpulan sudah dinilai.</p>;
+  return (
+    <button
+      type="button"
+      onClick={() => lanjut.bukaBerikutnya(uid)}
+      className="group mt-3 inline-flex max-w-full items-center gap-2 bg-white/[0.06] px-4 py-2.5 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-white/[0.1]"
+    >
+      <span className="truncate">Nilai berikutnya: {nama}</span>
+      <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1">
+        →
+      </span>
+    </button>
   );
 }

@@ -6,18 +6,12 @@ import AiGradingSettings from "@/components/classes/AiGradingSettings";
 import ClassGradeForm from "@/components/classes/ClassGradeForm";
 import DeleteButton from "@/components/classes/DeleteButton";
 import Lampiran, { hrefJawaban } from "@/components/classes/Lampiran";
-import Tag from "@/components/ui/Tag";
-import UserAvatar from "@/components/ui/UserAvatar";
+import DaftarPengumpulan from "@/components/classes/DaftarPengumpulan";
 import { getPost, listClassMembers } from "@/lib/classes";
 import { requireOwnedClass } from "@/lib/classGuards";
 import { getPengaturanAi, jamServer, listPostSubmissions } from "@/lib/classAssignments";
-import {
-  LABEL_STATUS,
-  formatWib,
-  statusTugas,
-  type KelasSubmission,
-  type StatusTugas,
-} from "@/lib/classAssignmentRules";
+import { formatWib, formatWibPendek, statusTugas, type KelasSubmission } from "@/lib/classAssignmentRules";
+import { statistikNilai, type BarisPengumpulan } from "@/lib/pengumpulanTugas";
 import { getUserCards } from "@/lib/userCards";
 import { requireUser } from "@/lib/firebase/session";
 import type { Metadata } from "next";
@@ -29,15 +23,6 @@ interface Props {
 export const metadata: Metadata = { title: "Tugas – SynapEd" };
 
 export const dynamic = "force-dynamic";
-
-/** Urutan baris: yang perlu dinilai paling atas, yang belum mengumpulkan paling bawah. */
-const URUTAN: Record<StatusTugas, number> = {
-  terlambat: 0,
-  dikumpulkan: 0,
-  dinilai: 1,
-  terlewat: 2,
-  belum: 2,
-};
 
 /**
  * Halaman satu tugas dari sisi pengelola: instruksi, pengaturan tenggat, dan
@@ -73,22 +58,55 @@ export default async function TugasPengajarPage({ params }: Props) {
   const kartu = await getUserCards([post.authorUid, ...uids]);
   const saat = jamServer();
 
-  const baris = uids
-    .map((uid) => {
-      const sub = perUid.get(uid) ?? null;
-      return {
-        uid,
-        sub,
-        nama: kartu.get(uid)?.name ?? "Peserta",
-        foto: kartu.get(uid)?.photoURL ?? null,
-        status: statusTugas(sub, p, saat),
-        keluar: !uidAnggota.has(uid),
-      };
-    })
-    .sort((a, b) => URUTAN[a.status] - URUTAN[b.status] || a.nama.localeCompare(b.nama, "id"));
+  // Tanggal diformat DI SERVER (WIB): Intl Node vs peramban bisa berbeda tanda baca.
+  const baris: BarisPengumpulan[] = uids.map((uid) => {
+    const sub = perUid.get(uid) ?? null;
+    return {
+      uid,
+      nama: kartu.get(uid)?.name ?? "Peserta",
+      foto: kartu.get(uid)?.photoURL ?? null,
+      status: statusTugas(sub, p, saat),
+      keluar: !uidAnggota.has(uid),
+      dikirimIso: sub?.submittedAt ?? null,
+      dikirimTeks: sub ? formatWibPendek(sub.submittedAt) : null,
+      dikirimLengkap: sub ? formatWib(sub.submittedAt) : null,
+      terlambat: sub?.late === true,
+      nilai: sub?.status === "graded" ? sub.grade : null,
+    };
+  });
+
+  // Isi baris yang dibuka: jawaban + formulir nilai, dirender di server.
+  const detail: Record<string, React.ReactNode> = {};
+  for (const s of subs) {
+    detail[s.uid] = (
+      <>
+        {s.text && (
+          <p className="max-h-96 overflow-y-auto whitespace-pre-line break-words bg-white/[0.06] px-4 py-3 text-sm leading-[1.7] text-ink-body">
+            {s.text}
+          </p>
+        )}
+        <Lampiran files={s.files} hrefs={s.files.map((_, i) => hrefJawaban(s.id, i))} className={s.text ? "mt-3" : ""} />
+        {!s.text && s.files.length === 0 && <p className="text-sm text-ink-muted">Kiriman kosong.</p>}
+        <ClassGradeForm
+          classId={id}
+          postId={postId}
+          studentUid={s.uid}
+          maxPoints={p.maxPoints}
+          grade={s.grade}
+          feedback={s.feedback}
+          aiIsiKomentar={ai.fillComment}
+        />
+      </>
+    );
+  }
 
   const terkumpul = subs.length;
   const dinilai = subs.filter((s) => s.status === "graded").length;
+  const statistik = statistikNilai(
+    subs.flatMap((s) => (s.status === "graded" && s.grade !== null ? [s.grade] : [])),
+    p.maxPoints,
+  );
+  const sebaranMaks = Math.max(1, ...(statistik?.sebaran.map((x) => x.jumlah) ?? [0]));
 
   return (
     <EducatorShell user={user} duaPanel>
@@ -116,6 +134,57 @@ export default async function TugasPengajarPage({ params }: Props) {
                   </div>
                 ))}
               </dl>
+
+              {/* Statistik dari nilai yang SUDAH disimpan saja; yang belum dinilai tidak ikut. */}
+              <div className="mt-6">
+                <p className="t-label mb-3 text-ink-muted">Statistik nilai</p>
+                {statistik ? (
+                  <>
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p className="text-[2.4rem] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-ink">
+                          {statistik.rata.toLocaleString("id-ID")}
+                        </p>
+                        <p className="mt-1.5 text-xs text-ink-muted">rata-rata dari {statistik.jumlah} nilai</p>
+                      </div>
+                      <dl className="text-right text-xs text-ink-muted">
+                        <div>
+                          <dt className="inline">Tertinggi </dt>
+                          <dd className="inline font-semibold tabular-nums text-ink">{statistik.tertinggi}</dd>
+                        </div>
+                        <div className="mt-1">
+                          <dt className="inline">Terendah </dt>
+                          <dd className="inline font-semibold tabular-nums text-ink">{statistik.terendah}</dd>
+                        </div>
+                      </dl>
+                    </div>
+
+                    <div
+                      className="mt-5 grid grid-cols-5 items-end gap-1.5"
+                      role="img"
+                      aria-label={`Sebaran nilai: ${statistik.sebaran.map((x) => `${x.label}: ${x.jumlah}`).join(", ")}`}
+                    >
+                      {statistik.sebaran.map((x) => (
+                        <div key={x.label} className="flex flex-col items-center gap-1">
+                          <span className="text-[11px] tabular-nums text-ink-muted">{x.jumlah}</span>
+                          <div className="flex h-16 w-full items-end bg-white/[0.04]">
+                            <div
+                              className="w-full bg-blue-500"
+                              style={{ height: `${x.jumlah ? Math.max(6, (x.jumlah / sebaranMaks) * 100) : 0}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] tabular-nums text-ink-faint">{x.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {p.maxPoints !== 100 && (
+                      <p className="mt-2 text-[11px] text-ink-faint">Kelompok dalam persen dari nilai maksimal {p.maxPoints}.</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-ink-muted">Muncul setelah ada nilai yang disimpan.</p>
+                )}
+              </div>
             </div>
 
             {/* Kunci = isi pengaturan tersimpan: setelah disimpan & disegarkan,
@@ -138,86 +207,7 @@ export default async function TugasPengajarPage({ params }: Props) {
             </div>
           </>
         }
-        bawah={
-          <section>
-            <h2 className="t-h3 mb-4">Pengumpulan siswa</h2>
-
-            {baris.length === 0 ? (
-              <p className="bg-paper-card/55 px-6 py-10 text-center text-sm text-ink-muted">
-                Belum ada anggota di kelas ini.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {baris.map((b) => {
-                  const label = LABEL_STATUS[b.status];
-                  return (
-                    <li key={b.uid} className="bg-paper-card">
-                      {/* <details> tanpa JavaScript: pengajar membuka satu per
-                          satu tanpa seluruh jawaban membanjiri halaman. Yang
-                          perlu dinilai terbuka sejak awal. */}
-                      <details open={b.status === "dikumpulkan" || b.status === "terlambat"} className="group">
-                        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
-                          <UserAvatar name={b.nama} photoURL={b.foto} size="sm" />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium text-ink">
-                              {b.nama}
-                              {b.keluar && <span className="ml-2 text-xs font-normal text-ink-muted">(sudah keluar)</span>}
-                            </span>
-                            {b.sub && (
-                              <span className="block text-xs text-ink-muted">Dikirim {formatWib(b.sub.submittedAt)}</span>
-                            )}
-                          </span>
-                          {b.sub?.status === "graded" && b.sub.grade !== null && (
-                            <span className="text-sm font-semibold tabular-nums text-ink">
-                              {b.sub.grade}/{p.maxPoints}
-                            </span>
-                          )}
-                          <Tag tone={label.tone}>{label.label}</Tag>
-                          {b.sub && (
-                            <svg
-                              aria-hidden="true"
-                              className="h-4 w-4 text-ink-muted transition-transform duration-200 group-open:rotate-180"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                          )}
-                        </summary>
-
-                        {b.sub && (
-                          <div className="border-t px-5 pb-5 pt-4">
-                            {b.sub.text && (
-                              <p className="max-h-96 overflow-y-auto whitespace-pre-line break-words bg-white/[0.06] px-4 py-3 text-sm leading-[1.7] text-ink-body">
-                                {b.sub.text}
-                              </p>
-                            )}
-                            <Lampiran
-                              files={b.sub.files}
-                              hrefs={b.sub.files.map((_, i) => hrefJawaban(b.sub!.id, i))}
-                              className={b.sub.text ? "mt-3" : ""}
-                            />
-                            <ClassGradeForm
-                              classId={id}
-                              postId={postId}
-                              studentUid={b.uid}
-                              maxPoints={p.maxPoints}
-                              grade={b.sub.grade}
-                              feedback={b.sub.feedback}
-                              aiIsiKomentar={ai.fillComment}
-                            />
-                          </div>
-                        )}
-                      </details>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        }
+        bawah={<DaftarPengumpulan baris={baris} detail={detail} maxPoints={p.maxPoints} />}
       />
     </EducatorShell>
   );

@@ -58,6 +58,7 @@
     "verify:premium-rules": "tsx scripts/verify-premium-rules.ts",
     "verify:premium": "tsx scripts/verify-premium.ts",
     "verify:berkas-ai": "tsx scripts/verify-berkas-ai.ts",
+    "verify:pengumpulan": "tsx scripts/verify-pengumpulan.ts",
     "verify:syrobo": "tsx scripts/verify-syrobo.ts",
     "verify:tanjakan": "tsx scripts/verify-tanjakan.ts",
     "verify:bola": "tsx scripts/verify-bola.ts",

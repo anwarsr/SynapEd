@@ -492,6 +492,16 @@ Ruang belajar kelompok milik educator, terpisah dari kursus.
   **nilai + komentar** yang langsung terlihat oleh siswa. Di layar lebar, kolom
   kiri (instruksi & daftar siswa) dan kolom kanan (Ringkasan & Koreksi AI)
   digulir terpisah, sehingga pengaturan AI tetap terjangkau saat menilai.
+  - Daftar siswa berbentuk **tabel ringkas** (No, Siswa, Dikirim, Status,
+    Nilai) dengan batang komposisi dinilai / perlu dinilai / belum,
+    **saringan** (Semua, Perlu dinilai, Dinilai, Terlambat, Belum
+    mengumpulkan) beserta jumlahnya, **pencarian nama**, dan **urutan**
+    (status, nama, waktu kirim, nilai tertinggi/terendah). Baris diklik untuk
+    membuka jawaban + formulir nilai; yang pertama perlu dinilai terbuka sendiri.
+  - Setelah menyimpan nilai, tombol **"Nilai berikutnya: <nama>"** langsung
+    membuka siswa berikutnya yang masih perlu dinilai.
+  - Panel Ringkasan memuat **statistik nilai**: rata-rata, tertinggi,
+    terendah, dan sebaran nilai (lima kelompok persen) dari nilai yang sudah disimpan.
 - Batas: maksimal 5 berkas per postingan/kiriman, masing-masing di bawah 20 MB.
   Siswa tidak bisa melihat jawaban siswa lain.
 - **Koreksi dengan AI** (per siswa, di halaman tugas pengajar):
@@ -672,6 +682,7 @@ npm run verify:searching          # Lab Searching: hasil, Kiri/Tengah/Kanan, bar
 npm run verify:premium-rules      # Premium: perpanjangan, bagi hasil, Σ = dibayar (murni)
 npm run verify:premium            # Premium: akses, pembayaran, cabut, bagi hasil, naik ke paid (dev server)
 npm run verify:berkas-ai          # pembaca berkas koreksi AI: gambar di DOCX/PPTX/XLSX/PDF, PDF pindaian, peringatan (murni)
+npm run verify:pengumpulan        # tabel pengumpulan tugas: saringan, cari, urut, nilai berikutnya, statistik (murni)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan
 npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman situs (murni)
 ```

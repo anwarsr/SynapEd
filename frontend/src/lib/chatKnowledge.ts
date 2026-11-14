@@ -149,6 +149,11 @@ export const PENGETAHUAN_SITUS = `## Akun
   Setelah dinilai, peserta melihat nilai + komentar pengajar dan kiriman tidak
   bisa dibatalkan lagi. Peserta tidak bisa melihat jawaban peserta lain.
 - Status tugas: belum mengumpulkan, dikumpulkan, terlambat, dinilai.
+- Di halaman tugas, pengajar melihat tabel seluruh siswa yang bisa disaring
+  (perlu dinilai, dinilai, terlambat, belum mengumpulkan), dicari menurut nama,
+  dan diurutkan; setelah menyimpan nilai ada tombol "Nilai berikutnya" ke siswa
+  berikutnya yang perlu dinilai. Panel Ringkasan menampilkan rata-rata,
+  nilai tertinggi & terendah, dan sebaran nilai.
 - Pengajar bisa menekan "Koreksi dengan AI" pada kiriman tiap siswa: AI mengisi
   nilai (dan komentar, kalau pengajar memintanya), lalu pengajar meninjau,
   boleh mengubah, dan menyimpannya sendiri. Nilai baru terlihat siswa setelah

@@ -464,3 +464,15 @@ export function formatWib(iso: string | null): string {
   }).format(new Date(iso));
   return `${teks} WIB`;
 }
+
+/** Versi ringkas untuk kolom tabel ("19 Okt, 08.26"); waktu lengkapnya di `formatWib` (title). */
+export function formatWibPendek(iso: string | null): string {
+  if (!iso) return "-";
+  return new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}

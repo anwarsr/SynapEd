@@ -651,7 +651,7 @@ manual (menumpuk), bagi hasil sesuai pemakaian, akses berhenti tetapi kemajuan t
   - Jangan menaruh harga, potongan platform, atau detail teknis di pengetahuan.
 - **Tutor dalam course**: `ChatWidget.tsx` dipasang sekali secara global di
   `layout.tsx`, tanpa props. Konteks "sedang di pelajaran mana" mengalir lewat
-  `ChatContext.tsx` (satu-satunya React Context di proyek ini) yang dipublikasikan
+  `ChatContext.tsx` (React Context; satu lagi hanya `DaftarPengumpulan` untuk tombol "Nilai berikutnya") yang dipublikasikan
   `LearnShell.tsx` — **hanya slug**, bukan konten. `/api/chat` mengambil &
   mengotorisasi ulang isi sesungguhnya lewat `chatLessonContext.ts` (`getCourseAccess`)
   dari sesi asli; konteks yang tidak valid/tidak berhak diam-diam jatuh ke mode FAQ,
@@ -731,6 +731,18 @@ Pengumuman berlampiran + tugas ala Google Classroom di dalam fitur Kelas.
   satu aliran halaman. SENGAJA bukan kolom kanan `sticky` + `max-h`: saat halaman di posisi atas, ujung
   bawah kolom itu keluar layar sehingga tombol Hapus tak terjangkau tanpa menggulir kolom kiri. Halaman
   siswa tetap pola lama (aside `sticky`, footer tampil).
+- **Tabel pengumpulan pengajar** (permintaan pemilik: "lebih profesional"; pilihan "tabel ringkas" + statistik nilai +
+  "Nilai berikutnya"): `DaftarPengumpulan.tsx` (client) menerima `baris: BarisPengumpulan[]` (tanggal SUDAH diformat server:
+  `formatWibPendek` + `formatWib` untuk `title`) dan `detail: Record<uid, ReactNode>` (jawaban + `ClassGradeForm`, dirender
+  SERVER di `page.tsx`, jadi data jawaban/AI tak lewat props klien). Detail baris tetap TERPASANG saat ditutup (`hidden`) supaya
+  ketikan nilai tidak hilang. Logika murni di `lib/pengumpulanTugas.ts` (NETRAL: `cocokSaringan`/`hitungSaringan`, `cocokCari`
+  tanpa beda huruf & diakritik, `urutkan` stabil dengan "tanpa nilai/waktu selalu di bawah", `berikutnyaPerlu` berputar & tak
+  pernah mengembalikan baris sekarang, `statistikNilai` lima kelompok PERSEN dari `maxPoints`). Saringan "Terlambat" memakai
+  `sub.late` (ikut yang sudah dinilai; status saja kehilangan info itu). `ClassGradeForm` membaca konteks `useNilaiBerikutnya()`
+  dan menampilkan tombol HANYA setelah simpan berhasil; bila berikutnya tersembunyi saringan/pencarian, keduanya direset. Gaya:
+  persegi tanpa border kotak, pemisah baris `divide-rule`, penanda status = kotak kecil berwarna + teks, `focus-visible` biru
+  (garis fokus bawaan terbaca sebagai kotak berborder). Uji: `npm run verify:pengumpulan` (murni; 5 sabotase terbukti merah) +
+  uji browser sementara (saring/cari/urut/simpan → berikutnya, 390 px, tema terang).
 - Hapus post/kelas memanggil `bersihkanPost`/`bersihkanKelas`: dokumen
   `classSubmissions` + berkasnya + lampiran. `MANAGED_PREFIXES` di `storageCleanup.ts`
   memuat kedua folder kelas (tanpa itu `deleteObjects` diam-diam tidak menghapus apa-apa).
@@ -1498,7 +1510,7 @@ materi array terbuka.
 - Dev server yang pekerjanya mogok (log `.next/dev/logs/next-development.log`: "Jest worker
   encountered 2 child process exceptions", "write EPIPE") menggagalkan suite di tengah jalan;
   setelah dimatikan, `.next/dev` harus dihapus juga (manifest basi → "Server action not found").
-- Suite murni tanpa server: `verify-berkas-ai`, `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-pengumpulan`, `verify-berkas-ai`, `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office
