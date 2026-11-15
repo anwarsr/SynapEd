@@ -386,7 +386,9 @@ npx tsx scripts/verify-<nama>.ts   # butuh dev server untuk yang memanggil HTTP
 | `classSubmissions/{classId}_{postId}_{uid}` | Pengumpulan tugas kelas: `text`, `files[]`, `status` submitted/graded, `late` (dibekukan saat kirim), `grade`, `feedback`. Koleksi TERPISAH dari `classes` — `recursiveDelete` tidak menjangkaunya. |
 | `users/{uid}` | `bio`, `education`, `skills`, `phone`, `username`, `usernameChangedAt`, `referralCode`. Nama & foto hidup di Firebase Auth, bukan di sini. |
 | `usernames/{username}` | Reservasi `{uid}`. |
-| `orders/{orderId}` | Pesanan. `kind` course/premium (hilang = course), `method` midtrans/manual, `status`, `royalty` (syarat dibekukan; `PremiumTerms` untuk premium), `postPaidStatus`. Pesanan premium: `courseSlug: "premium"`. |
+| `orders/{orderId}` | Pesanan. `kind` course/premium (hilang = course), `method` midtrans/manual/voucher, `status`, `royalty` (syarat dibekukan; `PremiumTerms` untuk premium), `postPaidStatus`, `voucher` {code, original, discount} + `voucherCode` (salinan untuk kueri satu field; `amount` = original - discount). Pesanan premium: `courseSlug: "premium"`. |
+| `vouchers/{KODE}` | Voucher (hanya admin). Lihat bagian Voucher. `dipakai`/`totalPotongan` hanya dinaikkan `catatPemakaianVoucher`. |
+| `voucherRedemptions/{orderId}` | Satu pemakaian voucher yang LUNAS (ID = pesanan → tepat sekali). |
 | `settings/payments` | Saklar metode, QRIS, `platformFeePercent` (bawaan 30), `referralPercent` (bawaan 10), `premiumPrice` (bawaan 50000). |
 | `premiumMembers/{uid}` | `{activeUntil}` - satu-satunya sumber "premium aktif". |
 | `premiumPeriods/{periodId}` | Satu periode 30 hari: `periodId` = orderId (beli) / `admin-<uid8>-<ts36>` (pemberian, `gross` 0). `start/end/source/gross/terms/settledAt/revokedAt`. `settledAt` SELALU ditulis (null) karena dikueri kesamaan. |
@@ -573,6 +575,53 @@ manual (menumpuk), bagi hasil sesuai pemakaian, akses berhenti tetapi kemajuan t
   dari Firebase Auth klien, jadi uji browser harus MASUK lewat /login - cookie saja tidak memunculkannya),
   `LencanaPremium` di profil, spanduk pengingat ≤ `PREMIUM_PENGINGAT_HARI` (5) di `/premium` & `/dashboard`,
   `/admin/premium` (`PremiumAdmin.tsx`).
+
+## Voucher
+
+Potongan harga opsional saat membeli kursus atau Premium; HANYA admin yang membuat. Keputusan pemilik:
+potongan **dibagi rata** (bagi hasil platform/educator/perujuk dihitung dari uang yang DIBAYAR - tidak ada
+rumus baru, `order.amount` diisi harga setelah potongan), voucher **100% boleh** (langsung membuka akses
+tanpa Midtrans/QRIS), dan **boleh digabung** kode referral.
+
+- Berkas: `voucherRules.ts` (NETRAL: tipe, `validasiVoucher` masukan admin, `hitungHarga`, `cocokSasaran`,
+  `statusVoucher`, `alasanDitolak`, normaliser `parseVoucher`/`parseVoucherPesanan`, `pratinjauDariPesanan`
+  - dipanggil Server Component, jadi TIDAK boleh tinggal di berkas "use client"), `voucherCore.ts` (`db`
+  disuntik, `catatPemakaianVoucher` tanpa penjaga), `vouchers.ts` (server-only: baca, `bacaSasaran`,
+  `nilaiVoucher`, `catatVoucherPesanan`, `pilihanVoucher`), `voucherActions.ts` ("use server": `cekVoucher`,
+  `klaimVoucherGratis`, admin `simpanVoucher`/`aturVoucherAktif`/`hapusVoucher`). UI: `courses/VoucherField.tsx`
+  (`VoucherProvider` + kolom + `GerbangVoucher`, pola `ReferralProvider`), `admin/VoucherForm.tsx`,
+  `/admin/vouchers`, `/admin/vouchers/new`, `/admin/vouchers/[kode]`.
+- **Pengaturan**: persen 1-100 (+ `maksPotongan` rupiah opsional) atau nominal; cakupan = `premium`,
+  `semuaKursus`, `kursus[]` (slug), `kategori[]` (cocok bila SALAH SATU cocok); `mulai`/`berakhir` (ISO; formulir
+  WIB lewat `inputWibKeIso`); `kuota` (null = tanpa batas), `batasPerAkun`, `minHarga` (harga NORMAL),
+  `pembelianPertama` (belum punya pesanan `paid`), `khususEmail` → `khususUid` (diselesaikan server lewat
+  `getUsers`; email tak dikenal = galat). Kode = ID dokumen, `^[A-Z0-9][A-Z0-9_-]{2,22}[A-Z0-9]$`, tidak bisa
+  diganti. Voucher rusak dinormalkan jadi nonaktif + nilai 0 (tidak pernah jadi 100%).
+- **Harga**: `hitungHarga` bulat ke bawah; harga akhir 0 HANYA bila potongan menutup seluruh harga, selain itu
+  minimal `MIN_BAYAR` Rp1.000 (Midtrans tak bisa memproses nominal sangat kecil). Browser hanya mengirim KODE +
+  jenis barang (`{kind:"course",slug}`/`{kind:"premium"}`); `nilaiVoucher` dijalankan ULANG di keempat pembuat
+  pesanan (`createOrder`, `createManualOrder`, `createPremiumOrder`, `createManualPremiumOrder`, argumen ke-3/ke-2
+  `voucherCode`). Hasil 0 di jalur bayar = ditolak ("tekan tombol Ambil Gratis"). Pesanan tertunda dipakai ulang
+  HANYA bila nominal, referral, DAN `voucherCode` sama.
+- **Kuota & batas per akun** menghitung pemakaian LUNAS + pesanan HIDUP (`isLive`: pending belum kedaluwarsa /
+  awaiting_review) dari kueri `orders where voucherCode ==`; pesanan hidup akun itu untuk barang yang SAMA tidak
+  dihitung (akan dipakai ulang/diganti). Tanpa itu satu voucher sekali-pakai bisa dibayar di dua pesanan.
+  Pesanan yang sudah dibuat sebelum kuota habis tetap dihormati saat lunas (hitungan bisa sedikit melewati kuota).
+- **Pemakaian dihitung saat LUNAS**, sebelum status pesanan berubah: webhook (bagian "2b", gagal → 500) dan
+  `decideManualOrder` (gagal → pesanan tetap ditinjau). `catatPemakaianVoucher` = transaksi get-then-create
+  `voucherRedemptions/{orderId}` + `dipakai+1`/`totalPotongan` dibaca-lalu-ditulis (BUKAN `FieldValue.increment`:
+  skrip memuat firebase-admin dari node_modules lain dan sentinel lintas instans ditolak).
+- **Voucher 100%** (`klaimVoucherGratis`): pesanan `method: "voucher"`, `amount` 0, langsung `paid`; ID DETERMINISTIK
+  `VCR-{KODE}-{uid8}-{n}` (n = pemakaian akun itu + 1) sehingga dua klik bersamaan = satu pendaftaran/periode/pemakaian.
+  Kursus → `writeEnrollment(paid, 0)` atau `naikkanKePaid`; Premium → `beriPeriodePremium(source "voucher", gross 0)`.
+  TIDAK menulis `royaltySales` Rp0.
+- Hapus hanya bila belum pernah dipakai dan tak ada pesanan hidup; selain itu nonaktifkan (riwayat = catatan uang).
+  `cekVoucher` dibatasi `checkChatRateLimit("voucher:{uid}")` (8/menit) supaya kode tak bisa ditebak beruntun.
+- QRIS: `ManualQrisPanel` kini menampilkan `order.amount` (bukan harga kursus) dan menawarkan "Perbarui nominal
+  pesanan" bila voucher yang diterapkan berbeda dari voucher pesanan yang masih hidup; `VoucherProvider` diisi dari
+  voucher pesanan itu (`pratinjauDariPesanan`) supaya muat ulang tidak "melupakannya". Prop `price` sudah dihapus.
+- Tes: `npm run verify:voucher-rules` (murni; 7 sabotase terbukti merah) dan `npm run verify:voucher` (dev server;
+  sabotase reservasi, webhook, nominal server, ID klaim, penjaga admin terbukti merah).
 
 ## Royalti, kontributor, referral
 
@@ -1510,7 +1559,7 @@ materi array terbuka.
 - Dev server yang pekerjanya mogok (log `.next/dev/logs/next-development.log`: "Jest worker
   encountered 2 child process exceptions", "write EPIPE") menggagalkan suite di tengah jalan;
   setelah dimatikan, `.next/dev` harus dihapus juga (manifest basi → "Server action not found").
-- Suite murni tanpa server: `verify-pengumpulan`, `verify-berkas-ai`, `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-voucher-rules`, `verify-pengumpulan`, `verify-berkas-ai`, `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office

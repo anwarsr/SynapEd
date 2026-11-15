@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createOrder } from "@/lib/paymentActions";
 import { createPremiumOrder } from "@/lib/premiumActions";
 import { useReferralCode } from "./ReferralField";
+import { useVoucherCode } from "./VoucherField";
 import { cn } from "@/lib/cn";
 
 /**
@@ -59,6 +60,7 @@ export default function BuyButton({
 }) {
   const router = useRouter();
   const referralCode = useReferralCode();
+  const voucherCode = useVoucherCode();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   // Menahan pemuatan skrip supaya klik kedua tidak memuatnya dua kali.
@@ -122,7 +124,9 @@ export default function BuyButton({
 
     let res: Awaited<ReturnType<typeof createOrder>>;
     try {
-      res = premium ? await createPremiumOrder(referralCode) : await createOrder(slug, referralCode);
+      res = premium
+        ? await createPremiumOrder(referralCode, voucherCode)
+        : await createOrder(slug, referralCode, voucherCode);
     } catch {
       setStatus({ kind: "error", message: "Pesanan gagal dibuat. Periksa koneksi lalu coba lagi." });
       return;

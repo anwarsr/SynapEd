@@ -64,6 +64,16 @@ export const PENGETAHUAN_SITUS = `## Akun
 - Kode referral: pembeli bisa memasukkan kode orang lain saat membeli, atau
   kode terisi sendiri kalau membuka tautan bagikan (berlaku 30 hari). Harga
   bagi pembeli TIDAK berubah. Kode milik sendiri tidak bisa dipakai.
+- Voucher: kode potongan harga yang HANYA dibuat admin (pengguna tidak bisa
+  membuatnya sendiri). Saat membeli kursus atau Premium, tekan "Punya kode
+  voucher?", ketik kodenya, lalu "Terapkan" - harga setelah potongan langsung
+  tampil dan dipakai untuk pembayaran. Tiap voucher punya aturan sendiri: kursus/
+  kategori/Premium yang dicakup, masa berlaku, kuota, batas pemakaian per akun,
+  dan kadang khusus akun tertentu atau pembelian pertama; kalau ditolak, pesan
+  alasannya tampil di bawah kolom. Voucher boleh dipakai bersama kode referral.
+  Voucher yang menggratiskan penuh memunculkan tombol "Ambil Kursus Gratis" /
+  "Aktifkan Premium Gratis" tanpa perlu membayar. Asisten tidak tahu kode voucher
+  yang sedang berlaku - arahkan ke pengumuman resmi SynapEd.
 - Pengembalian dana: pembelian bersifat final, kecuali beberapa keadaan
   (misalnya terbayar ganda, akses terkunci dan tidak terselesaikan dalam 7
   hari kerja, atau isi kursus tidak sesuai yang dijanjikan). Pengajuan lewat

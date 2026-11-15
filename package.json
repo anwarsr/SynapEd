@@ -57,6 +57,8 @@
     "verify:searching": "tsx scripts/verify-searching.ts",
     "verify:premium-rules": "tsx scripts/verify-premium-rules.ts",
     "verify:premium": "tsx scripts/verify-premium.ts",
+    "verify:voucher-rules": "tsx scripts/verify-voucher-rules.ts",
+    "verify:voucher": "tsx scripts/verify-voucher.ts",
     "verify:berkas-ai": "tsx scripts/verify-berkas-ai.ts",
     "verify:pengumpulan": "tsx scripts/verify-pengumpulan.ts",
     "verify:syrobo": "tsx scripts/verify-syrobo.ts",

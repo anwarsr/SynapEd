@@ -4,6 +4,8 @@ import Navbar from "@/components/sections/Navbar";
 import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import BuyButton from "@/components/courses/BuyButton";
+import VoucherField, { GerbangVoucher, VoucherProvider } from "@/components/courses/VoucherField";
+import { pratinjauDariPesanan } from "@/lib/voucherRules";
 import ManualQrisPanel from "@/components/courses/ManualQrisPanel";
 import CourseCard from "@/components/courses/CourseCard";
 import ReferralField, { ReferralProvider } from "@/components/courses/ReferralField";
@@ -229,7 +231,14 @@ export default async function PremiumPage({ searchParams }: Props) {
                     </Button>
                   ) : (
                     <ReferralProvider initial={referralAwal}>
-                      {(midtransUsable || manualUsable) && <ReferralField />}
+                    <VoucherProvider sasaran={{ kind: "premium" }} initial={pratinjauDariPesanan(manualOrder)}>
+                      {(midtransUsable || manualUsable) && (
+                        <>
+                          <ReferralField />
+                          <VoucherField />
+                        </>
+                      )}
+                      <GerbangVoucher>
                       {midtransUsable && (
                         <BuyButton
                           slug={PREMIUM_SLUG}
@@ -243,12 +252,16 @@ export default async function PremiumPage({ searchParams }: Props) {
                         <ManualQrisPanel
                           slug={PREMIUM_SLUG}
                           premium
-                          price={harga}
                           qrisUrl={qrisUrl!}
                           qrisNote={settings.qrisNote}
                           order={
                             manualOrder
-                              ? { orderId: manualOrder.orderId, amount: manualOrder.amount, status: manualOrder.status as "pending" | "awaiting_review" }
+                              ? {
+                                  orderId: manualOrder.orderId,
+                                  amount: manualOrder.amount,
+                                  status: manualOrder.status as "pending" | "awaiting_review",
+                                  voucherCode: manualOrder.voucherCode,
+                                }
                               : null
                           }
                         />
@@ -256,6 +269,8 @@ export default async function PremiumPage({ searchParams }: Props) {
                       {!midtransUsable && !manualUsable && (
                         <span className="w-full bg-white/10 px-6 py-3 text-center text-sm text-ink-muted">Pembayaran sedang tidak tersedia</span>
                       )}
+                      </GerbangVoucher>
+                    </VoucherProvider>
                     </ReferralProvider>
                   )}
                   <Button href="/courses" variant="outline" className="w-full">

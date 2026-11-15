@@ -37,7 +37,8 @@ export const PREMIUM_PERIODS = "premiumPeriods";
 export const PREMIUM_USAGE = "premiumUsage";
 export const PREMIUM_SETTLEMENTS = "premiumSettlements";
 
-export type SumberPremium = "midtrans" | "manual" | "admin";
+/** `voucher` = voucher 100% (Rp0, tanpa gerbang bayar - tidak ada yang dibagi). */
+export type SumberPremium = "midtrans" | "manual" | "admin" | "voucher";
 
 export interface PremiumPeriodDoc {
   periodId: string;
@@ -71,7 +72,7 @@ function toPeriod(d: FirebaseFirestore.DocumentData): PremiumPeriodDoc {
     uid: String(d.uid ?? ""),
     start: String(d.start ?? ""),
     end: String(d.end ?? ""),
-    source: d.source === "manual" || d.source === "admin" ? d.source : "midtrans",
+    source: d.source === "manual" || d.source === "admin" || d.source === "voucher" ? d.source : "midtrans",
     orderId: typeof d.orderId === "string" ? d.orderId : null,
     gross: typeof d.gross === "number" ? d.gross : 0,
     terms: d.terms ?? null,

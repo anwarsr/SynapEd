@@ -1,5 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { parseVoucherPesanan, type VoucherPesanan } from "@/lib/voucherRules";
 
 export const ORDERS = "orders";
 
@@ -34,8 +35,10 @@ export type OrderStatus = "pending" | "awaiting_review" | "paid" | "failed" | "e
  * - `midtrans` — otomatis, akses diberikan webhook bertanda tangan.
  * - `manual`   — QRIS Pedagang Bima, akses diberikan admin setelah mencocokkan
  *                dengan mutasi di aplikasi bank.
+ * - `voucher`  — voucher 100%: harga akhir Rp0, pesanan langsung lunas tanpa
+ *                gerbang bayar (`klaimVoucherGratis`), tanpa bagi hasil.
  */
-export type OrderMethod = "midtrans" | "manual";
+export type OrderMethod = "midtrans" | "manual" | "voucher";
 
 /**
  * Apa yang dibeli. `premium` = SynapEd Premium 30 hari (`courseSlug` =
@@ -112,6 +115,15 @@ export interface Order {
    * dan pesanan lama dibagi 100% ke pemilik tanpa potongan.
    */
   royalty: unknown;
+
+  /**
+   * Potongan voucher yang dibekukan bersama `amount` (amount = original -
+   * discount), atau null. Pemakaiannya baru DIHITUNG saat lunas
+   * (`catatPemakaianVoucher`), bukan saat pesanan dibuat.
+   */
+  voucher: VoucherPesanan | null;
+  /** Salinan `voucher.code` di tingkat atas supaya bisa dikueri satu field. */
+  voucherCode: string | null;
 }
 
 /**
@@ -136,7 +148,7 @@ function toOrder(d: FirebaseFirestore.DocumentData): Order {
     currency: "IDR",
     status: (d.status as OrderStatus | undefined) ?? "pending",
     // Tanpa `method` berarti pesanan lama, dan waktu itu hanya ada Midtrans.
-    method: d.method === "manual" ? "manual" : "midtrans",
+    method: d.method === "manual" || d.method === "voucher" ? d.method : "midtrans",
     paymentType: (d.paymentType as string | null | undefined) ?? null,
     snapToken: (d.snapToken as string | null | undefined) ?? null,
     proofPath: (d.proofPath as string | null | undefined) ?? null,
@@ -154,7 +166,26 @@ function toOrder(d: FirebaseFirestore.DocumentData): Order {
     postPaidTransactionStatus: (d.postPaidTransactionStatus as string | null | undefined) ?? null,
     postPaidAt: (d.postPaidAt as string | null | undefined) ?? null,
     royalty: d.royalty ?? null,
+    voucher: parseVoucherPesanan(d.voucher),
+    voucherCode: parseVoucherPesanan(d.voucher)?.code ?? null,
   };
+}
+
+/** Pesanan yang masih bisa jadi lunas: menunggu bayar (belum kedaluwarsa) atau menunggu tinjauan admin. */
+export function isLive(order: Order, now = new Date()): boolean {
+  return isPayable(order, now) || order.status === "awaiting_review";
+}
+
+/** Pesanan (semua status) yang memakai kode voucher ini - kueri satu field. */
+export async function listOrdersWithVoucher(code: string): Promise<Order[]> {
+  const snap = await adminDb().collection(ORDERS).where("voucherCode", "==", code).get();
+  return snap.docs.map((d) => toOrder(d.data()));
+}
+
+/** Semua pesanan satu akun - untuk syarat "pembelian pertama" dan pemakaian voucher per akun. */
+export async function listOrdersOfUser(uid: string): Promise<Order[]> {
+  const snap = await adminDb().collection(ORDERS).where("uid", "==", uid).get();
+  return snap.docs.map((d) => toOrder(d.data()));
 }
 
 export function orderRef(orderId: string) {

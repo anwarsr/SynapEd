@@ -10,6 +10,8 @@ import { getPaymentSettings, manualQrisReady } from "@/lib/paymentSettings";
 import { resolveReferral } from "@/lib/referrals";
 import { createSnapTransaction, expireTransaction, paymentsConfigured } from "@/lib/payments/midtrans";
 import { getPremium } from "@/lib/premium";
+import { nilaiVoucher } from "@/lib/vouchers";
+import type { VoucherPesanan } from "@/lib/voucherRules";
 import { beriPeriodePremium, bagiSemuaPeriode, cabutPremium } from "@/lib/premiumCore";
 import {
   PREMIUM_HARI_ADMIN_MAKS,
@@ -51,6 +53,7 @@ function pesananPremium(
   now: Date,
   ttlMinutes: number,
   snapToken: string | null,
+  voucher: VoucherPesanan | null,
 ): Order {
   return {
     orderId,
@@ -82,28 +85,37 @@ function pesananPremium(
     postPaidAt: null,
     // Dibekukan pada detik yang sama dengan `amount`: potongan platform & perujuk.
     royalty: terms,
+    voucher,
+    voucherCode: voucher?.code ?? null,
   };
 }
 
 /** Membeli premium 30 hari lewat Midtrans. Akses BARU diberikan webhook setelah uang masuk. */
-export async function createPremiumOrder(referralCode?: unknown): Promise<PremiumOrderResult> {
+export async function createPremiumOrder(referralCode?: unknown, voucherCode?: unknown): Promise<PremiumOrderResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
   if (!paymentsConfigured()) return { ok: false, error: "Pembayaran belum aktif. Hubungi pengelola." };
 
   const settings = await getPaymentSettings();
   if (!settings.midtransEnabled) return { ok: false, error: "Pembayaran otomatis sedang tidak tersedia." };
-  const harga = settings.premiumPrice;
 
   const ref = await resolveReferral(referralCode, user.uid);
   if (!ref.ok) return { ok: false, error: ref.error };
   const kode = ref.referral?.code ?? null;
 
+  // Harga normal dari setelan, potongan dinilai ulang di server. Uang yang
+  // dibayar (`harga`) yang dibagi - potongan ditanggung rata.
+  const v = await nilaiVoucher(user.uid, voucherCode, { kind: "premium", price: settings.premiumPrice });
+  if (!v.ok) return { ok: false, error: v.error };
+  if (v.akhir === 0) return { ok: false, error: "Voucher ini menggratiskan Premium - tekan tombol Ambil Gratis." };
+  const harga = v.akhir;
+  const kodeVoucher = v.snapshot?.code ?? null;
+
   // Pesanan tertunda dipakai ulang HANYA bila harga & kode referral sama -
   // alasan yang sama dengan createOrder kursus (harga bisa diubah admin).
   const pending = await findPendingOrder(user.uid, PREMIUM_SLUG, "midtrans", "premium");
   if (pending?.snapToken) {
-    if (pending.amount === harga && kodeReferralDari(pending) === kode) {
+    if (pending.amount === harga && kodeReferralDari(pending) === kode && pending.voucherCode === kodeVoucher) {
       return { ok: true, token: pending.snapToken, orderId: pending.orderId };
     }
     await expireTransaction(pending.orderId);
@@ -118,7 +130,7 @@ export async function createPremiumOrder(referralCode?: unknown): Promise<Premiu
       orderId,
       amount: harga,
       itemId: PREMIUM_SLUG,
-      itemName: PREMIUM_JUDUL,
+      itemName: kodeVoucher ? `${PREMIUM_JUDUL} (voucher ${kodeVoucher})` : PREMIUM_JUDUL,
       customerName: user.name,
       customerEmail: user.email,
       expiryMinutes: EXPIRY_MINUTES,
@@ -133,26 +145,33 @@ export async function createPremiumOrder(referralCode?: unknown): Promise<Premiu
     ref.referral ? { ...ref.referral, percent: settings.referralPercent } : null,
     now.toISOString(),
   );
-  await orderRef(orderId).set(pesananPremium(user, orderId, harga, "midtrans", terms, now, EXPIRY_MINUTES, token));
+  await orderRef(orderId).set(pesananPremium(user, orderId, harga, "midtrans", terms, now, EXPIRY_MINUTES, token, v.snapshot));
   return { ok: true, token, orderId };
 }
 
 /** Membeli premium lewat QRIS manual - premium diberikan saat admin menyetujui bukti bayar. */
-export async function createManualPremiumOrder(referralCode?: unknown): Promise<PremiumManualResult> {
+export async function createManualPremiumOrder(referralCode?: unknown, voucherCode?: unknown): Promise<PremiumManualResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
 
   const settings = await getPaymentSettings();
   if (!manualQrisReady(settings)) return { ok: false, error: "Pembayaran QRIS manual sedang tidak tersedia." };
-  const harga = settings.premiumPrice;
 
   const ref = await resolveReferral(referralCode, user.uid);
   if (!ref.ok) return { ok: false, error: ref.error };
   const kode = ref.referral?.code ?? null;
 
+  // Harga normal dari setelan, potongan dinilai ulang di server. Uang yang
+  // dibayar (`harga`) yang dibagi - potongan ditanggung rata.
+  const v = await nilaiVoucher(user.uid, voucherCode, { kind: "premium", price: settings.premiumPrice });
+  if (!v.ok) return { ok: false, error: v.error };
+  if (v.akhir === 0) return { ok: false, error: "Voucher ini menggratiskan Premium - tekan tombol Ambil Gratis." };
+  const harga = v.akhir;
+  const kodeVoucher = v.snapshot?.code ?? null;
+
   const reuse = await findPendingOrder(user.uid, PREMIUM_SLUG, "manual", "premium");
   if (reuse) {
-    if (reuse.amount === harga && kodeReferralDari(reuse) === kode) {
+    if (reuse.amount === harga && kodeReferralDari(reuse) === kode && reuse.voucherCode === kodeVoucher) {
       return { ok: true, message: "Melanjutkan pesanan yang belum selesai.", order: reuse };
     }
     await orderRef(reuse.orderId).update({ status: "expired", updatedAt: new Date().toISOString() });
@@ -165,7 +184,7 @@ export async function createManualPremiumOrder(referralCode?: unknown): Promise<
     ref.referral ? { ...ref.referral, percent: settings.referralPercent } : null,
     now.toISOString(),
   );
-  const order = pesananPremium(user, orderId, harga, "manual", terms, now, MANUAL_TTL_MINUTES, null);
+  const order = pesananPremium(user, orderId, harga, "manual", terms, now, MANUAL_TTL_MINUTES, null, v.snapshot);
   await orderRef(orderId).set(order);
   revalidatePath("/premium");
   return { ok: true, message: "Pesanan dibuat.", order };

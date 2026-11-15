@@ -20,6 +20,7 @@ const NAV = [
   { href: "/admin/course-requests", label: "Pengajuan Kursus", badge: "requests" },
   { href: "/admin/payments", label: "Pembayaran", badge: "payments" },
   { href: "/admin/premium", label: "Premium" },
+  { href: "/admin/vouchers", label: "Voucher" },
   // Tanpa lencana: ulasan tidak menunggu keputusan siapa pun, jadi tidak ada
   // angka yang berarti "belum dikerjakan".
   { href: "/admin/reviews", label: "Ulasan" },

@@ -17,6 +17,7 @@ import { getPaymentSettings, manualQrisReady } from "@/lib/paymentSettings";
 import { PAYMENT_PROOFS } from "@/lib/storagePaths";
 import { realiseOrderSale, referralCodeOf, termsForNewOrder } from "@/lib/royalty";
 import { resolveReferral } from "@/lib/referrals";
+import { catatVoucherPesanan, nilaiVoucher } from "@/lib/vouchers";
 
 export type ManualResult =
   | { ok: true; message: string; order?: Order }
@@ -54,7 +55,7 @@ function clean(raw: unknown, max: number): string {
  * sama dengan enrollFree dan createOrder. Server Action bisa dipanggil lewat
  * POST langsung, jadi apa pun yang dikirim browser bukan bukti.
  */
-export async function createManualOrder(slug: string, referralCode?: unknown): Promise<ManualResult> {
+export async function createManualOrder(slug: string, referralCode?: unknown, voucherCode?: unknown): Promise<ManualResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
 
@@ -80,6 +81,13 @@ export async function createManualOrder(slug: string, referralCode?: unknown): P
   if (!ref.ok) return { ok: false, error: ref.error };
   const kode = ref.referral?.code ?? null;
 
+  // Dinilai ulang di server - lihat paymentActions.createOrder.
+  const v = await nilaiVoucher(user.uid, voucherCode, { kind: "course", slug, category: course.category, price: course.price });
+  if (!v.ok) return { ok: false, error: v.error };
+  if (v.akhir === 0) return { ok: false, error: "Voucher ini menggratiskan kursus - tekan tombol Ambil Gratis." };
+  const harga = v.akhir;
+  const kodeVoucher = v.snapshot?.code ?? null;
+
   // Pesanan yang masih hidup dipakai ulang. Tanpa ini, setiap kali halaman
   // dibuka lahir satu pesanan baru dan antrean admin dipenuhi duplikat.
   //
@@ -89,7 +97,7 @@ export async function createManualOrder(slug: string, referralCode?: unknown): P
   // kembali semudah membatalkan transaksi.
   const reuse = await findPendingOrder(user.uid, slug, "manual");
   if (reuse) {
-    if (reuse.amount === course.price && referralCodeOf(reuse) === kode) {
+    if (reuse.amount === harga && referralCodeOf(reuse) === kode && reuse.voucherCode === kodeVoucher) {
       return { ok: true, message: "Melanjutkan pesanan yang belum selesai.", order: reuse };
     }
 
@@ -99,8 +107,9 @@ export async function createManualOrder(slug: string, referralCode?: unknown): P
     });
 
     console.info(
-      `[payment] pesanan manual ${reuse.orderId} dihanguskan: harga/referral ${slug} berubah ` +
-        `${reuse.amount} -> ${course.price}, ${referralCodeOf(reuse) ?? "-"} -> ${kode ?? "-"}`,
+      `[payment] pesanan manual ${reuse.orderId} dihanguskan: harga/referral/voucher ${slug} berubah ` +
+        `${reuse.amount} -> ${harga}, ${referralCodeOf(reuse) ?? "-"} -> ${kode ?? "-"}, ` +
+        `${reuse.voucherCode ?? "-"} -> ${kodeVoucher ?? "-"}`,
     );
   }
 
@@ -115,7 +124,7 @@ export async function createManualOrder(slug: string, referralCode?: unknown): P
     kind: "course",
     courseSlug: slug,
     courseTitle: course.title,
-    amount: course.price,
+    amount: harga,
     currency: "IDR",
     status: "pending",
     method: "manual",
@@ -138,6 +147,8 @@ export async function createManualOrder(slug: string, referralCode?: unknown): P
     // Dibekukan sekarang: tinjauan admin bisa memakan waktu sampai sehari,
     // dan pembagian yang berubah di tengahnya tidak boleh menjangkau pesanan ini.
     royalty: termsForNewOrder(course, settings, ref.referral, now.toISOString()),
+    voucher: v.snapshot,
+    voucherCode: kodeVoucher,
   };
 
   await orderRef(orderId).set(order);
@@ -254,6 +265,17 @@ export async function decideManualOrder(
     revalidatePath("/admin");
     revalidatePath("/admin/payments");
     return { ok: true, message: "Pembayaran ditolak." };
+  }
+
+  // Pemakaian voucher dihitung SAAT LUNAS, sebelum status berubah: gagal =
+  // pesanan tetap menunggu tinjauan dan setujui bisa diulang (idempoten per orderId).
+  if (order.voucher) {
+    try {
+      await catatVoucherPesanan(order, now);
+    } catch (err) {
+      console.error(`[voucher] gagal mencatat pemakaian ${order.orderId}:`, err);
+      return { ok: false, error: "Pencatatan voucher gagal. Pesanan belum disetujui - coba lagi." };
+    }
   }
 
   // SynapEd Premium: periode diberikan dulu (idempoten per orderId), baru status

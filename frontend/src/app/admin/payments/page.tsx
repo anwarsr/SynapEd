@@ -158,6 +158,14 @@ export default async function AdminPaymentsPage() {
                           <dt className="text-ink-muted">Nominal</dt>
                           <dd className="t-numeral text-lg text-ink">{formatPrice(o.amount)}</dd>
                         </div>
+                        {o.voucher && (
+                          <div className="flex flex-wrap items-baseline justify-between gap-3">
+                            <dt className="text-ink-muted">Voucher</dt>
+                            <dd className="text-right text-ink-body">
+                              {o.voucher.code} · hemat {formatPrice(o.voucher.discount)} dari {formatPrice(o.voucher.original)}
+                            </dd>
+                          </div>
+                        )}
                         <div className="flex flex-wrap items-baseline justify-between gap-3">
                           <dt className="text-ink-muted">Kursus</dt>
                           <dd className="text-right min-w-0">

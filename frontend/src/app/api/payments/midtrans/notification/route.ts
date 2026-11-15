@@ -6,6 +6,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { beriPeriodePremium } from "@/lib/premiumCore";
 import { applyNotification, getOrder, type NotificationUpdate } from "@/lib/orders";
 import { realiseOrderSale } from "@/lib/royalty";
+import { catatVoucherPesanan } from "@/lib/vouchers";
 import {
   amountOf,
   normalizeStatus,
@@ -96,6 +97,18 @@ export async function POST(request: Request) {
   if (status !== "paid") {
     const final = await applyNotification(orderId, update);
     return NextResponse.json({ ok: true, status: final });
+  }
+
+  // ── 2b. Pemakaian voucher ────────────────────────────────────────────
+  // Dihitung saat LUNAS (pesanan tertunda tidak menghabiskan kuota), sebelum
+  // status diperbarui; gagal = 500 supaya Midtrans mengulang. Idempoten per orderId.
+  if (order.voucher) {
+    try {
+      await catatVoucherPesanan(order, order.paidAt ?? update.now);
+    } catch (err) {
+      console.error(`[voucher] gagal mencatat pemakaian ${orderId}:`, err);
+      return NextResponse.json({ message: "Pencatatan voucher gagal." }, { status: 500 });
+    }
   }
 
   // ── 3a. SynapEd Premium ──────────────────────────────────────────────

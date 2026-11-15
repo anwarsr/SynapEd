@@ -6,6 +6,7 @@ import { uploadPaymentProof, validateImage, IMAGE_ACCEPT } from "@/lib/courseUpl
 import { createManualOrder, submitPaymentProof } from "@/lib/manualPaymentActions";
 import { createManualPremiumOrder } from "@/lib/premiumActions";
 import { useReferralCode } from "./ReferralField";
+import { useVoucherCode } from "./VoucherField";
 import { formatPrice } from "@/lib/courseUi";
 import { cn } from "@/lib/cn";
 
@@ -22,7 +23,6 @@ import { cn } from "@/lib/cn";
  */
 export default function ManualQrisPanel({
   slug,
-  price,
   qrisUrl,
   qrisNote,
   order,
@@ -31,7 +31,6 @@ export default function ManualQrisPanel({
   slug: string;
   /** Pesanan SynapEd Premium (halaman /premium), bukan kursus `slug`. */
   premium?: boolean;
-  price: number;
   qrisUrl: string;
   qrisNote: string;
   /** Pesanan manual yang masih hidup, kalau ada. */
@@ -39,10 +38,13 @@ export default function ManualQrisPanel({
     orderId: string;
     amount: number;
     status: "pending" | "awaiting_review";
+    /** Voucher yang dibekukan di pesanan itu, untuk mendeteksi voucher yang baru diterapkan. */
+    voucherCode: string | null;
   } | null;
 }) {
   const router = useRouter();
   const referralCode = useReferralCode();
+  const voucherCode = useVoucherCode();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [pending, startTransition] = useTransition();
@@ -55,7 +57,9 @@ export default function ManualQrisPanel({
   function mulai() {
     setError(null);
     startTransition(async () => {
-      const res = premium ? await createManualPremiumOrder(referralCode) : await createManualOrder(slug, referralCode);
+      const res = premium
+        ? await createManualPremiumOrder(referralCode, voucherCode)
+        : await createManualOrder(slug, referralCode, voucherCode);
       if (!res.ok) return setError(res.error);
       router.refresh();
     });
@@ -160,9 +164,25 @@ export default function ManualQrisPanel({
           mencocokkan nanti - tanpa jam transfer, dua pembelian bernominal sama
           di hari yang sama praktis tidak bisa dibedakan. */}
       <p className="mt-3 text-xs text-ink-muted">
-        Bayar tepat {formatPrice(price)}. Sebutkan jam transfer pada catatan supaya admin
+        Bayar tepat {formatPrice(order.amount)}. Sebutkan jam transfer pada catatan supaya admin
         lebih cepat menemukannya.
       </p>
+      {order.voucherCode && <p className="mt-1 text-xs text-ink-muted">Sudah termasuk potongan voucher {order.voucherCode}.</p>}
+
+      {/* Voucher diterapkan/dihapus SETELAH pesanan ini dibuat: nominalnya basi.
+          Membuat ulang pesanan menghanguskan yang lama (createManualOrder). */}
+      {(voucherCode || null) !== order.voucherCode && (
+        <div className="mt-3 bg-amber-500/15 px-4 py-3 text-xs text-warn-text">
+          <p>
+            {voucherCode
+              ? `Nominal di atas belum memakai voucher ${voucherCode}.`
+              : `Pesanan ini memakai voucher ${order.voucherCode} yang sudah Anda hapus.`}
+          </p>
+          <button type="button" onClick={mulai} disabled={pending} className="mt-1.5 font-semibold underline underline-offset-2 disabled:opacity-60">
+            {pending ? "Memperbarui…" : "Perbarui nominal pesanan"}
+          </button>
+        </div>
+      )}
 
       {qrisNote && <p className="mt-2 text-xs text-ink-muted">{qrisNote}</p>}
 

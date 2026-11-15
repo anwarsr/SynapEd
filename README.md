@@ -62,6 +62,12 @@ menyetujui.
 - **Kode referral:** pembeli bisa memasukkan kode orang lain, atau kodenya
   terisi sendiri kalau membuka tautan bagikan. Harga bagi pembeli tidak
   berubah.
+- **Voucher (opsional):** "Punya kode voucher?" di halaman kursus dan
+  `/premium`. Setelah *Terapkan*, harga normal dicoret dan harga setelah potongan
+  tampil; pesanan Midtrans/QRIS dibuat dengan harga itu (server selalu menghitung
+  ulang). Voucher boleh digabung kode referral. Voucher yang menutup seluruh harga
+  mengganti tombol bayar dengan **Ambil Kursus Gratis / Aktifkan Premium Gratis**
+  - akses langsung terbuka tanpa pembayaran.
 
 ### SynapEd Premium (`/premium`)
 
@@ -582,6 +588,7 @@ Admin juga bisa membuat kursus dan kelas seperti educator (menu "Kursus Saya" da
 | Pengajuan Kursus | Tayang, sembunyikan, sunting, dan hapus kursus, dengan perbandingan perubahan |
 | Pembayaran | Saklar metode bayar, gambar QRIS, **potongan platform & persentase referral**, bukti bayar yang menunggu, penjualan yang perlu ditindaklanjuti |
 | Premium | Harga premium, beri/cabut premium per akun, anggota aktif, dan **bagi hasil** periode yang sudah berakhir ke educator |
+| Voucher | **Membuat & menyunting voucher** (hanya admin): potongan persen (dengan batas rupiah opsional) atau rupiah; berlaku untuk Premium, semua kursus, kursus tertentu, dan/atau kategori; masa berlaku mulai-berakhir (WIB, tombol 1/7/30/90 hari); kuota total, batas per akun, minimal harga, khusus pembelian pertama, khusus akun tertentu (daftar email); aktif/nonaktif, hapus (hanya yang belum pernah dipakai), dan riwayat pemakaian |
 | Kategori | Kategori kursus |
 | Kelas | Seluruh kelas |
 | Ulasan | Moderasi ulasan dan **balasan admin** (tampil di kartu komentar beranda dan halaman kursus) |
@@ -681,6 +688,8 @@ npm run verify:sorting            # Lab Sorting: hasil stabil, langkah, baris ko
 npm run verify:searching          # Lab Searching: hasil, Kiri/Tengah/Kanan, baris kode, pseudocode dijalankan, tautan (murni)
 npm run verify:premium-rules      # Premium: perpanjangan, bagi hasil, Σ = dibayar (murni)
 npm run verify:premium            # Premium: akses, pembayaran, cabut, bagi hasil, naik ke paid (dev server)
+npm run verify:voucher-rules      # voucher: potongan, cakupan, status, validasi admin (murni)
+npm run verify:voucher            # voucher: penjaga admin, harga server, kuota & tertunda, lunas sekali, gratis 100% (dev server)
 npm run verify:berkas-ai          # pembaca berkas koreksi AI: gambar di DOCX/PPTX/XLSX/PDF, PDF pindaian, peringatan (murni)
 npm run verify:pengumpulan        # tabel pengumpulan tugas: saringan, cari, urut, nilai berikutnya, statistik (murni)
 npm run verify:class-assignment   # tugas kelas: format, tenggat, nilai, berkas, pembersihan

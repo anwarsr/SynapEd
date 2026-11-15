@@ -6,6 +6,7 @@ import { findPendingOrder, makeOrderId, orderRef, type Order } from "@/lib/order
 import { getPaymentSettings } from "@/lib/paymentSettings";
 import { referralCodeOf, termsForNewOrder } from "@/lib/royalty";
 import { resolveReferral } from "@/lib/referrals";
+import { nilaiVoucher } from "@/lib/vouchers";
 import {
   createSnapTransaction,
   expireTransaction,
@@ -31,7 +32,7 @@ const EXPIRY_MINUTES = 30;
  * hanya membuka popup pembayaran. Akses baru ditulis oleh webhook, setelah
  * Midtrans mengonfirmasi uangnya benar-benar masuk.
  */
-export async function createOrder(slug: string, referralCode?: unknown): Promise<OrderResult> {
+export async function createOrder(slug: string, referralCode?: unknown, voucherCode?: unknown): Promise<OrderResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Silakan masuk terlebih dahulu." };
 
@@ -59,6 +60,15 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
   if (!ref.ok) return { ok: false, error: ref.error };
   const kode = ref.referral?.code ?? null;
 
+  // Voucher dinilai ulang DI SINI dari dokumen voucher & harga kursus - hasil
+  // pratinjau di browser bukan bukti. `harga` = yang benar-benar dibayar, dan
+  // bagi hasil dihitung darinya (keputusan pemilik: potongan dibagi rata).
+  const v = await nilaiVoucher(user.uid, voucherCode, { kind: "course", slug, category: course.category, price: course.price });
+  if (!v.ok) return { ok: false, error: v.error };
+  if (v.akhir === 0) return { ok: false, error: "Voucher ini menggratiskan kursus - tekan tombol Ambil Gratis." };
+  const harga = v.akhir;
+  const kodeVoucher = v.snapshot?.code ?? null;
+
   // Pesanan yang masih hidup dipakai ulang. Tanpa ini, setiap klik "Beli"
   // menerbitkan transaksi baru di Midtrans dan meninggalkan tumpukan pesanan
   // menggantung yang tidak pernah bisa dibedakan dari percobaan yang sah.
@@ -75,7 +85,7 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
   if (pending?.snapToken) {
     // Kode referral juga harus sama: pesanan lama membawa perujuknya sendiri,
     // dan membayar lewat token lama berarti komisi jatuh ke orang yang salah.
-    if (pending.amount === course.price && referralCodeOf(pending) === kode) {
+    if (pending.amount === harga && referralCodeOf(pending) === kode && pending.voucherCode === kodeVoucher) {
       return { ok: true, token: pending.snapToken, orderId: pending.orderId };
     }
 
@@ -93,8 +103,9 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
     // itu hanya terlihat di sini — pesanan tetap ditandai kedaluwarsa dan
     // alurnya tetap mulus, sehingga tidak ada gejala lain yang muncul.
     console.info(
-      `[payment] pesanan ${pending.orderId} dihanguskan: harga/referral ${slug} berubah ` +
-        `${pending.amount} -> ${course.price}, ${referralCodeOf(pending) ?? "-"} -> ${kode ?? "-"}` +
+      `[payment] pesanan ${pending.orderId} dihanguskan: harga/referral/voucher ${slug} berubah ` +
+        `${pending.amount} -> ${harga}, ${referralCodeOf(pending) ?? "-"} -> ${kode ?? "-"}, ` +
+        `${pending.voucherCode ?? "-"} -> ${kodeVoucher ?? "-"}` +
         ` (di Midtrans: ${dihanguskan ? "ya" : "tidak / belum ada transaksi"})`,
     );
   }
@@ -108,9 +119,9 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
   try {
     token = await createSnapTransaction({
       orderId,
-      amount: course.price,
+      amount: harga,
       itemId: slug,
-      itemName: course.title,
+      itemName: kodeVoucher ? `${course.title} (voucher ${kodeVoucher})` : course.title,
       customerName: user.name,
       customerEmail: user.email,
       expiryMinutes: EXPIRY_MINUTES,
@@ -133,7 +144,7 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
     kind: "course",
     courseSlug: slug,
     courseTitle: course.title,
-    amount: course.price,
+    amount: harga,
     currency: "IDR",
     status: "pending",
     method: "midtrans",
@@ -158,6 +169,8 @@ export async function createOrder(slug: string, referralCode?: unknown): Promise
     postPaidAt: null,
     // Dibekukan pada detik yang sama dengan `amount`.
     royalty: termsForNewOrder(course, settings, ref.referral, now.toISOString()),
+    voucher: v.snapshot,
+    voucherCode: kodeVoucher,
   };
 
   await orderRef(orderId).set(order);

@@ -6,6 +6,8 @@ import Footer from "@/components/sections/Footer";
 import Button from "@/components/ui/Button";
 import EnrollButton from "@/components/courses/EnrollButton";
 import BuyButton from "@/components/courses/BuyButton";
+import VoucherField, { GerbangVoucher, VoucherProvider } from "@/components/courses/VoucherField";
+import { pratinjauDariPesanan } from "@/lib/voucherRules";
 import ManualQrisPanel from "@/components/courses/ManualQrisPanel";
 import PremiumEnrollButton from "@/components/premium/PremiumEnrollButton";
 import { getPremium } from "@/lib/premium";
@@ -384,6 +386,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                     />
                   ) : course.price > 0 ? (
                     <ReferralProvider initial={referralAwal}>
+                    <VoucherProvider sasaran={{ kind: "course", slug }} initial={pratinjauDariPesanan(manualOrder)}>
                       {premiumBerakhir && (
                         <p role="status" className="bg-amber-500/15 px-4 py-3 text-sm text-warn-text">
                           Premium Anda sudah berakhir. Kemajuan belajar tetap tersimpan -{" "}
@@ -394,9 +397,13 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                         </p>
                       )}
                       {(midtransUsable || manualUsable) && (
-                        <ReferralField />
+                        <>
+                          <ReferralField />
+                          <VoucherField />
+                        </>
                       )}
 
+                      <GerbangVoucher>
                       {/* Kunci Midtrans belum terpasang, atau saklarnya dimatikan
                           admin, berarti tombolnya pasti gagal - jadi tidak
                           dirender sama sekali. */}
@@ -411,7 +418,6 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                       {manualUsable && (
                         <ManualQrisPanel
                           slug={slug}
-                          price={course.price}
                           qrisUrl={qrisUrl!}
                           qrisNote={paymentSettings.qrisNote}
                           order={
@@ -420,11 +426,13 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                                   orderId: manualOrder.orderId,
                                   amount: manualOrder.amount,
                                   status: manualOrder.status as "pending" | "awaiting_review",
+                                  voucherCode: manualOrder.voucherCode,
                                 }
                               : null
                           }
                         />
                       )}
+                      </GerbangVoucher>
 
                       {/* Kedua metode mati. Dikatakan apa adanya, bukan
                           disodori tombol yang tidak menuju ke mana-mana. */}
@@ -443,6 +451,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                           <span className="font-semibold text-blue-300">Premium {formatPrice(paymentSettings.premiumPrice)}/bulan</span>
                         </Link>
                       )}
+                    </VoucherProvider>
                     </ReferralProvider>
                   ) : (
                     <EnrollButton slug={slug} />

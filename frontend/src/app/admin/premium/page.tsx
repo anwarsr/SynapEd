@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Premium – Panel Admin SynapEd" };
 
 export const dynamic = "force-dynamic";
 
-const SUMBER: Record<string, string> = { midtrans: "Midtrans", manual: "QRIS manual", admin: "Pemberian admin" };
+const SUMBER: Record<string, string> = { midtrans: "Midtrans", manual: "QRIS manual", admin: "Pemberian admin", voucher: "Voucher gratis" };
 
 /**
  * Panel SynapEd Premium: harga, beri/cabut, anggota aktif, dan pembagian hasil.
