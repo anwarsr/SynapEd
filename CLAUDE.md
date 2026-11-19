@@ -1113,16 +1113,16 @@ Pustaka: `three`, `@react-three/fiber`, `@react-three/drei` (+ `@types/three`).
 
 Papan sandbox untuk memvisualisasikan materi. **Tanpa Firestore, tanpa Server
 Action, tanpa login** — seluruh keadaan hidup di memori browser dan di URL.
-Tujuh materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
+Sembilan materi: **Array** — empat lab, **1D** (`array1d`), **2D** (`array2d`),
 **3D** (`array3d`), **N-D** (`arrayNd`) — **Linked List** (`linkedList`,
 singly), **Flowchart** (`"flowchart"`), **Python** (`"python"`, Lab 04) dan
-**Pseudocode** (`"pseudocode"`, Lab 05), **Sorting** (`"sorting"`, Lab 06), dan **Searching** (`"searching"`, Lab 07). Lima yang terakhir BUKAN `LabId` (lihat
+**Pseudocode** (`"pseudocode"`, Lab 05), **Sorting** (`"sorting"`, Lab 06), **Searching** (`"searching"`, Lab 07), **Stack** (`stack`, Lab 08), dan **Queue** (`queue`, Lab 09). Stack & Queue ADALAH `LabId` (memakai `LabKit`/`LabWorkspace`); flowchart, python, pseudocode, sorting, dan searching BUKAN `LabId` (lihat
 bagian Flowchart, Lab kode, Sorting & Searching); `PilihanLab = LabId | "flowchart" | "python" | "pseudocode" | "sorting" | "searching"`. Navigasi materi = GALERI KARTU (`GaleriLab.tsx`, satu kartu per item `NAVIGASI`,
 ilustrasi `IlustrasiLab.tsx`; permintaan pemilik dengan acuan VisuAlgo: semua lab terlihat
 sekaligus). Dua tempat: (1) HALAMAN DEPAN `/lab` — `LabShell` mulai dengan `aktif = null`
 bila tidak ada tautan (`?s=`/`?f=`/`?py=`/`?ps=`/`?u=`/`?c=`); tautan rusak juga jatuh ke
-galeri + pemberitahuan; grid 4 kolom di xl supaya ketujuh kartu muat di 1440×900
-(diuji); (2) tombol ☰ di dalam lab (`LabNavigasi.tsx`) membuka galeri yang sama
+galeri + pemberitahuan; grid 4 kolom di xl (tujuh kartu pertama muat di 1440×900;
+kartu 08-09 di baris berikutnya, halaman digulir); (2) tombol ☰ di dalam lab (`LabNavigasi.tsx`) membuka galeri yang sama
 sebagai lapisan layar penuh yang MENIMPA halaman (`backdrop-blur-xl`, `inert` saat
 tertutup, fokus dikurung & pindah ke kartu aktif, gulir `body` dikunci, `Esc` ditangkap
 di fase capture supaya tidak ikut menutup mode presentasi, klik latar menutup). Memilih
@@ -1195,7 +1195,7 @@ materi array terbuka.
 - Transformasi 2D & 3D memindahkan **sel** (id, catatan) beserta penunjuk & sorotannya;
   `verify-lab` memeriksa "yang ditandai" tetap sel yang sama.
 - **Skema URL** `?s=1<huruf>~ruas~ruas~ruas~ruas` (selalu 5 ruas), huruf `a`=1D,
-  `m`=2D, `c`=3D, `n`=N-D, `l`=linked list. Linked list: nilai dari head ~ tiga ruas
+  `m`=2D, `c`=3D, `n`=N-D, `l`=linked list, `s`=stack, `q`=queue (lihat bagian Stack & Queue). Linked list: nilai dari head ~ tiga ruas
   cadangan yang WAJIB kosong (alamat dihitung ulang dari id). 1D: nilai~penunjuk~rentang~catatan. 2D: baris dipisah `;`,
   nilai `,` ~ `nama:r:c:nada` ~ `r1:c1:r2:c2:nada` ~ `r:c:teks`. 3D: bentuk `DxRxC` (kosong = kubus kosong) ~ nilai row-major ~
   `nama:k:i:j:nada` ~ `k1:i1:j1:k2:i2:j2:nada`. N-D: bentuk dipisah
@@ -1539,6 +1539,41 @@ materi array terbuka.
     dilompati seluruhnya lebih kecil) - beda dengan binary. Penunjuk `Awal`/`Akhir`; `PapanCari` memakai Kiri..Kanan
     ATAU Awal..Akhir sebagai rentang bergaris bawah. Batas teruji `maksJump(n)` = ⌈n/m⌉ − 1 + m (32 data → 11).
   - Tautan `?c=1<l|b|j>~<dicari>~v,v,…` (≤200 karakter, semua-atau-tidak, dibaca server). Tes: `npm run verify:searching`.
+- **Stack (Lab 08) & Queue (Lab 09)** — berbasis ARRAY gaya Cambridge 9618 (pilihan pemilik: tampilan "keduanya" = gambaran
+  abstrak + memori array berpenunjuk, queue linear + melingkar, contoh penerapan, panel pseudocode, tautan bagikan):
+  - Berkas (semua NETRAL): `adtBersama.ts` (sel, `ADT_NILAI_RE` = nilai lab biasa ATAU satu kurung buka `([{` untuk cek kurung,
+    pita penerapan, `barisKode`), `stackLab.ts`/`queueLab.ts` (reducer), `stackKode.ts`/`queueKode.ts` (teks pseudocode +
+    `barisStack`/`barisQueue`/… = nomor baris dicari dari TEKS), `stackQueueCatalog.ts`, `labUrlStackQueue.ts`. UI:
+    `components/lab/adt/` (`StackBoard`, `QueueBoard`, `AdtBagian`), `KIT_STACK`/`KIT_QUEUE` di `labKits.tsx`.
+  - Keadaan: `memori` (panjang = kapasitas 2-10, null = belum pernah ditulis), stack `top` (-1 kosong), queue `front`/`rear`
+    (-1 di awal)/`jumlah` + `jenis`. Nilai yang di-pop/di-dequeue SENGAJA tetap di memori (digambar pudar "sisa"; "terbuang"
+    untuk slot depan queue linear yang penuh semu) - array sungguhan tidak menghapus. `item`/`keluaran`/`pita` = hasil operasi
+    terakhir (kembalian, baris OUTPUT, penerapan), dibuang di awal operasi berikutnya, tidak ikut URL.
+  - Setiap langkah mengikuti SATU pernyataan pseudocode: `LabStep.kode = {id, dari, sampai}` (field umum baru). `id` (mis.
+    `stack:6`, `queue:m:6`, `kurung`, `loket`) diterjemahkan `LabKit.kodeSumber`; `kodeAwal` = kode yang tampil sebelum ada
+    operasi. `LabWorkspace` merender `KodeSorotBaca` di bawah papan HANYA untuk kit yang punya `kodeSumber` (lab lain tak
+    berubah). Teks disimpan sekali, bukan disalin ke tiap langkah/riwayat.
+  - Urutan pernyataan ditiru persis: PUSH naik dulu baru tulis (sisa yang akan ditimpa diberi peran `luar` = "?"), POP baca
+    dulu baru turun; Enqueue melingkar `RearPointer ← RearPointer + 1` lalu `IF RearPointer = MaxSize THEN RearPointer ← 0`
+    (sengaja IF, bukan MOD: putarannya jadi langkah tersendiri). Linear penuh = `RearPointer = MaxSize - 1`, melingkar =
+    `NumberInQueue = MaxSize`. Overflow/underflow = langkah dengan OUTPUT, bukan `ok:false`.
+  - JEBAKAN queue: di antara "FrontPointer maju" dan "NumberInQueue berkurang" (dan saat Rear sudah maju tapi belum
+    ditulis) penunjuk sesaat tidak sepakat; langkah tengah membawa `dalam` (indeks yang DIGAMBAR, `indeksTampil`), keadaan
+    akhir tidak boleh membawanya (`assertQueueInvariants`). Papan queue menyisakan satu slot di kiri (Rear = -1) dan kanan
+    (penunjuk yang sesaat = MaxSize). Penerapan memakai Enqueue/Dequeue ringkas (`rinci=false`) supaya tidak ratusan langkah
+    (`ADT_MAX_LANGKAH` 140, masukan ≤ 24).
+  - Penerapan: stack `cekKurung` (berhenti dengan simpulan "Stack penuh" bila terlalu bersarang - pseudocode sungguhan akan
+    lanjut, uji melewatinya), `balikKata` (≤ kapasitas huruf), `undo` (kata = PUSH, `<` = POP); queue `loket` (`+Nama`/`-`),
+    `penuhSemu` (isi penuh, keluarkan 2, ENQUEUE X pada jenis yang aktif). Ganti `jenis`/`kapasitas` queue = isi disalin
+    mulai indeks 0 dengan id tetap (meluncur).
+  - URL: `1s~kapasitas~top~memori~` (ruas ke-4 WAJIB kosong), `1q~l|m~kapasitas~front:rear:jumlah~memori`; memori = nilai per
+    sel dipisah koma, sel kosong = bagian kosong (sisa ikut dibagikan). Semua-atau-tidak lewat invarian.
+  - Tes `npm run verify:stack-queue` (murni): pseudocode di panel DIJALANKAN `jalankanPseudo` untuk 160 urutan acak per
+    struktur/jenis dan OUTPUT, kembalian, penunjuk, serta isi memori (hanya sel yang pernah ditulis - mesin 9618 menolak
+    membaca elemen tanpa nilai) harus sama dengan reducer; plus penerapan vs pseudocode, perilaku yang diajarkan, katalog,
+    tautan. 8 sabotase terbukti merah (putar melingkar di kode & reducer, pop menghapus memori, linear seperti melingkar,
+    cek pasangan kurung, invarian URL, dequeue membaca sel salah). Uji browser sementara: Push/Pop/cek kurung, tautan queue
+    linear penuh semu → ganti melingkar → Enqueue, peraga, 390 px, tema terang, tanpa galat konsol.
 
 ## Pengujian (`scripts/`)
 
@@ -1559,7 +1594,7 @@ materi array terbuka.
 - Dev server yang pekerjanya mogok (log `.next/dev/logs/next-development.log`: "Jest worker
   encountered 2 child process exceptions", "write EPIPE") menggagalkan suite di tengah jalan;
   setelah dimatikan, `.next/dev` harus dihapus juga (manifest basi → "Server action not found").
-- Suite murni tanpa server: `verify-voucher-rules`, `verify-pengumpulan`, `verify-berkas-ai`, `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
+- Suite murni tanpa server: `verify-stack-queue`, `verify-voucher-rules`, `verify-pengumpulan`, `verify-berkas-ai`, `verify-premium-rules`, `verify-royalty-split`, `verify-lab`, `verify-chat-knowledge`, `verify-flowchart`, `verify-pseudocode`, `verify-kode`, `verify-sorting`, `verify-searching`. Sisanya butuh `npm run dev`.
 - `verify-class-assignment` menulis kelas & berkas uji langsung (Admin SDK) ke bucket asli
   lalu membersihkannya; ia TIDAK menguji storage.rules (unggahan uji melewati rules).
   Bagian koreksi AI menguji penjaga, kerahasiaan berkas konteks, pembaca Office

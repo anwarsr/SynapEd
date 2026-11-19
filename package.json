@@ -55,6 +55,7 @@
     "verify:kode": "tsx scripts/verify-kode.ts",
     "verify:sorting": "tsx scripts/verify-sorting.ts",
     "verify:searching": "tsx scripts/verify-searching.ts",
+    "verify:stack-queue": "tsx scripts/verify-stack-queue.ts",
     "verify:premium-rules": "tsx scripts/verify-premium-rules.ts",
     "verify:premium": "tsx scripts/verify-premium.ts",
     "verify:voucher-rules": "tsx scripts/verify-voucher-rules.ts",

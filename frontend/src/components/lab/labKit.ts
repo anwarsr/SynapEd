@@ -74,4 +74,11 @@ export interface LabKit<S, Op extends { kind: string }, P> {
   labelPilihan: (p: P) => string;
   /** Baris daftar tombol pintas untuk memilih sel: [tombol, arti]. */
   tombolPilih: readonly (readonly [string, string])[];
+  /**
+   * Opsional: pseudocode yang menyertai papan (stack & queue). `kodeSumber`
+   * menerjemahkan `LabStep.kode.id` menjadi teks; `kodeAwal` = kode yang
+   * tampil sebelum ada operasi yang diputar. Lab tanpa ini tidak berpanel kode.
+   */
+  kodeSumber?: (id: string) => string | null;
+  kodeAwal?: (s: S) => string;
 }

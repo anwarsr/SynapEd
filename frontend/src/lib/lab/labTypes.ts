@@ -58,7 +58,7 @@ export const KECEPATAN_PELAN: readonly number[] = [0.25, 0.5, 1, 2];
  * Masing-masing punya kanvas & operasinya sendiri; bilah alat, langkah,
  * riwayat, presentasi, dan tautan bagikan dipakai bersama.
  */
-export type LabId = "array1d" | "array2d" | "array3d" | "arrayNd" | "linkedList";
+export type LabId = "array1d" | "array2d" | "array3d" | "arrayNd" | "linkedList" | "stack" | "queue";
 
 /**
  * Nilai elemen: 1–6 karakter.
@@ -172,6 +172,12 @@ export interface LabStep<S> {
    * mengikuti rantai dari head di setiap langkah.
    */
   posisiSimpul?: Record<number, { kolom: number; baris: number }>;
+  /**
+   * Baris pseudocode 9618 yang sedang dijalankan langkah ini (stack & queue).
+   * `id` = kode milik lab (`LabKit.kodeSumber`), BUKAN teksnya: teks disimpan
+   * sekali, bukan disalin ke setiap langkah di setiap entri riwayat.
+   */
+  kode?: { id: string; dari: number; sampai: number };
 }
 
 /**

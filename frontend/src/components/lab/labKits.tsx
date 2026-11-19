@@ -15,6 +15,13 @@ import { buildCubeOp, CUBE_OP_CATALOG, CUBE_OP_GROUPS } from "@/lib/lab/cubeLabC
 import { encodeLabSnapshot } from "@/lib/lab/labUrl";
 import { applyListOp, emptyListState, urutanList, type ListLabState, type ListOp } from "@/lib/lab/listLab";
 import { buildListOp, LIST_OP_CATALOG, LIST_OP_GROUPS } from "@/lib/lab/listLabCatalog";
+import StackBoard from "./adt/StackBoard";
+import QueueBoard from "./adt/QueueBoard";
+import { applyStackOp, emptyStackState, kodeIdStack, type StackLabState, type StackOp } from "@/lib/lab/stackLab";
+import { applyQueueOp, emptyQueueState, type QueueLabState, type QueueOp } from "@/lib/lab/queueLab";
+import { kodeStackDariId } from "@/lib/lab/stackKode";
+import { kodeIdQueue, kodeQueueDariId } from "@/lib/lab/queueKode";
+import { ADT_OP_GROUPS, buildQueueOp, buildStackOp, QUEUE_OP_CATALOG, STACK_OP_CATALOG } from "@/lib/lab/stackQueueCatalog";
 
 /**
  * Empat lab array — 1D, 2D, 3D, dan N-dimensi — dalam bentuk yang dimengerti ruang
@@ -311,4 +318,69 @@ export const KIT_LINKED_LIST: LabKit<ListLabState, ListOp, number> = {
     ["← →", "pindah simpul"],
     ["Home / End", "head / ekor"],
   ],
+};
+
+// ---------------------------------------------------------------------------
+// Stack & Queue (berbasis array, Cambridge 9618)
+// ---------------------------------------------------------------------------
+
+const IKON_ADT = { isi: IKON.tambah, operasi: IKON.tukar, penerapan: IKON.bidik };
+
+/** Pilihan = indeks sel memori; ↑/↓ (stack tegak) atau ←/→ (queue mendatar). */
+function navigasiMemori(kap: number, p: number | null, tombol: string, naik: string, turun: string): number | null | undefined {
+  if (tombol === naik) return Math.min((p ?? -1) + 1, kap - 1);
+  if (tombol === turun) return Math.max((p ?? 1) - 1, 0);
+  if (tombol === "Home") return 0;
+  if (tombol === "End") return kap - 1;
+  return undefined;
+}
+
+export const KIT_STACK: LabKit<StackLabState, StackOp, number> = {
+  id: "stack",
+  nama: "Stack",
+  ringkas: "Stack berbasis array (LIFO): Push, Pop, dan Peek langkah demi langkah dengan TopPointer, overflow, underflow, dan pseudocode 9618 - plus cek kurung, balik kata, dan undo.",
+  kosong: () => emptyStackState(),
+  terapkan: applyStackOp,
+  katalog: Object.values(STACK_OP_CATALOG),
+  grup: denganIkon(ADT_OP_GROUPS, IKON_ADT),
+  bangun: buildStackOp,
+  namaOperasi: (op) => STACK_OP_CATALOG[op.kind].label,
+  Papan: StackBoard,
+  encode: (state) => encodeLabSnapshot({ lab: "stack", state }),
+  sahkanPilihan: (s, p) => (p !== null && p >= 0 && p < s.kapasitas ? p : null),
+  navigasi: (s, p, tombol) => navigasiMemori(s.kapasitas, p, tombol, "ArrowUp", "ArrowDown"),
+  isianDariPilihan: () => null,
+  isianSel: [],
+  labelPilihan: (p) => `Stack[${p}]`,
+  tombolPilih: [
+    ["↑ ↓", "pilih sel memori"],
+    ["Home / End", "indeks 0 / terakhir"],
+  ],
+  kodeSumber: kodeStackDariId,
+  kodeAwal: (s) => kodeIdStack(s.kapasitas),
+};
+
+export const KIT_QUEUE: LabKit<QueueLabState, QueueOp, number> = {
+  id: "queue",
+  nama: "Queue",
+  ringkas: "Queue berbasis array (FIFO), linear dan melingkar: Enqueue & Dequeue langkah demi langkah dengan FrontPointer, RearPointer, dan pseudocode 9618 - plus antrean loket dan kenapa queue linear bisa penuh.",
+  kosong: () => emptyQueueState(),
+  terapkan: applyQueueOp,
+  katalog: Object.values(QUEUE_OP_CATALOG),
+  grup: denganIkon(ADT_OP_GROUPS, IKON_ADT),
+  bangun: buildQueueOp,
+  namaOperasi: (op) => QUEUE_OP_CATALOG[op.kind].label,
+  Papan: QueueBoard,
+  encode: (state) => encodeLabSnapshot({ lab: "queue", state }),
+  sahkanPilihan: (s, p) => (p !== null && p >= 0 && p < s.kapasitas ? p : null),
+  navigasi: (s, p, tombol) => navigasiMemori(s.kapasitas, p, tombol, "ArrowRight", "ArrowLeft"),
+  isianDariPilihan: () => null,
+  isianSel: [],
+  labelPilihan: (p) => `Queue[${p}]`,
+  tombolPilih: [
+    ["← →", "pilih sel memori"],
+    ["Home / End", "indeks 0 / terakhir"],
+  ],
+  kodeSumber: kodeQueueDariId,
+  kodeAwal: (s) => kodeIdQueue(s.jenis, s.kapasitas),
 };

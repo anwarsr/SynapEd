@@ -8,7 +8,7 @@ import PseudoWorkspace from "./kode/PseudoWorkspace";
 import PythonWorkspace from "./kode/PythonWorkspace";
 import SortWorkspace from "./sort/SortWorkspace";
 import SearchWorkspace from "./search/SearchWorkspace";
-import { KIT_ARRAY_1D, KIT_ARRAY_2D, KIT_ARRAY_3D, KIT_ARRAY_ND, KIT_LINKED_LIST } from "./labKits";
+import { KIT_ARRAY_1D, KIT_ARRAY_2D, KIT_ARRAY_3D, KIT_ARRAY_ND, KIT_LINKED_LIST, KIT_QUEUE, KIT_STACK } from "./labKits";
 import type { LabSnapshot } from "@/lib/lab/labUrl";
 import type { LabId } from "@/lib/lab/labTypes";
 import type { Diagram } from "@/lib/lab/flowTypes";
@@ -17,7 +17,7 @@ import type { IsiSort } from "@/lib/lab/sort/sortUrl";
 import type { IsiCari } from "@/lib/lab/search/searchUrl";
 import { cn } from "@/lib/cn";
 
-type Materi = "array" | "list" | "flowchart" | "python" | "pseudocode" | "sorting" | "searching";
+type Materi = "array" | "list" | "flowchart" | "python" | "pseudocode" | "sorting" | "searching" | "stack" | "queue";
 
 /**
  * Flowchart dan lab kode BUKAN `LabId`: mereka tidak memakai skema tautan
@@ -53,6 +53,8 @@ const MATERI: readonly { id: Materi; nomor: string; nama: string }[] = [
   { id: "pseudocode", nomor: "05", nama: "Pseudocode" },
   { id: "sorting", nomor: "06", nama: "Sorting" },
   { id: "searching", nomor: "07", nama: "Searching" },
+  { id: "stack", nomor: "08", nama: "Stack" },
+  { id: "queue", nomor: "09", nama: "Queue" },
 ];
 
 /**
@@ -104,12 +106,28 @@ const NAVIGASI: readonly BagianNavigasi[] = [
     nama: "Searching",
     item: [{ id: "searching", nama: "Linear, binary & jump search", ket: RINGKAS_SEARCHING }],
   },
+  {
+    nomor: "08",
+    nama: "Stack",
+    item: [{ id: "stack", nama: "Stack (LIFO)", ket: KIT_STACK.ringkas }],
+  },
+  {
+    nomor: "09",
+    nama: "Queue",
+    // Satu item: linear/melingkar dipilih lewat operasi "Jenis queue" di dalamnya,
+    // supaya keduanya bisa dibandingkan pada isi yang sama.
+    item: [{ id: "queue", nama: "Queue (FIFO) linear & melingkar", ket: KIT_QUEUE.ringkas }],
+  },
 ];
 
 const ID_LAB: ReadonlySet<string> = new Set(NAVIGASI.flatMap((b) => b.item.map((it) => it.id)));
 
 const materiDari = (id: PilihanLab): Materi =>
-  id === "flowchart" || id === "python" || id === "pseudocode" || id === "sorting" || id === "searching" ? id : id === "linkedList" ? "list" : "array";
+  id === "flowchart" || id === "python" || id === "pseudocode" || id === "sorting" || id === "searching" || id === "stack" || id === "queue"
+    ? id
+    : id === "linkedList"
+      ? "list"
+      : "array";
 
 /**
  * Pengalih materi (Array · Linked List) dan, untuk array, pengalih dimensinya
@@ -219,6 +237,10 @@ export default function LabShell({
         ? { nama: "Searching", ringkas: RINGKAS_SEARCHING }
       : aktif === "linkedList"
         ? KIT_LINKED_LIST
+      : aktif === "stack"
+        ? KIT_STACK
+      : aktif === "queue"
+        ? KIT_QUEUE
         : (DIMENSI_ARRAY.find((l) => l.id === aktif) ?? DIMENSI_ARRAY[0]);
 
   const judul = (
@@ -336,6 +358,28 @@ export default function LabShell({
             awal={awal?.lab === "linkedList" ? awal.state : KIT_LINKED_LIST.kosong()}
             judul={judul}
             aktif={aktif === "linkedList"}
+            onJalan={sembunyikanPemberitahuan}
+          />
+        </div>
+      )}
+      {dibuka.has("stack") && (
+        <div hidden={aktif !== "stack"} className="lg:h-full">
+          <LabWorkspace
+            kit={KIT_STACK}
+            awal={awal?.lab === "stack" ? awal.state : KIT_STACK.kosong()}
+            judul={judul}
+            aktif={aktif === "stack"}
+            onJalan={sembunyikanPemberitahuan}
+          />
+        </div>
+      )}
+      {dibuka.has("queue") && (
+        <div hidden={aktif !== "queue"} className="lg:h-full">
+          <LabWorkspace
+            kit={KIT_QUEUE}
+            awal={awal?.lab === "queue" ? awal.state : KIT_QUEUE.kosong()}
+            judul={judul}
+            aktif={aktif === "queue"}
             onJalan={sembunyikanPemberitahuan}
           />
         </div>

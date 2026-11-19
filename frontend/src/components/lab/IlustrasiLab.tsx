@@ -200,4 +200,63 @@ const GAMBAR: Record<string, React.ReactNode> = {
       </text>
     </>
   ),
+  stack: (
+    <>
+      <g className={NETRAL} stroke="currentColor" strokeWidth={2}>
+        <path d="M58 22 V122 H130 V22" />
+      </g>
+      {[
+        { y: 92, v: "12" },
+        { y: 66, v: "7" },
+        { y: 40, v: "9" },
+      ].map((b, i) => (
+        <g key={b.v}>
+          <rect x={66} y={b.y} width={56} height={22} className={`fill-current ${i === 2 ? "text-blue-500/35" : "text-white/10"}`} />
+          <text x={94} y={b.y + 16} textAnchor="middle" fontSize={13} style={HURUF} className="fill-current text-ink">
+            {b.v}
+          </text>
+        </g>
+      ))}
+      <g className="text-blue-400" stroke="currentColor" strokeWidth={2}>
+        <path d="M150 51 H134" />
+        <path d="M139 46 L133 51 L139 56" />
+      </g>
+      <text x={154} y={55} fontSize={11} style={HURUF} className="fill-current text-blue-300">
+        Top
+      </text>
+      <text x={154} y={92} fontSize={10} style={MONO} className="fill-current text-white/40">
+        PUSH / POP
+      </text>
+    </>
+  ),
+
+  queue: (
+    <>
+      <text x={24} y={34} fontSize={11} style={HURUF} className="fill-current text-blue-300">
+        Front
+      </text>
+      <text x={200} y={106} fontSize={11} style={HURUF} className="fill-current text-white/60">
+        Rear
+      </text>
+      <g className={NETRAL} stroke="currentColor" strokeWidth={2}>
+        <rect x={24} y={52} width={192} height={36} />
+        {[72, 120, 168].map((x) => (
+          <line key={x} x1={x} y1={52} x2={x} y2={88} />
+        ))}
+      </g>
+      <rect x={73} y={53} width={46} height={34} className="fill-current text-blue-500/30" />
+      {["", "4", "8", "2"].map((v, i) => (
+        <text key={i} x={48 + i * 48} y={76} textAnchor="middle" fontSize={14} style={HURUF} className="fill-current text-ink">
+          {v}
+        </text>
+      ))}
+      <g className="text-blue-400" stroke="currentColor" strokeWidth={2}>
+        <path d="M96 38 V48" />
+        <path d="M92 44 L96 49 L100 44" />
+        <path d="M192 104 V92" />
+        <path d="M188 96 L192 91 L196 96" />
+        <path d="M216 70 C240 70 240 134 120 134 C30 134 34 112 34 92" strokeDasharray="4 4" />
+      </g>
+    </>
+  ),
 };

@@ -18,6 +18,8 @@
  *   1c~2x2x3~0,1,…,11~p:1:0:2:utama~0:1:0:1:1:2:sorot       ← array 3D (labUrlCube.ts)
  *   1n~2x3x4~0,1,…,23~1x2x0~1:0:sorot                       ← array N-D (labUrlNd.ts)
  *   1l~3,8,1~~~                                             ← linked list (labUrlList.ts)
+ *   1s~6~2~12,7,9,,,~                                       ← stack (labUrlStackQueue.ts)
+ *   1q~m~6~1:3:3~12,7,9,4,,                                 ← queue (labUrlStackQueue.ts)
  *
  * Untuk 1D: nilai dipisah koma ~ penunjuk nama:indeks:nada ~ rentang
  * dari:sampai:nada (inklusif) ~ catatan indeks:teks.
@@ -54,6 +56,9 @@ import { decodeCube, encodeCube } from "./labUrlCube";
 import { decodeList, encodeList } from "./labUrlList";
 import { decodeMatrix, encodeMatrix } from "./labUrlMatrix";
 import { decodeNd, encodeNd } from "./labUrlNd";
+import { decodeQueue, decodeStack, encodeQueue, encodeStack } from "./labUrlStackQueue";
+import type { QueueLabState } from "./queueLab";
+import type { StackLabState } from "./stackLab";
 import type { CubeLabState } from "./cubeLab";
 import type { ListLabState } from "./listLab";
 import type { MatrixLabState } from "./matrixLab";
@@ -72,10 +77,12 @@ export type LabSnapshot =
   | { lab: "array2d"; state: MatrixLabState }
   | { lab: "array3d"; state: CubeLabState }
   | { lab: "arrayNd"; state: NdLabState }
-  | { lab: "linkedList"; state: ListLabState };
+  | { lab: "linkedList"; state: ListLabState }
+  | { lab: "stack"; state: StackLabState }
+  | { lab: "queue"; state: QueueLabState };
 
 /** Satu huruf per lab. `Record<LabId, …>` membuat lab baru tanpa huruf jadi galat tipe. */
-const HURUF_LAB: Record<LabId, string> = { array1d: "a", array2d: "m", array3d: "c", arrayNd: "n", linkedList: "l" };
+const HURUF_LAB: Record<LabId, string> = { array1d: "a", array2d: "m", array3d: "c", arrayNd: "n", linkedList: "l", stack: "s", queue: "q" };
 
 /** Peta balik, diturunkan supaya huruf tidak ditulis dua kali di dua arah. */
 const LAB_DARI_HURUF = new Map<string, LabId>(
@@ -112,6 +119,12 @@ export function encodeLabSnapshot(snap: LabSnapshot): string | null {
       break;
     case "linkedList":
       data = encodeList(snap.state);
+      break;
+    case "stack":
+      data = encodeStack(snap.state);
+      break;
+    case "queue":
+      data = encodeQueue(snap.state);
       break;
   }
   if (data === null) return null;
@@ -167,6 +180,14 @@ export function decodeLabSnapshot(raw: unknown): LabSnapshot | null {
     }
     case "linkedList": {
       const state = decodeList(data);
+      return state === null ? null : { lab, state };
+    }
+    case "stack": {
+      const state = decodeStack(data);
+      return state === null ? null : { lab, state };
+    }
+    case "queue": {
+      const state = decodeQueue(data);
       return state === null ? null : { lab, state };
     }
     default:

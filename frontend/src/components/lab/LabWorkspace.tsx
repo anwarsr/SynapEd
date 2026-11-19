@@ -4,6 +4,7 @@ import LabControls from "./LabControls";
 import LabToolbar from "./LabToolbar";
 import ShareLabButton from "./ShareLabButton";
 import StepTimeline, { LangkahSekarang } from "./StepTimeline";
+import KodeSorotBaca from "./langkah/KodeSorotBaca";
 import type { LabKit } from "./labKit";
 import { useLabSession } from "@/lib/useLabSession";
 import { useLabPlayer } from "@/lib/useLabPlayer";
@@ -221,12 +222,28 @@ export default function LabWorkspace<S, Op extends { kind: string }, P>({
   );
   const narasi = <LangkahSekarang steps={sesi.steps} frame={pemutar.frame} memutar={pemutar.memutar} />;
 
+  // Panel pseudocode (lab yang menyediakannya): kode langkah yang sedang
+  // diputar dengan barisnya menyala, atau kode bawaan papan sebelum ada operasi.
+  const kodeLangkah = langkahIni?.kode;
+  const kodeId = kodeLangkah?.id ?? kit.kodeAwal?.(tampil) ?? null;
+  const kodeTeks = kodeId && kit.kodeSumber ? kit.kodeSumber(kodeId) : null;
+  const panelKode = kodeTeks ? (
+    <section aria-label="Pseudocode 9618" className="bg-paper-card p-4 sm:p-5">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="t-label text-ink">Pseudocode 9618</h2>
+        <span className="text-[11px] text-ink-muted">{kodeLangkah ? "baris yang menyala = langkah ini" : "jalankan operasi untuk mengikuti barisnya"}</span>
+      </div>
+      <KodeSorotBaca kode={kodeTeks} dari={kodeLangkah?.dari ?? 0} sampai={kodeLangkah?.sampai ?? -1} />
+    </section>
+  ) : null;
+
   if (presentasi) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col gap-4 overflow-y-auto bg-paper px-6 py-5">
         {bilah}
         {narasi}
         {papan}
+        {panelKode}
         {garisLangkah}
       </div>
     );
@@ -257,6 +274,8 @@ export default function LabWorkspace<S, Op extends { kind: string }, P>({
         )}
 
         {papan}
+
+        {panelKode}
 
         {garisLangkah}
 

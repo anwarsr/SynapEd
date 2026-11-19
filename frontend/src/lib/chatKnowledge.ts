@@ -252,7 +252,7 @@ export const PENGETAHUAN_SITUS = `## Akun
 ## SynapLab
 - /lab adalah papan untuk memahami struktur data dan pemrograman sambil
   mencobanya, terbuka untuk siapa saja tanpa login. Halaman /lab dibuka dengan
-  galeri kartu semua lab (Lab 01 Array sampai Lab 07 Searching); tombol menu
+  galeri kartu semua lab (Lab 01 Array sampai Lab 09 Queue); tombol menu
   (☰, di ponsel tombol "Materi") di dalam lab membuka galeri yang sama untuk
   pindah lab.
 - Materi: Array (1D, 2D, 3D yang tampil sebagai kubus yang bisa diputar, dan
@@ -315,6 +315,18 @@ export const PENGETAHUAN_SITUS = `## Akun
   pseudocode 9618 yang disorot, penghitung perbandingan, data 2-32 angka
   (ketik, acak, atau contoh kasus seperti "tidak ada" dan "32 data"), nilai
   yang dicari bisa diatur, dan bisa dibagikan lewat tautan.
+- Stack (Lab 08) dan Queue (Lab 09): stack dan queue berbasis array seperti
+  silabus Cambridge 9618. Papan menampilkan gambaran (tumpukan / antrean) dan
+  memori array berindeks dengan TopPointer, atau FrontPointer, RearPointer, dan
+  NumberInQueue; nilai yang sudah dikeluarkan tetap tertinggal di memori sebagai
+  "sisa" sampai ditimpa. Operasinya Push/Pop/Peek/IsEmpty/IsFull (stack) dan
+  Enqueue/Dequeue/Peek/IsEmpty/IsFull (queue), ditambah isi, acak, kosongkan,
+  dan ubah kapasitas 2-10; overflow dan underflow ditunjukkan sebagai langkah.
+  Di bawah papan ada pseudocode 9618 dengan baris yang menyala mengikuti
+  langkah. Queue bisa linear atau melingkar (operasi "Jenis queue") untuk
+  melihat kenapa queue linear bisa "penuh" padahal slot depannya kosong. Contoh
+  penerapan: cek kurung seimbang, balik kata, dan undo (stack); antrean loket
+  dan peraga queue linear vs melingkar (queue). Papan bisa dibagikan lewat tautan.
 
 ## Yang belum tersedia
 Penarikan dana pendapatan, notifikasi email, pengembalian dana otomatis,

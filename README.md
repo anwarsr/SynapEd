@@ -186,7 +186,7 @@ Sandbox untuk memahami materi sambil mencobanya, dan untuk menjelaskannya ke
 orang lain. Membuka `/lab` menampilkan **galeri kartu** semua materi (bergambar,
 terlihat sekaligus): **Array** (Lab 01 — 1D, 2D, 3D, N-D), **Linked List**
 (Lab 02), **Flowchart** (Lab 03), **Python** (Lab 04), **Pseudocode** (Lab 05),
-**Sorting** (Lab 06), dan **Searching** (Lab 07). Dari dalam lab, tombol ☰ di
+**Sorting** (Lab 06), **Searching** (Lab 07), **Stack** (Lab 08), dan **Queue** (Lab 09). Dari dalam lab, tombol ☰ di
 tepi kiri (di ponsel: tombol "Materi" di tengah bawah) membuka galeri yang sama
 sebagai lapisan layar penuh; lab yang sedang dibuka ditandai. Tautan bagikan
 langsung membuka lab-nya tanpa melewati galeri. Array tampil sebagai satu kartu;
@@ -376,6 +376,24 @@ tidak menghapus papan lab lain.
   - data 2-32 angka 0-999 + nilai yang dicari: ketik, acak, atau contoh kasus
     (ada di tengah, di awal, tidak ada, nilai kembar, 32 data); di akhir ketiga
     algoritma dibandingkan; **Bagikan** menyalin tautannya.
+- **Stack** (Lab 08) dan **Queue** (Lab 09) — struktur data **berbasis array** seperti
+  silabus Cambridge 9618, dengan kendali lab Array (putar langkah, maju/mundur,
+  batalkan/ulangi, presentasi, **Bagikan**):
+  - papan menggambar keadaan yang sama dua kali: **gambaran** (tumpukan / barisan
+    antre) dan **memori array** berindeks dengan penunjuknya (`TopPointer`;
+    `FrontPointer` di atas & `RearPointer` di bawah). Nilai yang sudah
+    di-pop/di-dequeue **tetap tertinggal di memori** (pudar, bertanda "sisa")
+    sampai ditimpa - begitulah array sungguhan bekerja;
+  - operasi dasar Push/Pop/Peek/IsEmpty/IsFull dan Enqueue/Dequeue/Peek/IsEmpty/IsFull,
+    plus isi, isi acak, kosongkan, dan ubah kapasitas (2-10). Overflow & underflow
+    dijalankan sebagai langkah dengan OUTPUT-nya, bukan galat;
+  - **panel pseudocode 9618** di bawah papan: baris yang sedang dijalankan menyala
+    mengikuti langkah (kodenya bisa dicoba di Lab 05);
+  - queue **linear dan melingkar** (operasi "Jenis queue"): queue linear "penuh"
+    walau slot depan kosong, queue melingkar membawa penunjuk kembali ke indeks 0;
+  - **contoh penerapan**: stack - cek kurung seimbang, balik kata, riwayat
+    ketikan dengan undo; queue - antrean loket (`+Nama` datang, `-` dilayani) dan
+    peraga "kenapa queue linear bisa penuh?".
 - Kedua lab kode: **contoh** siap pakai (luas, genap/ganjil, jumlah 1..n,
   CASE, array, validasi masukan, rekursi, BYREF/dictionary), **Bagikan**
   (tautan berisi kode + masukan; kode dari tautan hanya ditampilkan, tidak
@@ -686,6 +704,7 @@ npm run verify:pseudocode         # interpreter pseudocode 9618: bahasa, galat &
 npm run verify:kode               # lab kode: tautan, berkas, penyorot, saran Python, CSP worker (murni)
 npm run verify:sorting            # Lab Sorting: hasil stabil, langkah, baris kode, pseudocode dijalankan, tautan (murni)
 npm run verify:searching          # Lab Searching: hasil, Kiri/Tengah/Kanan, baris kode, pseudocode dijalankan, tautan (murni)
+npm run verify:stack-queue        # Lab Stack & Queue: pseudocode dijalankan = reducer, linear/melingkar, penerapan, tautan (murni)
 npm run verify:premium-rules      # Premium: perpanjangan, bagi hasil, Σ = dibayar (murni)
 npm run verify:premium            # Premium: akses, pembayaran, cabut, bagi hasil, naik ke paid (dev server)
 npm run verify:voucher-rules      # voucher: potongan, cakupan, status, validasi admin (murni)
@@ -704,7 +723,7 @@ npm run verify:chat-knowledge     # pengetahuan asisten sejalan dengan halaman s
 - Refund otomatis. Kabar refund dari Midtrans hanya ditandai untuk ditindaklanjuti admin.
 - Notifikasi email (keputusan pengajuan, penilaian tugas, dsb.).
 - Soal kuis selain pilihan tunggal.
-- Materi SynapLab lain (string, stack/queue, tree, visualisasi data), linked list ganda (doubly) dan melingkar (circular), serta algoritma pengurutan & pencarian lain di Lab Sorting/Searching (mis. quick sort, jump search).
+- Materi SynapLab lain (string, tree, visualisasi data, priority queue/deque), linked list ganda (doubly) dan melingkar (circular), serta algoritma pengurutan & pencarian lain di Lab Sorting/Searching (mis. quick sort, jump search).
 - Menyimpan & menamai papan SynapLab, dan menautkannya ke kelas atau pelajaran kursus.
 - Flowchart: titik belok garis yang diatur manual, pinch-zoom di layar sentuh,
   subproses yang benar-benar memanggil flowchart lain, dan perulangan `for` di
